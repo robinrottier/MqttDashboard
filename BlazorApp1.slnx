@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="README.md" />
+  </Folder>
   <Folder Name="/Web/">
     <Project Path="BlazorWasmStandalone/BlazorWasmStandalone.csproj" Id="400e9cef-297f-4397-b763-24cd054a4fdb" />
     <Project Path="BlazorWebAppServerOnly/BlazorWebAppServerOnly.csproj" Id="d852685b-bffb-48ac-b18b-ceaf0849a450" />
