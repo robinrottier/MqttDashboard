@@ -11,4 +11,8 @@
     <ProjectReference Include="..\BlazorApp1\BlazorApp1.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Components\Pages\" />
+  </ItemGroup>
+
 </Project>
