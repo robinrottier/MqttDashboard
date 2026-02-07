@@ -13,7 +13,7 @@ if defined gt (
 	echo Uncommitted changes detected. Please commit or stash your changes before running this script.
 	exit /b 1
 )
-exit
+
 echo Cleaning the .vs directory...
 rd /s/q .vs
 echo Cleaning the project...
