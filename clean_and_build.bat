@@ -7,6 +7,12 @@ if not exist *.slnx (
 	exit /b 1
 )
 
+set sln=.\BlazorApp1_withBlazorDiagrams.slnx
+if not exist "%sln%" (
+	echo Solution file "%sln%" not found.
+	exit /b 1
+)
+
 set gt=
 for /f "delims=" %%i in ('git status --porcelain') do set gt=1&&echo Modified: %%i
 if defined gt (
@@ -17,7 +23,7 @@ if defined gt (
 echo Cleaning the .vs directory...
 rd /s/q .vs
 echo Cleaning the project...
-dotnet clean
+dotnet clean %sln%
 echo Building the project...
-dotnet build
+dotnet build %sln%
 echo Build completed.
