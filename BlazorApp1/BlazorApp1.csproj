@@ -14,15 +14,17 @@
   <ItemGroup>
 	<PackageReference Include="Microsoft.AspNetCore.Components" Version="10.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.2" />
-
-	<ProjectReference Include="..\..\Blazor.diagrams\src\Blazor.Diagrams.Algorithms\Blazor.Diagrams.Algorithms.csproj" />
-	<ProjectReference Include="..\..\Blazor.diagrams\src\Blazor.Diagrams.Core\Blazor.Diagrams.Core.csproj" />
-	<ProjectReference Include="..\..\Blazor.diagrams\src\Blazor.Diagrams\Blazor.Diagrams.csproj" />
-	  
+	  	  
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="wwwroot\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Blazor.Diagrams\src\Blazor.Diagrams.Algorithms\Blazor.Diagrams.Algorithms.csproj" />
+    <ProjectReference Include="..\..\Blazor.Diagrams\src\Blazor.Diagrams.Core\Blazor.Diagrams.Core.csproj" />
+    <ProjectReference Include="..\..\Blazor.Diagrams\src\Blazor.Diagrams\Blazor.Diagrams.csproj" />
   </ItemGroup>
 
 </Project>
