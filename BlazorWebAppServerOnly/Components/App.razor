@@ -10,8 +10,7 @@
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["BlazorWebAppServerOnly.styles.css"]" />
 
-    <link href="@Assets["_content/Z.Blazor.Diagrams/style.min.css"]" rel="stylesheet" />
-    <link href="@Assets["_content/Z.Blazor.Diagrams/default.styles.min.css"]" rel="stylesheet" />
+    <AppHeadContent />
 
     <ImportMap />
     <link rel="icon" type="image/png" href="favicon.png" />
@@ -21,8 +20,7 @@
 <body>
     <Routes @rendermode="InteractiveServer" />
     <ReconnectModal />
-    <script src="@Assets["_framework/blazor.web.js"]"></script>
-    <script src="@Assets["_content/Z.Blazor.Diagrams/script.min.js"]"></script>
+    <AppBodyContent />
 </body>
 
 </html>
