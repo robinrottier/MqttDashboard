@@ -1,0 +1,29 @@
+﻿@using Blazor.Diagrams.Components.Renderers;
+@using BlazorApp1.Models
+
+<style>
+    .mud-node .mud-card {
+        width: 100%;
+        height: 100%;
+        background-color: lightgray;
+    }
+</style>
+
+<div class="mud-node default-node">
+
+<MudCard Outlined="true" >
+<MudCardHeader>@(Node.Title ?? "Title")</MudCardHeader>
+
+@foreach (var port in Node.Ports)
+{
+    // In case you have any ports to show
+    // IMPORTANT: You are always in charge of rendering ports
+    <PortRenderer @key="port" Port="port" />
+}
+</MudCard>
+
+    @code {
+    // This gets filled by the library
+    [Parameter] public MudNodeModel Node { get; set; } = null!;
+}
+</div>

@@ -7,6 +7,8 @@
 @using Blazor.Diagrams.Core.PathGenerators
 @using Blazor.Diagrams.Core.Routers
 @using Blazor.Diagrams.Options
+@using BlazorApp1.Models
+@using BlazorApp1.Widgets
 
 <h3>Diagram</h3>
 @if (_diagram == null)
@@ -44,11 +46,13 @@ else
 
         var diagram = new BlazorDiagram(options);
 
-        var firstNode = diagram.Nodes.Add(new NodeModel(position: new Point(50, 50))
+        diagram.RegisterComponent<MudNodeModel, MudNodeWidget>();
+
+        var firstNode = diagram.Nodes.Add(new MudNodeModel(position: new Point(50, 50))
         {
             Title = "Node 1"
         });
-        var secondNode = diagram.Nodes.Add(new NodeModel(position: new Point(200, 100))
+        var secondNode = diagram.Nodes.Add(new MudNodeModel(position: new Point(200, 100))
         {
             Title = "Node 2"
         });
