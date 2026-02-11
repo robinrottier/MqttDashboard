@@ -13,9 +13,15 @@ namespace BlazorApp1.Services;
 public class DiagramStateService
 {
     public int Counter { get; set; } = 0;
+    public bool IsInteractive { get; private set; } = false;
 
     private BlazorDiagram? _diagram;
-    
+
+    public void SetInteractive()
+    {
+        IsInteractive = true;
+    }
+
     public BlazorDiagram GetOrCreateDiagram()
     {
         if (_diagram != null)

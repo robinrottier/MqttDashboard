@@ -19,18 +19,34 @@
 <MudCard Outlined="true" >
     <MudCardContent>
         <MudText Typo="Typo.h4" GutterBottom="true">Counter</MudText>
+        @if (DiagramState.IsInteractive)
+        {
             <MudText Class="mb-4">Current count: @DiagramState.Counter</MudText>
+        }
+        else
+        {
+            <MudText Class="mb-4">Loading...</MudText>
+        }
     </MudCardContent>
     <MudCardActions>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" @onclick="IncrementCount">Click me</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" @onclick="IncrementCount" Disabled="!DiagramState.IsInteractive">Click me</MudButton>
     </MudCardActions>
 </MudCard>
 </MudStack>
 
 @code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            DiagramState.SetInteractive();
+            StateHasChanged();
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
 
     private void IncrementCount()
     {
-        DiagramState.Counter = DiagramState.Counter+1;
+        DiagramState.Counter++;
     }
 }

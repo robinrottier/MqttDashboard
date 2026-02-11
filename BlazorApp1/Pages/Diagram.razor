@@ -5,7 +5,7 @@
 @inject DiagramStateService DiagramState
 
 <h3>Diagram</h3>
-@if (_diagram == null)
+@if (!DiagramState.IsInteractive || _diagram == null)
 {
    <div>Loading...</div>
 }
@@ -21,9 +21,15 @@ else
 @code {
     private BlazorDiagram? _diagram { get; set; } = null!;
 
-    protected override void OnInitialized()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        _diagram = DiagramState.GetOrCreateDiagram();
+        if (firstRender)
+        {
+            DiagramState.SetInteractive();
+            _diagram = DiagramState.GetOrCreateDiagram();
+            StateHasChanged();
+        }
+        await base.OnAfterRenderAsync(firstRender);
     }
 
 }
