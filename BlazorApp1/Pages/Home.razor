@@ -1,12 +1,36 @@
 ﻿@page "/"
+@inject BlazorApp1.Services.DiagramStateService DiagramState
 
 <PageTitle>Home</PageTitle>
 
-<PageTitle>Home</PageTitle>
+<MudStack Spacing="2" Class="pa-2">
+<MudCard>
+    <MudCardContent>
+        <MudText Typo="Typo.h3" GutterBottom="true">Hello, world!</MudText>
+        <MudText Class="mb-8">A app for Blazor experiments</MudText>
+        <MudText>
+            Using the excellent
+            <MudLink Target="_blank" Href="https://mudblazor.com">MudBlazor</MudLink>
+            and <MudLink Target="_blank" Href="https://blazor-diagrams.zhaytam.com/">Blazor.Diagrams</MudLink>
+        </MudText>
+    </MudCardContent>
+</MudCard>
 
-<MudText Typo="Typo.h3" GutterBottom="true">Hello, world!</MudText>
-<MudText Class="mb-8">A app for Blazor experiments</MudText>
-<MudText>Using the excellent
-        <MudLink Target="_blank" Href="https://mudblazor.com">MudBlazor</MudLink>
-    and <MudLink Target="_blank" Href="https://blazor-diagrams.zhaytam.com/">Blazor.Diagrams</MudLink>
-</MudText>
+<MudCard Outlined="true" >
+    <MudCardContent>
+        <MudText Typo="Typo.h4" GutterBottom="true">Counter</MudText>
+            <MudText Class="mb-4">Current count: @DiagramState.Counter</MudText>
+    </MudCardContent>
+    <MudCardActions>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" @onclick="IncrementCount">Click me</MudButton>
+    </MudCardActions>
+</MudCard>
+</MudStack>
+
+@code {
+
+    private void IncrementCount()
+    {
+        DiagramState.Counter = DiagramState.Counter+1;
+    }
+}

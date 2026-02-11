@@ -1,5 +1,6 @@
 using BlazorWebAppWasmOnly.Components;
 using MudBlazor.Services;
+using BlazorApp1.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +9,8 @@ builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 
 builder.Services.AddMudServices();
+builder.Services.AddScoped<DiagramStateService>();
+builder.Services.AddScoped<LocalStorageService>();
 
 var app = builder.Build();
 
