@@ -6,8 +6,8 @@
 <MudStack Spacing="2" Class="pa-2">
 <MudCard>
     <MudCardContent>
-        <MudText Typo="Typo.h3" GutterBottom="true">Hello, world!</MudText>
-        <MudText Class="mb-8">A app for Blazor experiments</MudText>
+        <MudText Typo="Typo.h4" GutterBottom="true">Hello, world!</MudText>
+        <MudText Class="">A app for Blazor experiments</MudText>
         <MudText>
             Using the excellent
             <MudLink Target="_blank" Href="https://mudblazor.com">MudBlazor</MudLink>
@@ -18,14 +18,14 @@
 
 <MudCard Outlined="true" >
     <MudCardContent>
-        <MudText Typo="Typo.h4" GutterBottom="true">Counter</MudText>
+        <MudText Typo="Typo.h5" GutterBottom="true">Counter</MudText>
         @if (DiagramState.IsInteractive)
         {
-            <MudText Class="mb-4">Current count: @DiagramState.Counter</MudText>
+            <MudText>Current count: @DiagramState.Counter</MudText>
         }
         else
         {
-            <MudText Class="mb-4">Loading...</MudText>
+            <MudText>Loading...</MudText>
         }
     </MudCardContent>
     <MudCardActions>
