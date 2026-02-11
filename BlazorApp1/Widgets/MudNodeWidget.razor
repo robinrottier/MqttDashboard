@@ -6,12 +6,13 @@
         width: 100%;
         height: 100%;
         background-color: lightgray;
+        border-radius: 8px;
     }
 </style>
 
 <div class="mud-node default-node">
 
-<MudCard Outlined="true" >
+<MudCard >
 <MudCardHeader>@(Node.Title ?? "Title")</MudCardHeader>
 
 @foreach (var port in Node.Ports)
