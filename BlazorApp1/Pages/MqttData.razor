@@ -1,0 +1,76 @@
+@page "/mqtt-data"
+@using BlazorApp1.Models
+@using BlazorApp1.Services
+@inject SignalRService SignalRService
+@inject NavigationManager NavigationManager
+@implements IAsyncDisposable
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+<h3>Real-Time MQTT Data</h3>
+
+<div class="mb-3">
+    <p>Connection Status: <strong>@_connectionStatus</strong></p>
+</div>
+
+@if (_messages.Any())
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Topic</th>
+                <th>Payload</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var message in _messages.OrderByDescending(m => m.Timestamp).Take(50))
+            {
+                <tr>
+                    <td>@message.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss.fff")</td>
+                    <td>@message.Topic</td>
+                    <td>@message.Payload</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    
+    <p class="text-muted">Showing last 50 messages (Total: @_messages.Count)</p>
+}
+else
+{
+    <p class="text-muted">Waiting for MQTT messages...</p>
+}
+
+@code {
+    private List<MqttDataMessage> _messages = new();
+    private string _connectionStatus = "Disconnected";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            SignalRService.OnDataReceived += HandleDataReceived;
+            
+            var hubUrl = NavigationManager.ToAbsoluteUri("/mqttdatahub");
+            await SignalRService.StartAsync(hubUrl.ToString());
+            
+            _connectionStatus = "Connected";
+        }
+        catch (Exception ex)
+        {
+            _connectionStatus = $"Error: {ex.Message}";
+        }
+    }
+
+    private void HandleDataReceived(MqttDataMessage message)
+    {
+        _messages.Add(message);
+        InvokeAsync(StateHasChanged);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        SignalRService.OnDataReceived -= HandleDataReceived;
+        await SignalRService.DisposeAsync();
+    }
+}

@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MQTTnet" Version="5.1.0.1559" />
     <ProjectReference Include="..\BlazorWebAppWasmOnly.Client\BlazorWebAppWasmOnly.Client.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.2" />
   </ItemGroup>
