@@ -1,8 +1,7 @@
 using BlazorWebAppWasmOnly.Components;
-using MudBlazor.Services;
 using BlazorApp1.Services;
-using BlazorWebAppWasmOnly.Hubs;
-using BlazorWebAppWasmOnly.Services;
+using BlazorApp1.Server.Hubs;
+using BlazorApp1.Server.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,16 +9,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 
-builder.Services.AddMudServices();
-builder.Services.AddScoped<DiagramStateService>();
-builder.Services.AddScoped<LocalStorageService>();
-builder.Services.AddScoped<SignalRService>();
+builder.Services.AddBlazorApp1Services();
+builder.Services.AddBlazorApp1ServerServices();
 
 // Add SignalR
 builder.Services.AddSignalR();
-
-// Add MQTT service
-builder.Services.AddHostedService<MqttClientService>();
 
 var app = builder.Build();
 

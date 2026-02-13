@@ -7,6 +7,8 @@ public class SignalRService : IAsyncDisposable
 {
     private HubConnection? _hubConnection;
     public event Action<MqttDataMessage>? OnDataReceived;
+    public event Action<string>? OnSubscriptionConfirmed;
+    public event Action<string>? OnUnsubscriptionConfirmed;
 
     public async Task StartAsync(string hubUrl)
     {
@@ -26,7 +28,33 @@ public class SignalRService : IAsyncDisposable
             OnDataReceived?.Invoke(message);
         });
 
+        _hubConnection.On<string>("SubscriptionConfirmed", (topic) =>
+        {
+            OnSubscriptionConfirmed?.Invoke(topic);
+        });
+
+        _hubConnection.On<string>("UnsubscriptionConfirmed", (topic) =>
+        {
+            OnUnsubscriptionConfirmed?.Invoke(topic);
+        });
+
         await _hubConnection.StartAsync();
+    }
+
+    public async Task SubscribeToTopicAsync(string topic)
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.InvokeAsync("SubscribeToTopic", topic);
+        }
+    }
+
+    public async Task UnsubscribeFromTopicAsync(string topic)
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.InvokeAsync("UnsubscribeFromTopic", topic);
+        }
     }
 
     public async ValueTask DisposeAsync()

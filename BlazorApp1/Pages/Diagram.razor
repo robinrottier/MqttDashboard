@@ -2,10 +2,10 @@
 @using Blazor.Diagrams;
 @using Blazor.Diagrams.Components
 @using BlazorApp1.Services
-@inject DiagramStateService DiagramState
+@inject ApplicationState AppState
 
 <h3>Diagram</h3>
-@if (!DiagramState.IsInteractive || _diagram == null)
+@if (!AppState.IsInteractive || _diagram == null)
 {
    <div>Loading...</div>
 }
@@ -25,8 +25,8 @@ else
     {
         if (firstRender)
         {
-            DiagramState.SetInteractive();
-            _diagram = DiagramState.GetOrCreateDiagram();
+            AppState.SetInteractive();
+            _diagram = AppState.GetOrCreateDiagram();
             StateHasChanged();
         }
         await base.OnAfterRenderAsync(firstRender);

@@ -2,75 +2,275 @@
 @using BlazorApp1.Models
 @using BlazorApp1.Services
 @inject SignalRService SignalRService
+@inject ApplicationState AppState
 @inject NavigationManager NavigationManager
 @implements IAsyncDisposable
+@implements IDisposable
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 
-<h3>Real-Time MQTT Data</h3>
+<PageTitle>MQTT Data</PageTitle>
 
-<div class="mb-3">
-    <p>Connection Status: <strong>@_connectionStatus</strong></p>
-</div>
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h3" GutterBottom="true">Real-Time MQTT Data</MudText>
 
-@if (_messages.Any())
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Timestamp</th>
-                <th>Topic</th>
-                <th>Payload</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var message in _messages.OrderByDescending(m => m.Timestamp).Take(50))
-            {
-                <tr>
-                    <td>@message.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss.fff")</td>
-                    <td>@message.Topic</td>
-                    <td>@message.Payload</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-    
-    <p class="text-muted">Showing last 50 messages (Total: @_messages.Count)</p>
-}
-else
-{
-    <p class="text-muted">Waiting for MQTT messages...</p>
-}
+    <MudGrid Spacing="3">
+        <!-- Connection Status -->
+        <MudItem xs="12">
+            <MudAlert Severity="@(AppState.IsMqttConnected ? Severity.Success : Severity.Warning)" 
+                      Variant="Variant.Filled" 
+                      Dense="true">
+                Connection Status: @AppState.MqttConnectionStatus
+            </MudAlert>
+        </MudItem>
+
+        <!-- Topic Subscription Card -->
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Topic Subscriptions</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudTextField @bind-Value="_topicInput"
+                                  Label="MQTT Topic"
+                                  Variant="Variant.Outlined"
+                                  Placeholder="e.g., sensor/temperature"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@Icons.Material.Filled.Add"
+                                  OnAdornmentClick="SubscribeToTopic"
+                                  OnKeyPress="HandleKeyPress"
+                                  Disabled="@(!AppState.IsMqttConnected)" />
+
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.AddCircle"
+                               OnClick="SubscribeToTopic"
+                               Disabled="@(!AppState.IsMqttConnected)"
+                               FullWidth="true"
+                               Class="mt-3">
+                        Subscribe
+                    </MudButton>
+
+                    <MudDivider Class="my-4" />
+
+                    @if (AppState.SubscribedTopics.Any())
+                    {
+                        <MudText Typo="Typo.subtitle2" Class="mb-2">Active Subscriptions:</MudText>
+                        <MudList T="string" Dense="true">
+                            @foreach (var topic in AppState.SubscribedTopics)
+                            {
+                                <MudListItem T="string">
+                                    <div class="d-flex justify-space-between align-center" style="width: 100%;">
+                                        <MudText>@topic</MudText>
+                                        <MudButton Size="Size.Small"
+                                                   Variant="Variant.Filled"
+                                                   Color="Color.Error"
+                                                   StartIcon="@Icons.Material.Filled.RemoveCircle"
+                                                   OnClick="() => UnsubscribeFromTopic(topic)">
+                                            Unsubscribe
+                                        </MudButton>
+                                    </div>
+                                </MudListItem>
+                            }
+                        </MudList>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            No active subscriptions. Enter a topic above to subscribe.
+                        </MudText>
+                    }
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text"
+                               Color="Color.Secondary"
+                               StartIcon="@Icons.Material.Filled.Clear"
+                               OnClick="ClearMessages"
+                               Disabled="@(!AppState.Messages.Any())">
+                        Clear Messages
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+
+        <!-- Messages Display -->
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Recent Messages</MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudChip T="string" Size="Size.Small" Color="Color.Info">
+                            @AppState.Messages.Count Total
+                        </MudChip>
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent>
+                    @if (AppState.Messages.Any())
+                    {
+                        <MudPaper Elevation="0" Class="pa-2" Style="max-height: 400px; overflow-y: auto;">
+                            @foreach (var message in AppState.Messages.OrderByDescending(m => m.Timestamp).Take(10))
+                            {
+                                <MudPaper Elevation="1" Class="pa-3 mb-2">
+                                    <MudGrid Spacing="1">
+                                        <MudItem xs="12">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                @message.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss.fff")
+                                            </MudText>
+                                        </MudItem>
+                                        <MudItem xs="12">
+                                            <MudText Typo="Typo.body2">
+                                                <strong>Topic:</strong> @message.Topic
+                                            </MudText>
+                                        </MudItem>
+                                        <MudItem xs="12">
+                                            <MudText Typo="Typo.body2" Style="word-break: break-all;">
+                                                <strong>Payload:</strong> @message.Payload
+                                            </MudText>
+                                        </MudItem>
+                                    </MudGrid>
+                                </MudPaper>
+                            }
+                        </MudPaper>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
+                            Showing last 10 messages
+                        </MudText>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true">
+                            Waiting for MQTT messages...
+                        </MudAlert>
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
 
 @code {
-    private List<MqttDataMessage> _messages = new();
-    private string _connectionStatus = "Disconnected";
+    private string _topicInput = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
+        // Subscribe to state changes
+        AppState.OnStateChanged += StateHasChanged;
+
+        // Only initialize SignalR if not already connected
+        if (AppState.SignalRService == null)
+        {
+            try
+            {
+                SignalRService.OnDataReceived += HandleDataReceived;
+                SignalRService.OnSubscriptionConfirmed += HandleSubscriptionConfirmed;
+                SignalRService.OnUnsubscriptionConfirmed += HandleUnsubscriptionConfirmed;
+
+                var hubUrl = NavigationManager.ToAbsoluteUri("/mqttdatahub");
+                await SignalRService.StartAsync(hubUrl.ToString());
+
+                AppState.SetSignalRService(SignalRService);
+                AppState.SetMqttConnectionStatus("Connected", true);
+            }
+            catch (Exception ex)
+            {
+                AppState.SetMqttConnectionStatus($"Error: {ex.Message}", false);
+            }
+        }
+        else
+        {
+            // Reconnect event handlers if service already exists
+            AppState.SignalRService.OnDataReceived += HandleDataReceived;
+            AppState.SignalRService.OnSubscriptionConfirmed += HandleSubscriptionConfirmed;
+            AppState.SignalRService.OnUnsubscriptionConfirmed += HandleUnsubscriptionConfirmed;
+        }
+    }
+
+    private async Task SubscribeToTopic()
+    {
+        if (string.IsNullOrWhiteSpace(_topicInput))
+            return;
+
+        var topic = _topicInput.Trim();
+
+        if (AppState.SubscribedTopics.Contains(topic))
+            return;
+
         try
         {
-            SignalRService.OnDataReceived += HandleDataReceived;
-            
-            var hubUrl = NavigationManager.ToAbsoluteUri("/mqttdatahub");
-            await SignalRService.StartAsync(hubUrl.ToString());
-            
-            _connectionStatus = "Connected";
+            if (AppState.SignalRService != null)
+            {
+                await AppState.SignalRService.SubscribeToTopicAsync(topic);
+                _topicInput = string.Empty;
+            }
         }
         catch (Exception ex)
         {
-            _connectionStatus = $"Error: {ex.Message}";
+            AppState.SetMqttConnectionStatus($"Subscription error: {ex.Message}", AppState.IsMqttConnected);
+        }
+    }
+
+    private async Task UnsubscribeFromTopic(string topic)
+    {
+        try
+        {
+            if (AppState.SignalRService != null)
+            {
+                await AppState.SignalRService.UnsubscribeFromTopicAsync(topic);
+            }
+        }
+        catch (Exception ex)
+        {
+            AppState.SetMqttConnectionStatus($"Unsubscription error: {ex.Message}", AppState.IsMqttConnected);
+        }
+    }
+
+    private void ClearMessages()
+    {
+        AppState.ClearMessages();
+    }
+
+    private void HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            InvokeAsync(SubscribeToTopic);
         }
     }
 
     private void HandleDataReceived(MqttDataMessage message)
     {
-        _messages.Add(message);
-        InvokeAsync(StateHasChanged);
+        AppState.AddMessage(message);
+    }
+
+    private void HandleSubscriptionConfirmed(string topic)
+    {
+        AppState.AddSubscription(topic);
+        AppState.SetMqttConnectionStatus($"Connected - Subscribed to: {topic}", true);
+    }
+
+    private void HandleUnsubscriptionConfirmed(string topic)
+    {
+        AppState.RemoveSubscription(topic);
+        AppState.SetMqttConnectionStatus($"Connected - Unsubscribed from: {topic}", true);
+    }
+
+    public void Dispose()
+    {
+        AppState.OnStateChanged -= StateHasChanged;
+
+        if (AppState.SignalRService != null)
+        {
+            AppState.SignalRService.OnDataReceived -= HandleDataReceived;
+            AppState.SignalRService.OnSubscriptionConfirmed -= HandleSubscriptionConfirmed;
+            AppState.SignalRService.OnUnsubscriptionConfirmed -= HandleUnsubscriptionConfirmed;
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
-        SignalRService.OnDataReceived -= HandleDataReceived;
-        await SignalRService.DisposeAsync();
+        Dispose();
+        // Don't dispose SignalRService here as it's shared across pages
     }
 }

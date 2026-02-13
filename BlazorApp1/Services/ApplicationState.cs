@@ -10,12 +10,21 @@ using BlazorApp1.Widgets;
 
 namespace BlazorApp1.Services;
 
-public class DiagramStateService
+public class ApplicationState
 {
     public int Counter { get; set; } = 0;
     public bool IsInteractive { get; private set; } = false;
 
     private BlazorDiagram? _diagram;
+
+    // MQTT State
+    public SignalRService? SignalRService { get; private set; }
+    public List<MqttDataMessage> Messages { get; private set; } = new();
+    public HashSet<string> SubscribedTopics { get; private set; } = new();
+    public bool IsMqttConnected { get; set; } = false;
+    public string MqttConnectionStatus { get; set; } = "Disconnected";
+
+    public event Action? OnStateChanged;
 
     public void SetInteractive()
     {
@@ -68,5 +77,51 @@ public class DiagramStateService
     public void ResetDiagram()
     {
         _diagram = null;
+    }
+
+    // MQTT Methods
+    public void SetSignalRService(SignalRService service)
+    {
+        SignalRService = service;
+    }
+
+    public void AddMessage(MqttDataMessage message)
+    {
+        Messages.Add(message);
+        if (Messages.Count > 100)
+        {
+            Messages.RemoveAt(0);
+        }
+        NotifyStateChanged();
+    }
+
+    public void AddSubscription(string topic)
+    {
+        SubscribedTopics.Add(topic);
+        NotifyStateChanged();
+    }
+
+    public void RemoveSubscription(string topic)
+    {
+        SubscribedTopics.Remove(topic);
+        NotifyStateChanged();
+    }
+
+    public void SetMqttConnectionStatus(string status, bool connected)
+    {
+        MqttConnectionStatus = status;
+        IsMqttConnected = connected;
+        NotifyStateChanged();
+    }
+
+    public void ClearMessages()
+    {
+        Messages.Clear();
+        NotifyStateChanged();
+    }
+
+    private void NotifyStateChanged()
+    {
+        OnStateChanged?.Invoke();
     }
 }
