@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace BlazorApp1.Server.Hubs;
@@ -7,13 +8,16 @@ public class MqttDataHub : Hub
 {
     private readonly MqttTopicSubscriptionManager _subscriptionManager;
     private readonly ILogger<MqttDataHub> _logger;
+    private readonly IConfiguration _configuration;
 
     public MqttDataHub(
         MqttTopicSubscriptionManager subscriptionManager,
-        ILogger<MqttDataHub> logger)
+        ILogger<MqttDataHub> logger,
+        IConfiguration configuration)
     {
         _subscriptionManager = subscriptionManager;
         _logger = logger;
+        _configuration = configuration;
     }
 
     public async Task SubscribeToTopic(string topic)
@@ -48,6 +52,13 @@ public class MqttDataHub : Hub
         {
             _logger.LogWarning("Client {ConnectionId} was not subscribed to topic: {Topic}", Context.ConnectionId, topic);
         }
+    }
+
+    public Task<string> GetMqttBrokerInfo()
+    {
+        var broker = _configuration["MqttSettings:Broker"] ?? "unknown";
+        var port = _configuration["MqttSettings:Port"] ?? "1883";
+        return Task.FromResult($"{broker}:{port}");
     }
 
     public override async Task OnConnectedAsync()

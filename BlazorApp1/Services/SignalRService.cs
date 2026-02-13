@@ -142,6 +142,23 @@ public class SignalRService : IAsyncDisposable
         }
     }
 
+    public async Task<string> GetMqttBrokerInfoAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            try
+            {
+                return await _hubConnection.InvokeAsync<string>("GetMqttBrokerInfo");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[SignalR] Failed to get MQTT broker info");
+                return "unknown";
+            }
+        }
+        return "unknown";
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_hubConnection is not null)

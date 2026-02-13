@@ -172,7 +172,10 @@
                 await SignalRService.StartAsync(hubUrl.ToString());
 
                 AppState.SetSignalRService(SignalRService);
-                AppState.SetMqttConnectionStatus("Connected", true);
+
+                var serverHost = new Uri(NavigationManager.Uri).Host;
+                var mqttBroker = await SignalRService.GetMqttBrokerInfoAsync();
+                AppState.SetMqttConnectionStatus($"Connected to {serverHost} (MQTT: {mqttBroker})", true);
             }
             catch (Exception ex)
             {
