@@ -1,5 +1,7 @@
 using BlazorWebAppServerOnly.Components;
 using BlazorApp1.Services;
+using BlazorApp1.Server.Extensions;
+using BlazorApp1.Server.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +10,10 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddBlazorApp1Services();
+builder.Services.AddBlazorApp1ServerServices();
+
+// Add SignalR
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -24,6 +30,10 @@ app.UseHttpsRedirection();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+
+// Map SignalR Hub
+app.MapHub<MqttDataHub>("/mqttdatahub");
+
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddAdditionalAssemblies(typeof(BlazorApp1._Imports).Assembly);

@@ -6,7 +6,8 @@
 @inject NavigationManager NavigationManager
 @implements IAsyncDisposable
 @implements IDisposable
-@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@* rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false)) *@
 
 <PageTitle>MQTT Data</PageTitle>
 
@@ -39,7 +40,7 @@
                                   Adornment="Adornment.End"
                                   AdornmentIcon="@Icons.Material.Filled.Add"
                                   OnAdornmentClick="SubscribeToTopic"
-                                  OnKeyPress="HandleKeyPress"
+                                  OnKeyDown="HandleKeyPress"
                                   Disabled="@(!AppState.IsMqttConnected)" />
 
                     <MudButton Variant="Variant.Filled"
@@ -155,8 +156,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Subscribe to state changes
-        AppState.OnStateChanged += StateHasChanged;
+        // Subscribe to state changes with proper async handling
+        AppState.OnStateChanged += HandleStateChanged;
 
         // Only initialize SignalR if not already connected
         if (AppState.SignalRService == null)
@@ -185,6 +186,12 @@
             AppState.SignalRService.OnSubscriptionConfirmed += HandleSubscriptionConfirmed;
             AppState.SignalRService.OnUnsubscriptionConfirmed += HandleUnsubscriptionConfirmed;
         }
+    }
+
+    private void HandleStateChanged()
+    {
+        // Marshal to UI thread
+        InvokeAsync(StateHasChanged);
     }
 
     private async Task SubscribeToTopic()
@@ -258,7 +265,7 @@
 
     public void Dispose()
     {
-        AppState.OnStateChanged -= StateHasChanged;
+        AppState.OnStateChanged -= HandleStateChanged;
 
         if (AppState.SignalRService != null)
         {

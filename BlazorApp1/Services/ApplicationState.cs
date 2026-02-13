@@ -92,36 +92,37 @@ public class ApplicationState
         {
             Messages.RemoveAt(0);
         }
-        NotifyStateChanged();
+        NotifyStateChangedAsync();
     }
 
     public void AddSubscription(string topic)
     {
         SubscribedTopics.Add(topic);
-        NotifyStateChanged();
+        NotifyStateChangedAsync();
     }
 
     public void RemoveSubscription(string topic)
     {
         SubscribedTopics.Remove(topic);
-        NotifyStateChanged();
+        NotifyStateChangedAsync();
     }
 
     public void SetMqttConnectionStatus(string status, bool connected)
     {
         MqttConnectionStatus = status;
         IsMqttConnected = connected;
-        NotifyStateChanged();
+        NotifyStateChangedAsync();
     }
 
     public void ClearMessages()
     {
         Messages.Clear();
-        NotifyStateChanged();
+        NotifyStateChangedAsync();
     }
 
-    private void NotifyStateChanged()
+    private void NotifyStateChangedAsync()
     {
-        OnStateChanged?.Invoke();
+        // Invoke asynchronously to avoid thread issues
+        _ = Task.Run(() => OnStateChanged?.Invoke());
     }
 }

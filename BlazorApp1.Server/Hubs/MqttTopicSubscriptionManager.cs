@@ -128,11 +128,60 @@ public class MqttTopicSubscriptionManager
 
     public HashSet<string> GetInterestedClients(string topic)
     {
-        if (_subscriptions.TryGetValue(topic, out var subscription))
+        var interestedClients = new HashSet<string>();
+
+        foreach (var subscription in _subscriptions.Values)
         {
-            return subscription.GetClients();
+            if (TopicMatches(subscription.Topic, topic))
+            {
+                foreach (var client in subscription.GetClients())
+                {
+                    interestedClients.Add(client);
+                }
+            }
         }
-        return new HashSet<string>();
+
+        return interestedClients;
+    }
+
+    private bool TopicMatches(string filter, string topic)
+    {
+        // Handle exact match
+        if (filter == topic)
+            return true;
+
+        // Handle wildcard matching
+        var filterParts = filter.Split('/');
+        var topicParts = topic.Split('/');
+
+        // Multi-level wildcard '#' must be the last character
+        if (filterParts.Length > 0 && filterParts[^1] == "#")
+        {
+            // Match all remaining levels
+            for (int i = 0; i < filterParts.Length - 1; i++)
+            {
+                if (i >= topicParts.Length)
+                    return false;
+                if (filterParts[i] != "+" && filterParts[i] != topicParts[i])
+                    return false;
+            }
+            return true;
+        }
+
+        // Must have same number of levels for single-level wildcard matching
+        if (filterParts.Length != topicParts.Length)
+            return false;
+
+        // Check each level
+        for (int i = 0; i < filterParts.Length; i++)
+        {
+            if (filterParts[i] == "+")
+                continue; // Single-level wildcard matches any value at this level
+            if (filterParts[i] != topicParts[i])
+                return false;
+        }
+
+        return true;
     }
 
     public List<string> GetClientSubscriptions(string connectionId)

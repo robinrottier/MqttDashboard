@@ -8,13 +8,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\BlazorApp1.Server\BlazorApp1.Server.csproj" />
-    <ProjectReference Include="..\BlazorWebAppWasmOnly.Client\BlazorWebAppWasmOnly.Client.csproj" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.2" />
+    <Compile Remove="Services\**" />
+    <Content Remove="Services\**" />
+    <EmbeddedResource Remove="Services\**" />
+    <None Remove="Services\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Services\" />
+    <ProjectReference Include="..\..\BlazorApp1.Server\BlazorApp1.Server.csproj" />
+    <ProjectReference Include="..\BlazorWebAppWasmOnly.Client\BlazorWebAppWasmOnly.Client.csproj" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.2" />
   </ItemGroup>
 
 </Project>
