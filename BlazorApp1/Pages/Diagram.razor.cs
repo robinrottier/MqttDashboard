@@ -39,6 +39,26 @@ public partial class Diagram : IDisposable
                     AppState.ResetDiagram(); // Clear the empty diagram first
                     _diagram = AppState.CreateDiagramFromState(savedState);
                     Snackbar.Add("Diagram loaded from server", Severity.Info);
+
+                    // Trigger initial render
+                    StateHasChanged();
+
+                    // Wait for Blazor to render the nodes to the DOM, then refresh links
+                    await Task.Delay(100); // Small delay to allow DOM rendering
+
+                    // Now refresh everything so links calculate their paths correctly
+                    foreach (var node in _diagram.Nodes)
+                    {
+                        node.Refresh();
+                    }
+
+                    foreach (var link in _diagram.Links)
+                    {
+                        link.Refresh();
+                    }
+
+                    _diagram.Refresh();
+                    StateHasChanged();
                 }
                 // else: diagram stays empty (already created by GetOrCreateDiagram)
             }
