@@ -4,6 +4,10 @@
     border: 3px solid;
 }
 
+.mud-node.selected {
+    border-color: red;
+}
+
 .mud-node .mud-card {
     width: 100%;
     height: 100%;

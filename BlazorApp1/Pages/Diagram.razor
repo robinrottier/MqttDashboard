@@ -1,35 +1,335 @@
 ﻿@page "/diagram"
 @using Blazor.Diagrams;
 @using Blazor.Diagrams.Components
+@using Blazor.Diagrams.Core.Models
+@using Blazor.Diagrams.Core.Geometry
+@using BlazorApp1.Models
 @using BlazorApp1.Services
 @inject ApplicationState AppState
+@inject DiagramService DiagramService
+@inject ISnackbar Snackbar
 
-<h3>Diagram</h3>
-@if (!AppState.IsInteractive || _diagram == null)
-{
-   <div>Loading...</div>
-}
-else
-{
-    <div style="width:100%; height:400px;">
-        <CascadingValue Value="_diagram" IsFixed="true">
-            <DiagramCanvas></DiagramCanvas>
-        </CascadingValue>
-    </div>
-}
+<PageTitle>Diagram</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h3" GutterBottom="true">Diagram Editor</MudText>
+
+    @if (!AppState.IsInteractive || _diagram == null)
+    {
+        <MudProgressCircular Indeterminate="true" />
+        <MudText>Loading...</MudText>
+    }
+    else
+    {
+        <MudStack Row="true" Spacing="2">
+            <!-- Left Toolbar -->
+            <MudPaper Elevation="2" Class="pa-2" Style="width: fit-content;">
+                <MudStack Spacing="2">
+                    <!-- Add Node Button -->
+                    <MudTooltip Text="Add New Node">
+                        <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                       Color="Color.Primary"
+                                       Variant="Variant.Filled"
+                                       OnClick="AddNode"
+                                       Size="MudBlazor.Size.Large" />
+                    </MudTooltip>
+
+                    <!-- Delete Selected Node Button -->
+                    <MudTooltip Text="Delete Selected Node">
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error"
+                                       Variant="Variant.Filled"
+                                       OnClick="DeleteSelectedNode"
+                                       Disabled="@(!_hasSelectedNode)"
+                                       Size="MudBlazor.Size.Large" />
+                    </MudTooltip>
+
+                    <!-- Add Port Button with Menu -->
+                    <MudMenu AnchorOrigin="Origin.CenterRight"
+                             TransformOrigin="Origin.CenterLeft">
+                        <ActivatorContent>
+                            <MudTooltip Text="Add Port to Selected Node">
+                                <MudIconButton Icon="@Icons.Material.Filled.AddCircleOutline"
+                                               Color="Color.Secondary"
+                                               Variant="Variant.Filled"
+                                               Size="MudBlazor.Size.Large"
+                                               Disabled="@(!_hasSelectedNode)" />
+                            </MudTooltip>
+                        </ActivatorContent>
+                        <ChildContent>
+                            <MudMenuItem OnClick="() => AddPortToSelectedNode(PortAlignment.Top)"
+                                         Disabled="@HasPortAlignment(PortAlignment.Top)">
+                                <MudStack Row="true" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="@Icons.Material.Filled.ArrowUpward" Size="MudBlazor.Size.Small" />
+                                    <MudText>Top Port</MudText>
+                                </MudStack>
+                            </MudMenuItem>
+                            <MudMenuItem OnClick="() => AddPortToSelectedNode(PortAlignment.Right)"
+                                         Disabled="@HasPortAlignment(PortAlignment.Right)">
+                                <MudStack Row="true" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="MudBlazor.Size.Small" />
+                                    <MudText>Right Port</MudText>
+                                </MudStack>
+                            </MudMenuItem>
+                            <MudMenuItem OnClick="() => AddPortToSelectedNode(PortAlignment.Bottom)"
+                                         Disabled="@HasPortAlignment(PortAlignment.Bottom)">
+                                <MudStack Row="true" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="@Icons.Material.Filled.ArrowDownward" Size="MudBlazor.Size.Small" />
+                                    <MudText>Bottom Port</MudText>
+                                </MudStack>
+                            </MudMenuItem>
+                            <MudMenuItem OnClick="() => AddPortToSelectedNode(PortAlignment.Left)"
+                                         Disabled="@HasPortAlignment(PortAlignment.Left)">
+                                <MudStack Row="true" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="MudBlazor.Size.Small" />
+                                    <MudText>Left Port</MudText>
+                                </MudStack>
+                            </MudMenuItem>
+                        </ChildContent>
+                    </MudMenu>
+
+                    <!-- Delete Port Button with Menu -->
+                    <MudMenu AnchorOrigin="Origin.CenterRight"
+                             TransformOrigin="Origin.CenterLeft">
+                        <ActivatorContent>
+                            <MudTooltip Text="Delete Port from Selected Node">
+                                <MudIconButton Icon="@Icons.Material.Filled.RemoveCircleOutline"
+                                               Color="Color.Warning"
+                                               Variant="Variant.Filled"
+                                               Size="MudBlazor.Size.Large"
+                                               Disabled="@(!_hasSelectedNode)" />
+                            </MudTooltip>
+                        </ActivatorContent>
+                        <ChildContent>
+                            <MudMenuItem OnClick="() => DeletePortFromSelectedNode(PortAlignment.Top)"
+                                         Disabled="@(!HasPortAlignment(PortAlignment.Top))">
+                                <MudStack Row="true" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="@Icons.Material.Filled.ArrowUpward" Size="MudBlazor.Size.Small" />
+                                    <MudText>Top Port</MudText>
+                                </MudStack>
+                            </MudMenuItem>
+                            <MudMenuItem OnClick="() => DeletePortFromSelectedNode(PortAlignment.Right)"
+                                         Disabled="@(!HasPortAlignment(PortAlignment.Right))">
+                                <MudStack Row="true" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="MudBlazor.Size.Small" />
+                                    <MudText>Right Port</MudText>
+                                </MudStack>
+                            </MudMenuItem>
+                            <MudMenuItem OnClick="() => DeletePortFromSelectedNode(PortAlignment.Bottom)"
+                                         Disabled="@(!HasPortAlignment(PortAlignment.Bottom))">
+                                <MudStack Row="true" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="@Icons.Material.Filled.ArrowDownward" Size="MudBlazor.Size.Small" />
+                                    <MudText>Bottom Port</MudText>
+                                </MudStack>
+                            </MudMenuItem>
+                            <MudMenuItem OnClick="() => DeletePortFromSelectedNode(PortAlignment.Left)"
+                                         Disabled="@(!HasPortAlignment(PortAlignment.Left))">
+                                <MudStack Row="true" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="MudBlazor.Size.Small" />
+                                    <MudText>Left Port</MudText>
+                                </MudStack>
+                            </MudMenuItem>
+                        </ChildContent>
+                    </MudMenu>
+
+                    <MudDivider />
+
+                    <!-- Save Diagram Button -->
+                    <MudTooltip Text="Save Diagram">
+                        <MudIconButton Icon="@Icons.Material.Filled.Save"
+                                       Color="Color.Success"
+                                       Variant="Variant.Filled"
+                                       OnClick="SaveDiagram"
+                                       Size="MudBlazor.Size.Large" />
+                    </MudTooltip>
+                </MudStack>
+            </MudPaper>
+
+            <!-- Diagram Canvas -->
+            <MudPaper Elevation="2" Style="flex: 1; height:600px;">
+                <CascadingValue Value="_diagram" IsFixed="true">
+                    <DiagramCanvas></DiagramCanvas>
+                </CascadingValue>
+            </MudPaper>
+        </MudStack>
+    }
+</MudContainer>
 
 @code {
     private BlazorDiagram? _diagram { get; set; } = null!;
+    private int _nodeCounter = 3;
+    private bool _hasSelectedNode = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             AppState.SetInteractive();
-            _diagram = AppState.GetOrCreateDiagram();
+
+            // Try to load saved diagram
+            var savedState = await DiagramService.LoadDiagramAsync();
+
+            if (savedState != null && savedState.Nodes.Count > 0)
+            {
+                // Load from saved state
+                _diagram = AppState.CreateDiagramFromState(savedState);
+                Snackbar.Add("Diagram loaded from server", Severity.Info);
+            }
+            else
+            {
+                // Create new empty diagram
+                _diagram = AppState.GetOrCreateDiagram();
+            }
+
+            // Subscribe to selection changes to update button states
+            _diagram.SelectionChanged += OnSelectionChanged;
+
+            // Also subscribe to diagram changes for other updates
+            _diagram.Changed += OnDiagramChanged;
+
+            UpdateSelectionState();
             StateHasChanged();
         }
         await base.OnAfterRenderAsync(firstRender);
     }
 
+    private void OnSelectionChanged(object model)
+    {
+        UpdateSelectionState();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnDiagramChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateSelectionState()
+    {
+        var newState = _diagram?.GetSelectedModels()
+            .OfType<NodeModel>()
+            .Any() ?? false;
+
+        _hasSelectedNode = newState;
+    }
+
+    private void AddNode()
+    {
+        if (_diagram == null) return;
+
+        var random = new Random();
+        var x = random.Next(50, 500);
+        var y = random.Next(50, 400);
+
+        // Deselect all nodes first
+        _diagram.UnselectAll();
+
+        var node = _diagram.Nodes.Add(new MudNodeModel(position: new Point(x, y))
+        {
+            Title = $"Node {_nodeCounter++}"
+        });
+
+        // Select the newly created node
+        _diagram.SelectModel(node, false);
+
+        UpdateSelectionState();
+        StateHasChanged();
+    }
+
+    private void DeleteSelectedNode()
+    {
+        if (_diagram == null) return;
+
+        var selectedNodes = _diagram.GetSelectedModels()
+            .OfType<NodeModel>()
+            .ToList();
+
+        foreach (var node in selectedNodes)
+        {
+            _diagram.Nodes.Remove(node);
+        }
+
+        UpdateSelectionState();
+        StateHasChanged();
+    }
+
+    private bool HasPortAlignment(PortAlignment alignment)
+    {
+        if (_diagram == null) return false;
+
+        var selectedNode = _diagram.GetSelectedModels()
+            .OfType<NodeModel>()
+            .FirstOrDefault();
+
+        if (selectedNode == null) return false;
+
+        return selectedNode.Ports.Any(p => p.Alignment == alignment);
+    }
+
+    private void AddPortToSelectedNode(PortAlignment alignment)
+    {
+        if (_diagram == null) return;
+
+        var selectedNode = _diagram.GetSelectedModels()
+            .OfType<NodeModel>()
+            .FirstOrDefault();
+
+        if (selectedNode != null && !HasPortAlignment(alignment))
+        {
+            selectedNode.AddPort(alignment);
+            selectedNode.Refresh();
+            StateHasChanged();
+        }
+    }
+
+    private void DeletePortFromSelectedNode(PortAlignment alignment)
+    {
+        if (_diagram == null) return;
+
+        var selectedNode = _diagram.GetSelectedModels()
+            .OfType<NodeModel>()
+            .FirstOrDefault();
+
+        if (selectedNode != null)
+        {
+            var portToRemove = selectedNode.Ports.FirstOrDefault(p => p.Alignment == alignment);
+            if (portToRemove != null)
+            {
+                selectedNode.RemovePort(portToRemove);
+                selectedNode.Refresh();
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task SaveDiagram()
+    {
+        try
+        {
+            var state = AppState.GetDiagramState();
+            var success = await DiagramService.SaveDiagramAsync(state);
+
+            if (success)
+            {
+                Snackbar.Add($"Diagram saved successfully ({state.Nodes.Count} nodes, {state.Links.Count} links)", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Failed to save diagram", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error saving diagram: {ex.Message}", Severity.Error);
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_diagram != null)
+        {
+            _diagram.SelectionChanged -= OnSelectionChanged;
+            _diagram.Changed -= OnDiagramChanged;
+        }
+    }
 }

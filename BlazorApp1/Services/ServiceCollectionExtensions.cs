@@ -12,6 +12,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<LocalStorageService>();
         services.AddScoped<SignalRService>();
 
+        // DiagramService is only needed on client-side where HttpClient is available
+        // Do not register here - it will be registered in client Program.cs
+
         return services;
     }
 }

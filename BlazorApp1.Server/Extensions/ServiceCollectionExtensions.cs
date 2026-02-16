@@ -14,6 +14,9 @@ public static class ServiceCollectionExtensions
         // Add MQTT Client Service as hosted service
         services.AddHostedService<MqttClientService>();
 
+        // Add Diagram Storage Service
+        services.AddSingleton<DiagramStorageService>();
+
         return services;
     }
 }
