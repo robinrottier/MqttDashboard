@@ -1,25 +1,29 @@
 {
   "Nodes": [
     {
-      "Id": "4b0cc860-d412-4956-96a9-6fd0cc7eda5d",
+      "Id": "8f7c3b52-87ea-4fa3-a48d-77dad117f64c",
       "Title": "Node 3",
-      "X": 64.39996337890625,
-      "Y": 41,
+      "X": 42.99997,
+      "Y": 58.00003,
+      "Width": 120,
+      "Height": 90,
       "Ports": [
         {
-          "Id": "803da4ee-3454-469a-86f8-875ca974943a",
+          "Id": "1493ec53-4893-400e-8104-430da17e75a2",
           "Alignment": "Right"
         }
       ]
     },
     {
-      "Id": "00d61ea7-8735-444e-b0be-3a2c92f069dc",
+      "Id": "6bd182ee-d353-432f-8b96-09f96f27fc94",
       "Title": "Node 4",
-      "X": 349.9999694824219,
-      "Y": 72.80001831054688,
+      "X": 230.59998,
+      "Y": 59.19999,
+      "Width": 230.40003,
+      "Height": 188.20001,
       "Ports": [
         {
-          "Id": "a937ccf1-7563-4449-8048-430e35e034d7",
+          "Id": "9c6753d0-9486-4657-ae27-0761688509e8",
           "Alignment": "Left"
         }
       ]
@@ -27,9 +31,9 @@
   ],
   "Links": [
     {
-      "SourceNodeId": "4b0cc860-d412-4956-96a9-6fd0cc7eda5d",
+      "SourceNodeId": "8f7c3b52-87ea-4fa3-a48d-77dad117f64c",
       "SourcePortAlignment": "Right",
-      "TargetNodeId": "00d61ea7-8735-444e-b0be-3a2c92f069dc",
+      "TargetNodeId": "6bd182ee-d353-432f-8b96-09f96f27fc94",
       "TargetPortAlignment": "Left"
     }
   ]

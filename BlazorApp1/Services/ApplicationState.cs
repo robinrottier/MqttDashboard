@@ -1,8 +1,10 @@
 using Blazor.Diagrams;
 using Blazor.Diagrams.Core.Anchors;
+using Blazor.Diagrams.Core.Controls.Default;
 using Blazor.Diagrams.Core.Geometry;
 using Blazor.Diagrams.Core.Models;
 using Blazor.Diagrams.Core.PathGenerators;
+using Blazor.Diagrams.Core.Positions.Resizing;
 using Blazor.Diagrams.Core.Routers;
 using Blazor.Diagrams.Options;
 using BlazorApp1.Models;
@@ -85,7 +87,8 @@ public class ApplicationState
         {
             var node = new MudNodeModel(position: new Point(nodeState.X, nodeState.Y))
             {
-                Title = nodeState.Title
+                Title = nodeState.Title,
+                Size = new Blazor.Diagrams.Core.Geometry.Size(nodeState.Width, nodeState.Height)
             };
 
             diagram.Nodes.Add(node);
@@ -97,6 +100,9 @@ public class ApplicationState
                 var alignment = Enum.Parse<PortAlignment>(portState.Alignment);
                 node.AddPort(alignment);
             }
+
+            // add resize in bottom left
+            diagram.Controls.AddFor(node).Add(new ResizeControl(new BottomRightResizerProvider()));
         }
 
         // Create links from state
@@ -153,7 +159,9 @@ public class ApplicationState
                 Id = node.Id,
                 Title = node.Title ?? string.Empty,
                 X = node.Position?.X ?? 0,
-                Y = node.Position?.Y ?? 0
+                Y = node.Position?.Y ?? 0,
+                Width = node.Size?.Width ?? 120,
+                Height = node.Size?.Height ?? 90
             };
 
             // Save ports

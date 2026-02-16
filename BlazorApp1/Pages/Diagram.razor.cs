@@ -189,6 +189,9 @@ public partial class Diagram : IDisposable
 
     public void Dispose()
     {
+        // Clear any active snackbars to prevent them from persisting on navigation
+        Snackbar.Clear();
+
         if (_diagram != null)
         {
             _diagram.SelectionChanged -= OnSelectionChanged;

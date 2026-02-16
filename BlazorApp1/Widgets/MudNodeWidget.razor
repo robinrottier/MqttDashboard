@@ -14,7 +14,7 @@
     }
 </style>
 
-<div class="mud-node default-node @(Node.Selected ? "selected" : "")">
+<div class="mud-node default-node @(Node.Selected ? "selected" : "")" style=@GenerateStyle()>
 
 <MudCard Elevation="@(Node.Selected ? 8 : 2)">
     <MudCardHeader Class="@(Node.Selected ? "mud-node-title-selected" : "")">
@@ -28,9 +28,32 @@
         <PortRenderer @key="port" Port="port" />
     }
 </MudCard>
+</div>
 
     @code {
     // This gets filled by the library
     [Parameter] public MudNodeModel Node { get; set; } = null!;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        // set min size and default size...
+        Node.MinimumDimensions = new(60, 45);
+        if (Node.Size == null
+         || Node.Size.Width < Node.MinimumDimensions.Width
+         || Node.Size.Height < Node.MinimumDimensions.Height)
+            Node.Size = new(120, 90);
+
+    }
+
+    // copied from base diagrams NodeWidget.cs ...maybe we shold inherit from it?
+    private string GenerateStyle()
+    {
+        if (Node.Size is not null)
+        {
+            return $"width: {Node.Size.Width}px; height: {Node.Size.Height}px";
+        }
+        return string.Empty;
+    }
 }
-</div>
