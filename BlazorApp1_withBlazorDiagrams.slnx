@@ -8,7 +8,6 @@
     <File Path="README.md" />
   </Folder>
   <Folder Name="/Web/">
-    <Project Path="BlazorWasmStandalone/BlazorWasmStandalone.csproj" Id="400e9cef-297f-4397-b763-24cd054a4fdb" />
     <Project Path="BlazorWebAppServerOnly/BlazorWebAppServerOnly.csproj" Id="d852685b-bffb-48ac-b18b-ceaf0849a450" />
     <Project Path="BlazorWebAppWasmOnly/BlazorWebAppWasmOnly.Client/BlazorWebAppWasmOnly.Client.csproj" Id="349a411c-4ff5-498e-aa65-0554f499a960" />
     <Project Path="BlazorWebAppWasmOnly/BlazorWebAppWasmOnly/BlazorWebAppWasmOnly.csproj" Id="99cd29cc-f025-4fdb-8e58-9e498ff49acf" />
