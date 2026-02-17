@@ -1,58 +1,84 @@
 {
   "Nodes": [
     {
-      "Id": "00b24258-bed3-47d9-9f61-0f6713aee6cc",
+      "Id": "c753ca25-62c8-4dbf-afc0-562781d0304e",
       "Title": "Node 3",
-      "X": 210.19993591308594,
-      "Y": 22.600051879882812,
+      "X": 210.19994,
+      "Y": 22.60005,
+      "Width": 120,
+      "Height": 90,
       "Ports": [
         {
-          "Id": "ac11dbcc-effe-41dc-b6cb-42d8d9c0a888",
+          "Id": "f744a64e-58ab-46d8-978e-b8905d03a8d8",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "615c21d7-e376-4369-9f1c-21a57599e9d8",
+      "Id": "b676a75e-0ccd-486a-9f58-33e9c5ec541e",
       "Title": "Node 3",
-      "X": 220.6000518798828,
-      "Y": 165.79998779296875,
+      "X": 233.40004,
+      "Y": 182.60001,
+      "Width": 216.79999,
+      "Height": 185.99997,
       "Ports": [
         {
-          "Id": "9a577a3d-d8cc-4bb5-9c6e-a0e1b6a958fe",
+          "Id": "c0793ff1-50fa-4f99-8d82-05c2bf2be8f4",
           "Alignment": "Top"
         },
         {
-          "Id": "5b35f0d8-15c0-44a7-9788-c48a1d808d99",
+          "Id": "d22a8d8c-e3dc-4fc2-b609-956d596c2b88",
           "Alignment": "Left"
         }
       ]
     },
     {
-      "Id": "a11a9937-4700-4a10-8b3a-99a120b78b87",
+      "Id": "22363eca-44d2-4487-a665-a6e4f8063e72",
       "Title": "Node 4",
-      "X": 39.4000244140625,
-      "Y": 168.00003051757812,
+      "X": 36.99999,
+      "Y": 205.60004,
+      "Width": 120,
+      "Height": 90,
       "Ports": [
         {
-          "Id": "7638c943-5f77-4931-a46f-135d60b43a9e",
+          "Id": "887a2539-8dae-41ef-824c-a3cb09887d27",
           "Alignment": "Right"
+        }
+      ]
+    },
+    {
+      "Id": "e67c6858-10aa-491c-8f57-81f322b56432",
+      "Title": "Node 3",
+      "X": 487.20007,
+      "Y": 80.4,
+      "Width": 120,
+      "Height": 90,
+      "Ports": [
+        {
+          "Id": "fad37d40-e281-4ca0-ac02-ca8e9b66c06b",
+          "Alignment": "Top"
         }
       ]
     }
   ],
   "Links": [
     {
-      "SourceNodeId": "00b24258-bed3-47d9-9f61-0f6713aee6cc",
+      "SourceNodeId": "c753ca25-62c8-4dbf-afc0-562781d0304e",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "615c21d7-e376-4369-9f1c-21a57599e9d8",
+      "TargetNodeId": "b676a75e-0ccd-486a-9f58-33e9c5ec541e",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "a11a9937-4700-4a10-8b3a-99a120b78b87",
+      "SourceNodeId": "22363eca-44d2-4487-a665-a6e4f8063e72",
       "SourcePortAlignment": "Right",
-      "TargetNodeId": "615c21d7-e376-4369-9f1c-21a57599e9d8",
+      "TargetNodeId": "b676a75e-0ccd-486a-9f58-33e9c5ec541e",
       "TargetPortAlignment": "Left"
+    },
+    {
+      "SourceNodeId": "c753ca25-62c8-4dbf-afc0-562781d0304e",
+      "SourcePortAlignment": "Bottom",
+      "TargetNodeId": "e67c6858-10aa-491c-8f57-81f322b56432",
+      "TargetPortAlignment": "Top"
     }
   ]
 }

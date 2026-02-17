@@ -3,6 +3,7 @@
 @using Blazor.Diagrams;
 @using Blazor.Diagrams.Components
 @using Blazor.Diagrams.Core.Models
+@using BlazorApp1.Components
 
 <PageTitle>Diagram</PageTitle>
 
@@ -126,6 +127,18 @@
                             </MudMenuItem>
                         </ChildContent>
                     </MudMenu>
+
+                    <MudDivider />
+
+                    <!-- Edit Node Properties Button -->
+                    <MudTooltip Text="Edit Node Properties">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       Color="Color.Info"
+                                       Variant="Variant.Filled"
+                                       OnClick="EditNodeProperties"
+                                       Disabled="@(!_hasSelectedNode)"
+                                       Size="MudBlazor.Size.Large" />
+                    </MudTooltip>
 
                     <MudDivider />
 

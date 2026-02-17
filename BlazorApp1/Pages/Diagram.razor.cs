@@ -3,6 +3,7 @@ using Blazor.Diagrams.Core.Geometry;
 using Blazor.Diagrams.Core.Models;
 using BlazorApp1.Models;
 using BlazorApp1.Services;
+using BlazorApp1.Components;
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
 
@@ -13,6 +14,7 @@ public partial class Diagram : IDisposable
     [Inject] private ApplicationState AppState { get; set; } = default!;
     [Inject] private DiagramService DiagramService { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IDialogService DialogService { get; set; } = default!;
 
     private BlazorDiagram? _diagram;
     private int _nodeCounter = 3;
@@ -205,6 +207,45 @@ public partial class Diagram : IDisposable
         {
             Snackbar.Add($"Error saving diagram: {ex.Message}", Severity.Error);
         }
+    }
+
+    private async Task EditNodeProperties()
+    {
+        if (_diagram == null) return;
+
+        var selectedNode = _diagram.GetSelectedModels()
+            .OfType<MudNodeModel>()
+            .FirstOrDefault();
+
+        if (selectedNode == null)
+        {
+            Snackbar.Add("No node selected", Severity.Warning);
+            return;
+        }
+
+        var parameters = new DialogParameters
+        {
+            { "Node", selectedNode }
+        };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            CloseButton = true,
+            BackdropClick = true
+        };
+
+        var dialog = await DialogService.ShowAsync<NodePropertyEditor>("Edit Node Properties", parameters, options);
+        var result = await dialog.Result;
+
+        if (result == null || result.Canceled)
+        {
+            return;
+        }
+        // Refresh the diagram to show updates
+        StateHasChanged();
+        Snackbar.Add("Node properties updated", Severity.Success);
     }
 
     public void Dispose()

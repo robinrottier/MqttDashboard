@@ -1,0 +1,161 @@
+@using BlazorApp1.Models
+@using MudBlazor
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            <!-- Title -->
+            <MudItem xs="12">
+                <MudText Typo="Typo.h6">Node Properties</MudText>
+                <MudDivider Class="mb-4" />
+            </MudItem>
+
+            <!-- Title Property -->
+            <MudItem xs="4">
+                <MudText Typo="Typo.body2" Class="mt-2">Title</MudText>
+            </MudItem>
+            <MudItem xs="8">
+                <MudTextField @bind-Value="@Node.Title" 
+                              Label="Title" 
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense" />
+            </MudItem>
+
+            <!-- Description Property -->
+            <MudItem xs="4">
+                <MudText Typo="Typo.body2" Class="mt-2">Description</MudText>
+            </MudItem>
+            <MudItem xs="8">
+                <MudTextField @bind-Value="@Node.Description" 
+                              Label="Description" 
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Lines="2" />
+            </MudItem>
+
+            <!-- Icon Property -->
+            <MudItem xs="4">
+                <MudText Typo="Typo.body2" Class="mt-2">Icon</MudText>
+            </MudItem>
+            <MudItem xs="8">
+                <MudSelect @bind-Value="@Node.Icon" 
+                           Label="Icon" 
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Clearable="true">
+                    <MudSelectItem Value="@((string?)null)">None</MudSelectItem>
+                    <MudSelectItem Value="@Icons.Material.Filled.Home">Home</MudSelectItem>
+                    <MudSelectItem Value="@Icons.Material.Filled.Info">Info</MudSelectItem>
+                    <MudSelectItem Value="@Icons.Material.Filled.Settings">Settings</MudSelectItem>
+                    <MudSelectItem Value="@Icons.Material.Filled.Star">Star</MudSelectItem>
+                    <MudSelectItem Value="@Icons.Material.Filled.Cloud">Cloud</MudSelectItem>
+                    <MudSelectItem Value="@Icons.Material.Filled.Storage">Storage</MudSelectItem>
+                    <MudSelectItem Value="@Icons.Material.Filled.Computer">Computer</MudSelectItem>
+                    <MudSelectItem Value="@Icons.Material.Filled.PhoneAndroid">Phone</MudSelectItem>
+                    <MudSelectItem Value="@Icons.Material.Filled.Warning">Warning</MudSelectItem>
+                    <MudSelectItem Value="@Icons.Material.Filled.CheckCircle">Check</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+
+            <!-- Icon Color Property -->
+            <MudItem xs="4">
+                <MudText Typo="Typo.body2" Class="mt-2">Icon Color</MudText>
+            </MudItem>
+            <MudItem xs="8">
+                <MudSelect @bind-Value="@Node.IconColor" 
+                           Label="Icon Color" 
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Clearable="true">
+                    <MudSelectItem Value="@((string?)null)">Default</MudSelectItem>
+                    <MudSelectItem Value="@("Primary")">Primary</MudSelectItem>
+                    <MudSelectItem Value="@("Secondary")">Secondary</MudSelectItem>
+                    <MudSelectItem Value="@("Success")">Success</MudSelectItem>
+                    <MudSelectItem Value="@("Info")">Info</MudSelectItem>
+                    <MudSelectItem Value="@("Warning")">Warning</MudSelectItem>
+                    <MudSelectItem Value="@("Error")">Error</MudSelectItem>
+                    <MudSelectItem Value="@("Dark")">Dark</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+
+            <!-- Background Color Property -->
+            <MudItem xs="4">
+                <MudText Typo="Typo.body2" Class="mt-2">Background</MudText>
+            </MudItem>
+            <MudItem xs="8">
+                <MudTextField @bind-Value="@Node.BackgroundColor" 
+                              Label="Background Color (CSS)" 
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Placeholder="e.g., #FFFFFF, lightblue" />
+            </MudItem>
+
+            <!-- Size Properties -->
+            <MudItem xs="4">
+                <MudText Typo="Typo.body2" Class="mt-2">Width</MudText>
+            </MudItem>
+            <MudItem xs="8">
+                <MudNumericField @bind-Value="@Width" 
+                                 Label="Width (px)" 
+                                 Variant="Variant.Outlined"
+                                 Margin="Margin.Dense"
+                                 Min="60" />
+            </MudItem>
+
+            <MudItem xs="4">
+                <MudText Typo="Typo.body2" Class="mt-2">Height</MudText>
+            </MudItem>
+            <MudItem xs="8">
+                <MudNumericField @bind-Value="@Height" 
+                                 Label="Height (px)" 
+                                 Variant="Variant.Outlined"
+                                 Margin="Margin.Dense"
+                                 Min="45" />
+            </MudItem>
+
+            <!-- Custom Metadata Section -->
+            <MudItem xs="12" Class="mt-4">
+                <MudText Typo="Typo.subtitle1">Custom Metadata</MudText>
+                <MudDivider Class="mb-2" />
+            </MudItem>
+
+            @foreach (var kvp in Node.Metadata.ToList())
+            {
+                <MudItem xs="4">
+                    <MudTextField Value="@kvp.Key" 
+                                  Label="Key" 
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  ReadOnly="true" />
+                </MudItem>
+                <MudItem xs="7">
+                    <MudTextField Value="@kvp.Value" 
+                                  ValueChanged="@((string val) => UpdateMetadata(kvp.Key, val))"
+                                  Label="Value" 
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="1">
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                   Color="Color.Error"
+                                   OnClick="@(() => RemoveMetadata(kvp.Key))"
+                                   Size="MudBlazor.Size.Small" />
+                </MudItem>
+            }
+
+            <MudItem xs="12">
+                <MudButton StartIcon="@Icons.Material.Filled.Add" 
+                           OnClick="AddMetadata"
+                           Color="Color.Primary"
+                           Variant="Variant.Outlined"
+                           Size="MudBlazor.Size.Small">
+                    Add Custom Property
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Save">Save</MudButton>
+    </DialogActions>
+</MudDialog>

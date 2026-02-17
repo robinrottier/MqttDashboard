@@ -1,6 +1,4 @@
 ﻿.mud-node {
-    xx_width: 120px;
-    xx_height: 90px;
     border: 3px solid;
 }
 
@@ -11,8 +9,13 @@
 .mud-node .mud-card {
     width: 100%;
     height: 100%;
+    background-color: lightgray;
+    border-radius: 8px;
+}
+
+.mud-node-title-selected {
+    font-weight: bold;
 }
 
 .default-node {
-
 }

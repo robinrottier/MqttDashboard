@@ -1,37 +1,35 @@
 ﻿@using Blazor.Diagrams.Components.Renderers;
 @using BlazorApp1.Models
 
-<style>
-    .mud-node .mud-card {
-        width: 100%;
-        height: 100%;
-        background-color: lightgray;
-        border-radius: 8px;
-    }
-
-    .mud-node-title-selected {
-        font-weight: bold;
-    }
-</style>
-
 <div class="mud-node default-node @(Node.Selected ? "selected" : "")" style=@GenerateStyle()>
 
-<MudCard Elevation="@(Node.Selected ? 8 : 2)">
-    <MudCardHeader Class="@(Node.Selected ? "mud-node-title-selected" : "")">
-        @(Node.Title ?? "Title")
-    </MudCardHeader>
+    <MudCard Elevation="@(Node.Selected ? 8 : 2)" Style=@GetCardStyle()>
+        <MudCardHeader Class="@(Node.Selected ? "mud-node-title-selected" : "")">
+            <CardHeaderContent>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    @if (!string.IsNullOrEmpty(Node.Icon))
+                    {
+                        <MudIcon Icon="@Node.Icon" 
+                                 Color="@GetIconColor()" 
+                                 Size="MudBlazor.Size.Small" />
+                    }
+                    <MudText Typo="Typo.body2">@(Node.Title ?? "Title")</MudText>
+                </MudStack>
+                @if (!string.IsNullOrEmpty(Node.Description))
+                {
+                    <MudText Typo="Typo.caption" Class="mt-1">@Node.Description</MudText>
+                }
+            </CardHeaderContent>
+        </MudCardHeader>
 
-    @foreach (var port in Node.Ports)
-    {
-        // In case you have any ports to show
-        // IMPORTANT: You are always in charge of rendering ports
-        <PortRenderer @key="port" Port="port" />
-    }
-</MudCard>
+        @foreach (var port in Node.Ports)
+        {
+            <PortRenderer @key="port" Port="port" />
+        }
+    </MudCard>
 </div>
 
-    @code {
-    // This gets filled by the library
+@code {
     [Parameter] public MudNodeModel Node { get; set; } = null!;
 
     protected override void OnInitialized()
@@ -44,10 +42,8 @@
          || Node.Size.Width < Node.MinimumDimensions.Width
          || Node.Size.Height < Node.MinimumDimensions.Height)
             Node.Size = new(120, 90);
-
     }
 
-    // copied from base diagrams NodeWidget.cs ...maybe we shold inherit from it?
     private string GenerateStyle()
     {
         if (Node.Size is not null)
@@ -55,5 +51,41 @@
             return $"width: {Node.Size.Width}px; height: {Node.Size.Height}px";
         }
         return string.Empty;
+    }
+
+    private string GetCardStyle()
+    {
+        var styles = new List<string>();
+
+        if (!string.IsNullOrEmpty(Node.BackgroundColor))
+        {
+            styles.Add($"background-color: {Node.BackgroundColor}");
+        }
+
+        if (styles.Any())
+        {
+            return string.Join("; ", styles);
+        }
+
+        return string.Empty;
+    }
+
+    private MudBlazor.Color GetIconColor()
+    {
+        if (!string.IsNullOrEmpty(Node.IconColor))
+        {
+            return Node.IconColor.ToLower() switch
+            {
+                "primary" => MudBlazor.Color.Primary,
+                "secondary" => MudBlazor.Color.Secondary,
+                "success" => MudBlazor.Color.Success,
+                "info" => MudBlazor.Color.Info,
+                "warning" => MudBlazor.Color.Warning,
+                "error" => MudBlazor.Color.Error,
+                "dark" => MudBlazor.Color.Dark,
+                _ => MudBlazor.Color.Default
+            };
+        }
+        return MudBlazor.Color.Default;
     }
 }

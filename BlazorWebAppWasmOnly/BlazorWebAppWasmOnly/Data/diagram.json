@@ -1,29 +1,62 @@
 {
   "Nodes": [
     {
-      "Id": "8f7c3b52-87ea-4fa3-a48d-77dad117f64c",
+      "Id": "8020405a-47e1-41da-ade0-4673770ee389",
       "Title": "Node 3",
-      "X": 42.99997,
-      "Y": 58.00003,
+      "X": 47.79996,
+      "Y": 38.00003,
       "Width": 120,
       "Height": 90,
+      "Icon": null,
+      "Description": null,
+      "BackgroundColor": null,
+      "IconColor": null,
+      "Metadata": {},
       "Ports": [
         {
-          "Id": "1493ec53-4893-400e-8104-430da17e75a2",
+          "Id": "5d68f74d-ca96-420e-b448-2445cf4bcbe4",
           "Alignment": "Right"
         }
       ]
     },
     {
-      "Id": "6bd182ee-d353-432f-8b96-09f96f27fc94",
+      "Id": "5f423ef7-2e69-4966-a7f7-346e5712a095",
       "Title": "Node 4",
-      "X": 230.59998,
-      "Y": 59.19999,
-      "Width": 230.40003,
-      "Height": 188.20001,
+      "X": 235.4,
+      "Y": 124.00001,
+      "Width": 109.60001,
+      "Height": 82.6,
+      "Icon": null,
+      "Description": null,
+      "BackgroundColor": null,
+      "IconColor": null,
+      "Metadata": {},
       "Ports": [
         {
-          "Id": "9c6753d0-9486-4657-ae27-0761688509e8",
+          "Id": "cf84283b-c802-44df-ba11-714d47e0fed5",
+          "Alignment": "Left"
+        },
+        {
+          "Id": "311bb987-704f-4a32-a065-50ddf600fbad",
+          "Alignment": "Bottom"
+        }
+      ]
+    },
+    {
+      "Id": "ac5890a5-67a6-4687-96b7-e2f4a3a91792",
+      "Title": "Washing machine",
+      "X": 356.60007,
+      "Y": 239.79999,
+      "Width": 207.19996,
+      "Height": 45,
+      "Icon": "\u003Cpath d=\u0022M0 0h24v24H0z\u0022 fill=\u0022none\u0022/\u003E\u003Cpath d=\u0022M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z\u0022/\u003E",
+      "Description": null,
+      "BackgroundColor": "lightblue",
+      "IconColor": null,
+      "Metadata": {},
+      "Ports": [
+        {
+          "Id": "324adde0-6b9b-4dc2-a5fa-f526de084d3e",
           "Alignment": "Left"
         }
       ]
@@ -31,9 +64,15 @@
   ],
   "Links": [
     {
-      "SourceNodeId": "8f7c3b52-87ea-4fa3-a48d-77dad117f64c",
+      "SourceNodeId": "8020405a-47e1-41da-ade0-4673770ee389",
       "SourcePortAlignment": "Right",
-      "TargetNodeId": "6bd182ee-d353-432f-8b96-09f96f27fc94",
+      "TargetNodeId": "5f423ef7-2e69-4966-a7f7-346e5712a095",
+      "TargetPortAlignment": "Left"
+    },
+    {
+      "SourceNodeId": "5f423ef7-2e69-4966-a7f7-346e5712a095",
+      "SourcePortAlignment": "Bottom",
+      "TargetNodeId": "ac5890a5-67a6-4687-96b7-e2f4a3a91792",
       "TargetPortAlignment": "Left"
     }
   ]

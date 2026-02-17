@@ -88,7 +88,12 @@ public class ApplicationState
             var node = new MudNodeModel(position: new Point(nodeState.X, nodeState.Y))
             {
                 Title = nodeState.Title,
-                Size = new Blazor.Diagrams.Core.Geometry.Size(nodeState.Width, nodeState.Height)
+                Size = new Blazor.Diagrams.Core.Geometry.Size(nodeState.Width, nodeState.Height),
+                Icon = nodeState.Icon,
+                Description = nodeState.Description,
+                BackgroundColor = nodeState.BackgroundColor,
+                IconColor = nodeState.IconColor,
+                Metadata = nodeState.Metadata ?? new Dictionary<string, string>()
             };
 
             diagram.Nodes.Add(node);
@@ -161,7 +166,12 @@ public class ApplicationState
                 X = node.Position?.X ?? 0,
                 Y = node.Position?.Y ?? 0,
                 Width = node.Size?.Width ?? 120,
-                Height = node.Size?.Height ?? 90
+                Height = node.Size?.Height ?? 90,
+                Icon = node.Icon,
+                Description = node.Description,
+                BackgroundColor = node.BackgroundColor,
+                IconColor = node.IconColor,
+                Metadata = node.Metadata ?? new Dictionary<string, string>()
             };
 
             // Save ports

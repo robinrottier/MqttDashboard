@@ -54,6 +54,12 @@ public class NodeState
         set => Height = value;
     }
 
+    public string? Icon { get; set; }
+    public string? Description { get; set; }
+    public string? BackgroundColor { get; set; }
+    public string? IconColor { get; set; }
+    public Dictionary<string, string> Metadata { get; set; } = new();
+
     public List<PortState> Ports { get; set; } = new();
 }
 
