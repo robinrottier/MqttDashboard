@@ -52,6 +52,8 @@ public class ApplicationState
                 DefaultRouter = new NormalRouter(),
                 DefaultPathGenerator = new SmoothPathGenerator()
             },
+            GridSize = 20, // Default 20px grid size
+            GridSnapToCenter = false, // Disabled by default, can be toggled in UI
         };
 
         var diagram = new BlazorDiagram(options);
@@ -76,6 +78,11 @@ public class ApplicationState
                 DefaultRouter = new NormalRouter(),
                 DefaultPathGenerator = new SmoothPathGenerator()
             },
+            // if grid size is 0 then no grid
+            // if grid size is -ve then grid is snaptocenter
+            // if grid size is +ve then snap to corner (default)
+            GridSize = state.GridSize == 0 ? null : int.Abs(state.GridSize), // Use saved grid size or default to 20px
+            GridSnapToCenter = state.GridSize < 0,
         };
 
         var diagram = new BlazorDiagram(options);
@@ -90,6 +97,7 @@ public class ApplicationState
                 Title = nodeState.Title,
                 Size = new Blazor.Diagrams.Core.Geometry.Size(nodeState.Width, nodeState.Height),
                 Icon = nodeState.Icon,
+                IconName = nodeState.IconName,
                 Description = nodeState.Description,
                 BackgroundColor = nodeState.BackgroundColor,
                 IconColor = nodeState.IconColor,
@@ -156,6 +164,22 @@ public class ApplicationState
 
         var state = new DiagramState();
 
+        // map diagram grid and gridsnaptocenter to diagramstate saved value for grid size
+        // if grid size is 0 then no grid
+        // if grid size is -ve then grid is snaptocenter
+        // if grid size is +ve then snap to corner (default)
+        if (_diagram.Options.GridSize == null)
+        {
+            state.GridSize = 0;
+        }
+        else
+        {
+            if (_diagram.Options.GridSnapToCenter)
+                state.GridSize = -_diagram.Options.GridSize.Value;
+            else
+                state.GridSize = _diagram.Options.GridSize.Value;
+        }
+
         // Save nodes
         foreach (var node in _diagram.Nodes.OfType<MudNodeModel>())
         {
@@ -168,6 +192,7 @@ public class ApplicationState
                 Width = node.Size?.Width ?? 120,
                 Height = node.Size?.Height ?? 90,
                 Icon = node.Icon,
+                IconName = node.IconName,
                 Description = node.Description,
                 BackgroundColor = node.BackgroundColor,
                 IconColor = node.IconColor,

@@ -1,17 +1,14 @@
 using BlazorApp1.Models;
 using MudBlazor;
 using Microsoft.AspNetCore.Components;
-using System.Reflection;
 
 namespace BlazorApp1.Components;
 
 public partial class NodePropertyEditor
 {
-    //[CascadingParameter] private dynamic? MudDialog { get; set; }
-    [CascadingParameter]
-    private IMudDialogInstance? MudDialog { get; set; }
-
+    [CascadingParameter] private IMudDialogInstance? MudDialog { get; set; }
     [Parameter] public MudNodeModel Node { get; set; } = default!;
+    [Inject] private IDialogService DialogService { get; set; } = default!;
 
     private double Width { get; set; }
     private double Height { get; set; }
@@ -21,6 +18,90 @@ public partial class NodePropertyEditor
     {
         Width = Node.Size?.Width ?? 120;
         Height = Node.Size?.Height ?? 90;
+    }
+
+    private async Task OpenIconPicker()
+    {
+        var parameters = new DialogParameters
+        {
+            { "CurrentIcon", Node.Icon }
+        };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            CloseButton = true
+        };
+
+        var dialog = await DialogService.ShowAsync<IconPickerDialog>("Select Icon", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled && result.Data != null)
+        {
+            // The result is an anonymous object with IconPath and IconName
+            var resultData = result.Data as dynamic;
+            if (resultData != null)
+            {
+                Node.Icon = resultData.IconPath;
+                Node.IconName = resultData.IconName;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task OpenColorPicker(ColorPickerMode mode)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Mode", mode },
+            { "CurrentColor", Node.BackgroundColor }
+        };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = mode == ColorPickerMode.Named ? MaxWidth.Medium : MaxWidth.Small,
+            FullWidth = true,
+            CloseButton = true
+        };
+
+        string title = mode switch
+        {
+            ColorPickerMode.Theme => "Select Theme Color",
+            ColorPickerMode.Named => "Select Named Color",
+            ColorPickerMode.Custom => "Custom Color",
+            _ => "Select Color"
+        };
+
+        var dialog = await DialogService.ShowAsync<ColorPickerDialog>(title, parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled && result.Data is string selectedColor)
+        {
+            Node.BackgroundColor = selectedColor;
+            StateHasChanged();
+        }
+    }
+
+    private void ClearColor()
+    {
+        Node.BackgroundColor = null;
+        StateHasChanged();
+    }
+
+    private void ClearIcon()
+    {
+        Node.Icon = null;
+        Node.IconName = null;
+        StateHasChanged();
+    }
+
+    private string GetIconName()
+    {
+        if (string.IsNullOrEmpty(Node.Icon))
+            return "No icon selected";
+
+        return Node.IconName ?? "Custom Icon";
     }
 
     private void UpdateMetadata(string key, string value)

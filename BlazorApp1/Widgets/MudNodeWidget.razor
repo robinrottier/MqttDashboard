@@ -3,7 +3,7 @@
 
 <div class="mud-node default-node @(Node.Selected ? "selected" : "")" style=@GenerateStyle()>
 
-    <MudCard Elevation="@(Node.Selected ? 8 : 2)" Style=@GetCardStyle()>
+    <MudCard Outlined="false" Elevation="0" Style=@GetCardStyle() Class="mud-card" >
         <MudCardHeader Class="@(Node.Selected ? "mud-node-title-selected" : "")">
             <CardHeaderContent>
                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
@@ -41,14 +41,15 @@
         if (Node.Size == null
          || Node.Size.Width < Node.MinimumDimensions.Width
          || Node.Size.Height < Node.MinimumDimensions.Height)
-            Node.Size = new(120, 90);
+            Node.Size = new(120, 80);
     }
 
     private string GenerateStyle()
     {
+        var card = GetCardStyle();
         if (Node.Size is not null)
         {
-            return $"width: {Node.Size.Width}px; height: {Node.Size.Height}px";
+            return $"width:{Node.Size.Width}px; height:{Node.Size.Height}px; {card}";
         }
         return string.Empty;
     }
@@ -59,7 +60,7 @@
 
         if (!string.IsNullOrEmpty(Node.BackgroundColor))
         {
-            styles.Add($"background-color: {Node.BackgroundColor}");
+            styles.Add($"background-color:{Node.BackgroundColor}");
         }
 
         if (styles.Any())

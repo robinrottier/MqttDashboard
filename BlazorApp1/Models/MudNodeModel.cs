@@ -18,6 +18,11 @@ namespace BlazorApp1.Models
         public string? Icon { get; set; }
 
         /// <summary>
+        /// Human-readable icon name for display
+        /// </summary>
+        public string? IconName { get; set; }
+
+        /// <summary>
         /// Secondary text displayed below the title
         /// </summary>
         public string? Description { get; set; }

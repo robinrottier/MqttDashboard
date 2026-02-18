@@ -2,6 +2,7 @@
 @rendermode InteractiveAuto
 @using Blazor.Diagrams;
 @using Blazor.Diagrams.Components
+@using Blazor.Diagrams.Components.Widgets
 @using Blazor.Diagrams.Core.Models
 @using BlazorApp1.Components
 
@@ -130,6 +131,17 @@
 
                     <MudDivider />
 
+                    <!-- Grid Snap Toggle -->
+                    <MudTooltip Text="@(_gridSnapEnabled ? "Disable Grid Snap" : "Enable Grid Snap")">
+                        <MudIconButton Icon="@Icons.Material.Filled.GridOn"
+                                       Color="@(_gridSnapEnabled ? Color.Success : Color.Default)"
+                                       Variant="@(_gridSnapEnabled ? Variant.Filled : Variant.Outlined)"
+                                       OnClick="ToggleGridSnap"
+                                       Size="MudBlazor.Size.Large" />
+                    </MudTooltip>
+
+                    <MudDivider />
+
                     <!-- Edit Node Properties Button -->
                     <MudTooltip Text="Edit Node Properties">
                         <MudIconButton Icon="@Icons.Material.Filled.Edit"
@@ -156,7 +168,14 @@
             <!-- Diagram Canvas -->
             <MudPaper Elevation="2" Style="flex: 1; height:600px;">
                 <CascadingValue Value="_diagram" IsFixed="true">
-                    <DiagramCanvas></DiagramCanvas>
+                        <DiagramCanvas>
+                             <Widgets>
+                                 @if (_gridSnapEnabled)
+                                 {
+                                    <GridWidget Size="@(_diagram?.Options.GridSize ?? 20)" Mode=GridMode.Line BackgroundColor="white" />
+                                 }
+                             </Widgets>
+                        </DiagramCanvas>
                 </CascadingValue>
             </MudPaper>
         </MudStack>

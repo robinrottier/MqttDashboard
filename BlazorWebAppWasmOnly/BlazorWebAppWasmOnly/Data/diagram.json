@@ -1,7 +1,7 @@
 {
   "Nodes": [
     {
-      "Id": "8020405a-47e1-41da-ade0-4673770ee389",
+      "Id": "985d5af4-4122-4996-bd9f-42d8c0003d6f",
       "Title": "Node 3",
       "X": 47.79996,
       "Y": 38.00003,
@@ -14,13 +14,13 @@
       "Metadata": {},
       "Ports": [
         {
-          "Id": "5d68f74d-ca96-420e-b448-2445cf4bcbe4",
+          "Id": "bd36091f-c196-4f05-b078-3319f48fb6fc",
           "Alignment": "Right"
         }
       ]
     },
     {
-      "Id": "5f423ef7-2e69-4966-a7f7-346e5712a095",
+      "Id": "07bfdc58-afb8-4a3e-bf0a-596b8036fcd9",
       "Title": "Node 4",
       "X": 235.4,
       "Y": 124.00001,
@@ -33,30 +33,30 @@
       "Metadata": {},
       "Ports": [
         {
-          "Id": "cf84283b-c802-44df-ba11-714d47e0fed5",
+          "Id": "02bbb546-d722-4fd7-99cb-c54ceb125cb2",
           "Alignment": "Left"
         },
         {
-          "Id": "311bb987-704f-4a32-a065-50ddf600fbad",
+          "Id": "cfdd0f23-9d34-4adc-9638-a10917bc13e5",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "ac5890a5-67a6-4687-96b7-e2f4a3a91792",
+      "Id": "fe0bef55-0544-490c-939b-2183d560070f",
       "Title": "Washing machine",
-      "X": 356.60007,
-      "Y": 239.79999,
+      "X": 375.0001,
+      "Y": 224.59998,
       "Width": 207.19996,
-      "Height": 45,
-      "Icon": "\u003Cpath d=\u0022M0 0h24v24H0z\u0022 fill=\u0022none\u0022/\u003E\u003Cpath d=\u0022M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z\u0022/\u003E",
-      "Description": null,
+      "Height": 79.40002,
+      "Icon": "\u003Cpath d=\u0022M0 0h24v24H0z\u0022 fill=\u0022none\u0022/\u003E\u003Cpath d=\u0022M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z\u0022/\u003E",
+      "Description": "Some text xxx",
       "BackgroundColor": "lightblue",
-      "IconColor": null,
+      "IconColor": "Info",
       "Metadata": {},
       "Ports": [
         {
-          "Id": "324adde0-6b9b-4dc2-a5fa-f526de084d3e",
+          "Id": "bb62bd43-0218-4f57-9774-8200b9742f66",
           "Alignment": "Left"
         }
       ]
@@ -64,15 +64,15 @@
   ],
   "Links": [
     {
-      "SourceNodeId": "8020405a-47e1-41da-ade0-4673770ee389",
+      "SourceNodeId": "985d5af4-4122-4996-bd9f-42d8c0003d6f",
       "SourcePortAlignment": "Right",
-      "TargetNodeId": "5f423ef7-2e69-4966-a7f7-346e5712a095",
+      "TargetNodeId": "07bfdc58-afb8-4a3e-bf0a-596b8036fcd9",
       "TargetPortAlignment": "Left"
     },
     {
-      "SourceNodeId": "5f423ef7-2e69-4966-a7f7-346e5712a095",
+      "SourceNodeId": "07bfdc58-afb8-4a3e-bf0a-596b8036fcd9",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "ac5890a5-67a6-4687-96b7-e2f4a3a91792",
+      "TargetNodeId": "fe0bef55-0544-490c-939b-2183d560070f",
       "TargetPortAlignment": "Left"
     }
   ]

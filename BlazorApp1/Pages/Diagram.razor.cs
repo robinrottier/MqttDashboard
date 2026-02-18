@@ -19,6 +19,7 @@ public partial class Diagram : IDisposable
     private BlazorDiagram? _diagram;
     private int _nodeCounter = 3;
     private bool _hasSelectedNode;
+    private bool _gridSnapEnabled = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -40,6 +41,8 @@ public partial class Diagram : IDisposable
                     // Load from saved state
                     AppState.ResetDiagram(); // Clear the empty diagram first
                     _diagram = AppState.CreateDiagramFromState(savedState);
+                    _gridSnapEnabled = _diagram.Options.GridSize != null;
+
                     Snackbar.Add("Diagram loaded from server", Severity.Info);
 
                     // Trigger initial render
@@ -74,6 +77,10 @@ public partial class Diagram : IDisposable
 
             UpdateSelectionState();
             StateHasChanged();
+
+            // make sure grid enabled reflects setting in diagram state
+            _gridSnapEnabled = _diagram.Options.GridSize != null;
+
         }
         await base.OnAfterRenderAsync(firstRender);
     }
@@ -230,7 +237,7 @@ public partial class Diagram : IDisposable
 
         var options = new DialogOptions
         {
-            MaxWidth = MaxWidth.Medium,
+            MaxWidth = MaxWidth.Small,
             FullWidth = true,
             CloseButton = true,
             BackdropClick = true
@@ -246,6 +253,30 @@ public partial class Diagram : IDisposable
         // Refresh the diagram to show updates
         StateHasChanged();
         Snackbar.Add("Node properties updated", Severity.Success);
+    }
+
+    private void ToggleGridSnap()
+    {
+        if (_diagram == null) return;
+
+        _gridSnapEnabled = !_gridSnapEnabled;
+
+        if (_gridSnapEnabled)
+        {
+            _diagram.Options.GridSize = 20;
+        }
+        else
+        {
+            _diagram.Options.GridSize = null;
+        }
+
+        var message = _gridSnapEnabled 
+            ? "Grid snap enabled - nodes will snap to grid when moved" 
+            : "Grid snap disabled";
+
+        Snackbar.Add(message, _gridSnapEnabled ? Severity.Success : Severity.Info);
+        StateHasChanged();
+        _diagram.Refresh();
     }
 
     public void Dispose()

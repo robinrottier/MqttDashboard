@@ -6,6 +6,7 @@ public class DiagramState
 {
     public List<NodeState> Nodes { get; set; } = new();
     public List<LinkState> Links { get; set; } = new();
+    public int GridSize { get; set; } = 20; // Default 20px grid; 0 for no grid
 }
 
 public class NodeState
@@ -55,6 +56,7 @@ public class NodeState
     }
 
     public string? Icon { get; set; }
+    public string? IconName { get; set; }
     public string? Description { get; set; }
     public string? BackgroundColor { get; set; }
     public string? IconColor { get; set; }
