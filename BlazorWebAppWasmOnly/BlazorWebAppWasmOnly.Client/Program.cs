@@ -11,4 +11,7 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 // Add DiagramService (needs HttpClient)
 builder.Services.AddScoped<DiagramService>();
 
+// Add ApplicationStateService (needs HttpClient)
+builder.Services.AddScoped<ApplicationStateService>();
+
 await builder.Build().RunAsync();

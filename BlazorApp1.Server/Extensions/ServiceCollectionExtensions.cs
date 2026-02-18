@@ -39,6 +39,22 @@ public static class ServiceCollectionExtensions
             return new DiagramService(httpClient, sp.GetService<ILogger<DiagramService>>());
         });
 
+        // Add ApplicationStateService for server-side (calls its own API)
+        services.AddScoped<ApplicationStateService>(sp =>
+        {
+            var httpContextAccessor = sp.GetService<IHttpContextAccessor>();
+            var httpClient = new HttpClient();
+
+            // Use the current request's base address if available (for server-side)
+            if (httpContextAccessor?.HttpContext != null)
+            {
+                var request = httpContextAccessor.HttpContext.Request;
+                httpClient.BaseAddress = new Uri($"{request.Scheme}://{request.Host}");
+            }
+
+            return new ApplicationStateService(httpClient, sp.GetService<ILogger<ApplicationStateService>>());
+        });
+
         return services;
     }
 }

@@ -62,6 +62,9 @@ public class NodeState
     public string? IconColor { get; set; }
     public Dictionary<string, string> Metadata { get; set; } = new();
 
+    // MQTT Data Binding
+    public string? DataTopic { get; set; }
+
     public List<PortState> Ports { get; set; } = new();
 }
 

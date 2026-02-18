@@ -26,6 +26,12 @@ public class ApplicationState
     public bool IsMqttConnected { get; set; } = false;
     public string MqttConnectionStatus { get; set; } = "Disconnected";
 
+    // MQTT Data Cache
+    public MqttDataCache DataCache { get; } = new();
+
+    // Application State Persistence
+    private ApplicationStateService? _stateService;
+
     public event Action? OnStateChanged;
 
     public void SetInteractive()
@@ -101,7 +107,8 @@ public class ApplicationState
                 Description = nodeState.Description,
                 BackgroundColor = nodeState.BackgroundColor,
                 IconColor = nodeState.IconColor,
-                Metadata = nodeState.Metadata ?? new Dictionary<string, string>()
+                Metadata = nodeState.Metadata ?? new Dictionary<string, string>(),
+                DataTopic = nodeState.DataTopic
             };
 
             diagram.Nodes.Add(node);
@@ -196,7 +203,8 @@ public class ApplicationState
                 Description = node.Description,
                 BackgroundColor = node.BackgroundColor,
                 IconColor = node.IconColor,
-                Metadata = node.Metadata ?? new Dictionary<string, string>()
+                Metadata = node.Metadata ?? new Dictionary<string, string>(),
+                DataTopic = node.DataTopic
             };
 
             // Save ports
@@ -259,6 +267,35 @@ public class ApplicationState
         SignalRService = service;
     }
 
+    public void SetApplicationStateService(ApplicationStateService service)
+    {
+        _stateService = service;
+    }
+
+    public async Task LoadSubscriptionsAsync()
+    {
+        if (_stateService == null) return;
+
+        var state = await _stateService.LoadStateAsync();
+        if (state != null && state.MqttSubscriptions.Any())
+        {
+            SubscribedTopics = new HashSet<string>(state.MqttSubscriptions);
+            NotifyStateChangedAsync();
+        }
+    }
+
+    private async Task SaveSubscriptionsAsync()
+    {
+        if (_stateService == null) return;
+
+        var state = new ApplicationStateData
+        {
+            MqttSubscriptions = SubscribedTopics
+        };
+
+        await _stateService.SaveStateAsync(state);
+    }
+
     public void AddMessage(MqttDataMessage message)
     {
         Messages.Add(message);
@@ -266,18 +303,24 @@ public class ApplicationState
         {
             Messages.RemoveAt(0);
         }
+
+        // Update the data cache
+        DataCache.UpdateValue(message.Topic, message.Payload);
+
         NotifyStateChangedAsync();
     }
 
-    public void AddSubscription(string topic)
+    public async Task AddSubscriptionAsync(string topic)
     {
         SubscribedTopics.Add(topic);
+        await SaveSubscriptionsAsync();
         NotifyStateChangedAsync();
     }
 
-    public void RemoveSubscription(string topic)
+    public async Task RemoveSubscriptionAsync(string topic)
     {
         SubscribedTopics.Remove(topic);
+        await SaveSubscriptionsAsync();
         NotifyStateChangedAsync();
     }
 

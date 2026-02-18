@@ -1,4 +1,6 @@
 ﻿@inherits LayoutComponentBase
+@using BlazorApp1.Services
+@inject MqttInitializationService MqttInit
 
 <MudThemeProvider Theme="@_theme" IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
@@ -32,9 +34,9 @@
     private bool _isDarkMode = false;
     private MudTheme? _theme = null;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        base.OnInitialized();
+        await base.OnInitializedAsync();
 
         _theme = new()
         {
@@ -42,6 +44,9 @@
             PaletteDark = _darkPalette,
             LayoutProperties = new LayoutProperties()
         };
+
+        // Initialize MQTT connection on app startup
+        await MqttInit.InitializeAsync();
     }
 
     private void DrawerToggle()

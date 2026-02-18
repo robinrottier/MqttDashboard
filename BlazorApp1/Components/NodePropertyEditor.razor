@@ -124,6 +124,16 @@
                 </MudItem>
             </MudGrid>
 
+            <!-- MQTT Data Binding -->
+            <MudDivider Class="my-2" />
+            <MudText Typo="Typo.caption" Class="mb-1">MQTT Data Binding</MudText>
+            <MudTextField @bind-Value="@Node.DataTopic" 
+                          Label="MQTT Topic" 
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Placeholder="e.g., sensor/temperature" 
+                          HelperText="Subscribe to this topic to display live data on the node" />
+
             <!-- Custom Metadata Section -->
             @if (Node.Metadata.Any())
             {

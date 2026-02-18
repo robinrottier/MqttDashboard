@@ -1,5 +1,8 @@
 ﻿@using Blazor.Diagrams.Components.Renderers;
 @using BlazorApp1.Models
+@using BlazorApp1.Services
+@inject ApplicationState AppState
+@implements IDisposable
 
 <div class="mud-node default-node @(Node.Selected ? "selected" : "")" style=@GenerateStyle()>
 
@@ -22,6 +25,27 @@
             </CardHeaderContent>
         </MudCardHeader>
 
+        @* Display MQTT Data Value *@
+        @if (!string.IsNullOrEmpty(Node.DataTopic))
+        {
+            <MudCardContent Class="py-2">
+                <MudStack Spacing="1">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @Node.DataTopic
+                    </MudText>
+                    <MudText Typo="Typo.h6" Color="@GetDataValueColor()">
+                        @GetDataValueDisplay()
+                    </MudText>
+                    @if (Node.DataLastUpdated.HasValue)
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            Updated: @Node.DataLastUpdated.Value.ToString("HH:mm:ss")
+                        </MudText>
+                    }
+                </MudStack>
+            </MudCardContent>
+        }
+
         @foreach (var port in Node.Ports)
         {
             <PortRenderer @key="port" Port="port" />
@@ -31,6 +55,8 @@
 
 @code {
     [Parameter] public MudNodeModel Node { get; set; } = null!;
+
+    private IDisposable? _dataWatcher;
 
     protected override void OnInitialized()
     {
@@ -42,6 +68,71 @@
          || Node.Size.Width < Node.MinimumDimensions.Width
          || Node.Size.Height < Node.MinimumDimensions.Height)
             Node.Size = new(120, 80);
+
+        // Watch for data updates if DataTopic is set
+        SetupDataWatcher();
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        // Re-setup watcher if DataTopic changed
+        SetupDataWatcher();
+    }
+
+    private void SetupDataWatcher()
+    {
+        // Clean up existing watcher
+        _dataWatcher?.Dispose();
+        _dataWatcher = null;
+
+        // Setup new watcher if DataTopic is set
+        if (!string.IsNullOrEmpty(Node.DataTopic))
+        {
+            // Get initial value if available
+            var initialValue = AppState.DataCache.GetValue(Node.DataTopic);
+            if (initialValue != null)
+            {
+                Node.DataValue = initialValue;
+                Node.DataLastUpdated = DateTime.Now;
+            }
+
+            // Watch for updates
+            _dataWatcher = AppState.DataCache.Watch(Node.DataTopic, OnDataReceived);
+        }
+    }
+
+    private void OnDataReceived(string topic, object value)
+    {
+        Node.DataValue = value;
+        Node.DataLastUpdated = DateTime.Now;
+
+        // Update UI on the correct thread
+        InvokeAsync(StateHasChanged);
+    }
+
+    private string GetDataValueDisplay()
+    {
+        if (Node.DataValue == null)
+            return "No data";
+
+        return Node.DataValue.ToString() ?? "null";
+    }
+
+    private MudBlazor.Color GetDataValueColor()
+    {
+        if (Node.DataValue == null)
+            return MudBlazor.Color.Secondary;
+
+        // Try to parse as number for potential threshold-based coloring
+        if (double.TryParse(Node.DataValue.ToString(), out var numValue))
+        {
+            // Example: color based on value (can be customized)
+            return MudBlazor.Color.Primary;
+        }
+
+        return MudBlazor.Color.Default;
     }
 
     private string GenerateStyle()
@@ -88,5 +179,10 @@
             };
         }
         return MudBlazor.Color.Default;
+    }
+
+    public void Dispose()
+    {
+        _dataWatcher?.Dispose();
     }
 }

@@ -3,6 +3,8 @@
 @using BlazorApp1.Services
 @inject SignalRService SignalRService
 @inject ApplicationState AppState
+@inject ApplicationStateService AppStateService
+@inject MqttInitializationService MqttInit
 @inject NavigationManager NavigationManager
 @implements IAsyncDisposable
 @implements IDisposable
@@ -159,36 +161,25 @@
         // Subscribe to state changes with proper async handling
         AppState.OnStateChanged += HandleStateChanged;
 
-        // Only initialize SignalR if not already connected
-        if (AppState.SignalRService == null)
+        // Ensure MQTT is initialized (will skip if already done)
+        if (!MqttInit.IsInitialized)
         {
-            try
-            {
-                SignalRService.OnDataReceived += HandleDataReceived;
-                SignalRService.OnSubscriptionConfirmed += HandleSubscriptionConfirmed;
-                SignalRService.OnUnsubscriptionConfirmed += HandleUnsubscriptionConfirmed;
-
-                var hubUrl = NavigationManager.ToAbsoluteUri("/mqttdatahub");
-                await SignalRService.StartAsync(hubUrl.ToString());
-
-                AppState.SetSignalRService(SignalRService);
-
-                var serverHost = new Uri(NavigationManager.Uri).Host;
-                var mqttBroker = await SignalRService.GetMqttBrokerInfoAsync();
-                AppState.SetMqttConnectionStatus($"Connected to {serverHost} (MQTT: {mqttBroker})", true);
-            }
-            catch (Exception ex)
-            {
-                AppState.SetMqttConnectionStatus($"Error: {ex.Message}", false);
-            }
+            await MqttInit.InitializeAsync();
         }
-        else
+
+        // The SignalR service and subscriptions are already set up by MqttInitializationService
+        // Just ensure we have the event handlers connected for this page
+        if (AppState.SignalRService != null)
         {
-            // Reconnect event handlers if service already exists
-            AppState.SignalRService.OnDataReceived += HandleDataReceived;
-            AppState.SignalRService.OnSubscriptionConfirmed += HandleSubscriptionConfirmed;
-            AppState.SignalRService.OnUnsubscriptionConfirmed += HandleUnsubscriptionConfirmed;
+            // Note: Event handlers are already set up by MqttInitializationService
+            // This page can now just display the data
         }
+    }
+
+    private async Task RestoreSubscriptionsAsync()
+    {
+        // This is now handled by MqttInitializationService on app startup
+        // Keeping this method for backwards compatibility but it won't be called
     }
 
     private void HandleStateChanged()
@@ -251,19 +242,20 @@
 
     private void HandleDataReceived(MqttDataMessage message)
     {
-        AppState.AddMessage(message);
+        // This handler is no longer needed here as it's handled by MqttInitializationService
+        // Keeping for backwards compatibility
     }
 
-    private void HandleSubscriptionConfirmed(string topic)
+    private async void HandleSubscriptionConfirmed(string topic)
     {
-        AppState.AddSubscription(topic);
-        AppState.SetMqttConnectionStatus($"Connected - Subscribed to: {topic}", true);
+        // This handler is no longer needed here as it's handled by MqttInitializationService
+        // Keeping for backwards compatibility
     }
 
-    private void HandleUnsubscriptionConfirmed(string topic)
+    private async void HandleUnsubscriptionConfirmed(string topic)
     {
-        AppState.RemoveSubscription(topic);
-        AppState.SetMqttConnectionStatus($"Connected - Unsubscribed from: {topic}", true);
+        // This handler is no longer needed here as it's handled by MqttInitializationService
+        // Keeping for backwards compatibility
     }
 
     public void Dispose()

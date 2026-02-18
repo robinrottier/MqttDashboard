@@ -41,5 +41,20 @@ namespace BlazorApp1.Models
         /// Custom metadata dictionary for future extensibility
         /// </summary>
         public Dictionary<string, string> Metadata { get; set; } = new();
+
+        /// <summary>
+        /// MQTT topic to bind to for live data updates
+        /// </summary>
+        public string? DataTopic { get; set; }
+
+        /// <summary>
+        /// Current data value from MQTT topic
+        /// </summary>
+        public object? DataValue { get; set; }
+
+        /// <summary>
+        /// Last time the data value was updated
+        /// </summary>
+        public DateTime? DataLastUpdated { get; set; }
     }
 }
