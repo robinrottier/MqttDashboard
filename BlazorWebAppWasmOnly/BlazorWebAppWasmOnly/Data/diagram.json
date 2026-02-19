@@ -1,62 +1,68 @@
 {
   "Nodes": [
     {
-      "Id": "985d5af4-4122-4996-bd9f-42d8c0003d6f",
-      "Title": "Node 3",
+      "Id": "306b27a0-6b57-4c80-bf2f-40d3463aa99f",
+      "Title": "Grid",
       "X": 47.79996,
       "Y": 38.00003,
-      "Width": 120,
-      "Height": 90,
+      "Width": 200,
+      "Height": 160,
       "Icon": null,
+      "IconName": null,
       "Description": null,
       "BackgroundColor": null,
       "IconColor": null,
       "Metadata": {},
+      "DataTopic": "ess1/servers/HUB-3/grid",
       "Ports": [
         {
-          "Id": "bd36091f-c196-4f05-b078-3319f48fb6fc",
+          "Id": "937d5160-a9ca-4447-90aa-83151e7841e7",
           "Alignment": "Right"
         }
       ]
     },
     {
-      "Id": "07bfdc58-afb8-4a3e-bf0a-596b8036fcd9",
-      "Title": "Node 4",
-      "X": 235.4,
-      "Y": 124.00001,
-      "Width": 109.60001,
-      "Height": 82.6,
+      "Id": "0751df16-d21c-4d4b-8780-9ec33e3fcf14",
+      "Title": "HUB-3",
+      "X": 300,
+      "Y": 40,
+      "Width": 220,
+      "Height": 160,
       "Icon": null,
+      "IconName": null,
       "Description": null,
       "BackgroundColor": null,
       "IconColor": null,
       "Metadata": {},
+      "DataTopic": "ess1/servers/HUB-3/soc",
       "Ports": [
         {
-          "Id": "02bbb546-d722-4fd7-99cb-c54ceb125cb2",
+          "Id": "329c0218-2211-40f4-8bdb-68c42baa2130",
           "Alignment": "Left"
         },
         {
-          "Id": "cfdd0f23-9d34-4adc-9638-a10917bc13e5",
+          "Id": "e49e6591-a1db-443a-b8df-0f0cb3a3654a",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "fe0bef55-0544-490c-939b-2183d560070f",
+      "Id": "69d76201-ea98-4443-b759-12b44018aaa8",
       "Title": "Washing machine",
-      "X": 375.0001,
-      "Y": 224.59998,
+      "X": 420,
+      "Y": 260,
       "Width": 207.19996,
       "Height": 79.40002,
       "Icon": "\u003Cpath d=\u0022M0 0h24v24H0z\u0022 fill=\u0022none\u0022/\u003E\u003Cpath d=\u0022M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z\u0022/\u003E",
+      "IconName": null,
       "Description": "Some text xxx",
       "BackgroundColor": "lightblue",
       "IconColor": "Info",
       "Metadata": {},
+      "DataTopic": null,
       "Ports": [
         {
-          "Id": "bb62bd43-0218-4f57-9774-8200b9742f66",
+          "Id": "9f86870f-8b92-4ed6-8abf-cf3b8722c52d",
           "Alignment": "Left"
         }
       ]
@@ -64,16 +70,17 @@
   ],
   "Links": [
     {
-      "SourceNodeId": "985d5af4-4122-4996-bd9f-42d8c0003d6f",
+      "SourceNodeId": "306b27a0-6b57-4c80-bf2f-40d3463aa99f",
       "SourcePortAlignment": "Right",
-      "TargetNodeId": "07bfdc58-afb8-4a3e-bf0a-596b8036fcd9",
+      "TargetNodeId": "0751df16-d21c-4d4b-8780-9ec33e3fcf14",
       "TargetPortAlignment": "Left"
     },
     {
-      "SourceNodeId": "07bfdc58-afb8-4a3e-bf0a-596b8036fcd9",
+      "SourceNodeId": "0751df16-d21c-4d4b-8780-9ec33e3fcf14",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "fe0bef55-0544-490c-939b-2183d560070f",
+      "TargetNodeId": "69d76201-ea98-4443-b759-12b44018aaa8",
       "TargetPortAlignment": "Left"
     }
-  ]
+  ],
+  "GridSize": 20
 }
