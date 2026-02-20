@@ -1,14 +1,14 @@
 {
   "Nodes": [
     {
-      "Id": "a6fc5f31-0132-49ca-b996-2fad634bcefd",
+      "Id": "8f42f34e-3391-4266-845f-9a7c96383502",
       "Title": "HUB-3",
-      "X": 300,
-      "Y": 60,
-      "Width": 180,
-      "Height": 160,
-      "Icon": null,
-      "IconName": null,
+      "X": 160,
+      "Y": 140,
+      "Width": 120,
+      "Height": 100,
+      "Icon": "\u003Cpath d=\u0022M0 0h24v24H0z\u0022 fill=\u0022none\u0022/\u003E\u003Cpath d=\u0022M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4zM11 20v-5.5H9L13 7v5.5h2L11 20z\u0022/\u003E",
+      "IconName": "Battery",
       "Description": null,
       "BackgroundColor": null,
       "IconColor": null,
@@ -16,18 +16,22 @@
       "DataTopic": "ess1/servers/HUB-3/soc",
       "Ports": [
         {
-          "Id": "318021b5-1c5b-48b2-ac71-cd592923665c",
+          "Id": "2ab7dad9-f01e-4c30-bd9f-c2d3f6ddcc89",
           "Alignment": "Left"
+        },
+        {
+          "Id": "9a7c93e0-0261-4d31-ad62-798a85cc44e8",
+          "Alignment": "Top"
         }
       ]
     },
     {
-      "Id": "8287e38f-b369-413b-8415-9e1338d5d85f",
+      "Id": "38c7524c-39ef-46e6-bae4-0b97dfe8f3ac",
       "Title": "Grid",
-      "X": 40,
-      "Y": 60,
-      "Width": 220,
-      "Height": 160,
+      "X": 20,
+      "Y": 140,
+      "Width": 100,
+      "Height": 100,
       "Icon": null,
       "IconName": null,
       "Description": null,
@@ -37,18 +41,45 @@
       "DataTopic": "ess1/servers/HUB-3/grid",
       "Ports": [
         {
-          "Id": "8602138b-83ef-421b-9965-b3d2b720f2b8",
+          "Id": "f7e839af-ad9e-4126-9f3d-b08ea1dc09fc",
           "Alignment": "Right"
+        }
+      ]
+    },
+    {
+      "Id": "daddce1a-0225-41b0-b7f1-ba0dff93021a",
+      "Title": "Solar",
+      "X": 160,
+      "Y": 20,
+      "Width": 120,
+      "Height": 80,
+      "Icon": "\u003Cg\u003E\u003Crect fill=\u0022none\u0022 height=\u002224\u0022 width=\u002224\u0022/\u003E\u003C/g\u003E\u003Cg\u003E\u003Cg\u003E\u003Cpolygon points=\u00223.33,16 11,16 11,13 4,13\u0022/\u003E\u003Cpolygon points=\u002213,16 20.67,16 20,13 13,13\u0022/\u003E\u003Cpolygon points=\u002221.11,18 13,18 13,22 22,22\u0022/\u003E\u003Cpolygon points=\u00222,22 11,22 11,18 2.89,18\u0022/\u003E\u003Crect height=\u00223\u0022 width=\u00222\u0022 x=\u002211\u0022 y=\u00228\u0022/\u003E\u003Crect height=\u00223\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -0.2089 14.6085)\u0022 width=\u00222\u0022 x=\u002216.53\u0022 y=\u00226.06\u0022/\u003E\u003Crect height=\u00222\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -3.448 6.7885)\u0022 width=\u00223\u0022 x=\u00224.97\u0022 y=\u00226.56\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u00223\u0022 y=\u00222\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u002218\u0022 y=\u00222\u0022/\u003E\u003Cpath d=\u0022M12,7c2.76,0,5-2.24,5-5H7C7,4.76,9.24,7,12,7z\u0022/\u003E\u003C/g\u003E\u003C/g\u003E",
+      "IconName": "Solar Power",
+      "Description": null,
+      "BackgroundColor": null,
+      "IconColor": null,
+      "Metadata": {},
+      "DataTopic": "ess1/servers/HUB-3/solar",
+      "Ports": [
+        {
+          "Id": "1bb5e622-ad25-41a7-9c0d-70cb926bf3e1",
+          "Alignment": "Bottom"
         }
       ]
     }
   ],
   "Links": [
     {
-      "SourceNodeId": "8287e38f-b369-413b-8415-9e1338d5d85f",
+      "SourceNodeId": "38c7524c-39ef-46e6-bae4-0b97dfe8f3ac",
       "SourcePortAlignment": "Right",
-      "TargetNodeId": "a6fc5f31-0132-49ca-b996-2fad634bcefd",
+      "TargetNodeId": "8f42f34e-3391-4266-845f-9a7c96383502",
       "TargetPortAlignment": "Left"
+    },
+    {
+      "SourceNodeId": "daddce1a-0225-41b0-b7f1-ba0dff93021a",
+      "SourcePortAlignment": "Bottom",
+      "TargetNodeId": "8f42f34e-3391-4266-845f-9a7c96383502",
+      "TargetPortAlignment": "Top"
     }
   ],
   "GridSize": 20

@@ -1,11 +1,11 @@
 ﻿.mud-node {
     border: 3px solid;
-    // background-color: lightblue;
+    /* background-color: lightblue; */
 }
 
 .mud-node.selected {
         border-color: red;
-        // background-color: lightcoral;
+        /* background-color: lightcoral; */
  }
 
 ::deep .mud-node .mud-card {
@@ -13,6 +13,12 @@
     height: 100%;
     border: 0px;
     border-radius: 8px;
+}
+
+::deep .widget-text {
+    width: 100%;
+    padding-top: 1px;
+    padding-bottom: 1px;
 }
 
 ::deep .mud-node-title-selected {

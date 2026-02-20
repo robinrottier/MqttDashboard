@@ -1,4 +1,4 @@
-﻿@page "/diagram"
+﻿@page "/edit"
 @rendermode InteractiveAuto
 @using Blazor.Diagrams;
 @using Blazor.Diagrams.Components
@@ -6,11 +6,10 @@
 @using Blazor.Diagrams.Core.Models
 @using BlazorApp1.Components
 
-<PageTitle>Diagram</PageTitle>
+<PageTitle>@(AppState.DisplayName) - Edit</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    <MudText Typo="Typo.h3" GutterBottom="true">Diagram Editor</MudText>
-
+    
     @if (!AppState.IsInteractive || _diagram == null)
     {
         <MudProgressCircular Indeterminate="true" />
@@ -148,7 +147,7 @@
                                        Color="Color.Info"
                                        Variant="Variant.Filled"
                                        OnClick="EditNodeProperties"
-                                       Disabled="@(!_hasSelectedNode)"
+                                       Disabled="@(!_hasSingleSelectedNode)"
                                        Size="MudBlazor.Size.Large" />
                     </MudTooltip>
 

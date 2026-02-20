@@ -4,45 +4,39 @@
 @inject ApplicationState AppState
 @implements IDisposable
 
-<div class="mud-node default-node @(Node.Selected ? "selected" : "")" style=@GenerateStyle()>
+<div class="pa-1 mud-node default-node @(Node.Selected ? "selected" : "")" style=@GenerateStyle()>
 
     <MudCard Outlined="false" Elevation="0" Style=@GetCardStyle() Class="mud-card" >
-        <MudCardHeader Class="@(Node.Selected ? "mud-node-title-selected" : "")">
+        <MudCardHeader Class="widget-text">
             <CardHeaderContent>
-                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="0" Class="widget-text">
                     @if (!string.IsNullOrEmpty(Node.Icon))
                     {
                         <MudIcon Icon="@Node.Icon" 
                                  Color="@GetIconColor()" 
                                  Size="MudBlazor.Size.Small" />
                     }
-                    <MudText Typo="Typo.body2">@(Node.Title ?? "Title")</MudText>
+                    <MudText Style="text-align:center" Typo="Typo.body2">@(Node.Title ?? "Title")</MudText>
                 </MudStack>
-                @if (!string.IsNullOrEmpty(Node.Description))
-                {
-                    <MudText Typo="Typo.caption" Class="mt-1">@Node.Description</MudText>
-                }
             </CardHeaderContent>
         </MudCardHeader>
+
+        @if (!string.IsNullOrEmpty(Node.Description))
+        {
+            <MudCardContent Class="pa-1">
+                <MudText Typo="Typo.caption" Class="mt-1">@Node.Description</MudText>
+            </MudCardContent>
+        }
 
         @* Display MQTT Data Value *@
         @if (!string.IsNullOrEmpty(Node.DataTopic))
         {
-            <MudCardContent Class="py-2">
-                <MudStack Spacing="1">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">
-                        @Node.DataTopic
-                    </MudText>
-                    <MudText Typo="Typo.h6" Color="@GetDataValueColor()">
+            <MudCardContent Class="widget-text">
+                <MudTooltip Text="@GetDataTooltip()" Placement="Placement.Right">
+                    <MudText Typo="Typo.h6" Color="@GetDataValueColor()" Class="pa-0" Style="text-align:center;">
                         @GetDataValueDisplay()
                     </MudText>
-                    @if (Node.DataLastUpdated.HasValue)
-                    {
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">
-                            Updated: @Node.DataLastUpdated.Value.ToString("HH:mm:ss")
-                        </MudText>
-                    }
-                </MudStack>
+                </MudTooltip>
             </MudCardContent>
         }
 
@@ -118,6 +112,14 @@
             return "No data";
 
         return Node.DataValue.ToString() ?? "null";
+    }
+
+    private string GetDataTooltip()
+    {
+        var topic = Node.DataTopic ?? string.Empty;
+        if (Node.DataLastUpdated.HasValue)
+            return $"{topic} | Updated: {Node.DataLastUpdated.Value:HH:mm:ss}";
+        return topic;
     }
 
     private MudBlazor.Color GetDataValueColor()

@@ -1,96 +1,28 @@
-@page "/mqtt-data"
+@page "/data"
 @using BlazorApp1.Models
 @using BlazorApp1.Services
 @inject SignalRService SignalRService
 @inject ApplicationState AppState
 @inject ApplicationStateService AppStateService
 @inject MqttInitializationService MqttInit
+@inject DiagramService DiagramService
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
 @implements IAsyncDisposable
 @implements IDisposable
 
-@* rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false)) *@
+<PageTitle>@(AppState.DisplayName) - Data</PageTitle>
 
-<PageTitle>MQTT Data</PageTitle>
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-2 pa-2">
+    <MudGrid Spacing="2">
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    <MudText Typo="Typo.h3" GutterBottom="true">Real-Time MQTT Data</MudText>
-
-    <MudGrid Spacing="3">
-        <!-- Connection Status -->
-        <MudItem xs="12">
-            <MudAlert Severity="@(AppState.IsMqttConnected ? Severity.Success : Severity.Warning)" 
-                      Variant="Variant.Filled" 
-                      Dense="true">
-                Connection Status: @AppState.MqttConnectionStatus
-            </MudAlert>
-        </MudItem>
-
-        <!-- Topic Subscription Card -->
-        <MudItem xs="12" md="6">
+        <!-- Left: Data Cache Explorer -->
+        <MudItem xs="12" md="8">
             <MudCard Elevation="2">
                 <MudCardHeader>
                     <CardHeaderContent>
-                        <MudText Typo="Typo.h6">Topic Subscriptions</MudText>
-                    </CardHeaderContent>
-                </MudCardHeader>
-                <MudCardContent>
-                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-                        <MudTextField @bind-Value="_topicInput"
-                                      Label="MQTT Topic"
-                                      Variant="Variant.Outlined"
-                                      Placeholder="e.g., sensor/temperature"
-                                      OnKeyDown="HandleKeyPress"
-                                      Disabled="@(!AppState.IsMqttConnected)"
-                                      Style="flex-grow: 1;" />
-
-                        <MudButton Variant="Variant.Filled"
-                                   Color="Color.Primary"
-                                   StartIcon="@Icons.Material.Filled.AddCircle"
-                                   OnClick="SubscribeToTopic"
-                                   Disabled="@(!AppState.IsMqttConnected)"
-                                   Class="mt-2">
-                            Subscribe
-                        </MudButton>
-                    </MudStack>
-
-                    @if (AppState.SubscribedTopics.Any())
-                    {
-                        <MudDivider Class="my-3" />
-                        <MudList T="string" Dense="true">
-                            @foreach (var topic in AppState.SubscribedTopics)
-                            {
-                                <MudListItem T="string">
-                                    <div class="d-flex justify-space-between align-center" style="width: 100%;">
-                                        <MudText>@topic</MudText>
-                                        <MudButton Size="Size.Small"
-                                                   Variant="Variant.Filled"
-                                                   Color="Color.Error"
-                                                   StartIcon="@Icons.Material.Filled.RemoveCircle"
-                                                   OnClick="() => UnsubscribeFromTopic(topic)">
-                                            Unsubscribe
-                                        </MudButton>
-                                    </div>
-                                </MudListItem>
-                            }
-                        </MudList>
-                    }
-                    else
-                    {
-                        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-3">
-                            No active subscriptions. Enter a topic above to subscribe.
-                        </MudText>
-                    }
-                </MudCardContent>
-            </MudCard>
-        </MudItem>
-
-        <!-- Data Cache Explorer -->
-        <MudItem xs="12">
-            <MudCard Elevation="2">
-                <MudCardHeader>
-                    <CardHeaderContent>
-                        <MudText Typo="Typo.h6">Data Cache Explorer</MudText>
+                        <MudText Typo="Typo.h6">Data Explorer</MudText>
                     </CardHeaderContent>
                     <CardHeaderActions>
                         <MudChip T="string" Size="Size.Small" Color="Color.Success">
@@ -99,52 +31,41 @@
                         <MudIconButton Icon="@(_isDataExplorerExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
                                        Color="Color.Default"
                                        OnClick="ToggleDataExplorer"
-                                       Size="Size.Small" 
-                                       Title="@(_isDataExplorerExpanded ? "Collapse" : "Expand")" />
-                        <MudButton Variant="Variant.Text"
-                                   Color="Color.Secondary"
-                                   StartIcon="@Icons.Material.Filled.Refresh"
-                                   OnClick="RefreshDataTree"
-                                   Size="Size.Small">
-                            Refresh
-                        </MudButton>
+                                       Size="Size.Small"
+                                       title="@(_isDataExplorerExpanded ? "Collapse" : "Expand all")" />
                     </CardHeaderActions>
                 </MudCardHeader>
                 <MudCardContent Style="@GetDataExplorerStyle()">
-
                     @if (_treeItems != null && _treeItems.Any())
                     {
-                        <MudTreeView T="MqttTopicNode" 
-                                     Items="_treeItems" 
+                        <MudTreeView T="MqttTopicNode"
+                                     Items="_treeItems"
                                      Dense="true"
                                      Hover="true"
                                      ExpandOnClick="true">
                             <ItemTemplate Context="item">
-                                <MudTreeViewItem @bind-Expanded="@item.Expanded" 
-                                                 Items="@item.Children" 
+                                <MudTreeViewItem @bind-Expanded="@item.Expanded"
+                                                 Items="@item.Children"
                                                  Value="@item.Value"
-                                                 Icon="@item.Value.Icon"
-                                                 IconColor="@item.Value.IconColor"
-                                                 Text="@item.Text">
+                                                 Icon="@(item.Value?.Icon ?? string.Empty)"
+                                                 IconColor="@(item.Value?.IconColor ?? Color.Default)">
                                     <BodyContent>
-                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                            <MudText Typo="Typo.body2">@item.Value.Name</MudText>
-                                            @if (item.Value.HasValue)
+                                        <div style="display: flex; align-items: center; width: 100%; gap: 4px; cursor: pointer;"
+                                             @onclick="async () => await CopyTopicToClipboard(item.Value?.FullPath ?? string.Empty)">
+                                            <MudText Typo="Typo.body2" Style="flex: 1;">@item.Value?.Name</MudText>
+                                            @if (item.Value?.HasValue == true)
                                             {
-                                                <MudChip T="string" 
-                                                         Size="Size.Small" 
-                                                         Color="@(item.Value.HasChildren ? Color.Primary : Color.Success)" 
-                                                         Variant="Variant.Filled">
+                                                <MudText Typo="Typo.body2" Style="min-width: 100px; text-align: right; font-family: monospace;">
                                                     @item.Value.Value?.ToString()
-                                                </MudChip>
+                                                </MudText>
+                                                <span @onclick:stopPropagation="true">
+                                                    <MudIconButton Size="Size.Small"
+                                                                   Icon="@Icons.Material.Filled.Add"
+                                                                   title="Add to diagram"
+                                                                   OnClick="@(async () => await AddTopicToDiagram(item.Value!.FullPath, item.Value.Name))" />
+                                                </span>
                                             }
-                                            @if (!item.Value.HasValue && !item.Value.HasChildren)
-                                            {
-                                                <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Outlined">
-                                                    No data
-                                                </MudChip>
-                                            }
-                                        </MudStack>
+                                        </div>
                                     </BodyContent>
                                 </MudTreeViewItem>
                             </ItemTemplate>
@@ -160,59 +81,103 @@
             </MudCard>
         </MudItem>
 
-        <!-- Messages Display -->
-        <MudItem xs="12">
-            <MudCard Elevation="2">
-                <MudCardHeader>
-                    <CardHeaderContent>
-                        <MudText Typo="Typo.h6">Recent Messages</MudText>
-                    </CardHeaderContent>
-                    <CardHeaderActions>
-                        <MudChip T="string" Size="Size.Small" Color="Color.Info">
-                            @AppState.Messages.Count Total
-                        </MudChip>
-                    </CardHeaderActions>
-                </MudCardHeader>
-                <MudCardContent>
-                    @if (AppState.Messages.Any())
-                    {
-                        <MudPaper Elevation="0" Class="pa-2" Style="max-height: 400px; overflow-y: auto;">
-                            @foreach (var message in AppState.Messages.OrderByDescending(m => m.Timestamp).Take(10))
+        <!-- Right: Subscriptions + Log -->
+        <MudItem xs="12" md="4">
+            <MudStack Spacing="2">
+
+                <!-- Subscriptions card -->
+                <MudCard Elevation="2">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Subscriptions</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent Class="pa-0">
+                        <MudList T="string" Dense="true">
+                            @foreach (var topic in _orderedTopics)
                             {
-                                <MudPaper Elevation="1" Class="pa-3 mb-2">
-                                    <MudGrid Spacing="1">
-                                        <MudItem xs="12">
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                                @message.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss.fff")
-                                            </MudText>
-                                        </MudItem>
-                                        <MudItem xs="12">
-                                            <MudText Typo="Typo.body2">
-                                                <strong>Topic:</strong> @message.Topic
-                                            </MudText>
-                                        </MudItem>
-                                        <MudItem xs="12">
-                                            <MudText Typo="Typo.body2" Style="word-break: break-all;">
-                                                <strong>Payload:</strong> @message.Payload
-                                            </MudText>
-                                        </MudItem>
-                                    </MudGrid>
-                                </MudPaper>
+                                <MudListItem T="string" Dense="true" Class="px-2 py-0">
+                                    <div style="display: flex; align-items: center; gap: 2px; width: 100%;">
+                                        <MudText Typo="Typo.body2"
+                                                 Style="flex: 1; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                                                 title="@topic"
+                                                 @onclick="async () => await CopyTopicToClipboard(topic)">
+                                            @topic
+                                        </MudText>
+                                        <MudIconButton Size="Size.Small"
+                                                       Icon="@Icons.Material.Filled.Close"
+                                                       Color="Color.Error"
+                                                       title="Unsubscribe"
+                                                       OnClick="async () => await UnsubscribeFromTopic(topic)" />
+                                    </div>
+                                </MudListItem>
                             }
-                        </MudPaper>
-                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
-                            Showing last 10 messages
-                        </MudText>
-                    }
-                    else
-                    {
-                        <MudAlert Severity="Severity.Info" Dense="true">
-                            Waiting for MQTT messages...
-                        </MudAlert>
-                    }
-                </MudCardContent>
-            </MudCard>
+                            <!-- Add new subscription row -->
+                            <MudListItem T="string" Dense="true" Class="px-2 py-1">
+                                <div style="display: flex; align-items: center; gap: 2px; width: 100%;">
+                                    <MudTextField @bind-Value="_topicInput"
+                                                  Placeholder="Topic..."
+                                                  Variant="Variant.Text"
+                                                  Margin="Margin.Dense"
+                                                  OnKeyDown="HandleKeyPress"
+                                                  Style="flex: 1;"
+                                                  Immediate="true"
+                                                  Disabled="@(!AppState.IsMqttConnected)" />
+                                    <MudIconButton Size="Size.Small"
+                                                   Icon="@Icons.Material.Filled.Add"
+                                                   Color="Color.Primary"
+                                                   title="Subscribe"
+                                                   OnClick="async () => await SubscribeToTopic()"
+                                                   Disabled="@(string.IsNullOrWhiteSpace(_topicInput) || !AppState.IsMqttConnected)" />
+                                </div>
+                            </MudListItem>
+                        </MudList>
+                    </MudCardContent>
+                </MudCard>
+
+                <!-- Log card -->
+                <MudCard Elevation="2">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Log</MudText>
+                        </CardHeaderContent>
+                        <CardHeaderActions>
+                            <MudChip T="string" Size="Size.Small" Color="Color.Info">
+                                @AppState.Messages.Count
+                            </MudChip>
+                        </CardHeaderActions>
+                    </MudCardHeader>
+                    <MudCardContent Class="pa-0">
+                        @if (AppState.Messages.Any())
+                        {
+                            <MudTable Items="@AppState.Messages.OrderByDescending(m => m.Timestamp).Take(20).ToList()"
+                                      Dense="true" Hover="true" Elevation="0"
+                                      FixedHeader="true" Height="300px"
+                                      Breakpoint="Breakpoint.None">
+                                <HeaderContent>
+                                    <MudTh Style="width: 70px;">Time</MudTh>
+                                    <MudTh>Topic</MudTh>
+                                    <MudTh>Value</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd DataLabel="Time" Style="white-space: nowrap; font-size: 0.75rem;">@FormatTimestamp(context.Timestamp)</MudTd>
+                                    <MudTd DataLabel="Topic" Style="font-size: 0.75rem; word-break: break-all;">@context.Topic</MudTd>
+                                    <MudTd DataLabel="Value" Style="font-size: 0.75rem; font-family: monospace;">@context.Payload</MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        }
+                        else
+                        {
+                            <MudAlert Severity="Severity.Info" Dense="true">
+                                Waiting for MQTT messages...
+                            </MudAlert>
+                        }
+                    </MudCardContent>
+                </MudCard>
+
+            </MudStack>
         </MudItem>
+
     </MudGrid>
 </MudContainer>
 
@@ -221,28 +186,19 @@
     private HashSet<MqttTopicNode> _dataTreeNodes = new();
     private HashSet<TreeItemData<MqttTopicNode>>? _treeItems;
     private bool _isDataExplorerExpanded = false;
-    private HashSet<string> _currentTopics = new(); // Track topic structure changes
+    private HashSet<string> _currentTopics = new();
+    private List<string> _orderedTopics = new();
 
     protected override async Task OnInitializedAsync()
     {
-        // Subscribe to state changes with proper async handling
         AppState.OnStateChanged += HandleStateChanged;
 
-        // Ensure MQTT is initialized (will skip if already done)
         if (!MqttInit.IsInitialized)
         {
             await MqttInit.InitializeAsync();
         }
 
-        // The SignalR service and subscriptions are already set up by MqttInitializationService
-        // Just ensure we have the event handlers connected for this page
-        if (AppState.SignalRService != null)
-        {
-            // Note: Event handlers are already set up by MqttInitializationService
-            // This page can now just display the data
-        }
-
-        // Build initial data tree
+        _orderedTopics = AppState.SubscribedTopics.ToList();
         RefreshDataTree();
     }
 
@@ -260,16 +216,14 @@
 
         var newTopicSet = allTopics.Keys.ToHashSet();
 
-        // Only rebuild tree if topic structure changed
         if (!newTopicSet.SetEquals(_currentTopics))
         {
             _currentTopics = newTopicSet;
             _dataTreeNodes = MqttTopicNode.BuildTree(allTopics);
-            _treeItems = ConvertToTreeItems(_dataTreeNodes);
+            _treeItems = ConvertToTreeItems(_dataTreeNodes, depth: 0);
         }
         else
         {
-            // Just update values in existing nodes
             UpdateNodeValues(_dataTreeNodes, allTopics);
         }
 
@@ -280,13 +234,11 @@
     {
         foreach (var node in nodes)
         {
-            // Update value if this node represents a complete topic
             if (topicValues.TryGetValue(node.FullPath, out var value))
             {
                 node.Value = value;
             }
 
-            // Recursively update children
             if (node.Children.Any())
             {
                 UpdateNodeValues(node.Children, topicValues);
@@ -297,67 +249,81 @@
     private void ToggleDataExplorer()
     {
         _isDataExplorerExpanded = !_isDataExplorerExpanded;
+        ExpandAllTreeNodes(_treeItems, _isDataExplorerExpanded);
         StateHasChanged();
+    }
+
+    private void ExpandAllTreeNodes(IEnumerable<TreeItemData<MqttTopicNode>>? items, bool expanded)
+    {
+        if (items == null) return;
+        foreach (var item in items)
+        {
+            item.Expanded = expanded;
+            ExpandAllTreeNodes(item.Children, expanded);
+        }
     }
 
     private string GetDataExplorerStyle()
     {
-        var minHeight = "250px";
-        var maxHeight = _isDataExplorerExpanded ? "800px" : "250px";
-        return $"min-height: {minHeight}; max-height: {maxHeight}; overflow-y: auto; transition: max-height 0.3s ease-in-out;";
+        var maxHeight = _isDataExplorerExpanded ? "800px" : "400px";
+        return $"min-height: 250px; max-height: {maxHeight}; overflow-y: auto; transition: max-height 0.3s ease-in-out;";
     }
 
-    private HashSet<TreeItemData<MqttTopicNode>> ConvertToTreeItems(HashSet<MqttTopicNode> nodes)
+    private HashSet<TreeItemData<MqttTopicNode>> ConvertToTreeItems(HashSet<MqttTopicNode> nodes, int depth)
     {
         var items = new HashSet<TreeItemData<MqttTopicNode>>();
-
         foreach (var node in nodes)
         {
             var item = new TreeItemData<MqttTopicNode>
             {
                 Value = node,
                 Text = node.Name,
-                Children = node.Children.Any() ? ConvertToTreeItems(node.Children).ToList() : null,
-                Expanded = false // Let MudTreeView manage this
+                Children = node.Children.Any() ? ConvertToTreeItems(node.Children, depth + 1).ToList() : null,
+                Expanded = depth == 0,
             };
-
             items.Add(item);
         }
-
         return items;
-    }
-
-    private async Task RestoreSubscriptionsAsync()
-    {
-        // This is now handled by MqttInitializationService on app startup
-        // Keeping this method for backwards compatibility but it won't be called
     }
 
     private void HandleStateChanged()
     {
-        // Marshal to UI thread and refresh tree
         InvokeAsync(() =>
         {
+            SyncOrderedTopics();
             RefreshDataTree();
             StateHasChanged();
         });
     }
 
+    private void SyncOrderedTopics()
+    {
+        var current = AppState.SubscribedTopics;
+        _orderedTopics.RemoveAll(t => !current.Contains(t));
+        foreach (var topic in current)
+        {
+            if (!_orderedTopics.Contains(topic))
+                _orderedTopics.Add(topic);
+        }
+    }
+
     private async Task SubscribeToTopic()
     {
-        if (string.IsNullOrWhiteSpace(_topicInput))
-            return;
+        if (string.IsNullOrWhiteSpace(_topicInput)) return;
 
         var topic = _topicInput.Trim();
-
         if (AppState.SubscribedTopics.Contains(topic))
+        {
+            _topicInput = string.Empty;
             return;
+        }
 
         try
         {
             if (AppState.SignalRService != null)
             {
                 await AppState.SignalRService.SubscribeToTopicAsync(topic);
+                _orderedTopics.Insert(0, topic);
                 _topicInput = string.Empty;
             }
         }
@@ -374,17 +340,13 @@
             if (AppState.SignalRService != null)
             {
                 await AppState.SignalRService.UnsubscribeFromTopicAsync(topic);
+                _orderedTopics.Remove(topic);
             }
         }
         catch (Exception ex)
         {
             AppState.SetMqttConnectionStatus($"Unsubscription error: {ex.Message}", AppState.IsMqttConnected);
         }
-    }
-
-    private void ClearMessages()
-    {
-        AppState.ClearMessages();
     }
 
     private void HandleKeyPress(KeyboardEventArgs e)
@@ -395,39 +357,58 @@
         }
     }
 
-    private void HandleDataReceived(MqttDataMessage message)
+    private async Task CopyTopicToClipboard(string topic)
     {
-        // This handler is no longer needed here as it's handled by MqttInitializationService
-        // Keeping for backwards compatibility
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", topic);
+            Snackbar.Add($"Copied: {topic}", Severity.Info, config => { config.VisibleStateDuration = 1500; });
+        }
+        catch
+        {
+            Snackbar.Add("Could not copy to clipboard", Severity.Warning);
+        }
     }
 
-    private async void HandleSubscriptionConfirmed(string topic)
+    private async Task AddTopicToDiagram(string topicPath, string nodeName)
     {
-        // This handler is no longer needed here as it's handled by MqttInitializationService
-        // Keeping for backwards compatibility
+        var diagram = AppState.GetOrCreateDiagram();
+        if (diagram.Nodes.Count == 0)
+        {
+            var savedState = await DiagramService.LoadDiagramAsync();
+            if (savedState != null && savedState.Nodes.Count > 0)
+            {
+                AppState.ResetDiagram();
+                diagram = AppState.CreateDiagramFromState(savedState);
+            }
+        }
+
+        var node = new BlazorApp1.Models.MudNodeModel(
+            new Blazor.Diagrams.Core.Geometry.Point(100 + diagram.Nodes.Count * 20, 100))
+        {
+            Title = nodeName,
+            DataTopic = topicPath,
+        };
+        diagram.Nodes.Add(node);
+        Snackbar.Add($"Added '{nodeName}' to diagram", Severity.Success);
     }
 
-    private async void HandleUnsubscriptionConfirmed(string topic)
+    private string FormatTimestamp(DateTime timestamp)
     {
-        // This handler is no longer needed here as it's handled by MqttInitializationService
-        // Keeping for backwards compatibility
+        var local = timestamp.ToLocalTime();
+        return local.Date == DateTime.Today
+            ? local.ToString("HH:mm:ss")
+            : local.ToString("yyyy-MM-dd HH:mm:ss");
     }
 
     public void Dispose()
     {
         AppState.OnStateChanged -= HandleStateChanged;
-
-        if (AppState.SignalRService != null)
-        {
-            AppState.SignalRService.OnDataReceived -= HandleDataReceived;
-            AppState.SignalRService.OnSubscriptionConfirmed -= HandleSubscriptionConfirmed;
-            AppState.SignalRService.OnUnsubscriptionConfirmed -= HandleUnsubscriptionConfirmed;
-        }
     }
 
     public async ValueTask DisposeAsync()
     {
         Dispose();
-        // Don't dispose SignalRService here as it's shared across pages
+        await ValueTask.CompletedTask;
     }
 }

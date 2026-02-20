@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/Solution Items/">
     <File Path="README.md" />
+    <File Path="TODO.md" />
   </Folder>
   <Folder Name="/Web/">
     <Project Path="BlazorWebAppServerOnly/BlazorWebAppServerOnly.csproj" Id="d852685b-bffb-48ac-b18b-ceaf0849a450" />

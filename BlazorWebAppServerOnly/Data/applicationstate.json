@@ -1,6 +1,6 @@
 {
   "MqttSubscriptions": [
-    "ess1/servers/HUB-3/#"
+    "ess1/servers/#"
   ],
   "Settings": {}
 }

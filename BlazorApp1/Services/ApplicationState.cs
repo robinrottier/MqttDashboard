@@ -14,6 +14,7 @@ namespace BlazorApp1.Services;
 
 public class ApplicationState
 {
+    public string DisplayName => GetType().Assembly.GetName().Name ?? "BlazorApp1";
     public int Counter { get; set; } = 0;
     public bool IsInteractive { get; private set; } = false;
 

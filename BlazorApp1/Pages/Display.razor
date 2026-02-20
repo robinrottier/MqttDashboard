@@ -1,0 +1,23 @@
+@page "/"
+@rendermode InteractiveAuto
+@using Blazor.Diagrams
+@using Blazor.Diagrams.Components
+@using Blazor.Diagrams.Components.Widgets
+@using Blazor.Diagrams.Core.Models
+
+<PageTitle>@(AppState.DisplayName)</PageTitle>
+
+@if (!AppState.IsInteractive || _diagram == null)
+{
+    <MudProgressCircular Indeterminate="true" />
+    <MudText>Loading...</MudText>
+}
+else
+{
+    <MudPaper Elevation="2" Style="width: 100%; height: calc(100vh - 100px); overflow: hidden;">
+        <CascadingValue Value="_diagram" IsFixed="true">
+            <DiagramCanvas>
+            </DiagramCanvas>
+        </CascadingValue>
+    </MudPaper>
+}

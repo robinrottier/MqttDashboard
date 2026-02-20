@@ -81,12 +81,12 @@ public class MqttClientService : BackgroundService
                 var payload = e.ApplicationMessage.ConvertPayloadToString();
                 var timestamp = DateTime.UtcNow;
 
-                _logger.LogInformation("Received MQTT message on topic {Topic}: {Payload}", topic, payload);
+                _logger.LogTrace("Received MQTT message on topic {Topic}: {Payload}", topic, payload);
 
                 // Get clients interested in this topic
                 var interestedClients = _subscriptionManager.GetInterestedClients(topic);
 
-                _logger.LogInformation("Found {Count} interested clients for topic {Topic}", interestedClients.Count, topic);
+                _logger.LogTrace("Found {Count} interested clients for topic {Topic}", interestedClients.Count, topic);
 
                 if (interestedClients.Any())
                 {
@@ -152,7 +152,7 @@ public class MqttClientService : BackgroundService
 
             var result = await _mqttClient.SubscribeAsync(subscribeOptions);
             var resultCode = result.Items.FirstOrDefault()?.ResultCode;
-            _logger.LogInformation("Subscribed to MQTT topic: {Topic}. Result: {ResultCode}", 
+            _logger.LogTrace("Subscribed to MQTT topic: {Topic}. Result: {ResultCode}", 
                 topic, resultCode);
         }
         else
@@ -173,7 +173,7 @@ public class MqttClientService : BackgroundService
         {
             _logger.LogDebug("Attempting to unsubscribe from MQTT topic: {Topic}", topic);
             await _mqttClient.UnsubscribeAsync(topic);
-            _logger.LogInformation("Unsubscribed from MQTT topic: {Topic}", topic);
+            _logger.LogTrace("Unsubscribed from MQTT topic: {Topic}", topic);
         }
         else
         {
@@ -186,7 +186,7 @@ public class MqttClientService : BackgroundService
         if (_mqttClient?.IsConnected == true)
         {
             await _mqttClient.DisconnectAsync(cancellationToken: cancellationToken);
-            _logger.LogInformation("Disconnected from MQTT broker");
+            _logger.LogTrace("Disconnected from MQTT broker");
         }
 
         await base.StopAsync(cancellationToken);

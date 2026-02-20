@@ -1,12 +1,12 @@
 {
   "Nodes": [
     {
-      "Id": "306b27a0-6b57-4c80-bf2f-40d3463aa99f",
+      "Id": "9f851d53-c787-44cf-866d-92777958e7be",
       "Title": "Grid",
-      "X": 47.79996,
-      "Y": 38.00003,
-      "Width": 200,
-      "Height": 160,
+      "X": 40,
+      "Y": 40,
+      "Width": 120,
+      "Height": 100,
       "Icon": null,
       "IconName": null,
       "Description": null,
@@ -16,18 +16,18 @@
       "DataTopic": "ess1/servers/HUB-3/grid",
       "Ports": [
         {
-          "Id": "937d5160-a9ca-4447-90aa-83151e7841e7",
+          "Id": "c164654b-bed4-4556-bad0-15ae59e7c6e8",
           "Alignment": "Right"
         }
       ]
     },
     {
-      "Id": "0751df16-d21c-4d4b-8780-9ec33e3fcf14",
+      "Id": "63bddaad-61d5-4c7c-95eb-26ff226c993a",
       "Title": "HUB-3",
-      "X": 300,
+      "X": 200,
       "Y": 40,
-      "Width": 220,
-      "Height": 160,
+      "Width": 120,
+      "Height": 100,
       "Icon": null,
       "IconName": null,
       "Description": null,
@@ -37,20 +37,20 @@
       "DataTopic": "ess1/servers/HUB-3/soc",
       "Ports": [
         {
-          "Id": "329c0218-2211-40f4-8bdb-68c42baa2130",
+          "Id": "28e7881c-3870-4a6d-bff3-7d69bb433aa2",
           "Alignment": "Left"
         },
         {
-          "Id": "e49e6591-a1db-443a-b8df-0f0cb3a3654a",
+          "Id": "472a65b1-6429-4a3c-8aa8-f11550d09750",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "69d76201-ea98-4443-b759-12b44018aaa8",
+      "Id": "35149ff2-d363-4c8d-ab66-ac03a95c4014",
       "Title": "Washing machine",
-      "X": 420,
-      "Y": 260,
+      "X": 300,
+      "Y": 240,
       "Width": 207.19996,
       "Height": 79.40002,
       "Icon": "\u003Cpath d=\u0022M0 0h24v24H0z\u0022 fill=\u0022none\u0022/\u003E\u003Cpath d=\u0022M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z\u0022/\u003E",
@@ -62,23 +62,39 @@
       "DataTopic": null,
       "Ports": [
         {
-          "Id": "9f86870f-8b92-4ed6-8abf-cf3b8722c52d",
+          "Id": "c1793a5b-61e5-460d-90f1-daf01e41bbcc",
           "Alignment": "Left"
         }
       ]
+    },
+    {
+      "Id": "07d57611-e59f-48ea-b66d-980d67e8352c",
+      "Title": "power",
+      "X": 40,
+      "Y": 200,
+      "Width": 120,
+      "Height": 80,
+      "Icon": null,
+      "IconName": null,
+      "Description": null,
+      "BackgroundColor": null,
+      "IconColor": null,
+      "Metadata": {},
+      "DataTopic": "ess1/servers/HUB-3/power",
+      "Ports": []
     }
   ],
   "Links": [
     {
-      "SourceNodeId": "306b27a0-6b57-4c80-bf2f-40d3463aa99f",
+      "SourceNodeId": "9f851d53-c787-44cf-866d-92777958e7be",
       "SourcePortAlignment": "Right",
-      "TargetNodeId": "0751df16-d21c-4d4b-8780-9ec33e3fcf14",
+      "TargetNodeId": "63bddaad-61d5-4c7c-95eb-26ff226c993a",
       "TargetPortAlignment": "Left"
     },
     {
-      "SourceNodeId": "0751df16-d21c-4d4b-8780-9ec33e3fcf14",
+      "SourceNodeId": "63bddaad-61d5-4c7c-95eb-26ff226c993a",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "69d76201-ea98-4443-b759-12b44018aaa8",
+      "TargetNodeId": "35149ff2-d363-4c8d-ab66-ac03a95c4014",
       "TargetPortAlignment": "Left"
     }
   ],

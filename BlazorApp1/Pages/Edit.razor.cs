@@ -9,7 +9,7 @@ using MudBlazor;
 
 namespace BlazorApp1.Pages;
 
-public partial class Diagram : IDisposable
+public partial class Edit : IDisposable
 {
     [Inject] private ApplicationState AppState { get; set; } = default!;
     [Inject] private DiagramService DiagramService { get; set; } = default!;
@@ -17,8 +17,9 @@ public partial class Diagram : IDisposable
     [Inject] private IDialogService DialogService { get; set; } = default!;
 
     private BlazorDiagram? _diagram;
-    private int _nodeCounter = 3;
+    private int _nodeCounter = 1;
     private bool _hasSelectedNode;
+    private bool _hasSingleSelectedNode;
     private bool _gridSnapEnabled = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -98,11 +99,12 @@ public partial class Diagram : IDisposable
 
     private void UpdateSelectionState()
     {
-        var newState = _diagram?.GetSelectedModels()
+        var selectedNodes = _diagram?.GetSelectedModels()
             .OfType<NodeModel>()
-            .Any() ?? false;
+            .ToList() ?? [];
 
-        _hasSelectedNode = newState;
+        _hasSelectedNode = selectedNodes.Count > 0;
+        _hasSingleSelectedNode = selectedNodes.Count == 1;
     }
 
     private void AddNode()
