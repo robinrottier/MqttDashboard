@@ -9,6 +9,7 @@ using Blazor.Diagrams.Core.Routers;
 using Blazor.Diagrams.Options;
 using BlazorApp1.Models;
 using BlazorApp1.Widgets;
+using System.Collections.Concurrent;
 
 namespace BlazorApp1.Services;
 
@@ -299,10 +300,13 @@ public class ApplicationState
 
     public void AddMessage(MqttDataMessage message)
     {
-        Messages.Add(message);
-        if (Messages.Count > 100)
+        lock (Messages)
         {
-            Messages.RemoveAt(0);
+            Messages.Add(message);
+            while (Messages.Count > 100)
+            {
+                Messages.RemoveAt(0);
+            }
         }
 
         // Update the data cache
@@ -311,6 +315,13 @@ public class ApplicationState
         NotifyStateChangedAsync();
     }
 
+    public List<MqttDataMessage> RecentMessages(int n)
+    {
+        lock (Messages)
+        {
+            return Messages.TakeLast(n).ToList();
+        }
+    }
     public async Task AddSubscriptionAsync(string topic)
     {
         SubscribedTopics.Add(topic);

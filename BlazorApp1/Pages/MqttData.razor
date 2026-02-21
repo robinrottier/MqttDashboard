@@ -150,7 +150,7 @@
                     <MudCardContent Class="pa-0">
                         @if (AppState.Messages.Any())
                         {
-                            <MudTable Items="@AppState.Messages.OrderByDescending(m => m.Timestamp).Take(20).ToList()"
+                            <MudTable Items="@AppState.RecentMessages(20)"
                                       Dense="true" Hover="true" Elevation="0"
                                       FixedHeader="true" Height="300px"
                                       Breakpoint="Breakpoint.None">
