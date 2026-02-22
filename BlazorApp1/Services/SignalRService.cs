@@ -36,7 +36,7 @@ public class SignalRService : IAsyncDisposable
         {
             _logger.LogDebug("[SignalR] Received MQTT data: Topic={Topic}, Payload={Payload}, Timestamp={Timestamp}", 
                 topic, payload, timestamp);
-            Console.WriteLine($"[SignalR] Received MQTT data: Topic={topic}, Payload={payload}");
+            //Console.WriteLine($"[SignalR] Received MQTT data: Topic={topic}, Payload={payload}");
 
             var message = new MqttDataMessage
             {
@@ -50,14 +50,14 @@ public class SignalRService : IAsyncDisposable
         _hubConnection.On<string>("SubscriptionConfirmed", (topic) =>
         {
             _logger.LogInformation("[SignalR] Subscription confirmed: {Topic}", topic);
-            Console.WriteLine($"[SignalR] Subscription confirmed: {topic}");
+            //Console.WriteLine($"[SignalR] Subscription confirmed: {topic}");
             OnSubscriptionConfirmed?.Invoke(topic);
         });
 
         _hubConnection.On<string>("UnsubscriptionConfirmed", (topic) =>
         {
             _logger.LogInformation("[SignalR] Unsubscription confirmed: {Topic}", topic);
-            Console.WriteLine($"[SignalR] Unsubscription confirmed: {topic}");
+            //Console.WriteLine($"[SignalR] Unsubscription confirmed: {topic}");
             OnUnsubscriptionConfirmed?.Invoke(topic);
         });
 
