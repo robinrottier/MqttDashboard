@@ -42,7 +42,7 @@
 
         @foreach (var port in Node.Ports)
         {
-            <PortRenderer @key="port" Port="port" />
+            <PortRenderer @key="port" Port="port" Style=@GeneratePortStyle(port as MudPortModel) />
         }
     </MudCard>
 </div>
@@ -186,5 +186,12 @@
     public void Dispose()
     {
         _dataWatcher?.Dispose();
+    }
+
+    string GeneratePortStyle(MudPortModel? port)
+    {
+        if (port == null)
+            return "";
+        return $"width:{(int)(port.Size.Width)}px; height:{(int)(port.Size.Height)}px;";
     }
 }

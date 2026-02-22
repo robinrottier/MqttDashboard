@@ -372,24 +372,7 @@
 
     private async Task AddTopicToDiagram(string topicPath, string nodeName)
     {
-        var diagram = AppState.GetOrCreateDiagram();
-        if (diagram.Nodes.Count == 0)
-        {
-            var savedState = await DiagramService.LoadDiagramAsync();
-            if (savedState != null && savedState.Nodes.Count > 0)
-            {
-                AppState.ResetDiagram();
-                diagram = AppState.CreateDiagramFromState(savedState);
-            }
-        }
-
-        var node = new BlazorApp1.Models.MudNodeModel(
-            new Blazor.Diagrams.Core.Geometry.Point(100 + diagram.Nodes.Count * 20, 100))
-        {
-            Title = nodeName,
-            DataTopic = topicPath,
-        };
-        diagram.Nodes.Add(node);
+        await AppState.AddTopicToDiagram(topicPath, nodeName);
         Snackbar.Add($"Added '{nodeName}' to diagram", Severity.Success);
     }
 

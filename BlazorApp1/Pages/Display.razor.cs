@@ -28,7 +28,7 @@ public partial class Display : IDisposable
             var savedState = await DiagramService.LoadDiagramAsync();
             if (savedState != null && savedState.Nodes.Count > 0)
             {
-                _diagram = BuildReadOnlyDiagram(savedState);
+                _diagram = AppState.CreateDiagramFromState(savedState, true);
 
                 StateHasChanged();
 
@@ -44,108 +44,12 @@ public partial class Display : IDisposable
             }
             else
             {
-                _diagram = BuildEmptyReadOnlyDiagram();
+                _diagram = AppState.CreateDiagramFromState(null, true);
                 StateHasChanged();
             }
         }
 
         await base.OnAfterRenderAsync(firstRender);
-    }
-
-    private BlazorDiagram BuildReadOnlyDiagram(DiagramState state)
-    {
-        var options = new BlazorDiagramOptions
-        {
-            AllowMultiSelection = false,
-            Zoom = { Enabled = false },
-            Links =
-            {
-                DefaultRouter = new NormalRouter(),
-                DefaultPathGenerator = new SmoothPathGenerator()
-            },
-        };
-
-        var diagram = new BlazorDiagram(options);
-        diagram.RegisterComponent<MudNodeModel, MudNodeWidget>();
-
-        var nodeMap = new Dictionary<string, NodeModel>();
-        foreach (var nodeState in state.Nodes)
-        {
-            var node = new MudNodeModel(position: new Point(nodeState.X, nodeState.Y))
-            {
-                Title = nodeState.Title,
-                Size = new Blazor.Diagrams.Core.Geometry.Size(nodeState.Width, nodeState.Height),
-                Icon = nodeState.Icon,
-                IconName = nodeState.IconName,
-                Description = nodeState.Description,
-                BackgroundColor = nodeState.BackgroundColor,
-                IconColor = nodeState.IconColor,
-                Metadata = nodeState.Metadata ?? new Dictionary<string, string>(),
-                DataTopic = nodeState.DataTopic,
-                Locked = true,
-            };
-
-            foreach (var portState in nodeState.Ports)
-            {
-                var alignment = Enum.Parse<PortAlignment>(portState.Alignment);
-                node.AddPort(alignment);
-            }
-
-            diagram.Nodes.Add(node);
-            nodeMap[nodeState.Id] = node;
-        }
-
-        foreach (var linkState in state.Links)
-        {
-            if (nodeMap.TryGetValue(linkState.SourceNodeId, out var sourceNode) &&
-                nodeMap.TryGetValue(linkState.TargetNodeId, out var targetNode))
-            {
-                PortModel? sourcePort = null;
-                PortModel? targetPort = null;
-
-                if (!string.IsNullOrEmpty(linkState.SourcePortAlignment))
-                {
-                    var sourceAlignment = Enum.Parse<PortAlignment>(linkState.SourcePortAlignment);
-                    sourcePort = sourceNode.Ports.FirstOrDefault(p => p.Alignment == sourceAlignment);
-                }
-
-                if (!string.IsNullOrEmpty(linkState.TargetPortAlignment))
-                {
-                    var targetAlignment = Enum.Parse<PortAlignment>(linkState.TargetPortAlignment);
-                    targetPort = targetNode.Ports.FirstOrDefault(p => p.Alignment == targetAlignment);
-                }
-
-                Anchor sourceAnchor = sourcePort != null
-                    ? new SinglePortAnchor(sourcePort)
-                    : new ShapeIntersectionAnchor(sourceNode);
-
-                Anchor targetAnchor = targetPort != null
-                    ? new SinglePortAnchor(targetPort)
-                    : new ShapeIntersectionAnchor(targetNode);
-
-                diagram.Links.Add(new LinkModel(sourceAnchor, targetAnchor));
-            }
-        }
-
-        return diagram;
-    }
-
-    private BlazorDiagram BuildEmptyReadOnlyDiagram()
-    {
-        var options = new BlazorDiagramOptions
-        {
-            AllowMultiSelection = false,
-            Zoom = { Enabled = false },
-            Links =
-            {
-                DefaultRouter = new NormalRouter(),
-                DefaultPathGenerator = new SmoothPathGenerator()
-            },
-        };
-
-        var diagram = new BlazorDiagram(options);
-        diagram.RegisterComponent<MudNodeModel, MudNodeWidget>();
-        return diagram;
     }
 
     public void Dispose() { }

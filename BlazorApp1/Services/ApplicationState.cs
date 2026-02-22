@@ -9,7 +9,9 @@ using Blazor.Diagrams.Core.Routers;
 using Blazor.Diagrams.Options;
 using BlazorApp1.Models;
 using BlazorApp1.Widgets;
+//using MudBlazor;
 using System.Collections.Concurrent;
+using System.Net.NetworkInformation;
 
 namespace BlazorApp1.Services;
 
@@ -43,120 +45,107 @@ public class ApplicationState
 
     public BlazorDiagram GetOrCreateDiagram()
     {
-        if (_diagram != null)
-        {
-            return _diagram;
-        }
-
-        var options = new BlazorDiagramOptions
-        {
-            AllowMultiSelection = true,
-            Zoom =
-            {
-                Enabled = false,
-            },
-            Links =
-            {
-                DefaultRouter = new NormalRouter(),
-                DefaultPathGenerator = new SmoothPathGenerator()
-            },
-            GridSize = 20, // Default 20px grid size
-            GridSnapToCenter = false, // Disabled by default, can be toggled in UI
-        };
-
-        var diagram = new BlazorDiagram(options);
-        diagram.RegisterComponent<MudNodeModel, MudNodeWidget>();
-
-        // Start with empty diagram - will be loaded from server or user will create nodes
-        _diagram = diagram;
+        if (_diagram == null)
+            _diagram = CreateDiagramFromState(null, false);
         return _diagram;
     }
 
-    public BlazorDiagram CreateDiagramFromState(DiagramState state)
+    public BlazorDiagram CreateDiagramFromState(DiagramState? state, bool readOnly)
     {
         var options = new BlazorDiagramOptions
         {
-            AllowMultiSelection = true,
-            Zoom =
-            {
-                Enabled = false,
-            },
+            AllowMultiSelection = !readOnly,
+            Zoom = { Enabled = false, },
             Links =
             {
                 DefaultRouter = new NormalRouter(),
                 DefaultPathGenerator = new SmoothPathGenerator()
-            },
+            }
+        };
+        if (!readOnly)
+        {
             // if grid size is 0 then no grid
             // if grid size is -ve then grid is snaptocenter
             // if grid size is +ve then snap to corner (default)
-            GridSize = state.GridSize == 0 ? null : int.Abs(state.GridSize), // Use saved grid size or default to 20px
-            GridSnapToCenter = state.GridSize < 0,
+            if (state == null)
+                options.GridSize = 20; // Default grid size for new diagrams
+            else
+                options.GridSize = state.GridSize == 0 ? null : int.Abs(state.GridSize); // Use saved grid size or default to 20px
+            options.GridSnapToCenter = options.GridSize < 0;
         };
 
         var diagram = new BlazorDiagram(options);
         diagram.RegisterComponent<MudNodeModel, MudNodeWidget>();
 
-        // Create nodes from state
-        var nodeMap = new Dictionary<string, NodeModel>();
-        foreach (var nodeState in state.Nodes)
+        if (state != null)
         {
-            var node = new MudNodeModel(position: new Point(nodeState.X, nodeState.Y))
+            // Create nodes from state
+            var nodeMap = new Dictionary<string, NodeModel>();
+            foreach (var nodeState in state.Nodes)
             {
-                Title = nodeState.Title,
-                Size = new Blazor.Diagrams.Core.Geometry.Size(nodeState.Width, nodeState.Height),
-                Icon = nodeState.Icon,
-                IconName = nodeState.IconName,
-                Description = nodeState.Description,
-                BackgroundColor = nodeState.BackgroundColor,
-                IconColor = nodeState.IconColor,
-                Metadata = nodeState.Metadata ?? new Dictionary<string, string>(),
-                DataTopic = nodeState.DataTopic
-            };
+                var node = new MudNodeModel(position: new Point(nodeState.X, nodeState.Y))
+                {
+                    Locked = readOnly,
+                    Title = nodeState.Title,
+                    Size = new Blazor.Diagrams.Core.Geometry.Size(nodeState.Width, nodeState.Height),
+                    Icon = nodeState.Icon,
+                    IconName = nodeState.IconName,
+                    Description = nodeState.Description,
+                    BackgroundColor = nodeState.BackgroundColor,
+                    IconColor = nodeState.IconColor,
+                    Metadata = nodeState.Metadata ?? new Dictionary<string, string>(),
+                    DataTopic = nodeState.DataTopic,
+                };
 
-            diagram.Nodes.Add(node);
-            nodeMap[nodeState.Id] = node;
+                diagram.Nodes.Add(node);
+                nodeMap[nodeState.Id] = node;
 
-            // Add ports
-            foreach (var portState in nodeState.Ports)
-            {
-                var alignment = Enum.Parse<PortAlignment>(portState.Alignment);
-                node.AddPort(alignment);
+                // Add ports
+                foreach (var portState in nodeState.Ports)
+                {
+                    var alignment = Enum.Parse<PortAlignment>(portState.Alignment);
+                    AddPortToNode(node, alignment);
+                }
+
+                // add resize in bottom left
+                if (!readOnly)
+                {
+                    diagram.Controls.AddFor(node).Add(new ResizeControl(new BottomRightResizerProvider()));
+                }
             }
 
-            // add resize in bottom left
-            diagram.Controls.AddFor(node).Add(new ResizeControl(new BottomRightResizerProvider()));
-        }
-
-        // Create links from state
-        foreach (var linkState in state.Links)
-        {
-            if (nodeMap.TryGetValue(linkState.SourceNodeId, out var sourceNode) &&
-                nodeMap.TryGetValue(linkState.TargetNodeId, out var targetNode))
+            // Create links from state
+            foreach (var linkState in state.Links)
             {
-                PortModel? sourcePort = null;
-                PortModel? targetPort = null;
-
-                if (!string.IsNullOrEmpty(linkState.SourcePortAlignment))
+                if (nodeMap.TryGetValue(linkState.SourceNodeId, out var sourceNode) &&
+                    nodeMap.TryGetValue(linkState.TargetNodeId, out var targetNode))
                 {
-                    var sourceAlignment = Enum.Parse<PortAlignment>(linkState.SourcePortAlignment);
-                    sourcePort = sourceNode.Ports.FirstOrDefault(p => p.Alignment == sourceAlignment);
+                    PortModel? sourcePort = null;
+                    PortModel? targetPort = null;
+
+                    if (!string.IsNullOrEmpty(linkState.SourcePortAlignment))
+                    {
+                        var sourceAlignment = Enum.Parse<PortAlignment>(linkState.SourcePortAlignment);
+                        sourcePort = sourceNode.Ports.FirstOrDefault(p => p.Alignment == sourceAlignment);
+                    }
+
+                    if (!string.IsNullOrEmpty(linkState.TargetPortAlignment))
+                    {
+                        var targetAlignment = Enum.Parse<PortAlignment>(linkState.TargetPortAlignment);
+                        targetPort = targetNode.Ports.FirstOrDefault(p => p.Alignment == targetAlignment);
+                    }
+
+                    Anchor sourceAnchor = sourcePort != null
+                        ? new SinglePortAnchor(sourcePort)
+                        : new ShapeIntersectionAnchor(sourceNode);
+
+                    Anchor targetAnchor = targetPort != null
+                        ? new SinglePortAnchor(targetPort)
+                        : new ShapeIntersectionAnchor(targetNode);
+
+                    var link = diagram.Links.Add(new LinkModel(sourceAnchor, targetAnchor));
+                    link.Locked = readOnly;
                 }
-
-                if (!string.IsNullOrEmpty(linkState.TargetPortAlignment))
-                {
-                    var targetAlignment = Enum.Parse<PortAlignment>(linkState.TargetPortAlignment);
-                    targetPort = targetNode.Ports.FirstOrDefault(p => p.Alignment == targetAlignment);
-                }
-
-                Anchor sourceAnchor = sourcePort != null
-                    ? new SinglePortAnchor(sourcePort)
-                    : new ShapeIntersectionAnchor(sourceNode);
-
-                Anchor targetAnchor = targetPort != null
-                    ? new SinglePortAnchor(targetPort)
-                    : new ShapeIntersectionAnchor(targetNode);
-
-                diagram.Links.Add(new LinkModel(sourceAnchor, targetAnchor));
             }
         }
 
@@ -354,4 +343,29 @@ public class ApplicationState
         // Invoke asynchronously to avoid thread issues
         _ = Task.Run(() => OnStateChanged?.Invoke());
     }
+
+    internal async Task AddTopicToDiagram(string topicPath, string nodeName)
+    {
+        var diagram = GetOrCreateDiagram();
+
+        var node = new BlazorApp1.Models.MudNodeModel(
+            new Blazor.Diagrams.Core.Geometry.Point(100 + diagram.Nodes.Count * 20, 100))
+        {
+            Title = nodeName,
+            DataTopic = topicPath,
+        };
+        diagram.Nodes.Add(node);
+        diagram.Controls.AddFor(node).Add(new ResizeControl(new BottomRightResizerProvider()));
+    }
+
+    internal void AddPortToNode(NodeModel node, PortAlignment alignment)
+    {
+        if (node != null)
+        {
+            //node.AddPort(alignment);
+            node.AddPort(new MudPortModel(node, alignment));
+        }
+    }
+
+
 }

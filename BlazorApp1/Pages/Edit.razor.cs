@@ -41,7 +41,7 @@ public partial class Edit : IDisposable
                 {
                     // Load from saved state
                     AppState.ResetDiagram(); // Clear the empty diagram first
-                    _diagram = AppState.CreateDiagramFromState(savedState);
+                    _diagram = AppState.CreateDiagramFromState(savedState, false);
                     _gridSnapEnabled = _diagram.Options.GridSize != null;
 
                     Snackbar.Add("Diagram loaded from server", Severity.Info);
@@ -170,7 +170,8 @@ public partial class Edit : IDisposable
 
         if (selectedNode != null && !HasPortAlignment(alignment))
         {
-            selectedNode.AddPort(alignment);
+            AppState.AddPortToNode(selectedNode, alignment);
+            //selectedNode.AddPort(alignment);
             selectedNode.Refresh();
             StateHasChanged();
         }
