@@ -259,7 +259,7 @@
         foreach (var item in items)
         {
             item.Expanded = expanded;
-            ExpandAllTreeNodes(item.Children, expanded);
+            ExpandAllTreeNodes(item.Children?.Cast<TreeItemData<MqttTopicNode>>(), expanded);
         }
     }
 
