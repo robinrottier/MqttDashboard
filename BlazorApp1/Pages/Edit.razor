@@ -44,13 +44,13 @@
                     <MudMenu AnchorOrigin="Origin.CenterRight"
                              TransformOrigin="Origin.CenterLeft">
                         <ActivatorContent>
-                            <MudTooltip Text="Add Port to Selected Node">
-                                <MudIconButton Icon="@Icons.Material.Filled.AddCircleOutline"
-                                               Color="Color.Secondary"
-                                               Variant="Variant.Filled"
-                                               Size="MudBlazor.Size.Large"
-                                               Disabled="@(!_hasSelectedNode)" />
-                            </MudTooltip>
+                            <MudIconButton Icon="@Icons.Material.Filled.AddCircleOutline"
+                                           Color="Color.Secondary"
+                                           Variant="Variant.Filled"
+                                           Size="MudBlazor.Size.Large"
+                                           title="Add Port to Selected Node"
+                                           OnClick="@context.ToggleAsync"
+                                           Disabled="@(!_hasSelectedNode)" />
                         </ActivatorContent>
                         <ChildContent>
                             <MudMenuItem OnClick="() => AddPortToSelectedNode(PortAlignment.Top)"
@@ -88,13 +88,13 @@
                     <MudMenu AnchorOrigin="Origin.CenterRight"
                              TransformOrigin="Origin.CenterLeft">
                         <ActivatorContent>
-                            <MudTooltip Text="Delete Port from Selected Node">
-                                <MudIconButton Icon="@Icons.Material.Filled.RemoveCircleOutline"
-                                               Color="Color.Warning"
-                                               Variant="Variant.Filled"
-                                               Size="MudBlazor.Size.Large"
-                                               Disabled="@(!_hasSelectedNode)" />
-                            </MudTooltip>
+                            <MudIconButton Icon="@Icons.Material.Filled.RemoveCircleOutline"
+                                           Color="Color.Warning"
+                                           Variant="Variant.Filled"
+                                           Size="MudBlazor.Size.Large"
+                                           title="Delete Port from Selected Node"
+                                           OnClick="@context.ToggleAsync"
+                                           Disabled="@(!_hasSelectedNode)" />
                         </ActivatorContent>
                         <ChildContent>
                             <MudMenuItem OnClick="() => DeletePortFromSelectedNode(PortAlignment.Top)"

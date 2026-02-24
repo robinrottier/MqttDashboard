@@ -1,6 +1,19 @@
 # TO DO
 
-*(all items completed — see Completed section below)*
+
+## App
+- add common data directory for file saving and loading, between WebAppServer and WebAppWasm projects
+- that data directory should come from config file and environment variable
+
+## Layout
+
+- add a conventional top-level menu control
+
+## Edit page
+
+- add clipboard functionality...copy/cut/paste, including on multiple nodes if selected
+- double click on a node and it should go to edit properties
+
 
 ---
 
