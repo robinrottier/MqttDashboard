@@ -4,47 +4,43 @@
 <MudDialog>
     <DialogContent>
         <MudStack Spacing="2">
-            <!-- Title Row -->
             <MudText Typo="Typo.subtitle2" Class="mb-2">Node Properties</MudText>
 
-            <!-- Title and Description Row -->
+            <!-- Title and Description -->
             <MudGrid Spacing="2">
                 <MudItem xs="6">
-                    <MudTextField @bind-Value="@Node.Title" 
-                                  Label="Title" 
+                    <MudTextField @bind-Value="@Node.Title"
+                                  Label="Title"
                                   Variant="Variant.Outlined"
-                                  Margin="Margin.Dense"
-                                  />
+                                  Margin="Margin.Dense" />
                 </MudItem>
                 <MudItem xs="6">
-                    <MudTextField @bind-Value="@Node.Description" 
-                                  Label="Description" 
+                    <MudTextField @bind-Value="@Node.Description"
+                                  Label="Description"
                                   Variant="Variant.Outlined"
-                                  Margin="Margin.Dense"
-                                  />
+                                  Margin="Margin.Dense" />
                 </MudItem>
             </MudGrid>
 
-            <!-- Icon and Icon Color Row -->
+            <!-- Icon and Icon Color -->
             <MudGrid Spacing="2">
                 <MudItem xs="6">
                     <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
-                        <MudIcon Icon="@(Node.Icon ?? Icons.Material.Filled.HideImage)" 
-                                 Size="MudBlazor.Size.Small" 
-                                 Class="mt-2" />
-                        <MudTextField Value="@GetIconName()" 
-                                      Label="Icon" 
+                        <MudIcon Icon="@(Node.Icon ?? Icons.Material.Filled.HideImage)"
+                                 Size="MudBlazor.Size.Small" Class="mt-2" />
+                        <MudTextField Value="@GetIconName()"
+                                      Label="Icon"
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"
                                       ReadOnly="true"
-                                      Style="flex-grow: 1;" />
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                      Style="flex-grow:1;" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                        Size="MudBlazor.Size.Small"
                                        OnClick="OpenIconPicker"
                                        Class="mt-2" />
                         @if (!string.IsNullOrEmpty(Node.Icon))
                         {
-                            <MudIconButton Icon="@Icons.Material.Filled.Clear" 
+                            <MudIconButton Icon="@Icons.Material.Filled.Clear"
                                            Size="MudBlazor.Size.Small"
                                            OnClick="ClearIcon"
                                            Class="mt-2" />
@@ -52,8 +48,8 @@
                     </MudStack>
                 </MudItem>
                 <MudItem xs="6">
-                    <MudSelect @bind-Value="@Node.IconColor" 
-                               Label="Icon Color" 
+                    <MudSelect @bind-Value="@Node.IconColor"
+                               Label="Icon Color"
                                Variant="Variant.Outlined"
                                Margin="Margin.Dense"
                                Dense="true"
@@ -70,96 +66,229 @@
                 </MudItem>
             </MudGrid>
 
-            <!-- Background Color (full width) -->
+            <!-- Background Color -->
             <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
-                <div style="@($"width: 30px; height: 30px; background-color: {Node.BackgroundColor ?? "transparent"}; border: 2px solid var(--mud-palette-divider); border-radius: 4px;")"></div>
-                <MudTextField Value="@(Node.BackgroundColor ?? "No color")" 
-                              Label="Background Color" 
+                <div style="@($"width:30px;height:30px;background-color:{Node.BackgroundColor ?? "transparent"};border:2px solid var(--mud-palette-divider);border-radius:4px;")"></div>
+                <MudTextField Value="@(Node.BackgroundColor ?? "No color")"
+                              Label="Background Color"
                               Variant="Variant.Outlined"
                               Margin="Margin.Dense"
                               ReadOnly="true"
-                              Style="flex-grow: 1;" />
+                              Style="flex-grow:1;" />
                 <MudTooltip Text="Theme Colors">
-                    <MudIconButton Icon="@Icons.Material.Filled.Palette" 
+                    <MudIconButton Icon="@Icons.Material.Filled.Palette"
                                    Size="MudBlazor.Size.Small"
                                    OnClick="@(() => OpenColorPicker(ColorPickerMode.Theme))"
                                    Class="mt-2" />
                 </MudTooltip>
                 <MudTooltip Text="Named Colors">
-                    <MudIconButton Icon="@Icons.Material.Filled.FormatColorFill" 
+                    <MudIconButton Icon="@Icons.Material.Filled.FormatColorFill"
                                    Size="MudBlazor.Size.Small"
                                    OnClick="@(() => OpenColorPicker(ColorPickerMode.Named))"
                                    Class="mt-2" />
                 </MudTooltip>
                 <MudTooltip Text="Custom Color">
-                    <MudIconButton Icon="@Icons.Material.Filled.Colorize" 
+                    <MudIconButton Icon="@Icons.Material.Filled.Colorize"
                                    Size="MudBlazor.Size.Small"
                                    OnClick="@(() => OpenColorPicker(ColorPickerMode.Custom))"
                                    Class="mt-2" />
                 </MudTooltip>
                 @if (!string.IsNullOrEmpty(Node.BackgroundColor))
                 {
-                    <MudIconButton Icon="@Icons.Material.Filled.Clear" 
+                    <MudIconButton Icon="@Icons.Material.Filled.Clear"
                                    Size="MudBlazor.Size.Small"
                                    OnClick="ClearColor"
                                    Class="mt-2" />
                 }
             </MudStack>
 
-            <!-- Width and Height Row -->
+            <!-- Width, Height, Font Size -->
             <MudGrid Spacing="2">
-                <MudItem xs="6">
-                    <MudNumericField @bind-Value="@Width" 
-                                     Label="Width (px)" 
+                <MudItem xs="4">
+                    <MudNumericField @bind-Value="@Width"
+                                     Label="Width (px)"
                                      Variant="Variant.Outlined"
                                      Margin="Margin.Dense"
                                      Min="60" />
                 </MudItem>
-                <MudItem xs="6">
-                    <MudNumericField @bind-Value="@Height" 
-                                     Label="Height (px)" 
+                <MudItem xs="4">
+                    <MudNumericField @bind-Value="@Height"
+                                     Label="Height (px)"
                                      Variant="Variant.Outlined"
                                      Margin="Margin.Dense"
                                      Min="45" />
+                </MudItem>
+                <MudItem xs="4">
+                    <MudNumericField @bind-Value="@FontSize"
+                                     Label="Font Size (px)"
+                                     Variant="Variant.Outlined"
+                                     Margin="Margin.Dense"
+                                     Min="0"
+                                     Placeholder="default" />
                 </MudItem>
             </MudGrid>
 
             <!-- MQTT Data Binding -->
             <MudDivider Class="my-2" />
             <MudText Typo="Typo.caption" Class="mb-1">MQTT Data Binding</MudText>
-            <MudTextField @bind-Value="@Node.DataTopic" 
-                          Label="MQTT Topic" 
-                          Variant="Variant.Outlined"
-                          Margin="Margin.Dense"
-                          Placeholder="e.g., sensor/temperature" 
-                          HelperText="Subscribe to this topic to display live data on the node" />
 
-            <!-- Custom Metadata Section -->
+            <!-- Data 1 -->
+            <MudGrid Spacing="2">
+                <MudItem xs="6">
+                    <MudTextField @bind-Value="@Node.DataTopic"
+                                  Label="MQTT Topic 1"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Placeholder="e.g. sensor/temperature" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField @bind-Value="@Node.DataFormat"
+                                  Label="Format 1"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Placeholder="{0:F2} °C"
+                                  HelperText="C# string.Format, e.g. {0:F2} °C" />
+                </MudItem>
+            </MudGrid>
+
+            <!-- Color rules for data 1 -->
+            @if (Node.DataColorRules.Count > 0)
+            {
+                <MudText Typo="Typo.caption" Class="mb-1">Value Color Rules (Topic 1)</MudText>
+                @foreach (var rule in Node.DataColorRules.ToList())
+                {
+                    <MudGrid Spacing="1">
+                        <MudItem xs="3">
+                            <MudSelect @bind-Value="rule.Operator"
+                                       Label="Op"
+                                       Dense="true"
+                                       Variant="Variant.Outlined"
+                                       Margin="Margin.Dense">
+                                @foreach (var op in _operators)
+                                {
+                                    <MudSelectItem Value="@op">@op</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="4">
+                            <MudNumericField @bind-Value="rule.Threshold"
+                                             Label="Value"
+                                             Variant="Variant.Outlined"
+                                             Margin="Margin.Dense" />
+                        </MudItem>
+                        <MudItem xs="4">
+                            <MudTextField @bind-Value="rule.Color"
+                                          Label="Color"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Placeholder="red / #FF0000" />
+                        </MudItem>
+                        <MudItem xs="1" Class="d-flex align-center">
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Color="Color.Error"
+                                           Size="MudBlazor.Size.Small"
+                                           OnClick="@(() => Node.DataColorRules.Remove(rule))" />
+                        </MudItem>
+                    </MudGrid>
+                }
+            }
+            <MudButton StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="@(() => Node.DataColorRules.Add(new NodeColorRule()))"
+                       Color="Color.Primary" Variant="Variant.Text" Size="MudBlazor.Size.Small">
+                Add Color Rule (Topic 1)
+            </MudButton>
+
+            <!-- Data 2 -->
+            <MudDivider Class="my-1" />
+            <MudGrid Spacing="2">
+                <MudItem xs="6">
+                    <MudTextField @bind-Value="@Node.DataTopic2"
+                                  Label="MQTT Topic 2"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Placeholder="e.g. sensor/humidity" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField @bind-Value="@Node.DataFormat2"
+                                  Label="Format 2"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Placeholder="{0:F1} %"
+                                  HelperText="C# string.Format, e.g. {0:F1} %" />
+                </MudItem>
+            </MudGrid>
+
+            <!-- Color rules for data 2 -->
+            @if (Node.DataColorRules2.Count > 0)
+            {
+                <MudText Typo="Typo.caption" Class="mb-1">Value Color Rules (Topic 2)</MudText>
+                @foreach (var rule in Node.DataColorRules2.ToList())
+                {
+                    <MudGrid Spacing="1">
+                        <MudItem xs="3">
+                            <MudSelect @bind-Value="rule.Operator"
+                                       Label="Op"
+                                       Dense="true"
+                                       Variant="Variant.Outlined"
+                                       Margin="Margin.Dense">
+                                @foreach (var op in _operators)
+                                {
+                                    <MudSelectItem Value="@op">@op</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="4">
+                            <MudNumericField @bind-Value="rule.Threshold"
+                                             Label="Value"
+                                             Variant="Variant.Outlined"
+                                             Margin="Margin.Dense" />
+                        </MudItem>
+                        <MudItem xs="4">
+                            <MudTextField @bind-Value="rule.Color"
+                                          Label="Color"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Placeholder="red / #FF0000" />
+                        </MudItem>
+                        <MudItem xs="1" Class="d-flex align-center">
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Color="Color.Error"
+                                           Size="MudBlazor.Size.Small"
+                                           OnClick="@(() => Node.DataColorRules2.Remove(rule))" />
+                        </MudItem>
+                    </MudGrid>
+                }
+            }
+            <MudButton StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="@(() => Node.DataColorRules2.Add(new NodeColorRule()))"
+                       Color="Color.Primary" Variant="Variant.Text" Size="MudBlazor.Size.Small">
+                Add Color Rule (Topic 2)
+            </MudButton>
+
+            <!-- Custom Metadata -->
             @if (Node.Metadata.Any())
             {
                 <MudDivider Class="my-2" />
                 <MudText Typo="Typo.caption" Class="mb-1">Custom Metadata</MudText>
-
                 @foreach (var kvp in Node.Metadata.ToList())
                 {
                     <MudGrid Spacing="1">
                         <MudItem xs="5">
-                            <MudTextField Value="@kvp.Key" 
-                                          Label="Key" 
+                            <MudTextField Value="@kvp.Key"
+                                          Label="Key"
                                           Variant="Variant.Outlined"
                                           Margin="Margin.Dense"
                                           ReadOnly="true" />
                         </MudItem>
                         <MudItem xs="6">
-                            <MudTextField Value="@kvp.Value" 
+                            <MudTextField Value="@kvp.Value"
                                           ValueChanged="@((string val) => UpdateMetadata(kvp.Key, val))"
-                                          Label="Value" 
+                                          Label="Value"
                                           Variant="Variant.Outlined"
-                                          Margin="Margin.Dense"
-                                          />
+                                          Margin="Margin.Dense" />
                         </MudItem>
                         <MudItem xs="1" Class="d-flex align-center">
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                            Color="Color.Error"
                                            OnClick="@(() => RemoveMetadata(kvp.Key))"
                                            Size="MudBlazor.Size.Small" />
@@ -168,7 +297,7 @@
                 }
             }
 
-            <MudButton StartIcon="@Icons.Material.Filled.Add" 
+            <MudButton StartIcon="@Icons.Material.Filled.Add"
                        OnClick="AddMetadata"
                        Color="Color.Primary"
                        Variant="Variant.Text"
@@ -183,3 +312,4 @@
         <MudButton Color="Color.Primary" OnClick="Save" Variant="Variant.Filled" Size="MudBlazor.Size.Small">Save</MudButton>
     </DialogActions>
 </MudDialog>
+

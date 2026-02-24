@@ -9,11 +9,11 @@ using Blazor.Diagrams.Core.Routers;
 using Blazor.Diagrams.Options;
 using BlazorApp1.Models;
 using BlazorApp1.Widgets;
-//using MudBlazor;
 using System.Collections.Concurrent;
-using System.Net.NetworkInformation;
 
 namespace BlazorApp1.Services;
+
+public enum ThemeMode { Light, Dark, Auto }
 
 public class ApplicationState
 {
@@ -36,12 +36,88 @@ public class ApplicationState
     // Application State Persistence
     private ApplicationStateService? _stateService;
 
+    // Theme & UI preferences
+    public ThemeMode ThemeMode { get; private set; } = ThemeMode.Auto;
+    public bool ShowDiagramName { get; private set; } = false;
+    public string DiagramName { get; private set; } = string.Empty;
+    public int GridSize { get; private set; } = 20;
+
+    // Edit mode state (set by Edit page)
+    public bool IsEditMode { get; private set; } = false;
+    public bool HasSelectedNode { get; private set; } = false;
+    public bool HasSingleSelectedNode { get; private set; } = false;
+
+    // Menu action events — the Edit page subscribes to these
+    public event Action? MenuAddNode;
+    public event Action? MenuDeleteNode;
+    public event Action? MenuCutSelected;
+    public event Action? MenuCopySelected;
+    public event Action? MenuPasteSelected;
+    public event Action<PortAlignment>? MenuAddPort;
+    public event Action<PortAlignment>? MenuDeletePort;
+    public event Action? MenuEditProperties;
+    public event Action? MenuSaveDiagram;
+    public event Action? MenuNewDiagram;
+    public event Action? MenuReloadDiagram;
+
     public event Action? OnStateChanged;
 
-    public void SetInteractive()
+    public void SetInteractive() => IsInteractive = true;
+
+    public void SetEditMode(bool editMode)
     {
-        IsInteractive = true;
+        IsEditMode = editMode;
+        NotifyStateChangedAsync();
     }
+
+    public void UpdateSelectionState(bool hasSelected, bool hasSingleSelected)
+    {
+        HasSelectedNode = hasSelected;
+        HasSingleSelectedNode = hasSingleSelected;
+        NotifyStateChangedAsync();
+    }
+
+    public void SetTheme(ThemeMode mode)
+    {
+        ThemeMode = mode;
+        NotifyStateChangedAsync();
+    }
+
+    public void ToggleShowDiagramName()
+    {
+        ShowDiagramName = !ShowDiagramName;
+        NotifyStateChangedAsync();
+    }
+
+    public void SetDiagramName(string name)
+    {
+        DiagramName = name;
+        NotifyStateChangedAsync();
+    }
+
+    public void SetGridSize(int size)
+    {
+        GridSize = size;
+        if (_diagram != null)
+        {
+            _diagram.Options.GridSize = size == 0 ? null : size;
+            _diagram.Refresh();
+        }
+        NotifyStateChangedAsync();
+    }
+
+    // Menu trigger methods — called by AppMenu
+    public void TriggerAddNode() => MenuAddNode?.Invoke();
+    public void TriggerDeleteNode() => MenuDeleteNode?.Invoke();
+    public void TriggerCutSelected() => MenuCutSelected?.Invoke();
+    public void TriggerCopySelected() => MenuCopySelected?.Invoke();
+    public void TriggerPasteSelected() => MenuPasteSelected?.Invoke();
+    public void TriggerAddPort(PortAlignment alignment) => MenuAddPort?.Invoke(alignment);
+    public void TriggerDeletePort(PortAlignment alignment) => MenuDeletePort?.Invoke(alignment);
+    public void TriggerEditProperties() => MenuEditProperties?.Invoke();
+    public void TriggerSaveDiagram() => MenuSaveDiagram?.Invoke();
+    public void TriggerNewDiagram() => MenuNewDiagram?.Invoke();
+    public void TriggerReloadDiagram() => MenuReloadDiagram?.Invoke();
 
     public BlazorDiagram GetOrCreateDiagram()
     {
@@ -95,6 +171,12 @@ public class ApplicationState
                     IconColor = nodeState.IconColor,
                     Metadata = nodeState.Metadata ?? new Dictionary<string, string>(),
                     DataTopic = nodeState.DataTopic,
+                    DataTopic2 = nodeState.DataTopic2,
+                    DataFormat = nodeState.DataFormat,
+                    DataFormat2 = nodeState.DataFormat2,
+                    FontSize = nodeState.FontSize,
+                    DataColorRules = nodeState.DataColorRules ?? new(),
+                    DataColorRules2 = nodeState.DataColorRules2 ?? new(),
                 };
 
                 diagram.Nodes.Add(node);
@@ -149,6 +231,10 @@ public class ApplicationState
             }
         }
 
+        // Update diagram name from state
+        if (state != null)
+            DiagramName = state.Name;
+
         _diagram = diagram;
         return _diagram;
     }
@@ -161,6 +247,7 @@ public class ApplicationState
         }
 
         var state = new DiagramState();
+        state.Name = DiagramName;
 
         // map diagram grid and gridsnaptocenter to diagramstate saved value for grid size
         // if grid size is 0 then no grid
@@ -195,7 +282,13 @@ public class ApplicationState
                 BackgroundColor = node.BackgroundColor,
                 IconColor = node.IconColor,
                 Metadata = node.Metadata ?? new Dictionary<string, string>(),
-                DataTopic = node.DataTopic
+                DataTopic = node.DataTopic,
+                DataTopic2 = node.DataTopic2,
+                DataFormat = node.DataFormat,
+                DataFormat2 = node.DataFormat2,
+                FontSize = node.FontSize,
+                DataColorRules = node.DataColorRules,
+                DataColorRules2 = node.DataColorRules2,
             };
 
             // Save ports
@@ -354,6 +447,22 @@ public class ApplicationState
             Title = nodeName,
             DataTopic = topicPath,
         };
+        // try be clever with formatting...
+        string? format = null;
+        switch (nodeName.ToLower())
+        {
+            case "soc":     format = "{0:0}%"; break;
+            case "power":
+            case "solar":
+            case "pv":
+            case "load":
+            case "grid":    format = "{0:0}W"; break;
+        }
+        if (format != null)
+        {
+            node.DataFormat = format;
+        }
+
         diagram.Nodes.Add(node);
         diagram.Controls.AddFor(node).Add(new ResizeControl(new BottomRightResizerProvider()));
     }

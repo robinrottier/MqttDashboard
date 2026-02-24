@@ -4,16 +4,18 @@
 @inject ApplicationState AppState
 @implements IDisposable
 
-<div class="pa-1 mud-node default-node @(Node.Selected ? "selected" : "")" style=@GenerateStyle()>
+<div class="pa-1 mud-node default-node @(Node.Selected ? "selected" : "")"
+     style="@GenerateStyle()"
+     @ondblclick="OnDoubleClick">
 
-    <MudCard Outlined="false" Elevation="0" Style=@GetCardStyle() Class="mud-card" >
+    <MudCard Outlined="false" Elevation="0" Style="@GetCardStyle()" Class="mud-card">
         <MudCardHeader Class="widget-text">
             <CardHeaderContent>
                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="0" Class="widget-text">
                     @if (!string.IsNullOrEmpty(Node.Icon))
                     {
-                        <MudIcon Icon="@Node.Icon" 
-                                 Color="@GetIconColor()" 
+                        <MudIcon Icon="@Node.Icon"
+                                 Color="@GetIconColor()"
                                  Size="MudBlazor.Size.Small" />
                     }
                     <MudText Style="text-align:center" Typo="Typo.body2">@(Node.Title ?? "Title")</MudText>
@@ -28,13 +30,27 @@
             </MudCardContent>
         }
 
-        @* Display MQTT Data Value *@
+        @* Primary data value *@
         @if (!string.IsNullOrEmpty(Node.DataTopic))
         {
-            <MudCardContent Class="widget-text">
-                <MudTooltip Text="@GetDataTooltip()" Placement="Placement.Right">
-                    <MudText Typo="Typo.h6" Color="@GetDataValueColor()" Class="pa-0" Style="text-align:center;">
-                        @GetDataValueDisplay()
+            <MudCardContent Class="widget-text pa-1">
+                <MudTooltip Text="@GetDataTooltip(Node.DataTopic, Node.DataLastUpdated)" Placement="Placement.Right">
+                    <MudText Class="pa-0"
+                             Style="@($"text-align:center; font-size:{GetFontSize()}; {GetDataColorStyle(Node.DataValue, Node.DataColorRules)}")">
+                        @FormatValue(Node.DataValue, Node.DataFormat)
+                    </MudText>
+                </MudTooltip>
+            </MudCardContent>
+        }
+
+        @* Optional second data value *@
+        @if (!string.IsNullOrEmpty(Node.DataTopic2))
+        {
+            <MudCardContent Class="widget-text pa-1">
+                <MudTooltip Text="@GetDataTooltip(Node.DataTopic2, Node.DataLastUpdated2)" Placement="Placement.Right">
+                    <MudText Class="pa-0"
+                             Style="@($"text-align:center; font-size:{GetFontSize()}; {GetDataColorStyle(Node.DataValue2, Node.DataColorRules2)}")">
+                        @FormatValue(Node.DataValue2, Node.DataFormat2)
                     </MudText>
                 </MudTooltip>
             </MudCardContent>
@@ -42,7 +58,7 @@
 
         @foreach (var port in Node.Ports)
         {
-            <PortRenderer @key="port" Port="port" Style=@GeneratePortStyle(port as MudPortModel) />
+            <PortRenderer @key="port" Port="port" Style="@GeneratePortStyle(port as MudPortModel)" />
         }
     </MudCard>
 </div>
@@ -51,147 +67,242 @@
     [Parameter] public MudNodeModel Node { get; set; } = null!;
 
     private IDisposable? _dataWatcher;
+    private IDisposable? _dataWatcher2;
 
     protected override void OnInitialized()
     {
         base.OnInitialized();
-
-        // set min size and default size...
         Node.MinimumDimensions = new(60, 45);
         if (Node.Size == null
-         || Node.Size.Width < Node.MinimumDimensions.Width
+         || Node.Size.Width  < Node.MinimumDimensions.Width
          || Node.Size.Height < Node.MinimumDimensions.Height)
             Node.Size = new(120, 80);
 
-        // Watch for data updates if DataTopic is set
-        SetupDataWatcher();
+        SetupDataWatchers();
     }
 
     protected override void OnParametersSet()
     {
         base.OnParametersSet();
-
-        // Re-setup watcher if DataTopic changed
-        SetupDataWatcher();
+        SetupDataWatchers();
     }
 
-    private void SetupDataWatcher()
+    private void SetupDataWatchers()
     {
-        // Clean up existing watcher
         _dataWatcher?.Dispose();
         _dataWatcher = null;
+        _dataWatcher2?.Dispose();
+        _dataWatcher2 = null;
 
-        // Setup new watcher if DataTopic is set
         if (!string.IsNullOrEmpty(Node.DataTopic))
         {
-            // Get initial value if available
-            var initialValue = AppState.DataCache.GetValue(Node.DataTopic);
-            if (initialValue != null)
-            {
-                Node.DataValue = initialValue;
-                Node.DataLastUpdated = DateTime.Now;
-            }
+            var v = AppState.DataCache.GetValue(Node.DataTopic);
+            if (v != null) { Node.DataValue = v; Node.DataLastUpdated = DateTime.Now; }
+            _dataWatcher = AppState.DataCache.Watch(Node.DataTopic, OnData1Received);
+        }
 
-            // Watch for updates
-            _dataWatcher = AppState.DataCache.Watch(Node.DataTopic, OnDataReceived);
+        if (!string.IsNullOrEmpty(Node.DataTopic2))
+        {
+            var v2 = AppState.DataCache.GetValue(Node.DataTopic2);
+            if (v2 != null) { Node.DataValue2 = v2; Node.DataLastUpdated2 = DateTime.Now; }
+            _dataWatcher2 = AppState.DataCache.Watch(Node.DataTopic2, OnData2Received);
         }
     }
 
-    private void OnDataReceived(string topic, object value)
+    private void OnData1Received(string topic, object value)
     {
         Node.DataValue = value;
         Node.DataLastUpdated = DateTime.Now;
-
-        // Update UI on the correct thread
         InvokeAsync(StateHasChanged);
     }
 
-    private string GetDataValueDisplay()
+    private void OnData2Received(string topic, object value)
     {
-        if (Node.DataValue == null)
-            return "No data";
-
-        return Node.DataValue.ToString() ?? "null";
+        Node.DataValue2 = value;
+        Node.DataLastUpdated2 = DateTime.Now;
+        InvokeAsync(StateHasChanged);
     }
 
-    private string GetDataTooltip()
+    private void OnDoubleClick()
     {
-        var topic = Node.DataTopic ?? string.Empty;
-        if (Node.DataLastUpdated.HasValue)
-            return $"{topic} | Updated: {Node.DataLastUpdated.Value:HH:mm:ss}";
-        return topic;
-    }
-
-    private MudBlazor.Color GetDataValueColor()
-    {
-        if (Node.DataValue == null)
-            return MudBlazor.Color.Secondary;
-
-        // Try to parse as number for potential threshold-based coloring
-        if (double.TryParse(Node.DataValue.ToString(), out var numValue))
+        if (AppState.IsEditMode)
         {
-            // Example: color based on value (can be customized)
-            return MudBlazor.Color.Primary;
+            // Select this node first, then open properties
+            AppState.TriggerEditProperties();
+        }
+    }
+
+    // ── Formatting helpers ────────────────────────────────────────────────────
+
+    private string GetFontSize() =>
+        Node.FontSize.HasValue ? $"{Node.FontSize.Value}px" : "inherit";
+
+    /// <summary>
+    /// Handles an arbitary value and allows to be formatted as float using string.Format
+    /// if incoming value is a string but format species a number format then convert to that first
+    /// TODO: moe this somewhere else and add some test cases!
+    /// </summary>
+    class FormattableValue: IFormattable
+    {
+        public FormattableValue(object value)
+        {
+            _value = value;
         }
 
-        return MudBlazor.Color.Default;
+        object _value;
+
+        public string ToString(string? format, IFormatProvider? provider)
+        {
+            try
+            {
+                if (format != null)
+                {
+                    switch (format[0])
+                    {
+                        case 'E':
+                        case 'F':
+                        case 'G':
+                        case 'N':
+                        case '0':
+                            // if its a string, try parse to double...
+                            if (_value.GetType() == typeof(String))
+                            {
+                                double d;
+                                if (double.TryParse(_value.ToString(), out d))
+                                {
+                                    return d.ToString(format, provider);
+                                }
+                            }
+                            else if (_value.GetType() == typeof(int))
+                            {
+                                double d = (int)_value;
+                                return d.ToString(format, provider);
+                            }
+                            break;
+                        case 'I':
+                        case 'X':
+                            // if its a string, try parse to double...
+                            if (_value.GetType() == typeof(String))
+                            {
+                                int i;
+                                if (int.TryParse(_value.ToString(), out i))
+                                {
+                                    return i.ToString(format, provider);
+                                }
+                            }
+                            else if (_value.GetType() == typeof(double))
+                            {
+                                int i = (int)(double)_value;
+                                return i.ToString(format, provider);
+                            }
+                            break;
+                    }
+                }
+            }
+            catch
+            {
+                // something wrong in my formatting! just carry on... 
+                System.Diagnostics.Debug.WriteLine("Exception in FormattableValue ignored");
+            }
+
+            if (_value == null)
+                return "";
+
+            var fv = _value as IFormattable;
+            if (fv != null)
+                return fv.ToString(format, provider);
+
+            return _value.ToString() ?? "";
+        }
+    }
+
+    private string FormatValue(object? value, string? format)
+    {
+        if (value == null) return "No data";
+        if (string.IsNullOrEmpty(format)) return value.ToString() ?? "null";
+        try
+        {
+            return string.Format(format, new FormattableValue(value));
+        }
+        catch
+        {
+            return value.ToString() ?? "null";
+        }
+    }
+
+    private string GetDataColorStyle(object? value, List<NodeColorRule> rules)
+    {
+        var color = EvaluateColor(value, rules);
+        return color != null ? $"color:{color};" : string.Empty;
+    }
+
+    private static string? EvaluateColor(object? value, List<NodeColorRule> rules)
+    {
+        if (value == null || rules.Count == 0) return null;
+        if (!double.TryParse(value.ToString(),
+                System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out var num))
+            return null;
+
+        foreach (var rule in rules)
+        {
+            bool hit = rule.Operator switch
+            {
+                "<"  => num <  rule.Threshold,
+                ">"  => num >  rule.Threshold,
+                "<=" => num <= rule.Threshold,
+                ">=" => num >= rule.Threshold,
+                "==" => num == rule.Threshold,
+                "!=" => num != rule.Threshold,
+                _    => false
+            };
+            if (hit) return rule.Color;
+        }
+        return null;
+    }
+
+    private static string GetDataTooltip(string? topic, DateTime? updated)
+    {
+        if (updated.HasValue)
+            return $"{topic} | Updated: {updated.Value:HH:mm:ss}";
+        return topic ?? string.Empty;
     }
 
     private string GenerateStyle()
     {
-        var card = GetCardStyle();
         if (Node.Size is not null)
-        {
-            return $"width:{Node.Size.Width}px; height:{Node.Size.Height}px; {card}";
-        }
+            return $"width:{Node.Size.Width}px; height:{Node.Size.Height}px; {GetCardStyle()}";
         return string.Empty;
     }
 
     private string GetCardStyle()
     {
-        var styles = new List<string>();
-
-        if (!string.IsNullOrEmpty(Node.BackgroundColor))
-        {
-            styles.Add($"background-color:{Node.BackgroundColor}");
-        }
-
-        if (styles.Any())
-        {
-            return string.Join("; ", styles);
-        }
-
-        return string.Empty;
+        return !string.IsNullOrEmpty(Node.BackgroundColor)
+            ? $"background-color:{Node.BackgroundColor};"
+            : string.Empty;
     }
 
-    private MudBlazor.Color GetIconColor()
-    {
-        if (!string.IsNullOrEmpty(Node.IconColor))
+    private MudBlazor.Color GetIconColor() =>
+        Node.IconColor?.ToLower() switch
         {
-            return Node.IconColor.ToLower() switch
-            {
-                "primary" => MudBlazor.Color.Primary,
-                "secondary" => MudBlazor.Color.Secondary,
-                "success" => MudBlazor.Color.Success,
-                "info" => MudBlazor.Color.Info,
-                "warning" => MudBlazor.Color.Warning,
-                "error" => MudBlazor.Color.Error,
-                "dark" => MudBlazor.Color.Dark,
-                _ => MudBlazor.Color.Default
-            };
-        }
-        return MudBlazor.Color.Default;
-    }
+            "primary"   => MudBlazor.Color.Primary,
+            "secondary" => MudBlazor.Color.Secondary,
+            "success"   => MudBlazor.Color.Success,
+            "info"      => MudBlazor.Color.Info,
+            "warning"   => MudBlazor.Color.Warning,
+            "error"     => MudBlazor.Color.Error,
+            "dark"      => MudBlazor.Color.Dark,
+            _           => MudBlazor.Color.Default
+        };
 
     public void Dispose()
     {
         _dataWatcher?.Dispose();
+        _dataWatcher2?.Dispose();
     }
 
-    string GeneratePortStyle(MudPortModel? port)
-    {
-        if (port == null)
-            return "";
-        return $"width:{(int)(port.Size.Width)}px; height:{(int)(port.Size.Height)}px;";
-    }
+    private static string GeneratePortStyle(MudPortModel? port) =>
+        port == null ? string.Empty
+                     : $"width:{(int)port.Size.Width}px; height:{(int)port.Size.Height}px;";
 }

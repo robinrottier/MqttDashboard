@@ -12,12 +12,16 @@ public partial class NodePropertyEditor
 
     private double Width { get; set; }
     private double Height { get; set; }
+    private int? FontSize { get; set; }
     private int _newMetadataCounter = 1;
+
+    private static readonly string[] _operators = ["<", ">", "<=", ">=", "==", "!="];
 
     protected override void OnInitialized()
     {
-        Width = Node.Size?.Width ?? 120;
-        Height = Node.Size?.Height ?? 90;
+        Width    = Node.Size?.Width  ?? 120;
+        Height   = Node.Size?.Height ?? 90;
+        FontSize = Node.FontSize;
     }
 
     private async Task OpenIconPicker()
@@ -128,6 +132,9 @@ public partial class NodePropertyEditor
     {
         // Update size
         Node.Size = new Blazor.Diagrams.Core.Geometry.Size(Width, Height);
+
+        // Update font size (null = default)
+        Node.FontSize = FontSize > 0 ? FontSize : null;
 
         // Refresh the node to update the display
         Node.Refresh();

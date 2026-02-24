@@ -1,12 +1,13 @@
 {
+  "Name": "",
   "Nodes": [
     {
-      "Id": "0fdc287f-c8c7-4ef6-ad92-977a55d3cf94",
+      "Id": "c5223e19-225a-40ff-893d-525c9a9fb09d",
       "Title": "HUB-3",
       "X": 160,
       "Y": 140,
-      "Width": 120,
-      "Height": 100,
+      "Width": 100,
+      "Height": 80,
       "Icon": null,
       "IconName": null,
       "Description": null,
@@ -14,27 +15,33 @@
       "IconColor": null,
       "Metadata": {},
       "DataTopic": "ess1/servers/HUB-3/active",
+      "DataTopic2": null,
+      "DataFormat": null,
+      "DataFormat2": null,
+      "FontSize": null,
+      "DataColorRules": [],
+      "DataColorRules2": [],
       "Ports": [
         {
-          "Id": "48b40d73-a25f-4317-a6ba-22b19493ce6b",
+          "Id": "e5e03a9e-b10b-4337-9754-88ae5443921c",
           "Alignment": "Left"
         },
         {
-          "Id": "1134ece6-15ed-47eb-aec9-6d9337a1300c",
+          "Id": "11fb866f-b446-4735-9eff-52d4a3ea1670",
           "Alignment": "Top"
         },
         {
-          "Id": "f6e8c735-3605-4f5e-8bc9-943f71a21d2c",
+          "Id": "269401d8-d733-4e1c-a338-f1038dc366b4",
           "Alignment": "Right"
         },
         {
-          "Id": "a2e2810a-4e43-4825-b913-713e477976d2",
+          "Id": "53c1f07c-94e3-4283-bf28-50974a27bf3e",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "d3a733b6-9873-4a5e-81d2-fddd63a38de7",
+      "Id": "73db74f4-864a-46ab-a5d3-5c608152aafb",
       "Title": "Grid",
       "X": 20,
       "Y": 140,
@@ -47,19 +54,31 @@
       "IconColor": null,
       "Metadata": {},
       "DataTopic": "ess1/servers/HUB-3/grid",
+      "DataTopic2": null,
+      "DataFormat": "{0:0}W",
+      "DataFormat2": null,
+      "FontSize": null,
+      "DataColorRules": [
+        {
+          "Operator": "\u003C",
+          "Threshold": 0,
+          "Color": "green"
+        }
+      ],
+      "DataColorRules2": [],
       "Ports": [
         {
-          "Id": "15bd1c80-887c-42e9-8cad-97627f3cdd1e",
+          "Id": "3706e637-a2ad-4aa3-8510-2cccf4fcedc6",
           "Alignment": "Right"
         }
       ]
     },
     {
-      "Id": "f1fb8d50-e205-4fdb-80ea-7dfe114c3222",
+      "Id": "fa2de83d-7098-470f-9462-df9ca56d29e4",
       "Title": "Solar",
       "X": 160,
       "Y": 20,
-      "Width": 120,
+      "Width": 100,
       "Height": 80,
       "Icon": "\u003Cg\u003E\u003Crect fill=\u0022none\u0022 height=\u002224\u0022 width=\u002224\u0022/\u003E\u003C/g\u003E\u003Cg\u003E\u003Cg\u003E\u003Cpolygon points=\u00223.33,16 11,16 11,13 4,13\u0022/\u003E\u003Cpolygon points=\u002213,16 20.67,16 20,13 13,13\u0022/\u003E\u003Cpolygon points=\u002221.11,18 13,18 13,22 22,22\u0022/\u003E\u003Cpolygon points=\u00222,22 11,22 11,18 2.89,18\u0022/\u003E\u003Crect height=\u00223\u0022 width=\u00222\u0022 x=\u002211\u0022 y=\u00228\u0022/\u003E\u003Crect height=\u00223\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -0.2089 14.6085)\u0022 width=\u00222\u0022 x=\u002216.53\u0022 y=\u00226.06\u0022/\u003E\u003Crect height=\u00222\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -3.448 6.7885)\u0022 width=\u00223\u0022 x=\u00224.97\u0022 y=\u00226.56\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u00223\u0022 y=\u00222\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u002218\u0022 y=\u00222\u0022/\u003E\u003Cpath d=\u0022M12,7c2.76,0,5-2.24,5-5H7C7,4.76,9.24,7,12,7z\u0022/\u003E\u003C/g\u003E\u003C/g\u003E",
       "IconName": "Solar Power",
@@ -68,15 +87,21 @@
       "IconColor": null,
       "Metadata": {},
       "DataTopic": "ess1/servers/HUB-3/solar",
+      "DataTopic2": null,
+      "DataFormat": null,
+      "DataFormat2": null,
+      "FontSize": null,
+      "DataColorRules": [],
+      "DataColorRules2": [],
       "Ports": [
         {
-          "Id": "234ab287-08bc-4a02-a264-61017fdf6cbd",
+          "Id": "0991610a-afcd-49e4-9ea2-8ebefb7dbbfd",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "155c1f1e-5538-497e-a230-b10dfb37d2ce",
+      "Id": "278aa918-328f-4e35-84a4-f50cdc5a49cf",
       "Title": "DURA",
       "X": 320,
       "Y": 140,
@@ -89,28 +114,34 @@
       "IconColor": null,
       "Metadata": {},
       "DataTopic": "ess1/servers/DURA-1/active",
+      "DataTopic2": null,
+      "DataFormat": null,
+      "DataFormat2": null,
+      "FontSize": null,
+      "DataColorRules": [],
+      "DataColorRules2": [],
       "Ports": [
         {
-          "Id": "fe82e279-be95-4d5e-8918-d8e88966dbf4",
+          "Id": "31610992-f3d9-430a-a45f-2cbab9c523e0",
           "Alignment": "Left"
         },
         {
-          "Id": "b5fb52f5-4192-45c2-82b6-97cc98e4e7bf",
+          "Id": "cc914e59-cb2e-496c-b9f1-8a1dd4456c6d",
           "Alignment": "Top"
         },
         {
-          "Id": "338501ac-22f4-4875-aca3-1abdef0caabf",
+          "Id": "a00e14fc-1402-40ea-874d-c84ea6ccfd50",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "eb36ae0a-ec72-43b7-8ec1-e3d5daf1a39f",
+      "Id": "25754d6e-5dfc-450d-b742-c177693f83dd",
       "Title": "",
       "X": 160,
       "Y": 280,
-      "Width": 120,
-      "Height": 80,
+      "Width": 100,
+      "Height": 100,
       "Icon": "\u003Cpath d=\u0022M0 0h24v24H0z\u0022 fill=\u0022none\u0022/\u003E\u003Cpath d=\u0022M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4zM11 20v-5.5H9L13 7v5.5h2L11 20z\u0022/\u003E",
       "IconName": "Battery",
       "Description": null,
@@ -118,15 +149,21 @@
       "IconColor": null,
       "Metadata": {},
       "DataTopic": "ess1/servers/HUB-3/soc",
+      "DataTopic2": "ess1/servers/HUB-3/power",
+      "DataFormat": "{0:0}%",
+      "DataFormat2": "{0:0}W",
+      "FontSize": null,
+      "DataColorRules": [],
+      "DataColorRules2": [],
       "Ports": [
         {
-          "Id": "722338a1-133a-48bf-a3b4-cccaceb07e18",
+          "Id": "adc8cf44-4d50-4d46-889c-a71d34733e71",
           "Alignment": "Top"
         }
       ]
     },
     {
-      "Id": "1c652e0d-ae51-4353-9359-e6fcea1d7ed9",
+      "Id": "9aa094af-ffa6-4fce-b479-4c2cbca7fa76",
       "Title": "",
       "X": 320,
       "Y": 280,
@@ -139,15 +176,21 @@
       "IconColor": null,
       "Metadata": {},
       "DataTopic": "ess1/servers/DURA-1/soc",
+      "DataTopic2": "ess1/servers/DURA-1/power",
+      "DataFormat": "{0:0}%",
+      "DataFormat2": "{0:0}W",
+      "FontSize": null,
+      "DataColorRules": [],
+      "DataColorRules2": [],
       "Ports": [
         {
-          "Id": "23f9ed75-b859-422d-9543-8c7f0a88bdb3",
+          "Id": "e9768fe0-bc71-46e4-b38c-8f6a7aa9fd60",
           "Alignment": "Top"
         }
       ]
     },
     {
-      "Id": "294e4fde-e7bb-4ab3-883b-bc0754487e1a",
+      "Id": "04a69779-3561-4dd0-a28e-bdf189df960c",
       "Title": "Solar",
       "X": 320,
       "Y": 20,
@@ -160,9 +203,100 @@
       "IconColor": null,
       "Metadata": {},
       "DataTopic": "ess1/servers/DURA-1/solar",
+      "DataTopic2": null,
+      "DataFormat": null,
+      "DataFormat2": null,
+      "FontSize": null,
+      "DataColorRules": [],
+      "DataColorRules2": [],
       "Ports": [
         {
-          "Id": "f08fb1ba-b7e8-42ff-b231-12c9eb906937",
+          "Id": "660e072f-8c2b-499a-a693-6a940fbc782a",
+          "Alignment": "Bottom"
+        }
+      ]
+    },
+    {
+      "Id": "31d6099c-b9d3-4da0-bb0e-7aeb7a35e324",
+      "Title": "active",
+      "X": 480,
+      "Y": 140,
+      "Width": 120,
+      "Height": 100,
+      "Icon": null,
+      "IconName": null,
+      "Description": null,
+      "BackgroundColor": null,
+      "IconColor": null,
+      "Metadata": {},
+      "DataTopic": "ess1/servers/HUB-4/active",
+      "DataTopic2": null,
+      "DataFormat": null,
+      "DataFormat2": null,
+      "FontSize": null,
+      "DataColorRules": [],
+      "DataColorRules2": [],
+      "Ports": [
+        {
+          "Id": "2d9e7a1d-61da-43bd-a49e-69706a93900c",
+          "Alignment": "Top"
+        },
+        {
+          "Id": "9587c1d3-1a38-40dd-a5d2-8b5b0741a95f",
+          "Alignment": "Bottom"
+        }
+      ]
+    },
+    {
+      "Id": "57cdd667-5e47-46c5-826e-b93839fe500d",
+      "Title": "soc",
+      "X": 480,
+      "Y": 280,
+      "Width": 120,
+      "Height": 70,
+      "Icon": null,
+      "IconName": null,
+      "Description": null,
+      "BackgroundColor": null,
+      "IconColor": null,
+      "Metadata": {},
+      "DataTopic": "ess1/servers/HUB-4/soc",
+      "DataTopic2": "ess1/servers/HUB-4/power",
+      "DataFormat": "{0:0}%",
+      "DataFormat2": "{0:0}W",
+      "FontSize": null,
+      "DataColorRules": [],
+      "DataColorRules2": [],
+      "Ports": [
+        {
+          "Id": "8570cccc-a922-4a64-a574-07a440944d59",
+          "Alignment": "Top"
+        }
+      ]
+    },
+    {
+      "Id": "c6d973b9-f9e1-44f6-9ba9-835562d3413f",
+      "Title": "solar",
+      "X": 480,
+      "Y": 20,
+      "Width": 120,
+      "Height": 80,
+      "Icon": null,
+      "IconName": null,
+      "Description": null,
+      "BackgroundColor": null,
+      "IconColor": null,
+      "Metadata": {},
+      "DataTopic": "ess1/servers/HUB-4/solar",
+      "DataTopic2": null,
+      "DataFormat": "{0:0}W",
+      "DataFormat2": null,
+      "FontSize": null,
+      "DataColorRules": [],
+      "DataColorRules2": [],
+      "Ports": [
+        {
+          "Id": "1c35577d-4155-476f-a04c-4af8f624b11d",
           "Alignment": "Bottom"
         }
       ]
@@ -170,39 +304,51 @@
   ],
   "Links": [
     {
-      "SourceNodeId": "d3a733b6-9873-4a5e-81d2-fddd63a38de7",
+      "SourceNodeId": "73db74f4-864a-46ab-a5d3-5c608152aafb",
       "SourcePortAlignment": "Right",
-      "TargetNodeId": "0fdc287f-c8c7-4ef6-ad92-977a55d3cf94",
+      "TargetNodeId": "c5223e19-225a-40ff-893d-525c9a9fb09d",
       "TargetPortAlignment": "Left"
     },
     {
-      "SourceNodeId": "f1fb8d50-e205-4fdb-80ea-7dfe114c3222",
+      "SourceNodeId": "fa2de83d-7098-470f-9462-df9ca56d29e4",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "0fdc287f-c8c7-4ef6-ad92-977a55d3cf94",
+      "TargetNodeId": "c5223e19-225a-40ff-893d-525c9a9fb09d",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "0fdc287f-c8c7-4ef6-ad92-977a55d3cf94",
+      "SourceNodeId": "c5223e19-225a-40ff-893d-525c9a9fb09d",
       "SourcePortAlignment": "Right",
-      "TargetNodeId": "155c1f1e-5538-497e-a230-b10dfb37d2ce",
+      "TargetNodeId": "278aa918-328f-4e35-84a4-f50cdc5a49cf",
       "TargetPortAlignment": "Left"
     },
     {
-      "SourceNodeId": "294e4fde-e7bb-4ab3-883b-bc0754487e1a",
+      "SourceNodeId": "04a69779-3561-4dd0-a28e-bdf189df960c",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "155c1f1e-5538-497e-a230-b10dfb37d2ce",
+      "TargetNodeId": "278aa918-328f-4e35-84a4-f50cdc5a49cf",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "155c1f1e-5538-497e-a230-b10dfb37d2ce",
+      "SourceNodeId": "278aa918-328f-4e35-84a4-f50cdc5a49cf",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "1c652e0d-ae51-4353-9359-e6fcea1d7ed9",
+      "TargetNodeId": "9aa094af-ffa6-4fce-b479-4c2cbca7fa76",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "0fdc287f-c8c7-4ef6-ad92-977a55d3cf94",
+      "SourceNodeId": "c5223e19-225a-40ff-893d-525c9a9fb09d",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "eb36ae0a-ec72-43b7-8ec1-e3d5daf1a39f",
+      "TargetNodeId": "25754d6e-5dfc-450d-b742-c177693f83dd",
+      "TargetPortAlignment": "Top"
+    },
+    {
+      "SourceNodeId": "31d6099c-b9d3-4da0-bb0e-7aeb7a35e324",
+      "SourcePortAlignment": "Top",
+      "TargetNodeId": "c6d973b9-f9e1-44f6-9ba9-835562d3413f",
+      "TargetPortAlignment": "Bottom"
+    },
+    {
+      "SourceNodeId": "31d6099c-b9d3-4da0-bb0e-7aeb7a35e324",
+      "SourcePortAlignment": "Bottom",
+      "TargetNodeId": "57cdd667-5e47-46c5-826e-b93839fe500d",
       "TargetPortAlignment": "Top"
     }
   ],

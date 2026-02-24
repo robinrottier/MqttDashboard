@@ -45,13 +45,53 @@ namespace BlazorApp1.Models
         public string? DataTopic { get; set; }
 
         /// <summary>
+        /// Optional second MQTT topic
+        /// </summary>
+        public string? DataTopic2 { get; set; }
+
+        /// <summary>
         /// Current data value from MQTT topic
         /// </summary>
         public object? DataValue { get; set; }
 
         /// <summary>
+        /// Current data value from the second MQTT topic
+        /// </summary>
+        public object? DataValue2 { get; set; }
+
+        /// <summary>
         /// Last time the data value was updated
         /// </summary>
         public DateTime? DataLastUpdated { get; set; }
+
+        /// <summary>
+        /// Last time the second data value was updated
+        /// </summary>
+        public DateTime? DataLastUpdated2 { get; set; }
+
+        /// <summary>
+        /// C# format string for data value 1, e.g. "{0:F2} °C"
+        /// </summary>
+        public string? DataFormat { get; set; }
+
+        /// <summary>
+        /// C# format string for data value 2
+        /// </summary>
+        public string? DataFormat2 { get; set; }
+
+        /// <summary>
+        /// Optional font size in pixels for data values
+        /// </summary>
+        public int? FontSize { get; set; }
+
+        /// <summary>
+        /// Color rules for data value 1 (e.g. value &lt; 0 → red)
+        /// </summary>
+        public List<NodeColorRule> DataColorRules { get; set; } = new();
+
+        /// <summary>
+        /// Color rules for data value 2
+        /// </summary>
+        public List<NodeColorRule> DataColorRules2 { get; set; } = new();
     }
 }

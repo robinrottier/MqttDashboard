@@ -8,175 +8,28 @@
 
 <PageTitle>@(AppState.DisplayName) - Edit</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    
-    @if (!AppState.IsInteractive || _diagram == null)
-    {
+@if (!AppState.IsInteractive || _diagram == null)
+{
+    <MudStack AlignItems="AlignItems.Center" Class="mt-8">
         <MudProgressCircular Indeterminate="true" />
-        <MudText>Loading...</MudText>
-    }
-    else
-    {
-        <MudStack Row="true" Spacing="2">
-            <!-- Left Toolbar -->
-            <MudPaper Elevation="2" Class="pa-2" Style="width: fit-content;">
-                <MudStack Spacing="2">
-                    <!-- Add Node Button -->
-                    <MudTooltip Text="Add New Node">
-                        <MudIconButton Icon="@Icons.Material.Filled.Add"
-                                       Color="Color.Primary"
-                                       Variant="Variant.Filled"
-                                       OnClick="AddNode"
-                                       Size="MudBlazor.Size.Large" />
-                    </MudTooltip>
+        <MudText>Loading&hellip;</MudText>
+    </MudStack>
+}
+else
+{
+    <MudPaper Elevation="2" Style="width:100%; height:calc(100vh - 80px);">
+        <CascadingValue Value="_diagram" IsFixed="true">
+            <DiagramCanvas>
+                <Widgets>
+                    @if (_diagram?.Options.GridSize != null)
+                    {
+                        <GridWidget Size="@(_diagram.Options.GridSize ?? 20)"
+                                    Mode="GridMode.Line"
+                                    BackgroundColor="white" />
+                    }
+                </Widgets>
+            </DiagramCanvas>
+        </CascadingValue>
+    </MudPaper>
+}
 
-                    <!-- Delete Selected Node Button -->
-                    <MudTooltip Text="Delete Selected Node">
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                       Color="Color.Error"
-                                       Variant="Variant.Filled"
-                                       OnClick="DeleteSelectedNode"
-                                       Disabled="@(!_hasSelectedNode)"
-                                       Size="MudBlazor.Size.Large" />
-                    </MudTooltip>
-
-                    <!-- Add Port Button with Menu -->
-                    <MudMenu AnchorOrigin="Origin.CenterRight"
-                             TransformOrigin="Origin.CenterLeft">
-                        <ActivatorContent>
-                            <MudIconButton Icon="@Icons.Material.Filled.AddCircleOutline"
-                                           Color="Color.Secondary"
-                                           Variant="Variant.Filled"
-                                           Size="MudBlazor.Size.Large"
-                                           title="Add Port to Selected Node"
-                                           OnClick="@context.ToggleAsync"
-                                           Disabled="@(!_hasSelectedNode)" />
-                        </ActivatorContent>
-                        <ChildContent>
-                            <MudMenuItem OnClick="() => AddPortToSelectedNode(PortAlignment.Top)"
-                                         Disabled="@HasPortAlignment(PortAlignment.Top)">
-                                <MudStack Row="true" AlignItems="AlignItems.Center">
-                                    <MudIcon Icon="@Icons.Material.Filled.ArrowUpward" Size="MudBlazor.Size.Small" />
-                                    <MudText>Top Port</MudText>
-                                </MudStack>
-                            </MudMenuItem>
-                            <MudMenuItem OnClick="() => AddPortToSelectedNode(PortAlignment.Right)"
-                                         Disabled="@HasPortAlignment(PortAlignment.Right)">
-                                <MudStack Row="true" AlignItems="AlignItems.Center">
-                                    <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="MudBlazor.Size.Small" />
-                                    <MudText>Right Port</MudText>
-                                </MudStack>
-                            </MudMenuItem>
-                            <MudMenuItem OnClick="() => AddPortToSelectedNode(PortAlignment.Bottom)"
-                                         Disabled="@HasPortAlignment(PortAlignment.Bottom)">
-                                <MudStack Row="true" AlignItems="AlignItems.Center">
-                                    <MudIcon Icon="@Icons.Material.Filled.ArrowDownward" Size="MudBlazor.Size.Small" />
-                                    <MudText>Bottom Port</MudText>
-                                </MudStack>
-                            </MudMenuItem>
-                            <MudMenuItem OnClick="() => AddPortToSelectedNode(PortAlignment.Left)"
-                                         Disabled="@HasPortAlignment(PortAlignment.Left)">
-                                <MudStack Row="true" AlignItems="AlignItems.Center">
-                                    <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="MudBlazor.Size.Small" />
-                                    <MudText>Left Port</MudText>
-                                </MudStack>
-                            </MudMenuItem>
-                        </ChildContent>
-                    </MudMenu>
-
-                    <!-- Delete Port Button with Menu -->
-                    <MudMenu AnchorOrigin="Origin.CenterRight"
-                             TransformOrigin="Origin.CenterLeft">
-                        <ActivatorContent>
-                            <MudIconButton Icon="@Icons.Material.Filled.RemoveCircleOutline"
-                                           Color="Color.Warning"
-                                           Variant="Variant.Filled"
-                                           Size="MudBlazor.Size.Large"
-                                           title="Delete Port from Selected Node"
-                                           OnClick="@context.ToggleAsync"
-                                           Disabled="@(!_hasSelectedNode)" />
-                        </ActivatorContent>
-                        <ChildContent>
-                            <MudMenuItem OnClick="() => DeletePortFromSelectedNode(PortAlignment.Top)"
-                                         Disabled="@(!HasPortAlignment(PortAlignment.Top))">
-                                <MudStack Row="true" AlignItems="AlignItems.Center">
-                                    <MudIcon Icon="@Icons.Material.Filled.ArrowUpward" Size="MudBlazor.Size.Small" />
-                                    <MudText>Top Port</MudText>
-                                </MudStack>
-                            </MudMenuItem>
-                            <MudMenuItem OnClick="() => DeletePortFromSelectedNode(PortAlignment.Right)"
-                                         Disabled="@(!HasPortAlignment(PortAlignment.Right))">
-                                <MudStack Row="true" AlignItems="AlignItems.Center">
-                                    <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="MudBlazor.Size.Small" />
-                                    <MudText>Right Port</MudText>
-                                </MudStack>
-                            </MudMenuItem>
-                            <MudMenuItem OnClick="() => DeletePortFromSelectedNode(PortAlignment.Bottom)"
-                                         Disabled="@(!HasPortAlignment(PortAlignment.Bottom))">
-                                <MudStack Row="true" AlignItems="AlignItems.Center">
-                                    <MudIcon Icon="@Icons.Material.Filled.ArrowDownward" Size="MudBlazor.Size.Small" />
-                                    <MudText>Bottom Port</MudText>
-                                </MudStack>
-                            </MudMenuItem>
-                            <MudMenuItem OnClick="() => DeletePortFromSelectedNode(PortAlignment.Left)"
-                                         Disabled="@(!HasPortAlignment(PortAlignment.Left))">
-                                <MudStack Row="true" AlignItems="AlignItems.Center">
-                                    <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="MudBlazor.Size.Small" />
-                                    <MudText>Left Port</MudText>
-                                </MudStack>
-                            </MudMenuItem>
-                        </ChildContent>
-                    </MudMenu>
-
-                    <MudDivider />
-
-                    <!-- Grid Snap Toggle -->
-                    <MudTooltip Text="@(_gridSnapEnabled ? "Disable Grid Snap" : "Enable Grid Snap")">
-                        <MudIconButton Icon="@Icons.Material.Filled.GridOn"
-                                       Color="@(_gridSnapEnabled ? Color.Success : Color.Default)"
-                                       Variant="@(_gridSnapEnabled ? Variant.Filled : Variant.Outlined)"
-                                       OnClick="ToggleGridSnap"
-                                       Size="MudBlazor.Size.Large" />
-                    </MudTooltip>
-
-                    <MudDivider />
-
-                    <!-- Edit Node Properties Button -->
-                    <MudTooltip Text="Edit Node Properties">
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                       Color="Color.Info"
-                                       Variant="Variant.Filled"
-                                       OnClick="EditNodeProperties"
-                                       Disabled="@(!_hasSingleSelectedNode)"
-                                       Size="MudBlazor.Size.Large" />
-                    </MudTooltip>
-
-                    <MudDivider />
-
-                    <!-- Save Diagram Button -->
-                    <MudTooltip Text="Save Diagram">
-                        <MudIconButton Icon="@Icons.Material.Filled.Save"
-                                       Color="Color.Success"
-                                       Variant="Variant.Filled"
-                                       OnClick="SaveDiagram"
-                                       Size="MudBlazor.Size.Large" />
-                    </MudTooltip>
-                </MudStack>
-            </MudPaper>
-
-            <!-- Diagram Canvas -->
-            <MudPaper Elevation="2" Style="flex: 1; height:600px;">
-                <CascadingValue Value="_diagram" IsFixed="true">
-                        <DiagramCanvas>
-                             <Widgets>
-                                 @if (_gridSnapEnabled)
-                                 {
-                                    <GridWidget Size="@(_diagram?.Options.GridSize ?? 20)" Mode=GridMode.Line BackgroundColor="white" />
-                                 }
-                             </Widgets>
-                        </DiagramCanvas>
-                </CascadingValue>
-            </MudPaper>
-        </MudStack>
-    }
-</MudContainer>

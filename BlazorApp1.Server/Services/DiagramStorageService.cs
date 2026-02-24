@@ -1,5 +1,6 @@
 using System.Text.Json;
 using BlazorApp1.Models;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Hosting;
 
@@ -11,9 +12,15 @@ public class DiagramStorageService
     private readonly ILogger<DiagramStorageService> _logger;
     private const string DiagramFileName = "diagram.json";
 
-    public DiagramStorageService(IWebHostEnvironment environment, ILogger<DiagramStorageService> logger)
+    public DiagramStorageService(IWebHostEnvironment environment, IConfiguration configuration, ILogger<DiagramStorageService> logger)
     {
-        _storagePath = Path.Combine(environment.ContentRootPath, "Data");
+        // Priority: environment variable > appsettings.json > default (ContentRoot/Data)
+        var envDir = Environment.GetEnvironmentVariable("DIAGRAM_DATA_DIR");
+        var configDir = configuration["DiagramStorage:DataDirectory"];
+        _storagePath = !string.IsNullOrWhiteSpace(envDir) ? envDir
+                     : !string.IsNullOrWhiteSpace(configDir) ? configDir
+                     : Path.Combine(environment.ContentRootPath, "Data");
+
         _logger = logger;
 
         // Ensure the data directory exists

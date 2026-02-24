@@ -20,68 +20,76 @@ public partial class Edit : IDisposable
     private int _nodeCounter = 1;
     private bool _hasSelectedNode;
     private bool _hasSingleSelectedNode;
-    private bool _gridSnapEnabled = false;
+
+    // Stored handler references so we can unsubscribe cleanly
+    private Action? _onMenuSaveDiagram;
+    private Action? _onMenuReloadDiagram;
+    private Action? _onMenuEditProperties;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             AppState.SetInteractive();
+            AppState.SetEditMode(true);
 
-            // Check if diagram already exists in memory (user navigated back to this page)
+            // Check if diagram already exists in memory (user navigated back)
             _diagram = AppState.GetOrCreateDiagram();
 
-            // Only load from server if diagram is empty (no nodes)
             if (_diagram.Nodes.Count == 0)
             {
-                // Try to load saved diagram from server
                 var savedState = await DiagramService.LoadDiagramAsync();
-
                 if (savedState != null && savedState.Nodes.Count > 0)
                 {
-                    // Load from saved state
-                    AppState.ResetDiagram(); // Clear the empty diagram first
+                    AppState.ResetDiagram();
                     _diagram = AppState.CreateDiagramFromState(savedState, false);
-                    _gridSnapEnabled = _diagram.Options.GridSize != null;
+
+                    // Sync grid size into AppState
+                    var gs = _diagram.Options.GridSize;
+                    AppState.SetGridSize(gs.HasValue ? (int)gs.Value : 0);
 
                     Snackbar.Add("Diagram loaded from server", Severity.Info);
-
-                    // Trigger initial render
                     StateHasChanged();
 
-                    // Wait for Blazor to render the nodes to the DOM, then refresh links
-                    await Task.Delay(100); // Small delay to allow DOM rendering
-
-                    // Now refresh everything so links calculate their paths correctly
-                    foreach (var node in _diagram.Nodes)
-                    {
-                        node.Refresh();
-                    }
-
-                    foreach (var link in _diagram.Links)
-                    {
-                        link.Refresh();
-                    }
-
+                    await Task.Delay(100);
+                    foreach (var n in _diagram.Nodes) n.Refresh();
+                    foreach (var l in _diagram.Links) l.Refresh();
                     _diagram.Refresh();
                     StateHasChanged();
                 }
-                // else: diagram stays empty (already created by GetOrCreateDiagram)
             }
-            // else: diagram already exists in memory, use it as-is
+            else
+            {
+                // Sync grid size from existing diagram
+                var gs = _diagram.Options.GridSize;
+                AppState.SetGridSize(gs.HasValue ? (int)gs.Value : 0);
+            }
 
-            // Subscribe to selection changes to update button states
+            // Subscribe to diagram events
             _diagram.SelectionChanged += OnSelectionChanged;
-
-            // Also subscribe to diagram changes for other updates
             _diagram.Changed += OnDiagramChanged;
+
+            // Subscribe to AppState events
+            AppState.OnStateChanged += OnAppStateChanged;
+            AppState.MenuAddNode      += AddNode;
+            AppState.MenuDeleteNode   += DeleteSelectedNode;
+            AppState.MenuCutSelected  += CutSelectedNodes;
+            AppState.MenuCopySelected += CopySelectedNodes;
+            AppState.MenuPasteSelected += PasteNodes;
+            AppState.MenuAddPort      += AddPortToSelectedNode;
+            AppState.MenuDeletePort   += DeletePortFromSelectedNode;
+
+            _onMenuSaveDiagram     = () => InvokeAsync(SaveDiagram);
+            _onMenuReloadDiagram   = () => InvokeAsync(ReloadDiagram);
+            _onMenuEditProperties  = () => InvokeAsync(EditNodeProperties);
+
+            AppState.MenuSaveDiagram    += _onMenuSaveDiagram;
+            AppState.MenuReloadDiagram  += _onMenuReloadDiagram;
+            AppState.MenuEditProperties += _onMenuEditProperties;
+            AppState.MenuNewDiagram     += NewDiagram;
 
             UpdateSelectionState();
             StateHasChanged();
-
-            // make sure grid enabled reflects setting in diagram state
-            _gridSnapEnabled = _diagram.Options.GridSize != null;
-
         }
         await base.OnAfterRenderAsync(firstRender);
     }
@@ -92,40 +100,30 @@ public partial class Edit : IDisposable
         InvokeAsync(StateHasChanged);
     }
 
-    private void OnDiagramChanged()
-    {
-        InvokeAsync(StateHasChanged);
-    }
+    private void OnDiagramChanged() => InvokeAsync(StateHasChanged);
+
+    private void OnAppStateChanged() => InvokeAsync(StateHasChanged);
 
     private void UpdateSelectionState()
     {
-        var selectedNodes = _diagram?.GetSelectedModels()
-            .OfType<NodeModel>()
-            .ToList() ?? [];
-
-        _hasSelectedNode = selectedNodes.Count > 0;
-        _hasSingleSelectedNode = selectedNodes.Count == 1;
+        var selected = _diagram?.GetSelectedModels().OfType<NodeModel>().ToList() ?? [];
+        _hasSelectedNode       = selected.Count > 0;
+        _hasSingleSelectedNode = selected.Count == 1;
+        AppState.UpdateSelectionState(_hasSelectedNode, _hasSingleSelectedNode);
     }
+
+    // ── Node operations ──────────────────────────────────────────────────────
 
     private void AddNode()
     {
         if (_diagram == null) return;
-
-        var random = new Random();
-        var x = random.Next(50, 500);
-        var y = random.Next(50, 400);
-
-        // Deselect all nodes first
+        var rng = new Random();
         _diagram.UnselectAll();
-
-        var node = _diagram.Nodes.Add(new MudNodeModel(position: new Point(x, y))
+        var node = _diagram.Nodes.Add(new MudNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))
         {
             Title = $"Node {_nodeCounter++}"
         });
-
-        // Select the newly created node
         _diagram.SelectModel(node, false);
-
         UpdateSelectionState();
         StateHasChanged();
     }
@@ -133,46 +131,74 @@ public partial class Edit : IDisposable
     private void DeleteSelectedNode()
     {
         if (_diagram == null) return;
-
-        var selectedNodes = _diagram.GetSelectedModels()
-            .OfType<NodeModel>()
-            .ToList();
-
-        foreach (var node in selectedNodes)
-        {
-            _diagram.Nodes.Remove(node);
-        }
-
+        foreach (var n in _diagram.GetSelectedModels().OfType<NodeModel>().ToList())
+            _diagram.Nodes.Remove(n);
         UpdateSelectionState();
         StateHasChanged();
     }
 
-    private bool HasPortAlignment(PortAlignment alignment)
+    private void NewDiagram()
     {
-        if (_diagram == null) return false;
-
-        var selectedNode = _diagram.GetSelectedModels()
-            .OfType<NodeModel>()
-            .FirstOrDefault();
-
-        if (selectedNode == null) return false;
-
-        return selectedNode.Ports.Any(p => p.Alignment == alignment);
+        if (_diagram != null)
+        {
+            _diagram.SelectionChanged -= OnSelectionChanged;
+            _diagram.Changed -= OnDiagramChanged;
+        }
+        AppState.ResetDiagram();
+        _diagram = AppState.GetOrCreateDiagram();
+        _diagram.SelectionChanged += OnSelectionChanged;
+        _diagram.Changed += OnDiagramChanged;
+        _nodeCounter = 1;
+        UpdateSelectionState();
+        Snackbar.Add("New diagram created", Severity.Info);
+        StateHasChanged();
     }
+
+    private async Task ReloadDiagram()
+    {
+        if (_diagram != null)
+        {
+            _diagram.SelectionChanged -= OnSelectionChanged;
+            _diagram.Changed -= OnDiagramChanged;
+        }
+        AppState.ResetDiagram();
+        var savedState = await DiagramService.LoadDiagramAsync();
+        if (savedState != null && savedState.Nodes.Count > 0)
+        {
+            _diagram = AppState.CreateDiagramFromState(savedState, false);
+            var gs = _diagram.Options.GridSize;
+            AppState.SetGridSize(gs.HasValue ? (int)gs.Value : 0);
+            Snackbar.Add($"Diagram reloaded ({savedState.Nodes.Count} nodes)", Severity.Info);
+        }
+        else
+        {
+            _diagram = AppState.GetOrCreateDiagram();
+            Snackbar.Add("No saved diagram found", Severity.Warning);
+        }
+        _diagram.SelectionChanged += OnSelectionChanged;
+        _diagram.Changed += OnDiagramChanged;
+        UpdateSelectionState();
+        StateHasChanged();
+    }
+
+    private void CutSelectedNodes()  { /* TODO: clipboard */ }
+    private void CopySelectedNodes() { /* TODO: clipboard */ }
+    private void PasteNodes()        { /* TODO: clipboard */ }
+
+    // ── Port operations ──────────────────────────────────────────────────────
+
+    private bool HasPortAlignment(PortAlignment alignment) =>
+        _diagram?.GetSelectedModels().OfType<NodeModel>().FirstOrDefault()
+                ?.Ports.Any(p => p.Alignment == alignment) ?? false;
 
     private void AddPortToSelectedNode(PortAlignment alignment)
     {
         if (_diagram == null) return;
-
-        var selectedNode = _diagram.GetSelectedModels()
-            .OfType<NodeModel>()
-            .FirstOrDefault();
-
-        if (selectedNode != null && !HasPortAlignment(alignment))
+        var node = _diagram.GetSelectedModels().OfType<NodeModel>().FirstOrDefault();
+        if (node != null && !node.Ports.Any(p => p.Alignment == alignment))
         {
-            AppState.AddPortToNode(selectedNode, alignment);
-            //selectedNode.AddPort(alignment);
-            selectedNode.Refresh();
+            AppState.AddPortToNode(node, alignment);
+            node.Refresh();
             StateHasChanged();
         }
     }
@@ -180,22 +206,17 @@ public partial class Edit : IDisposable
     private void DeletePortFromSelectedNode(PortAlignment alignment)
     {
         if (_diagram == null) return;
-
-        var selectedNode = _diagram.GetSelectedModels()
-            .OfType<NodeModel>()
-            .FirstOrDefault();
-
-        if (selectedNode != null)
+        var node = _diagram.GetSelectedModels().OfType<NodeModel>().FirstOrDefault();
+        var port = node?.Ports.FirstOrDefault(p => p.Alignment == alignment);
+        if (port != null)
         {
-            var portToRemove = selectedNode.Ports.FirstOrDefault(p => p.Alignment == alignment);
-            if (portToRemove != null)
-            {
-                selectedNode.RemovePort(portToRemove);
-                selectedNode.Refresh();
-                StateHasChanged();
-            }
+            node!.RemovePort(port);
+            node.Refresh();
+            StateHasChanged();
         }
     }
+
+    // ── Save ─────────────────────────────────────────────────────────────────
 
     private async Task SaveDiagram()
     {
@@ -203,15 +224,10 @@ public partial class Edit : IDisposable
         {
             var state = AppState.GetDiagramState();
             var success = await DiagramService.SaveDiagramAsync(state);
-
-            if (success)
-            {
-                Snackbar.Add($"Diagram saved successfully ({state.Nodes.Count} nodes, {state.Links.Count} links)", Severity.Success);
-            }
-            else
-            {
-                Snackbar.Add("Failed to save diagram", Severity.Error);
-            }
+            Snackbar.Add(success
+                ? $"Diagram saved ({state.Nodes.Count} nodes, {state.Links.Count} links)"
+                : "Failed to save diagram",
+                success ? Severity.Success : Severity.Error);
         }
         catch (Exception ex)
         {
@@ -219,25 +235,15 @@ public partial class Edit : IDisposable
         }
     }
 
+    // ── Properties ───────────────────────────────────────────────────────────
+
     private async Task EditNodeProperties()
     {
         if (_diagram == null) return;
+        var node = _diagram.GetSelectedModels().OfType<MudNodeModel>().FirstOrDefault();
+        if (node == null) { Snackbar.Add("No node selected", Severity.Warning); return; }
 
-        var selectedNode = _diagram.GetSelectedModels()
-            .OfType<MudNodeModel>()
-            .FirstOrDefault();
-
-        if (selectedNode == null)
-        {
-            Snackbar.Add("No node selected", Severity.Warning);
-            return;
-        }
-
-        var parameters = new DialogParameters
-        {
-            { "Node", selectedNode }
-        };
-
+        var parameters = new DialogParameters { { "Node", node } };
         var options = new DialogOptions
         {
             MaxWidth = MaxWidth.Small,
@@ -245,52 +251,41 @@ public partial class Edit : IDisposable
             CloseButton = true,
             BackdropClick = true
         };
-
         var dialog = await DialogService.ShowAsync<NodePropertyEditor>("Edit Node Properties", parameters, options);
         var result = await dialog.Result;
-
-        if (result == null || result.Canceled)
+        if (result is { Canceled: false })
         {
-            return;
+            StateHasChanged();
+            Snackbar.Add("Node properties updated", Severity.Success);
         }
-        // Refresh the diagram to show updates
-        StateHasChanged();
-        Snackbar.Add("Node properties updated", Severity.Success);
     }
 
-    private void ToggleGridSnap()
-    {
-        if (_diagram == null) return;
-
-        _gridSnapEnabled = !_gridSnapEnabled;
-
-        if (_gridSnapEnabled)
-        {
-            _diagram.Options.GridSize = 20;
-        }
-        else
-        {
-            _diagram.Options.GridSize = null;
-        }
-
-        var message = _gridSnapEnabled 
-            ? "Grid snap enabled - nodes will snap to grid when moved" 
-            : "Grid snap disabled";
-
-        Snackbar.Add(message, _gridSnapEnabled ? Severity.Success : Severity.Info);
-        StateHasChanged();
-        _diagram.Refresh();
-    }
+    // ── Dispose ───────────────────────────────────────────────────────────────
 
     public void Dispose()
     {
-        // Clear any active snackbars to prevent them from persisting on navigation
         Snackbar.Clear();
+        AppState.SetEditMode(false);
+        AppState.UpdateSelectionState(false, false);
 
         if (_diagram != null)
         {
             _diagram.SelectionChanged -= OnSelectionChanged;
             _diagram.Changed -= OnDiagramChanged;
         }
+
+        AppState.OnStateChanged    -= OnAppStateChanged;
+        AppState.MenuAddNode       -= AddNode;
+        AppState.MenuDeleteNode    -= DeleteSelectedNode;
+        AppState.MenuCutSelected   -= CutSelectedNodes;
+        AppState.MenuCopySelected  -= CopySelectedNodes;
+        AppState.MenuPasteSelected -= PasteNodes;
+        AppState.MenuAddPort       -= AddPortToSelectedNode;
+        AppState.MenuDeletePort    -= DeletePortFromSelectedNode;
+        AppState.MenuNewDiagram    -= NewDiagram;
+
+        if (_onMenuSaveDiagram    != null) AppState.MenuSaveDiagram    -= _onMenuSaveDiagram;
+        if (_onMenuReloadDiagram  != null) AppState.MenuReloadDiagram  -= _onMenuReloadDiagram;
+        if (_onMenuEditProperties != null) AppState.MenuEditProperties -= _onMenuEditProperties;
     }
 }

@@ -2,8 +2,16 @@ using System.Text.Json.Serialization;
 
 namespace BlazorApp1.Models;
 
+public class NodeColorRule
+{
+    public string Operator { get; set; } = "<"; // <, >, <=, >=, ==, !=
+    public double Threshold { get; set; } = 0;
+    public string Color { get; set; } = "red"; // CSS color, e.g. "red", "#FF0000"
+}
+
 public class DiagramState
 {
+    public string Name { get; set; } = string.Empty;
     public List<NodeState> Nodes { get; set; } = new();
     public List<LinkState> Links { get; set; } = new();
     public int GridSize { get; set; } = 20; // Default 20px grid; 0 for no grid
@@ -64,6 +72,12 @@ public class NodeState
 
     // MQTT Data Binding
     public string? DataTopic { get; set; }
+    public string? DataTopic2 { get; set; }
+    public string? DataFormat { get; set; }
+    public string? DataFormat2 { get; set; }
+    public int? FontSize { get; set; }
+    public List<NodeColorRule> DataColorRules { get; set; } = new();
+    public List<NodeColorRule> DataColorRules2 { get; set; } = new();
 
     public List<PortState> Ports { get; set; } = new();
 }
