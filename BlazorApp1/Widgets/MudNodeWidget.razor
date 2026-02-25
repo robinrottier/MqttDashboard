@@ -1,4 +1,6 @@
 ﻿@using Blazor.Diagrams.Components.Renderers;
+@using Blazor.Diagrams.Core.Anchors
+@using Blazor.Diagrams.Core.Models
 @using BlazorApp1.Models
 @using BlazorApp1.Services
 @inject ApplicationState AppState
@@ -114,6 +116,27 @@
         Node.DataValue = value;
         Node.DataLastUpdated = DateTime.Now;
         InvokeAsync(StateHasChanged);
+
+        // find outgoing link and make it dash to indicate data flow
+        foreach (var port in Node.Ports)
+        {
+            if (port.Links.Count > 0)
+            {
+                foreach (var link in port.Links)
+                {
+                    var l = link as LinkModel;
+                    if (l != null)
+                    {
+                        var a = link.Source as SinglePortAnchor;
+                        if (a != null)
+                        {
+                            l.DashPattern = "5,5";
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private void OnData2Received(string topic, object value)

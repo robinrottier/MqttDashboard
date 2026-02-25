@@ -2,11 +2,11 @@
   "Name": "",
   "Nodes": [
     {
-      "Id": "c5223e19-225a-40ff-893d-525c9a9fb09d",
+      "Id": "036fa614-b3d4-4d38-b1b9-533d6242a496",
       "Title": "HUB-3",
-      "X": 160,
-      "Y": 140,
-      "Width": 100,
+      "X": 200,
+      "Y": 40,
+      "Width": 70,
       "Height": 80,
       "Icon": null,
       "IconName": null,
@@ -23,30 +23,30 @@
       "DataColorRules2": [],
       "Ports": [
         {
-          "Id": "e5e03a9e-b10b-4337-9754-88ae5443921c",
+          "Id": "b49d031c-abc2-4fe4-b18d-c28b173f0575",
           "Alignment": "Left"
         },
         {
-          "Id": "11fb866f-b446-4735-9eff-52d4a3ea1670",
+          "Id": "ddba14b8-7f2c-47fb-9dac-6f51e6b3e95e",
           "Alignment": "Top"
         },
         {
-          "Id": "269401d8-d733-4e1c-a338-f1038dc366b4",
+          "Id": "c464278b-61f4-40fc-8db9-c86d544ca989",
           "Alignment": "Right"
         },
         {
-          "Id": "53c1f07c-94e3-4283-bf28-50974a27bf3e",
+          "Id": "e07a098d-c6dc-4f62-a029-c897d872ac74",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "73db74f4-864a-46ab-a5d3-5c608152aafb",
+      "Id": "f6dd67ec-d795-4c5f-bdb7-b8e0522571f8",
       "Title": "Grid",
-      "X": 20,
-      "Y": 140,
-      "Width": 100,
-      "Height": 100,
+      "X": 10,
+      "Y": 40,
+      "Width": 80,
+      "Height": 80,
       "Icon": null,
       "IconName": null,
       "Description": null,
@@ -68,45 +68,45 @@
       "DataColorRules2": [],
       "Ports": [
         {
-          "Id": "3706e637-a2ad-4aa3-8510-2cccf4fcedc6",
+          "Id": "6fc3daf1-79fc-42ef-a059-1539f9951eb2",
           "Alignment": "Right"
         }
       ]
     },
     {
-      "Id": "fa2de83d-7098-470f-9462-df9ca56d29e4",
-      "Title": "Solar",
-      "X": 160,
-      "Y": 20,
-      "Width": 100,
-      "Height": 80,
+      "Id": "977fae1f-d781-4fe4-b9e7-0f1557785b37",
+      "Title": "",
+      "X": 130,
+      "Y": -90,
+      "Width": 60,
+      "Height": 100,
       "Icon": "\u003Cg\u003E\u003Crect fill=\u0022none\u0022 height=\u002224\u0022 width=\u002224\u0022/\u003E\u003C/g\u003E\u003Cg\u003E\u003Cg\u003E\u003Cpolygon points=\u00223.33,16 11,16 11,13 4,13\u0022/\u003E\u003Cpolygon points=\u002213,16 20.67,16 20,13 13,13\u0022/\u003E\u003Cpolygon points=\u002221.11,18 13,18 13,22 22,22\u0022/\u003E\u003Cpolygon points=\u00222,22 11,22 11,18 2.89,18\u0022/\u003E\u003Crect height=\u00223\u0022 width=\u00222\u0022 x=\u002211\u0022 y=\u00228\u0022/\u003E\u003Crect height=\u00223\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -0.2089 14.6085)\u0022 width=\u00222\u0022 x=\u002216.53\u0022 y=\u00226.06\u0022/\u003E\u003Crect height=\u00222\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -3.448 6.7885)\u0022 width=\u00223\u0022 x=\u00224.97\u0022 y=\u00226.56\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u00223\u0022 y=\u00222\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u002218\u0022 y=\u00222\u0022/\u003E\u003Cpath d=\u0022M12,7c2.76,0,5-2.24,5-5H7C7,4.76,9.24,7,12,7z\u0022/\u003E\u003C/g\u003E\u003C/g\u003E",
       "IconName": "Solar Power",
-      "Description": null,
+      "Description": "Solar",
       "BackgroundColor": "darkorange",
       "IconColor": null,
       "Metadata": {},
       "DataTopic": "ess1/servers/HUB-3/solar",
       "DataTopic2": null,
-      "DataFormat": null,
+      "DataFormat": "{0:0}W",
       "DataFormat2": null,
       "FontSize": null,
       "DataColorRules": [],
       "DataColorRules2": [],
       "Ports": [
         {
-          "Id": "0991610a-afcd-49e4-9ea2-8ebefb7dbbfd",
-          "Alignment": "Bottom"
+          "Id": "9aa4cea3-3e35-445d-a8ef-9583bf2550fc",
+          "Alignment": "Top"
         }
       ]
     },
     {
-      "Id": "278aa918-328f-4e35-84a4-f50cdc5a49cf",
+      "Id": "a2a66db8-f449-4c29-acc6-23a3fd6e0290",
       "Title": "DURA",
-      "X": 320,
-      "Y": 140,
-      "Width": 120,
-      "Height": 100,
+      "X": 340,
+      "Y": 40,
+      "Width": 70,
+      "Height": 80,
       "Icon": null,
       "IconName": null,
       "Description": null,
@@ -122,25 +122,25 @@
       "DataColorRules2": [],
       "Ports": [
         {
-          "Id": "31610992-f3d9-430a-a45f-2cbab9c523e0",
+          "Id": "1dfb750f-f7ef-4960-a8be-a365dba7e8c1",
           "Alignment": "Left"
         },
         {
-          "Id": "cc914e59-cb2e-496c-b9f1-8a1dd4456c6d",
+          "Id": "5343cb4a-0446-4308-b67e-40e6df374d01",
           "Alignment": "Top"
         },
         {
-          "Id": "a00e14fc-1402-40ea-874d-c84ea6ccfd50",
+          "Id": "2c33c0eb-535e-4c78-992b-fa5a8392cf62",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "25754d6e-5dfc-450d-b742-c177693f83dd",
+      "Id": "3a7e389f-18b2-49a1-81df-9a1d84458a65",
       "Title": "",
-      "X": 160,
-      "Y": 280,
-      "Width": 100,
+      "X": 210,
+      "Y": -90,
+      "Width": 60,
       "Height": 100,
       "Icon": "\u003Cpath d=\u0022M0 0h24v24H0z\u0022 fill=\u0022none\u0022/\u003E\u003Cpath d=\u0022M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4zM11 20v-5.5H9L13 7v5.5h2L11 20z\u0022/\u003E",
       "IconName": "Battery",
@@ -157,18 +157,18 @@
       "DataColorRules2": [],
       "Ports": [
         {
-          "Id": "adc8cf44-4d50-4d46-889c-a71d34733e71",
+          "Id": "91cf7e70-d1fd-44e0-be31-e794b73a296f",
           "Alignment": "Top"
         }
       ]
     },
     {
-      "Id": "9aa094af-ffa6-4fce-b479-4c2cbca7fa76",
+      "Id": "d48abebb-2d1a-4a80-a826-93b2736d179b",
       "Title": "",
-      "X": 320,
-      "Y": 280,
-      "Width": 120,
-      "Height": 80,
+      "X": 380,
+      "Y": -90,
+      "Width": 60,
+      "Height": 100,
       "Icon": "\u003Cpath d=\u0022M0 0h24v24H0z\u0022 fill=\u0022none\u0022/\u003E\u003Cpath d=\u0022M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4zM11 20v-5.5H9L13 7v5.5h2L11 20z\u0022/\u003E",
       "IconName": "Battery",
       "Description": null,
@@ -184,21 +184,21 @@
       "DataColorRules2": [],
       "Ports": [
         {
-          "Id": "e9768fe0-bc71-46e4-b38c-8f6a7aa9fd60",
+          "Id": "292d2b73-adff-4c63-993f-a58ddc0678b4",
           "Alignment": "Top"
         }
       ]
     },
     {
-      "Id": "04a69779-3561-4dd0-a28e-bdf189df960c",
-      "Title": "Solar",
-      "X": 320,
-      "Y": 20,
-      "Width": 120,
-      "Height": 80,
+      "Id": "f5dae468-4793-4bf8-879a-1321928ca5ae",
+      "Title": "",
+      "X": 310,
+      "Y": -90,
+      "Width": 60,
+      "Height": 100,
       "Icon": "\u003Cg\u003E\u003Crect fill=\u0022none\u0022 height=\u002224\u0022 width=\u002224\u0022/\u003E\u003C/g\u003E\u003Cg\u003E\u003Cg\u003E\u003Cpolygon points=\u00223.33,16 11,16 11,13 4,13\u0022/\u003E\u003Cpolygon points=\u002213,16 20.67,16 20,13 13,13\u0022/\u003E\u003Cpolygon points=\u002221.11,18 13,18 13,22 22,22\u0022/\u003E\u003Cpolygon points=\u00222,22 11,22 11,18 2.89,18\u0022/\u003E\u003Crect height=\u00223\u0022 width=\u00222\u0022 x=\u002211\u0022 y=\u00228\u0022/\u003E\u003Crect height=\u00223\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -0.2089 14.6085)\u0022 width=\u00222\u0022 x=\u002216.53\u0022 y=\u00226.06\u0022/\u003E\u003Crect height=\u00222\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -3.448 6.7885)\u0022 width=\u00223\u0022 x=\u00224.97\u0022 y=\u00226.56\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u00223\u0022 y=\u00222\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u002218\u0022 y=\u00222\u0022/\u003E\u003Cpath d=\u0022M12,7c2.76,0,5-2.24,5-5H7C7,4.76,9.24,7,12,7z\u0022/\u003E\u003C/g\u003E\u003C/g\u003E",
       "IconName": "Solar Power",
-      "Description": null,
+      "Description": "Solar",
       "BackgroundColor": null,
       "IconColor": null,
       "Metadata": {},
@@ -211,18 +211,18 @@
       "DataColorRules2": [],
       "Ports": [
         {
-          "Id": "660e072f-8c2b-499a-a693-6a940fbc782a",
+          "Id": "d03f34ac-0556-4bdc-8d35-e7209726bc54",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "31d6099c-b9d3-4da0-bb0e-7aeb7a35e324",
-      "Title": "active",
-      "X": 480,
-      "Y": 140,
-      "Width": 120,
-      "Height": 100,
+      "Id": "1582aeaf-340c-46d2-99d7-009abe07789a",
+      "Title": "HUB-4",
+      "X": 510,
+      "Y": 40,
+      "Width": 70,
+      "Height": 80,
       "Icon": null,
       "IconName": null,
       "Description": null,
@@ -238,24 +238,24 @@
       "DataColorRules2": [],
       "Ports": [
         {
-          "Id": "2d9e7a1d-61da-43bd-a49e-69706a93900c",
+          "Id": "f27a654d-d988-449f-8466-f12ba5b592a2",
           "Alignment": "Top"
         },
         {
-          "Id": "9587c1d3-1a38-40dd-a5d2-8b5b0741a95f",
+          "Id": "24d98440-2b1b-464f-8d11-9201cb765d28",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "57cdd667-5e47-46c5-826e-b93839fe500d",
-      "Title": "soc",
-      "X": 480,
-      "Y": 280,
-      "Width": 120,
-      "Height": 70,
-      "Icon": null,
-      "IconName": null,
+      "Id": "dc6a0f02-02ab-4d1b-8fee-6b68b8bf0eb2",
+      "Title": "",
+      "X": 550,
+      "Y": -90,
+      "Width": 60,
+      "Height": 100,
+      "Icon": "\u003Cpath d=\u0022M0 0h24v24H0z\u0022 fill=\u0022none\u0022/\u003E\u003Cpath d=\u0022M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4zM11 20v-5.5H9L13 7v5.5h2L11 20z\u0022/\u003E",
+      "IconName": "Battery",
       "Description": null,
       "BackgroundColor": null,
       "IconColor": null,
@@ -269,21 +269,21 @@
       "DataColorRules2": [],
       "Ports": [
         {
-          "Id": "8570cccc-a922-4a64-a574-07a440944d59",
-          "Alignment": "Top"
+          "Id": "b4fd7662-4e75-4ad4-831d-7ede2caa662f",
+          "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "c6d973b9-f9e1-44f6-9ba9-835562d3413f",
-      "Title": "solar",
+      "Id": "4d2b47f3-9b71-4375-adb7-97121dfb0934",
+      "Title": "",
       "X": 480,
-      "Y": 20,
-      "Width": 120,
-      "Height": 80,
-      "Icon": null,
-      "IconName": null,
-      "Description": null,
+      "Y": -90,
+      "Width": 60,
+      "Height": 100,
+      "Icon": "\u003Cg\u003E\u003Crect fill=\u0022none\u0022 height=\u002224\u0022 width=\u002224\u0022/\u003E\u003C/g\u003E\u003Cg\u003E\u003Cg\u003E\u003Cpolygon points=\u00223.33,16 11,16 11,13 4,13\u0022/\u003E\u003Cpolygon points=\u002213,16 20.67,16 20,13 13,13\u0022/\u003E\u003Cpolygon points=\u002221.11,18 13,18 13,22 22,22\u0022/\u003E\u003Cpolygon points=\u00222,22 11,22 11,18 2.89,18\u0022/\u003E\u003Crect height=\u00223\u0022 width=\u00222\u0022 x=\u002211\u0022 y=\u00228\u0022/\u003E\u003Crect height=\u00223\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -0.2089 14.6085)\u0022 width=\u00222\u0022 x=\u002216.53\u0022 y=\u00226.06\u0022/\u003E\u003Crect height=\u00222\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -3.448 6.7885)\u0022 width=\u00223\u0022 x=\u00224.97\u0022 y=\u00226.56\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u00223\u0022 y=\u00222\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u002218\u0022 y=\u00222\u0022/\u003E\u003Cpath d=\u0022M12,7c2.76,0,5-2.24,5-5H7C7,4.76,9.24,7,12,7z\u0022/\u003E\u003C/g\u003E\u003C/g\u003E",
+      "IconName": "Solar Power",
+      "Description": "Solar",
       "BackgroundColor": null,
       "IconColor": null,
       "Metadata": {},
@@ -296,61 +296,69 @@
       "DataColorRules2": [],
       "Ports": [
         {
-          "Id": "1c35577d-4155-476f-a04c-4af8f624b11d",
+          "Id": "c0548be8-a85b-4d17-9490-a7224fb815de",
           "Alignment": "Bottom"
         }
       ]
+    },
+    {
+      "Id": "75c51c4a-f6db-48ed-a211-18fc29b73fa1",
+      "Title": "",
+      "X": 120,
+      "Y": 60,
+      "Width": 60,
+      "Height": 45,
+      "Icon": null,
+      "IconName": null,
+      "Description": null,
+      "BackgroundColor": null,
+      "IconColor": null,
+      "Metadata": {},
+      "DataTopic": null,
+      "DataTopic2": null,
+      "DataFormat": null,
+      "DataFormat2": null,
+      "FontSize": null,
+      "DataColorRules": [],
+      "DataColorRules2": [],
+      "Ports": []
+    },
+    {
+      "Id": "c6cf6ae3-130d-4e2e-954d-b40ddcb779da",
+      "Title": "Zappi",
+      "X": 150,
+      "Y": 150,
+      "Width": 120,
+      "Height": 80,
+      "Icon": null,
+      "IconName": null,
+      "Description": null,
+      "BackgroundColor": null,
+      "IconColor": null,
+      "Metadata": {},
+      "DataTopic": null,
+      "DataTopic2": null,
+      "DataFormat": null,
+      "DataFormat2": null,
+      "FontSize": null,
+      "DataColorRules": [],
+      "DataColorRules2": [],
+      "Ports": []
     }
   ],
   "Links": [
     {
-      "SourceNodeId": "73db74f4-864a-46ab-a5d3-5c608152aafb",
-      "SourcePortAlignment": "Right",
-      "TargetNodeId": "c5223e19-225a-40ff-893d-525c9a9fb09d",
-      "TargetPortAlignment": "Left"
-    },
-    {
-      "SourceNodeId": "fa2de83d-7098-470f-9462-df9ca56d29e4",
+      "SourceNodeId": "4d2b47f3-9b71-4375-adb7-97121dfb0934",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "c5223e19-225a-40ff-893d-525c9a9fb09d",
+      "TargetNodeId": "1582aeaf-340c-46d2-99d7-009abe07789a",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "c5223e19-225a-40ff-893d-525c9a9fb09d",
-      "SourcePortAlignment": "Right",
-      "TargetNodeId": "278aa918-328f-4e35-84a4-f50cdc5a49cf",
-      "TargetPortAlignment": "Left"
-    },
-    {
-      "SourceNodeId": "04a69779-3561-4dd0-a28e-bdf189df960c",
+      "SourceNodeId": "dc6a0f02-02ab-4d1b-8fee-6b68b8bf0eb2",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "278aa918-328f-4e35-84a4-f50cdc5a49cf",
-      "TargetPortAlignment": "Top"
-    },
-    {
-      "SourceNodeId": "278aa918-328f-4e35-84a4-f50cdc5a49cf",
-      "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "9aa094af-ffa6-4fce-b479-4c2cbca7fa76",
-      "TargetPortAlignment": "Top"
-    },
-    {
-      "SourceNodeId": "c5223e19-225a-40ff-893d-525c9a9fb09d",
-      "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "25754d6e-5dfc-450d-b742-c177693f83dd",
-      "TargetPortAlignment": "Top"
-    },
-    {
-      "SourceNodeId": "31d6099c-b9d3-4da0-bb0e-7aeb7a35e324",
-      "SourcePortAlignment": "Top",
-      "TargetNodeId": "c6d973b9-f9e1-44f6-9ba9-835562d3413f",
-      "TargetPortAlignment": "Bottom"
-    },
-    {
-      "SourceNodeId": "31d6099c-b9d3-4da0-bb0e-7aeb7a35e324",
-      "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "57cdd667-5e47-46c5-826e-b93839fe500d",
+      "TargetNodeId": "1582aeaf-340c-46d2-99d7-009abe07789a",
       "TargetPortAlignment": "Top"
     }
   ],
-  "GridSize": 20
+  "GridSize": 0
 }
