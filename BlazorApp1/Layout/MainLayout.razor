@@ -4,7 +4,6 @@
 @using BlazorApp1.Models
 @inject MqttInitializationService MqttInit
 @inject ApplicationState AppState
-@inject NavigationManager NavManager
 @inject IJSRuntime JS
 
 <MudThemeProvider Theme="@_theme" IsDarkMode="@ComputedDarkMode" />
@@ -30,16 +29,18 @@
 
         <MudSpacer />
 
-        <!-- Edit / View mode toggle -->
+        <!-- Edit mode toggle switch -->
         <MudTooltip Text="@(_isEditMode ? "Switch to view mode" : "Switch to edit mode")">
-            <MudButton Variant="@(_isEditMode ? Variant.Filled : Variant.Outlined)"
-                       Color="Color.Primary"
-                       StartIcon="@(_isEditMode ? Icons.Material.Filled.Edit : Icons.Material.Filled.Visibility)"
-                       OnClick="ToggleEditMode"
-                       Size="Size.Small"
-                       Class="mr-2">
-                @(_isEditMode ? "Edit" : "View")
-            </MudButton>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mr-2">
+                <MudText Typo="Typo.body2"
+                         Style="@(_isEditMode ? "font-weight:700; color: var(--mud-palette-primary);" : "color: var(--mud-palette-text-secondary);")">
+                    Edit
+                </MudText>
+                <MudSwitch Value="_isEditMode"
+                           ValueChanged="@((bool v) => ToggleEditMode())"
+                           Color="Color.Primary"
+                           T="bool" />
+            </MudStack>
         </MudTooltip>
 
         <!-- Hamburger menu button (top-right, 3 bars) -->
@@ -62,7 +63,7 @@
     private MudTheme? _theme = null;
 
     private string AppName => GetType().Assembly.GetName().Name ?? "Application";
-    private bool _isEditMode => NavManager.Uri.Contains("/edit", StringComparison.OrdinalIgnoreCase);
+    private bool _isEditMode => AppState.IsEditMode;
 
     private bool ComputedDarkMode => AppState.ThemeMode switch
     {
@@ -103,13 +104,7 @@
 
     private void OnAppStateChanged() => InvokeAsync(StateHasChanged);
 
-    private void ToggleEditMode()
-    {
-        if (_isEditMode)
-            NavManager.NavigateTo("/");
-        else
-            NavManager.NavigateTo("/edit");
-    }
+    private void ToggleEditMode() => AppState.RequestToggleEditMode();
 
     public void Dispose()
     {

@@ -78,6 +78,7 @@ public class NodeState
     public int? FontSize { get; set; }
     public List<NodeColorRule> DataColorRules { get; set; } = new();
     public List<NodeColorRule> DataColorRules2 { get; set; } = new();
+    public string? LinkAnimation { get; set; }
 
     public List<PortState> Ports { get; set; } = new();
 }

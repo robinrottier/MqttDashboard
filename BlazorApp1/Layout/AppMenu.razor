@@ -2,7 +2,6 @@
 @using BlazorApp1.Models
 @using Blazor.Diagrams.Core.Models
 @inject ApplicationState AppState
-@inject NavigationManager NavManager
 
 <MudMenu Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
 
@@ -64,7 +63,7 @@
 </MudMenu>
 
 @code {
-    private bool IsEditMode => NavManager.Uri.Contains("/edit", StringComparison.OrdinalIgnoreCase);
+    private bool IsEditMode => AppState.IsEditMode;
 
     private void NewDiagram()=> AppState.TriggerNewDiagram();
     private void ReloadDiagram()      => AppState.TriggerReloadDiagram();

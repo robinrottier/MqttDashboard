@@ -47,7 +47,11 @@ public class ApplicationState
     public bool HasSelectedNode { get; private set; } = false;
     public bool HasSingleSelectedNode { get; private set; } = false;
 
-    // Menu action events — the Edit page subscribes to these
+    // Edit mode toggle event — fired by MainLayout, handled by Display page
+    public event Action? OnToggleEditModeRequested;
+    public void RequestToggleEditMode() => OnToggleEditModeRequested?.Invoke();
+
+    // Menu action events — the Display page subscribes to these when in edit mode
     public event Action? MenuAddNode;
     public event Action? MenuDeleteNode;
     public event Action? MenuCutSelected;
@@ -177,6 +181,7 @@ public class ApplicationState
                     FontSize = nodeState.FontSize,
                     DataColorRules = nodeState.DataColorRules ?? new(),
                     DataColorRules2 = nodeState.DataColorRules2 ?? new(),
+                    LinkAnimation = nodeState.LinkAnimation,
                 };
 
                 diagram.Nodes.Add(node);
@@ -227,6 +232,7 @@ public class ApplicationState
 
                     var link = diagram.Links.Add(new LinkModel(sourceAnchor, targetAnchor));
                     link.Locked = readOnly;
+                    CheckForLinkAnimation(sourceNode, link);
                 }
             }
         }
@@ -265,6 +271,11 @@ public class ApplicationState
                 state.GridSize = _diagram.Options.GridSize.Value;
         }
 
+        // Rebase node positions to current view by baking in the pan offset,
+        // then reset pan to zero so the diagram looks identical after save.
+        var panX = _diagram.Pan.X;
+        var panY = _diagram.Pan.Y;
+
         // Save nodes
         foreach (var node in _diagram.Nodes.OfType<MudNodeModel>())
         {
@@ -272,8 +283,8 @@ public class ApplicationState
             {
                 Id = node.Id,
                 Title = node.Title ?? string.Empty,
-                X = node.Position?.X ?? 0,
-                Y = node.Position?.Y ?? 0,
+                X = (node.Position?.X ?? 0) + panX,
+                Y = (node.Position?.Y ?? 0) + panY,
                 Width = node.Size?.Width ?? 120,
                 Height = node.Size?.Height ?? 90,
                 Icon = node.Icon,
@@ -289,6 +300,7 @@ public class ApplicationState
                 FontSize = node.FontSize,
                 DataColorRules = node.DataColorRules,
                 DataColorRules2 = node.DataColorRules2,
+                LinkAnimation = node.LinkAnimation,
             };
 
             // Save ports
@@ -336,6 +348,10 @@ public class ApplicationState
                 state.Links.Add(linkState);
             }
         }
+
+        // Reset pan to zero — positions are now in view space
+        if (panX != 0 || panY != 0)
+            _diagram.SetPan(0, 0);
 
         return state;
     }
@@ -465,6 +481,16 @@ public class ApplicationState
 
         diagram.Nodes.Add(node);
         diagram.Controls.AddFor(node).Add(new ResizeControl(new BottomRightResizerProvider()));
+    }
+
+    public void CheckForLinkAnimation(NodeModel sourceNode, LinkModel link)
+    {
+        if (sourceNode is MudNodeModel mudSource &&
+            !string.IsNullOrEmpty(mudSource.LinkAnimation) &&
+            mudSource.LinkAnimation != "None")
+        {
+            link.DashPattern = "5,5";
+        }
     }
 
     internal void AddPortToNode(NodeModel node, PortAlignment alignment)

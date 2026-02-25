@@ -93,5 +93,10 @@ namespace BlazorApp1.Models
         /// Color rules for data value 2
         /// </summary>
         public List<NodeColorRule> DataColorRules2 { get; set; } = new();
+
+        /// <summary>
+        /// Link animation style for links sourced from this node: "None", "Forward", "Reverse"
+        /// </summary>
+        public string? LinkAnimation { get; set; }
     }
 }

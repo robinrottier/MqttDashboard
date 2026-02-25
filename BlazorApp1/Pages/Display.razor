@@ -4,6 +4,7 @@
 @using Blazor.Diagrams.Components
 @using Blazor.Diagrams.Components.Widgets
 @using Blazor.Diagrams.Core.Models
+@using BlazorApp1.Components
 
 <PageTitle>@(AppState.DisplayName)</PageTitle>
 
@@ -17,6 +18,14 @@ else
     <MudPaper Elevation="2" Style="width: 100%; height: calc(100vh - 100px); overflow: hidden;">
         <CascadingValue Value="_diagram" IsFixed="true">
             <DiagramCanvas>
+                <Widgets>
+                    @if (AppState.IsEditMode)
+                    {
+                        <GridWidget Size="@(_diagram.Options.GridSize ?? 20)"
+                                    Mode="GridMode.Line"
+                                    BackgroundColor="white" />
+                    }
+                </Widgets>
             </DiagramCanvas>
         </CascadingValue>
     </MudPaper>

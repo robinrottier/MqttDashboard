@@ -2,10 +2,10 @@
   "Name": "",
   "Nodes": [
     {
-      "Id": "036fa614-b3d4-4d38-b1b9-533d6242a496",
+      "Id": "c0778521-ae55-4872-9cf7-7abe1246a8cd",
       "Title": "HUB-3",
-      "X": 200,
-      "Y": 40,
+      "X": 199.19998,
+      "Y": 151.99998,
       "Width": 70,
       "Height": 80,
       "Icon": null,
@@ -21,30 +21,31 @@
       "FontSize": null,
       "DataColorRules": [],
       "DataColorRules2": [],
+      "LinkAnimation": null,
       "Ports": [
         {
-          "Id": "b49d031c-abc2-4fe4-b18d-c28b173f0575",
+          "Id": "677249d6-d57b-4318-a060-725f62fd156f",
           "Alignment": "Left"
         },
         {
-          "Id": "ddba14b8-7f2c-47fb-9dac-6f51e6b3e95e",
+          "Id": "95bc5a8f-ca61-450a-90a3-ac5687240f2b",
           "Alignment": "Top"
         },
         {
-          "Id": "c464278b-61f4-40fc-8db9-c86d544ca989",
+          "Id": "fe3bab02-5a20-40e1-b4e0-af56cc60226a",
           "Alignment": "Right"
         },
         {
-          "Id": "e07a098d-c6dc-4f62-a029-c897d872ac74",
+          "Id": "190c4d66-33ea-43e8-9eb0-3de1e3a8dc21",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "f6dd67ec-d795-4c5f-bdb7-b8e0522571f8",
+      "Id": "a4517948-830d-4bbf-90b9-d1cafd005b9d",
       "Title": "Grid",
-      "X": 10,
-      "Y": 40,
+      "X": 9.19998,
+      "Y": 151.99998,
       "Width": 80,
       "Height": 80,
       "Icon": null,
@@ -66,18 +67,19 @@
         }
       ],
       "DataColorRules2": [],
+      "LinkAnimation": null,
       "Ports": [
         {
-          "Id": "6fc3daf1-79fc-42ef-a059-1539f9951eb2",
+          "Id": "6d9b1eed-9c5b-4482-93b4-9bca34e28eb0",
           "Alignment": "Right"
         }
       ]
     },
     {
-      "Id": "977fae1f-d781-4fe4-b9e7-0f1557785b37",
+      "Id": "0a460039-cc0c-46b6-b9c9-a097e83e3f22",
       "Title": "",
-      "X": 130,
-      "Y": -90,
+      "X": 129.19998,
+      "Y": 21.99998,
       "Width": 60,
       "Height": 100,
       "Icon": "\u003Cg\u003E\u003Crect fill=\u0022none\u0022 height=\u002224\u0022 width=\u002224\u0022/\u003E\u003C/g\u003E\u003Cg\u003E\u003Cg\u003E\u003Cpolygon points=\u00223.33,16 11,16 11,13 4,13\u0022/\u003E\u003Cpolygon points=\u002213,16 20.67,16 20,13 13,13\u0022/\u003E\u003Cpolygon points=\u002221.11,18 13,18 13,22 22,22\u0022/\u003E\u003Cpolygon points=\u00222,22 11,22 11,18 2.89,18\u0022/\u003E\u003Crect height=\u00223\u0022 width=\u00222\u0022 x=\u002211\u0022 y=\u00228\u0022/\u003E\u003Crect height=\u00223\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -0.2089 14.6085)\u0022 width=\u00222\u0022 x=\u002216.53\u0022 y=\u00226.06\u0022/\u003E\u003Crect height=\u00222\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -3.448 6.7885)\u0022 width=\u00223\u0022 x=\u00224.97\u0022 y=\u00226.56\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u00223\u0022 y=\u00222\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u002218\u0022 y=\u00222\u0022/\u003E\u003Cpath d=\u0022M12,7c2.76,0,5-2.24,5-5H7C7,4.76,9.24,7,12,7z\u0022/\u003E\u003C/g\u003E\u003C/g\u003E",
@@ -93,18 +95,19 @@
       "FontSize": null,
       "DataColorRules": [],
       "DataColorRules2": [],
+      "LinkAnimation": null,
       "Ports": [
         {
-          "Id": "9aa4cea3-3e35-445d-a8ef-9583bf2550fc",
+          "Id": "ef81a5fc-553d-4c6f-bddb-0941ffdcb5d3",
           "Alignment": "Top"
         }
       ]
     },
     {
-      "Id": "a2a66db8-f449-4c29-acc6-23a3fd6e0290",
+      "Id": "d8aeae66-20bb-4b26-9d08-0069839b4b16",
       "Title": "DURA",
-      "X": 340,
-      "Y": 40,
+      "X": 339.19998,
+      "Y": 151.99998,
       "Width": 70,
       "Height": 80,
       "Icon": null,
@@ -120,26 +123,27 @@
       "FontSize": null,
       "DataColorRules": [],
       "DataColorRules2": [],
+      "LinkAnimation": null,
       "Ports": [
         {
-          "Id": "1dfb750f-f7ef-4960-a8be-a365dba7e8c1",
+          "Id": "1bf52214-20d0-4add-bf43-50ee1b2cbc14",
           "Alignment": "Left"
         },
         {
-          "Id": "5343cb4a-0446-4308-b67e-40e6df374d01",
+          "Id": "6fdd8418-ecbb-40b7-9389-a2805a9aad4d",
           "Alignment": "Top"
         },
         {
-          "Id": "2c33c0eb-535e-4c78-992b-fa5a8392cf62",
+          "Id": "12f49131-9b31-4820-b333-45e485e67ecd",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "3a7e389f-18b2-49a1-81df-9a1d84458a65",
+      "Id": "7928ca47-897d-4ba4-814b-e966ed02a058",
       "Title": "",
-      "X": 210,
-      "Y": -90,
+      "X": 209.19998,
+      "Y": 21.99998,
       "Width": 60,
       "Height": 100,
       "Icon": "\u003Cpath d=\u0022M0 0h24v24H0z\u0022 fill=\u0022none\u0022/\u003E\u003Cpath d=\u0022M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4zM11 20v-5.5H9L13 7v5.5h2L11 20z\u0022/\u003E",
@@ -155,18 +159,19 @@
       "FontSize": null,
       "DataColorRules": [],
       "DataColorRules2": [],
+      "LinkAnimation": null,
       "Ports": [
         {
-          "Id": "91cf7e70-d1fd-44e0-be31-e794b73a296f",
+          "Id": "82b86c10-a160-4270-a117-e90f4c039ced",
           "Alignment": "Top"
         }
       ]
     },
     {
-      "Id": "d48abebb-2d1a-4a80-a826-93b2736d179b",
+      "Id": "d3dc9b3b-dba0-4c89-a3aa-4b4fd5a3465d",
       "Title": "",
-      "X": 380,
-      "Y": -90,
+      "X": 379.19998,
+      "Y": 21.99998,
       "Width": 60,
       "Height": 100,
       "Icon": "\u003Cpath d=\u0022M0 0h24v24H0z\u0022 fill=\u0022none\u0022/\u003E\u003Cpath d=\u0022M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4zM11 20v-5.5H9L13 7v5.5h2L11 20z\u0022/\u003E",
@@ -182,18 +187,19 @@
       "FontSize": null,
       "DataColorRules": [],
       "DataColorRules2": [],
+      "LinkAnimation": null,
       "Ports": [
         {
-          "Id": "292d2b73-adff-4c63-993f-a58ddc0678b4",
+          "Id": "6a4b4235-641f-4c3c-b92c-6f3aa854967d",
           "Alignment": "Top"
         }
       ]
     },
     {
-      "Id": "f5dae468-4793-4bf8-879a-1321928ca5ae",
+      "Id": "8bbee9a5-393b-4423-97e2-9af1f91970df",
       "Title": "",
-      "X": 310,
-      "Y": -90,
+      "X": 309.19998,
+      "Y": 21.99998,
       "Width": 60,
       "Height": 100,
       "Icon": "\u003Cg\u003E\u003Crect fill=\u0022none\u0022 height=\u002224\u0022 width=\u002224\u0022/\u003E\u003C/g\u003E\u003Cg\u003E\u003Cg\u003E\u003Cpolygon points=\u00223.33,16 11,16 11,13 4,13\u0022/\u003E\u003Cpolygon points=\u002213,16 20.67,16 20,13 13,13\u0022/\u003E\u003Cpolygon points=\u002221.11,18 13,18 13,22 22,22\u0022/\u003E\u003Cpolygon points=\u00222,22 11,22 11,18 2.89,18\u0022/\u003E\u003Crect height=\u00223\u0022 width=\u00222\u0022 x=\u002211\u0022 y=\u00228\u0022/\u003E\u003Crect height=\u00223\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -0.2089 14.6085)\u0022 width=\u00222\u0022 x=\u002216.53\u0022 y=\u00226.06\u0022/\u003E\u003Crect height=\u00222\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -3.448 6.7885)\u0022 width=\u00223\u0022 x=\u00224.97\u0022 y=\u00226.56\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u00223\u0022 y=\u00222\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u002218\u0022 y=\u00222\u0022/\u003E\u003Cpath d=\u0022M12,7c2.76,0,5-2.24,5-5H7C7,4.76,9.24,7,12,7z\u0022/\u003E\u003C/g\u003E\u003C/g\u003E",
@@ -209,20 +215,21 @@
       "FontSize": null,
       "DataColorRules": [],
       "DataColorRules2": [],
+      "LinkAnimation": null,
       "Ports": [
         {
-          "Id": "d03f34ac-0556-4bdc-8d35-e7209726bc54",
+          "Id": "e6360566-a5ec-4261-befb-64162f012a92",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "1582aeaf-340c-46d2-99d7-009abe07789a",
+      "Id": "2f069113-2bf8-4c30-9e32-b418c5bc12ac",
       "Title": "HUB-4",
-      "X": 510,
-      "Y": 40,
-      "Width": 70,
-      "Height": 80,
+      "X": 499.19998,
+      "Y": 171.99998,
+      "Width": 80,
+      "Height": 60,
       "Icon": null,
       "IconName": null,
       "Description": null,
@@ -236,22 +243,23 @@
       "FontSize": null,
       "DataColorRules": [],
       "DataColorRules2": [],
+      "LinkAnimation": null,
       "Ports": [
         {
-          "Id": "f27a654d-d988-449f-8466-f12ba5b592a2",
+          "Id": "304a20bc-a1d1-45cd-916b-dbd556b30e7a",
           "Alignment": "Top"
         },
         {
-          "Id": "24d98440-2b1b-464f-8d11-9201cb765d28",
+          "Id": "51f8a039-3538-42c4-a8cb-735cb7a635d4",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "dc6a0f02-02ab-4d1b-8fee-6b68b8bf0eb2",
+      "Id": "40b85c55-d3e7-4183-b436-8b64ca6eb38c",
       "Title": "",
-      "X": 550,
-      "Y": -90,
+      "X": 549.19998,
+      "Y": 21.99998,
       "Width": 60,
       "Height": 100,
       "Icon": "\u003Cpath d=\u0022M0 0h24v24H0z\u0022 fill=\u0022none\u0022/\u003E\u003Cpath d=\u0022M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4zM11 20v-5.5H9L13 7v5.5h2L11 20z\u0022/\u003E",
@@ -265,20 +273,27 @@
       "DataFormat": "{0:0}%",
       "DataFormat2": "{0:0}W",
       "FontSize": null,
-      "DataColorRules": [],
+      "DataColorRules": [
+        {
+          "Operator": "\u003C",
+          "Threshold": 0,
+          "Color": "red"
+        }
+      ],
       "DataColorRules2": [],
+      "LinkAnimation": null,
       "Ports": [
         {
-          "Id": "b4fd7662-4e75-4ad4-831d-7ede2caa662f",
+          "Id": "d34afdb6-ebfd-4a4d-8e6b-784443a11d61",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "4d2b47f3-9b71-4375-adb7-97121dfb0934",
+      "Id": "0e321c12-1d49-40d4-b270-d96a687c3a27",
       "Title": "",
-      "X": 480,
-      "Y": -90,
+      "X": 479.19998,
+      "Y": 21.99998,
       "Width": 60,
       "Height": 100,
       "Icon": "\u003Cg\u003E\u003Crect fill=\u0022none\u0022 height=\u002224\u0022 width=\u002224\u0022/\u003E\u003C/g\u003E\u003Cg\u003E\u003Cg\u003E\u003Cpolygon points=\u00223.33,16 11,16 11,13 4,13\u0022/\u003E\u003Cpolygon points=\u002213,16 20.67,16 20,13 13,13\u0022/\u003E\u003Cpolygon points=\u002221.11,18 13,18 13,22 22,22\u0022/\u003E\u003Cpolygon points=\u00222,22 11,22 11,18 2.89,18\u0022/\u003E\u003Crect height=\u00223\u0022 width=\u00222\u0022 x=\u002211\u0022 y=\u00228\u0022/\u003E\u003Crect height=\u00223\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -0.2089 14.6085)\u0022 width=\u00222\u0022 x=\u002216.53\u0022 y=\u00226.06\u0022/\u003E\u003Crect height=\u00222\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -3.448 6.7885)\u0022 width=\u00223\u0022 x=\u00224.97\u0022 y=\u00226.56\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u00223\u0022 y=\u00222\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u002218\u0022 y=\u00222\u0022/\u003E\u003Cpath d=\u0022M12,7c2.76,0,5-2.24,5-5H7C7,4.76,9.24,7,12,7z\u0022/\u003E\u003C/g\u003E\u003C/g\u003E",
@@ -294,18 +309,19 @@
       "FontSize": null,
       "DataColorRules": [],
       "DataColorRules2": [],
+      "LinkAnimation": "Forward",
       "Ports": [
         {
-          "Id": "c0548be8-a85b-4d17-9490-a7224fb815de",
+          "Id": "6ce16043-6629-4d38-a154-7d0095faa0d8",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "75c51c4a-f6db-48ed-a211-18fc29b73fa1",
+      "Id": "95cf9f2b-19d0-4ce7-9167-a03b77d174ec",
       "Title": "",
-      "X": 120,
-      "Y": 60,
+      "X": 119.19998,
+      "Y": 171.99998,
       "Width": 60,
       "Height": 45,
       "Icon": null,
@@ -321,13 +337,14 @@
       "FontSize": null,
       "DataColorRules": [],
       "DataColorRules2": [],
+      "LinkAnimation": null,
       "Ports": []
     },
     {
-      "Id": "c6cf6ae3-130d-4e2e-954d-b40ddcb779da",
+      "Id": "c7c1d700-2c7a-44b2-858c-e196a8afd844",
       "Title": "Zappi",
-      "X": 150,
-      "Y": 150,
+      "X": 149.19998,
+      "Y": 261.99998,
       "Width": 120,
       "Height": 80,
       "Icon": null,
@@ -343,22 +360,23 @@
       "FontSize": null,
       "DataColorRules": [],
       "DataColorRules2": [],
+      "LinkAnimation": null,
       "Ports": []
     }
   ],
   "Links": [
     {
-      "SourceNodeId": "4d2b47f3-9b71-4375-adb7-97121dfb0934",
+      "SourceNodeId": "0e321c12-1d49-40d4-b270-d96a687c3a27",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "1582aeaf-340c-46d2-99d7-009abe07789a",
+      "TargetNodeId": "2f069113-2bf8-4c30-9e32-b418c5bc12ac",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "dc6a0f02-02ab-4d1b-8fee-6b68b8bf0eb2",
+      "SourceNodeId": "40b85c55-d3e7-4183-b436-8b64ca6eb38c",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "1582aeaf-340c-46d2-99d7-009abe07789a",
+      "TargetNodeId": "2f069113-2bf8-4c30-9e32-b418c5bc12ac",
       "TargetPortAlignment": "Top"
     }
   ],
-  "GridSize": 0
+  "GridSize": 20
 }

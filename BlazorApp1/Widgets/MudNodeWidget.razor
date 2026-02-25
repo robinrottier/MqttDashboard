@@ -130,7 +130,7 @@
                         var a = link.Source as SinglePortAnchor;
                         if (a != null)
                         {
-                            l.DashPattern = "5,5";
+                            //l.DashPattern = "5,5";
                             break;
                         }
                     }
@@ -241,7 +241,7 @@
 
     private string FormatValue(object? value, string? format)
     {
-        if (value == null) return "No data";
+        if (value == null) return "";
         if (string.IsNullOrEmpty(format)) return value.ToString() ?? "null";
         try
         {
