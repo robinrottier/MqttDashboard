@@ -65,7 +65,7 @@ public class NodeState
 
     public string? Icon { get; set; }
     public string? IconName { get; set; }
-    public string? Description { get; set; }
+    public string? Text { get; set; }
     public string? BackgroundColor { get; set; }
     public string? IconColor { get; set; }
     public Dictionary<string, string> Metadata { get; set; } = new();
@@ -73,11 +73,7 @@ public class NodeState
     // MQTT Data Binding
     public string? DataTopic { get; set; }
     public string? DataTopic2 { get; set; }
-    public string? DataFormat { get; set; }
-    public string? DataFormat2 { get; set; }
     public int? FontSize { get; set; }
-    public List<NodeColorRule> DataColorRules { get; set; } = new();
-    public List<NodeColorRule> DataColorRules2 { get; set; } = new();
     public string? LinkAnimation { get; set; }
 
     public List<PortState> Ports { get; set; } = new();

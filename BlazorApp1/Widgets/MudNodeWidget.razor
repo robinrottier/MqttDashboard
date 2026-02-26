@@ -10,51 +10,33 @@
      style="@GenerateStyle()"
      @ondblclick="OnDoubleClick">
 
-    <MudCard Outlined="false" Elevation="0" Style="@GetCardStyle()" Class="mud-card">
-        <MudCardHeader Class="widget-text">
-            <CardHeaderContent>
-                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="0" Class="widget-text">
-                    @if (!string.IsNullOrEmpty(Node.Icon))
-                    {
-                        <MudIcon Icon="@Node.Icon"
-                                 Color="@GetIconColor()"
-                                 Size="MudBlazor.Size.Small" />
-                    }
-                    <MudText Style="text-align:center" Typo="Typo.body2">@(Node.Title ?? "Title")</MudText>
-                </MudStack>
-            </CardHeaderContent>
-        </MudCardHeader>
-
-        @if (!string.IsNullOrEmpty(Node.Description))
+    <MudCard Outlined="false" Elevation="0" Style="@GetCardStyle()" Class="mud-card mud-node-card">
+        @if (!string.IsNullOrEmpty(Node.Icon) && !string.IsNullOrEmpty(Node.Title))
         {
-            <MudCardContent Class="pa-1">
-                <MudText Typo="Typo.caption" Class="mt-1">@Node.Description</MudText>
-            </MudCardContent>
+            <MudCardHeader Class="widget-text pa-1">
+                <CardHeaderContent>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="0" Class="widget-text">
+                        @if (!string.IsNullOrEmpty(Node.Icon))
+                        {
+                            <MudIcon Icon="@Node.Icon"
+                            Color="@GetIconColor()"
+                            Size="MudBlazor.Size.Small" />
+                        }
+                        @if (!string.IsNullOrEmpty(Node.Title))
+                        {
+                            <MudText Style="text-align:center" Typo="Typo.body2">@(Node.Title)</MudText>
+                        }
+                    </MudStack>
+                </CardHeaderContent>
+            </MudCardHeader>
         }
-
-        @* Primary data value *@
-        @if (!string.IsNullOrEmpty(Node.DataTopic))
+        @if (!string.IsNullOrEmpty(Node.Text))
         {
-            <MudCardContent Class="widget-text pa-1">
-                <MudTooltip Text="@GetDataTooltip(Node.DataTopic, Node.DataLastUpdated)" Placement="Placement.Right">
-                    <MudText Class="pa-0"
-                             Style="@($"text-align:center; font-size:{GetFontSize()}; {GetDataColorStyle(Node.DataValue, Node.DataColorRules)}")">
-                        @FormatValue(Node.DataValue, Node.DataFormat)
-                    </MudText>
-                </MudTooltip>
-            </MudCardContent>
-        }
-
-        @* Optional second data value *@
-        @if (!string.IsNullOrEmpty(Node.DataTopic2))
-        {
-            <MudCardContent Class="widget-text pa-1">
-                <MudTooltip Text="@GetDataTooltip(Node.DataTopic2, Node.DataLastUpdated2)" Placement="Placement.Right">
-                    <MudText Class="pa-0"
-                             Style="@($"text-align:center; font-size:{GetFontSize()}; {GetDataColorStyle(Node.DataValue2, Node.DataColorRules2)}")">
-                        @FormatValue(Node.DataValue2, Node.DataFormat2)
-                    </MudText>
-                </MudTooltip>
+            <MudCardContent Class="widget-text pa-1 mud-node-text-content">
+                <MudText Typo="Typo.body2"
+                         Style="@($"font-size:{GetFontSize()}; white-space:pre-wrap; word-break:break-word;")">
+                    @FormatText()
+                </MudText>
             </MudCardContent>
         }
 
@@ -117,7 +99,6 @@
         Node.DataLastUpdated = DateTime.Now;
         InvokeAsync(StateHasChanged);
 
-        // find outgoing link and make it dash to indicate data flow
         if (Node.LinkAnimation != null && Node.LinkAnimation != "None")
         {
             double d;
@@ -126,7 +107,6 @@
                 if (Node.LinkAnimation == "Reverse")
                     d = -d;
 
-                // for each port, find each link, get source, anchor, get port, check its same port from here...
                 foreach (var port in Node.Ports)
                 {
                     if (port.Links.Count > 0)
@@ -177,29 +157,20 @@
     {
         if (AppState.IsEditMode)
         {
-            // Select this node first, then open properties
             AppState.TriggerEditProperties();
         }
     }
-
-    // ── Formatting helpers ────────────────────────────────────────────────────
 
     private string GetFontSize() =>
         Node.FontSize.HasValue ? $"{Node.FontSize.Value}px" : "inherit";
 
     /// <summary>
-    /// Handles an arbitary value and allows to be formatted as float using string.Format
-    /// if incoming value is a string but format species a number format then convert to that first
-    /// TODO: moe this somewhere else and add some test cases!
+    /// Wraps an arbitrary value for use with string.Format numeric/integer format specifiers.
     /// </summary>
-    class FormattableValue: IFormattable
+    class FormattableValue : IFormattable
     {
-        public FormattableValue(object value)
-        {
-            _value = value;
-        }
-
-        object _value;
+        public FormattableValue(object? value) { _value = value; }
+        object? _value;
 
         public string ToString(string? format, IFormatProvider? provider)
         {
@@ -214,16 +185,12 @@
                         case 'G':
                         case 'N':
                         case '0':
-                            // if its a string, try parse to double...
-                            if (_value.GetType() == typeof(String))
+                            if (_value?.GetType() == typeof(string))
                             {
-                                double d;
-                                if (double.TryParse(_value.ToString(), out d))
-                                {
+                                if (double.TryParse(_value.ToString(), out double d))
                                     return d.ToString(format, provider);
-                                }
                             }
-                            else if (_value.GetType() == typeof(int))
+                            else if (_value?.GetType() == typeof(int))
                             {
                                 double d = (int)_value;
                                 return d.ToString(format, provider);
@@ -231,16 +198,12 @@
                             break;
                         case 'I':
                         case 'X':
-                            // if its a string, try parse to double...
-                            if (_value.GetType() == typeof(String))
+                            if (_value?.GetType() == typeof(string))
                             {
-                                int i;
-                                if (int.TryParse(_value.ToString(), out i))
-                                {
+                                if (int.TryParse(_value.ToString(), out int i))
                                     return i.ToString(format, provider);
-                                }
                             }
-                            else if (_value.GetType() == typeof(double))
+                            else if (_value?.GetType() == typeof(double))
                             {
                                 int i = (int)(double)_value;
                                 return i.ToString(format, provider);
@@ -251,72 +214,28 @@
             }
             catch
             {
-                // something wrong in my formatting! just carry on... 
                 System.Diagnostics.Debug.WriteLine("Exception in FormattableValue ignored");
             }
 
-            if (_value == null)
-                return "";
-
+            if (_value == null) return "";
             var fv = _value as IFormattable;
-            if (fv != null)
-                return fv.ToString(format, provider);
-
-            return _value.ToString() ?? "";
+            return fv != null ? fv.ToString(format, provider) : (_value.ToString() ?? "");
         }
     }
 
-    private string FormatValue(object? value, string? format)
+    private string FormatText()
     {
-        if (value == null) return "";
-        if (string.IsNullOrEmpty(format)) return value.ToString() ?? "null";
+        if (string.IsNullOrEmpty(Node.Text)) return string.Empty;
         try
         {
-            return string.Format(format, new FormattableValue(value));
+            return string.Format(Node.Text,
+                new FormattableValue(Node.DataValue),
+                new FormattableValue(Node.DataValue2));
         }
         catch
         {
-            return value.ToString() ?? "null";
+            return Node.Text;
         }
-    }
-
-    private string GetDataColorStyle(object? value, List<NodeColorRule> rules)
-    {
-        var color = EvaluateColor(value, rules);
-        return color != null ? $"color:{color};" : string.Empty;
-    }
-
-    private static string? EvaluateColor(object? value, List<NodeColorRule> rules)
-    {
-        if (value == null || rules.Count == 0) return null;
-        if (!double.TryParse(value.ToString(),
-                System.Globalization.NumberStyles.Any,
-                System.Globalization.CultureInfo.InvariantCulture,
-                out var num))
-            return null;
-
-        foreach (var rule in rules)
-        {
-            bool hit = rule.Operator switch
-            {
-                "<"  => num <  rule.Threshold,
-                ">"  => num >  rule.Threshold,
-                "<=" => num <= rule.Threshold,
-                ">=" => num >= rule.Threshold,
-                "==" => num == rule.Threshold,
-                "!=" => num != rule.Threshold,
-                _    => false
-            };
-            if (hit) return rule.Color;
-        }
-        return null;
-    }
-
-    private static string GetDataTooltip(string? topic, DateTime? updated)
-    {
-        if (updated.HasValue)
-            return $"{topic} | Updated: {updated.Value:HH:mm:ss}";
-        return topic ?? string.Empty;
     }
 
     private string GenerateStyle()

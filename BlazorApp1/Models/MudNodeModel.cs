@@ -20,9 +20,10 @@ namespace BlazorApp1.Models
         public string? IconName { get; set; }
 
         /// <summary>
-        /// Secondary text displayed below the title
+        /// Format string for the body text. Use {0} for first data value, {1} for second, etc.
+        /// Supports C# format specifiers e.g. "Temp: {0:F2}°C\nHumidity: {1:F1}%"
         /// </summary>
-        public string? Description { get; set; }
+        public string? Text { get; set; }
 
         /// <summary>
         /// Background color for the node
@@ -49,50 +50,16 @@ namespace BlazorApp1.Models
         /// </summary>
         public string? DataTopic2 { get; set; }
 
-        /// <summary>
-        /// Current data value from MQTT topic
-        /// </summary>
+        // Runtime-only: populated by MQTT watchers, not serialized
         public object? DataValue { get; set; }
-
-        /// <summary>
-        /// Current data value from the second MQTT topic
-        /// </summary>
         public object? DataValue2 { get; set; }
-
-        /// <summary>
-        /// Last time the data value was updated
-        /// </summary>
         public DateTime? DataLastUpdated { get; set; }
-
-        /// <summary>
-        /// Last time the second data value was updated
-        /// </summary>
         public DateTime? DataLastUpdated2 { get; set; }
-
-        /// <summary>
-        /// C# format string for data value 1, e.g. "{0:F2} °C"
-        /// </summary>
-        public string? DataFormat { get; set; }
-
-        /// <summary>
-        /// C# format string for data value 2
-        /// </summary>
-        public string? DataFormat2 { get; set; }
 
         /// <summary>
         /// Optional font size in pixels for data values
         /// </summary>
         public int? FontSize { get; set; }
-
-        /// <summary>
-        /// Color rules for data value 1 (e.g. value &lt; 0 → red)
-        /// </summary>
-        public List<NodeColorRule> DataColorRules { get; set; } = new();
-
-        /// <summary>
-        /// Color rules for data value 2
-        /// </summary>
-        public List<NodeColorRule> DataColorRules2 { get; set; } = new();
 
         /// <summary>
         /// Link animation style for links sourced from this node: "None", "Forward", "Reverse"

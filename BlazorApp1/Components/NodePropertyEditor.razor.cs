@@ -15,8 +15,6 @@ public partial class NodePropertyEditor
     private int? FontSize { get; set; }
     private int _newMetadataCounter = 1;
 
-    private static readonly string[] _operators = ["<", ">", "<=", ">=", "==", "!="];
-
     protected override void OnInitialized()
     {
         Width    = Node.Size?.Width  ?? 120;

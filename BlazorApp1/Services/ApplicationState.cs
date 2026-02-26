@@ -148,7 +148,7 @@ public class ApplicationState
             // if grid size is -ve then grid is snaptocenter
             // if grid size is +ve then snap to corner (default)
             if (state == null)
-                options.GridSize = 20; // Default grid size for new diagrams
+                options.GridSize = 10; // Default grid size for new diagrams
             else
                 options.GridSize = state.GridSize == 0 ? null : int.Abs(state.GridSize); // Use saved grid size or default to 20px
             options.GridSnapToCenter = options.GridSize < 0;
@@ -170,17 +170,13 @@ public class ApplicationState
                     Size = new Blazor.Diagrams.Core.Geometry.Size(nodeState.Width, nodeState.Height),
                     Icon = nodeState.Icon,
                     IconName = nodeState.IconName,
-                    Description = nodeState.Description,
+                    Text = nodeState.Text,
                     BackgroundColor = nodeState.BackgroundColor,
                     IconColor = nodeState.IconColor,
                     Metadata = nodeState.Metadata ?? new Dictionary<string, string>(),
                     DataTopic = nodeState.DataTopic,
                     DataTopic2 = nodeState.DataTopic2,
-                    DataFormat = nodeState.DataFormat,
-                    DataFormat2 = nodeState.DataFormat2,
                     FontSize = nodeState.FontSize,
-                    DataColorRules = nodeState.DataColorRules ?? new(),
-                    DataColorRules2 = nodeState.DataColorRules2 ?? new(),
                     LinkAnimation = nodeState.LinkAnimation,
                 };
 
@@ -289,17 +285,13 @@ public class ApplicationState
                 Height = node.Size?.Height ?? 90,
                 Icon = node.Icon,
                 IconName = node.IconName,
-                Description = node.Description,
+                Text = node.Text,
                 BackgroundColor = node.BackgroundColor,
                 IconColor = node.IconColor,
                 Metadata = node.Metadata ?? new Dictionary<string, string>(),
                 DataTopic = node.DataTopic,
                 DataTopic2 = node.DataTopic2,
-                DataFormat = node.DataFormat,
-                DataFormat2 = node.DataFormat2,
                 FontSize = node.FontSize,
-                DataColorRules = node.DataColorRules,
-                DataColorRules2 = node.DataColorRules2,
                 LinkAnimation = node.LinkAnimation,
             };
 
@@ -476,7 +468,7 @@ public class ApplicationState
         }
         if (format != null)
         {
-            node.DataFormat = format;
+            node.Text = format;
         }
 
         diagram.Nodes.Add(node);

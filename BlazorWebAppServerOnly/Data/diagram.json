@@ -2,7 +2,7 @@
   "Name": "",
   "Nodes": [
     {
-      "Id": "627d40ab-5fbf-4240-ac52-d76d23f713f6",
+      "Id": "a2dc1863-dbb8-466b-9bc1-4cdea3ca4758",
       "Title": "HUB-3",
       "X": 178.39999,
       "Y": 164,
@@ -10,35 +10,31 @@
       "Height": 80,
       "Icon": null,
       "IconName": null,
-      "Description": null,
+      "Text": null,
       "BackgroundColor": null,
       "IconColor": null,
       "Metadata": {},
       "DataTopic": "ess1/servers/HUB-3/active",
       "DataTopic2": null,
-      "DataFormat": null,
-      "DataFormat2": null,
       "FontSize": null,
-      "DataColorRules": [],
-      "DataColorRules2": [],
       "LinkAnimation": null,
       "Ports": [
         {
-          "Id": "7a55e4de-2256-4357-8a50-141cde0bb359",
+          "Id": "990c46f2-a619-42cf-94d6-13aa0d2cc1a0",
           "Alignment": "Top"
         },
         {
-          "Id": "760b8c9d-0712-40e0-970b-44dea3769786",
+          "Id": "bbe1e1c5-73f5-452a-b6c5-e1b8d6143b13",
           "Alignment": "Left"
         },
         {
-          "Id": "be0b3f31-c75b-4ce1-a92c-5a95ba733d65",
+          "Id": "fc8edc8f-1eed-4023-8f82-65313c43064e",
           "Alignment": "Right"
         }
       ]
     },
     {
-      "Id": "126a1741-f15f-4979-b151-fdf86c8d05b6",
+      "Id": "fcb4a7f6-f2e4-4e12-a6cc-67458a7f4ce4",
       "Title": "Grid",
       "X": 28.39999,
       "Y": 164,
@@ -46,33 +42,23 @@
       "Height": 80,
       "Icon": null,
       "IconName": null,
-      "Description": null,
+      "Text": null,
       "BackgroundColor": null,
       "IconColor": null,
       "Metadata": {},
       "DataTopic": "ess1/servers/HUB-3/grid",
       "DataTopic2": null,
-      "DataFormat": "{0:0}W",
-      "DataFormat2": null,
       "FontSize": null,
-      "DataColorRules": [
-        {
-          "Operator": "\u003C",
-          "Threshold": 0,
-          "Color": "green"
-        }
-      ],
-      "DataColorRules2": [],
       "LinkAnimation": "Forward",
       "Ports": [
         {
-          "Id": "38599ab2-77ec-4f75-9cbb-e3f1ef2ba1ca",
+          "Id": "436091be-aba1-4016-94b7-bcf17b239fa4",
           "Alignment": "Right"
         }
       ]
     },
     {
-      "Id": "c94e233a-84af-4ba6-a4af-7ee91b4ec2e3",
+      "Id": "557a167d-da96-4b3f-875e-0d93450618ad",
       "Title": "",
       "X": 148.39999,
       "Y": 24,
@@ -80,59 +66,51 @@
       "Height": 100,
       "Icon": "\u003Cg\u003E\u003Crect fill=\u0022none\u0022 height=\u002224\u0022 width=\u002224\u0022/\u003E\u003C/g\u003E\u003Cg\u003E\u003Cg\u003E\u003Cpolygon points=\u00223.33,16 11,16 11,13 4,13\u0022/\u003E\u003Cpolygon points=\u002213,16 20.67,16 20,13 13,13\u0022/\u003E\u003Cpolygon points=\u002221.11,18 13,18 13,22 22,22\u0022/\u003E\u003Cpolygon points=\u00222,22 11,22 11,18 2.89,18\u0022/\u003E\u003Crect height=\u00223\u0022 width=\u00222\u0022 x=\u002211\u0022 y=\u00228\u0022/\u003E\u003Crect height=\u00223\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -0.2089 14.6085)\u0022 width=\u00222\u0022 x=\u002216.53\u0022 y=\u00226.06\u0022/\u003E\u003Crect height=\u00222\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -3.448 6.7885)\u0022 width=\u00223\u0022 x=\u00224.97\u0022 y=\u00226.56\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u00223\u0022 y=\u00222\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u002218\u0022 y=\u00222\u0022/\u003E\u003Cpath d=\u0022M12,7c2.76,0,5-2.24,5-5H7C7,4.76,9.24,7,12,7z\u0022/\u003E\u003C/g\u003E\u003C/g\u003E",
       "IconName": "Solar Power",
-      "Description": "Solar",
+      "Text": "{0:0}W",
       "BackgroundColor": "darkorange",
       "IconColor": null,
       "Metadata": {},
       "DataTopic": "ess1/servers/HUB-3/solar",
       "DataTopic2": null,
-      "DataFormat": "{0:0}W",
-      "DataFormat2": null,
       "FontSize": null,
-      "DataColorRules": [],
-      "DataColorRules2": [],
       "LinkAnimation": "Forward",
       "Ports": [
         {
-          "Id": "dfc37ae0-bff6-4f7d-91b2-cf63bbe05063",
-          "Alignment": "Top"
-        },
-        {
-          "Id": "6f93b5ba-188b-4275-a3f8-daf0cf629506",
+          "Id": "5f93a140-2716-4811-a116-bac868413b0f",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "7afb137c-4a50-4b95-9fdf-4a4868f73509",
+      "Id": "21d1e7d1-b258-4a57-b846-0f969f0c6ac1",
       "Title": "DURA",
       "X": 341.59998,
       "Y": 170,
       "Width": 80,
-      "Height": 60,
+      "Height": 70,
       "Icon": null,
       "IconName": null,
-      "Description": null,
+      "Text": null,
       "BackgroundColor": null,
       "IconColor": null,
       "Metadata": {},
       "DataTopic": "ess1/servers/DURA-1/active",
       "DataTopic2": null,
-      "DataFormat": null,
-      "DataFormat2": null,
       "FontSize": null,
-      "DataColorRules": [],
-      "DataColorRules2": [],
       "LinkAnimation": null,
       "Ports": [
         {
-          "Id": "91db2373-7e79-4bf6-a1ae-6dcca0ea7a37",
+          "Id": "274a1d20-48b2-44ba-a214-69da7f4deb9f",
           "Alignment": "Top"
+        },
+        {
+          "Id": "e513c423-217c-4cef-b913-7a9c94727bca",
+          "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "93865033-e74d-400e-9f64-2b5e4be6ba84",
+      "Id": "c5e35b58-c1fd-487a-8e9a-230d1241968c",
       "Title": "",
       "X": 228.39999,
       "Y": 24,
@@ -140,27 +118,23 @@
       "Height": 100,
       "Icon": "\u003Cpath d=\u0022M0 0h24v24H0z\u0022 fill=\u0022none\u0022/\u003E\u003Cpath d=\u0022M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4zM11 20v-5.5H9L13 7v5.5h2L11 20z\u0022/\u003E",
       "IconName": "Battery",
-      "Description": null,
+      "Text": "{1:0}%\n{0:0}W",
       "BackgroundColor": null,
       "IconColor": null,
       "Metadata": {},
       "DataTopic": "ess1/servers/HUB-3/power",
       "DataTopic2": "ess1/servers/HUB-3/soc",
-      "DataFormat": "{0:0}W",
-      "DataFormat2": "{0:0}%",
       "FontSize": null,
-      "DataColorRules": [],
-      "DataColorRules2": [],
       "LinkAnimation": "Reverse",
       "Ports": [
         {
-          "Id": "6d69c25c-d0f5-44a6-b7d4-0f4537c69fb4",
+          "Id": "0a0c3edb-7bdd-4035-93fd-92e7ca236f6a",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "b7949868-34a9-4695-9e73-795faa336684",
+      "Id": "598d9404-c4cf-48e4-836c-033954ae8efb",
       "Title": "",
       "X": 378.39999,
       "Y": 24,
@@ -168,27 +142,23 @@
       "Height": 100,
       "Icon": "\u003Cpath d=\u0022M0 0h24v24H0z\u0022 fill=\u0022none\u0022/\u003E\u003Cpath d=\u0022M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4zM11 20v-5.5H9L13 7v5.5h2L11 20z\u0022/\u003E",
       "IconName": "Battery",
-      "Description": null,
+      "Text": "{1:0}%\n{0:0}W",
       "BackgroundColor": null,
       "IconColor": null,
       "Metadata": {},
       "DataTopic": "ess1/servers/DURA-1/power",
       "DataTopic2": "ess1/servers/DURA-1/soc",
-      "DataFormat": "{0:0}W",
-      "DataFormat2": "{0:0}%",
       "FontSize": null,
-      "DataColorRules": [],
-      "DataColorRules2": [],
       "LinkAnimation": "Reverse",
       "Ports": [
         {
-          "Id": "2c9cb041-1fa1-49c4-aba6-ce44dff409d4",
+          "Id": "445fe270-9b32-4ddf-a626-cc8a071a061a",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "857e4ae4-79ab-48c0-b1ad-ccc04d27dda5",
+      "Id": "efc1a23b-1a41-4592-b5dd-dd1107300fc0",
       "Title": "",
       "X": 308.39999,
       "Y": 24,
@@ -196,27 +166,23 @@
       "Height": 100,
       "Icon": "\u003Cg\u003E\u003Crect fill=\u0022none\u0022 height=\u002224\u0022 width=\u002224\u0022/\u003E\u003C/g\u003E\u003Cg\u003E\u003Cg\u003E\u003Cpolygon points=\u00223.33,16 11,16 11,13 4,13\u0022/\u003E\u003Cpolygon points=\u002213,16 20.67,16 20,13 13,13\u0022/\u003E\u003Cpolygon points=\u002221.11,18 13,18 13,22 22,22\u0022/\u003E\u003Cpolygon points=\u00222,22 11,22 11,18 2.89,18\u0022/\u003E\u003Crect height=\u00223\u0022 width=\u00222\u0022 x=\u002211\u0022 y=\u00228\u0022/\u003E\u003Crect height=\u00223\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -0.2089 14.6085)\u0022 width=\u00222\u0022 x=\u002216.53\u0022 y=\u00226.06\u0022/\u003E\u003Crect height=\u00222\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -3.448 6.7885)\u0022 width=\u00223\u0022 x=\u00224.97\u0022 y=\u00226.56\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u00223\u0022 y=\u00222\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u002218\u0022 y=\u00222\u0022/\u003E\u003Cpath d=\u0022M12,7c2.76,0,5-2.24,5-5H7C7,4.76,9.24,7,12,7z\u0022/\u003E\u003C/g\u003E\u003C/g\u003E",
       "IconName": "Solar Power",
-      "Description": "Solar",
+      "Text": "{0:0}W",
       "BackgroundColor": null,
       "IconColor": null,
       "Metadata": {},
       "DataTopic": "ess1/servers/DURA-1/solar",
       "DataTopic2": null,
-      "DataFormat": "{0:0}W",
-      "DataFormat2": null,
       "FontSize": null,
-      "DataColorRules": [],
-      "DataColorRules2": [],
       "LinkAnimation": "Forward",
       "Ports": [
         {
-          "Id": "43c53416-dbc0-4f3d-a84e-ce81f157e393",
+          "Id": "e20c7a2a-9213-455b-9f7a-14e9e555748c",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "bc438b12-3eca-4fc4-b31f-524734238b09",
+      "Id": "41649c7b-c839-49ca-9d28-4a0be519c455",
       "Title": "HUB-4",
       "X": 483.19999,
       "Y": 170,
@@ -224,31 +190,27 @@
       "Height": 70,
       "Icon": null,
       "IconName": null,
-      "Description": null,
+      "Text": null,
       "BackgroundColor": null,
       "IconColor": null,
       "Metadata": {},
       "DataTopic": "ess1/servers/HUB-4/active",
       "DataTopic2": null,
-      "DataFormat": null,
-      "DataFormat2": null,
       "FontSize": null,
-      "DataColorRules": [],
-      "DataColorRules2": [],
       "LinkAnimation": null,
       "Ports": [
         {
-          "Id": "fe15e200-15be-4155-97f8-61333e2983f2",
+          "Id": "aaca3315-7581-4383-a027-5dee5e37e4e5",
           "Alignment": "Top"
         },
         {
-          "Id": "06f00453-a7d0-49b7-8558-20fe9b3b5c9d",
+          "Id": "5db89ddc-0a9a-400e-bd8c-36724ca11799",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "b474eeb9-3e91-41a0-8c45-ce2a119f7d88",
+      "Id": "494cd36e-fdda-4fe2-bb54-29d15813ca39",
       "Title": "",
       "X": 528.39999,
       "Y": 24,
@@ -256,33 +218,23 @@
       "Height": 100,
       "Icon": "\u003Cpath d=\u0022M0 0h24v24H0z\u0022 fill=\u0022none\u0022/\u003E\u003Cpath d=\u0022M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4zM11 20v-5.5H9L13 7v5.5h2L11 20z\u0022/\u003E",
       "IconName": "Battery",
-      "Description": null,
+      "Text": "{1:0}%\n{0:0}W",
       "BackgroundColor": null,
       "IconColor": null,
       "Metadata": {},
       "DataTopic": "ess1/servers/HUB-4/power",
       "DataTopic2": "ess1/servers/HUB-4/soc",
-      "DataFormat": "{0:0}W",
-      "DataFormat2": "{0:0}%",
       "FontSize": null,
-      "DataColorRules": [
-        {
-          "Operator": "\u003C",
-          "Threshold": 0,
-          "Color": "red"
-        }
-      ],
-      "DataColorRules2": [],
       "LinkAnimation": "Reverse",
       "Ports": [
         {
-          "Id": "39a448fe-aa34-42a0-8ea4-75705a7599ca",
+          "Id": "27414c69-eaab-4c7f-8d8e-fa09409a2996",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "98f51d6c-4b1a-41ad-8304-252f1a7d2b40",
+      "Id": "f5379c3b-033c-42a0-b68a-85bc0dabab92",
       "Title": "",
       "X": 458.39999,
       "Y": 24,
@@ -290,27 +242,23 @@
       "Height": 100,
       "Icon": "\u003Cg\u003E\u003Crect fill=\u0022none\u0022 height=\u002224\u0022 width=\u002224\u0022/\u003E\u003C/g\u003E\u003Cg\u003E\u003Cg\u003E\u003Cpolygon points=\u00223.33,16 11,16 11,13 4,13\u0022/\u003E\u003Cpolygon points=\u002213,16 20.67,16 20,13 13,13\u0022/\u003E\u003Cpolygon points=\u002221.11,18 13,18 13,22 22,22\u0022/\u003E\u003Cpolygon points=\u00222,22 11,22 11,18 2.89,18\u0022/\u003E\u003Crect height=\u00223\u0022 width=\u00222\u0022 x=\u002211\u0022 y=\u00228\u0022/\u003E\u003Crect height=\u00223\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -0.2089 14.6085)\u0022 width=\u00222\u0022 x=\u002216.53\u0022 y=\u00226.06\u0022/\u003E\u003Crect height=\u00222\u0022 transform=\u0022matrix(0.7071 -0.7071 0.7071 0.7071 -3.448 6.7885)\u0022 width=\u00223\u0022 x=\u00224.97\u0022 y=\u00226.56\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u00223\u0022 y=\u00222\u0022/\u003E\u003Crect height=\u00222\u0022 width=\u00223\u0022 x=\u002218\u0022 y=\u00222\u0022/\u003E\u003Cpath d=\u0022M12,7c2.76,0,5-2.24,5-5H7C7,4.76,9.24,7,12,7z\u0022/\u003E\u003C/g\u003E\u003C/g\u003E",
       "IconName": "Solar Power",
-      "Description": "Solar",
+      "Text": "{0:0}W",
       "BackgroundColor": null,
       "IconColor": null,
       "Metadata": {},
       "DataTopic": "ess1/servers/HUB-4/solar",
       "DataTopic2": null,
-      "DataFormat": "{0:0}W",
-      "DataFormat2": null,
       "FontSize": null,
-      "DataColorRules": [],
-      "DataColorRules2": [],
       "LinkAnimation": "Forward",
       "Ports": [
         {
-          "Id": "d8c58638-5782-44cf-83ad-49f79c4662f8",
+          "Id": "08493233-ccff-4f59-8525-9edce13c4218",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "9632b7e2-5697-419c-b1ce-e4ebbfcccb6e",
+      "Id": "20351467-465e-44bc-8547-a45c37350b9d",
       "Title": "Zappi",
       "X": 181.59998,
       "Y": 290,
@@ -318,97 +266,119 @@
       "Height": 90,
       "Icon": null,
       "IconName": null,
-      "Description": null,
+      "Text": null,
       "BackgroundColor": null,
       "IconColor": null,
       "Metadata": {},
       "DataTopic": null,
       "DataTopic2": null,
-      "DataFormat": null,
-      "DataFormat2": null,
       "FontSize": null,
-      "DataColorRules": [],
-      "DataColorRules2": [],
       "LinkAnimation": null,
       "Ports": []
     },
     {
-      "Id": "1df13623-354a-4a5a-8d7e-69a3ebb3eded",
+      "Id": "8eaf2015-90db-4ddc-b6a8-c4d9217738a2",
       "Title": "",
       "X": 321.59998,
       "Y": 170,
       "Width": 20,
-      "Height": 60,
+      "Height": 70,
       "Icon": null,
       "IconName": null,
-      "Description": null,
+      "Text": null,
       "BackgroundColor": null,
       "IconColor": null,
       "Metadata": {},
       "DataTopic": "ess1/servers/DURA-1/grid",
       "DataTopic2": null,
-      "DataFormat": "",
-      "DataFormat2": null,
       "FontSize": null,
-      "DataColorRules": [],
-      "DataColorRules2": [],
       "LinkAnimation": "Forward",
       "Ports": [
         {
-          "Id": "e7a05cfe-b294-4a5a-b15e-1ae7c7e1ba01",
+          "Id": "c0914eae-bcc8-46bb-9642-4a0b1e5aef71",
           "Alignment": "Left"
+        }
+      ]
+    },
+    {
+      "Id": "0f3231a8-947a-4aa6-9b9f-b203e10dbb07",
+      "Title": "",
+      "X": 340,
+      "Y": 290,
+      "Width": 80,
+      "Height": 50,
+      "Icon": null,
+      "IconName": null,
+      "Text": "Load\n{0:0}",
+      "BackgroundColor": null,
+      "IconColor": null,
+      "Metadata": {},
+      "DataTopic": "ess1/servers/DURA-1/load",
+      "DataTopic2": null,
+      "FontSize": null,
+      "LinkAnimation": "Reverse",
+      "Ports": [
+        {
+          "Id": "8d5c7bcb-4583-4175-9062-f78ccc05fcb1",
+          "Alignment": "Top"
         }
       ]
     }
   ],
   "Links": [
     {
-      "SourceNodeId": "98f51d6c-4b1a-41ad-8304-252f1a7d2b40",
+      "SourceNodeId": "f5379c3b-033c-42a0-b68a-85bc0dabab92",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "bc438b12-3eca-4fc4-b31f-524734238b09",
+      "TargetNodeId": "41649c7b-c839-49ca-9d28-4a0be519c455",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "b474eeb9-3e91-41a0-8c45-ce2a119f7d88",
+      "SourceNodeId": "494cd36e-fdda-4fe2-bb54-29d15813ca39",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "bc438b12-3eca-4fc4-b31f-524734238b09",
+      "TargetNodeId": "41649c7b-c839-49ca-9d28-4a0be519c455",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "b7949868-34a9-4695-9e73-795faa336684",
+      "SourceNodeId": "598d9404-c4cf-48e4-836c-033954ae8efb",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "7afb137c-4a50-4b95-9fdf-4a4868f73509",
+      "TargetNodeId": "21d1e7d1-b258-4a57-b846-0f969f0c6ac1",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "857e4ae4-79ab-48c0-b1ad-ccc04d27dda5",
+      "SourceNodeId": "efc1a23b-1a41-4592-b5dd-dd1107300fc0",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "7afb137c-4a50-4b95-9fdf-4a4868f73509",
+      "TargetNodeId": "21d1e7d1-b258-4a57-b846-0f969f0c6ac1",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "93865033-e74d-400e-9f64-2b5e4be6ba84",
+      "SourceNodeId": "c5e35b58-c1fd-487a-8e9a-230d1241968c",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "627d40ab-5fbf-4240-ac52-d76d23f713f6",
+      "TargetNodeId": "a2dc1863-dbb8-466b-9bc1-4cdea3ca4758",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "c94e233a-84af-4ba6-a4af-7ee91b4ec2e3",
+      "SourceNodeId": "557a167d-da96-4b3f-875e-0d93450618ad",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "627d40ab-5fbf-4240-ac52-d76d23f713f6",
+      "TargetNodeId": "a2dc1863-dbb8-466b-9bc1-4cdea3ca4758",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "126a1741-f15f-4979-b151-fdf86c8d05b6",
+      "SourceNodeId": "fcb4a7f6-f2e4-4e12-a6cc-67458a7f4ce4",
       "SourcePortAlignment": "Right",
-      "TargetNodeId": "627d40ab-5fbf-4240-ac52-d76d23f713f6",
+      "TargetNodeId": "a2dc1863-dbb8-466b-9bc1-4cdea3ca4758",
       "TargetPortAlignment": "Left"
     },
     {
-      "SourceNodeId": "1df13623-354a-4a5a-8d7e-69a3ebb3eded",
+      "SourceNodeId": "8eaf2015-90db-4ddc-b6a8-c4d9217738a2",
       "SourcePortAlignment": "Left",
-      "TargetNodeId": "627d40ab-5fbf-4240-ac52-d76d23f713f6",
+      "TargetNodeId": "a2dc1863-dbb8-466b-9bc1-4cdea3ca4758",
       "TargetPortAlignment": "Right"
+    },
+    {
+      "SourceNodeId": "0f3231a8-947a-4aa6-9b9f-b203e10dbb07",
+      "SourcePortAlignment": "Top",
+      "TargetNodeId": "21d1e7d1-b258-4a57-b846-0f969f0c6ac1",
+      "TargetPortAlignment": "Bottom"
     }
   ],
   "GridSize": 10
