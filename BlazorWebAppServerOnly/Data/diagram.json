@@ -2,7 +2,7 @@
   "Name": "",
   "Nodes": [
     {
-      "Id": "8e60b700-3dc4-4058-8739-e68a72fa3f68",
+      "Id": "6f81bf77-f5a9-42a2-9927-86ac319dcde4",
       "Title": "HUB-3",
       "X": 178.39999,
       "Y": 164,
@@ -10,31 +10,31 @@
       "Height": 80,
       "Icon": null,
       "IconName": null,
-      "Text": null,
+      "Text": "{1}\n{0:0}W",
       "BackgroundColor": null,
       "IconColor": null,
       "Metadata": {},
-      "DataTopic": "ess1/servers/HUB-3/active",
-      "DataTopic2": null,
+      "DataTopic": "ess1/servers/HUB-3/grid",
+      "DataTopic2": "ess1/servers/HUB-3/active",
       "FontSize": null,
       "LinkAnimation": null,
       "Ports": [
         {
-          "Id": "d4b17c3a-a7ef-4ad2-bd07-deb5333d5cfb",
+          "Id": "67f01bc0-cb1d-4782-b951-70d94fb7ef3e",
           "Alignment": "Top"
         },
         {
-          "Id": "594a01b2-5f14-4c90-b82a-93e7c4234b6a",
+          "Id": "714e1363-faed-415f-b915-999bca1d63dd",
           "Alignment": "Left"
         },
         {
-          "Id": "dd83892d-eade-48df-ac82-83c6adffacd3",
+          "Id": "efb3848a-23d3-49d3-9cce-c181f4eee7b3",
           "Alignment": "Right"
         }
       ]
     },
     {
-      "Id": "f8eadd8c-fac1-4ddb-a1b0-44f4fa3fb2f2",
+      "Id": "89103947-a6c7-4ab8-9819-269894a921f7",
       "Title": "Grid",
       "X": 28.39999,
       "Y": 164,
@@ -52,13 +52,13 @@
       "LinkAnimation": "Forward",
       "Ports": [
         {
-          "Id": "30225c49-781c-48d9-b4a5-24e2d7d94e69",
+          "Id": "7e5f3ce1-0862-4641-82b5-8c925f9a7801",
           "Alignment": "Right"
         }
       ]
     },
     {
-      "Id": "016edf08-e05f-439f-9c73-8b514202cfa9",
+      "Id": "b9b007c5-a996-4c69-821c-0866efd1a75a",
       "Title": "",
       "X": 148.39999,
       "Y": 24,
@@ -76,13 +76,13 @@
       "LinkAnimation": "Forward",
       "Ports": [
         {
-          "Id": "7e96e52b-3f57-4341-b4fe-2cfd49440d8d",
+          "Id": "582b69c7-7d49-455b-b485-6fb1f9e54ea3",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "6c850831-fd86-4584-b186-a166b8d35efc",
+      "Id": "372cd83f-94b2-43b7-8f6c-ff336add6af4",
       "Title": "DURA",
       "X": 330,
       "Y": 170,
@@ -100,21 +100,25 @@
       "LinkAnimation": "Reverse",
       "Ports": [
         {
-          "Id": "94855b07-51db-4bd5-b07e-53c29560dab2",
+          "Id": "388d973a-799e-4990-bb5e-32f1e1a97797",
           "Alignment": "Top"
         },
         {
-          "Id": "1c2e22b2-01ce-4463-8ea7-75005fcd25ae",
+          "Id": "4919e64f-469d-4666-832e-426a2c43d639",
           "Alignment": "Bottom"
         },
         {
-          "Id": "87470535-741a-40ea-b7b1-5d369b0f1a83",
+          "Id": "85140df0-ce9a-4bfa-8a41-d26252415d52",
           "Alignment": "Left"
+        },
+        {
+          "Id": "2b5fa779-8733-428a-9257-7f671a68ff85",
+          "Alignment": "Right"
         }
       ]
     },
     {
-      "Id": "7339b16d-624d-4040-bc9b-1b7e0678b7f3",
+      "Id": "2947c8e7-ec42-4cb2-8c08-ad9c0c8cdad8",
       "Title": "",
       "X": 228.39999,
       "Y": 24,
@@ -132,13 +136,13 @@
       "LinkAnimation": "Reverse",
       "Ports": [
         {
-          "Id": "ec318f55-f204-4038-9384-165b08f80352",
+          "Id": "aab4ac60-f001-4348-8faa-666e50bfb510",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "28bc0015-1625-4556-9485-06f88ac768de",
+      "Id": "3ab6e2b7-c004-4ef6-8f25-61c3c47ee7fc",
       "Title": "",
       "X": 378.39999,
       "Y": 24,
@@ -156,13 +160,13 @@
       "LinkAnimation": "Reverse",
       "Ports": [
         {
-          "Id": "18ca1d7c-55cb-4a9d-ad93-52d4736b2886",
+          "Id": "2a3f3e1b-9991-4d79-a738-1f67411879e0",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "836f8d79-b0db-410b-838a-6e8546f83788",
+      "Id": "2ecabe70-a0f0-4d7d-bed6-497ce2e275a2",
       "Title": "",
       "X": 308.39999,
       "Y": 24,
@@ -180,13 +184,13 @@
       "LinkAnimation": "Forward",
       "Ports": [
         {
-          "Id": "bcf407bf-f8ba-4e50-85e6-909d9c9c5ce7",
+          "Id": "481e608c-7d07-42d3-8276-54c4a6aa8835",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "1ce89786-b6f1-42fd-8885-0190dcc6aa38",
+      "Id": "4360faef-76ee-446c-a88f-d2ee8cf1593a",
       "Title": "HUB-4",
       "X": 483.19999,
       "Y": 170,
@@ -194,27 +198,31 @@
       "Height": 70,
       "Icon": null,
       "IconName": null,
-      "Text": null,
+      "Text": "{1}\n{0:0}",
       "BackgroundColor": null,
       "IconColor": null,
       "Metadata": {},
-      "DataTopic": "ess1/servers/HUB-4/active",
-      "DataTopic2": null,
+      "DataTopic": "ess1/servers/HUB-4/grid",
+      "DataTopic2": "ess1/servers/HUB-4/active",
       "FontSize": null,
-      "LinkAnimation": null,
+      "LinkAnimation": "Reverse",
       "Ports": [
         {
-          "Id": "f23517cc-51ea-4390-a8a6-789b1cefb9c3",
+          "Id": "72db80b1-f05a-4100-8433-2815c54fb42b",
           "Alignment": "Top"
         },
         {
-          "Id": "d6197a68-c725-4935-aaa6-d6efdf39160f",
+          "Id": "e01d51da-f60c-475c-ac78-e87e6dd8905a",
           "Alignment": "Bottom"
+        },
+        {
+          "Id": "f9c59e9c-472c-4f91-aa7a-976bb0d696c2",
+          "Alignment": "Left"
         }
       ]
     },
     {
-      "Id": "a4eba94a-f038-4838-ab05-945306dc50fb",
+      "Id": "3e3f9b0f-2d04-4b70-beba-234b797f06a6",
       "Title": "",
       "X": 528.39999,
       "Y": 24,
@@ -232,13 +240,13 @@
       "LinkAnimation": "Reverse",
       "Ports": [
         {
-          "Id": "f2514c74-2700-4874-9e6b-ebdd76aab744",
+          "Id": "2972e14d-4b10-4b8e-a37d-a1d6f6ed96db",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "545cf7bc-ccc9-4fbf-9d6d-feb956a44420",
+      "Id": "e9c68500-d196-4170-a5be-c3c1b9eb0e73",
       "Title": "",
       "X": 458.39999,
       "Y": 24,
@@ -256,13 +264,13 @@
       "LinkAnimation": "Forward",
       "Ports": [
         {
-          "Id": "0d88da31-3bae-40a6-85e8-474ea20b2239",
+          "Id": "7ec6e581-f942-4ce0-a7a0-07f65320a5cf",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "ad77d13e-90bd-4ef2-84af-f57d5a563851",
+      "Id": "39b435df-8227-40ca-9717-d45d2625fb5d",
       "Title": "Zappi",
       "X": 181.59998,
       "Y": 290,
@@ -281,7 +289,7 @@
       "Ports": []
     },
     {
-      "Id": "c94eab96-6242-4607-9116-be02b0d31869",
+      "Id": "63528b44-8c72-4258-855b-9b53acb6c2ee",
       "Title": "",
       "X": 340,
       "Y": 290,
@@ -299,7 +307,7 @@
       "LinkAnimation": "Reverse",
       "Ports": [
         {
-          "Id": "2cfe5b18-2644-4d57-a0ba-4c7dce217113",
+          "Id": "75ec915d-c4f2-44a1-9b5f-e9d59a450710",
           "Alignment": "Top"
         }
       ]
@@ -307,57 +315,63 @@
   ],
   "Links": [
     {
-      "SourceNodeId": "545cf7bc-ccc9-4fbf-9d6d-feb956a44420",
+      "SourceNodeId": "e9c68500-d196-4170-a5be-c3c1b9eb0e73",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "1ce89786-b6f1-42fd-8885-0190dcc6aa38",
+      "TargetNodeId": "4360faef-76ee-446c-a88f-d2ee8cf1593a",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "a4eba94a-f038-4838-ab05-945306dc50fb",
+      "SourceNodeId": "3e3f9b0f-2d04-4b70-beba-234b797f06a6",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "1ce89786-b6f1-42fd-8885-0190dcc6aa38",
+      "TargetNodeId": "4360faef-76ee-446c-a88f-d2ee8cf1593a",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "28bc0015-1625-4556-9485-06f88ac768de",
+      "SourceNodeId": "3ab6e2b7-c004-4ef6-8f25-61c3c47ee7fc",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "6c850831-fd86-4584-b186-a166b8d35efc",
+      "TargetNodeId": "372cd83f-94b2-43b7-8f6c-ff336add6af4",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "836f8d79-b0db-410b-838a-6e8546f83788",
+      "SourceNodeId": "2ecabe70-a0f0-4d7d-bed6-497ce2e275a2",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "6c850831-fd86-4584-b186-a166b8d35efc",
+      "TargetNodeId": "372cd83f-94b2-43b7-8f6c-ff336add6af4",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "7339b16d-624d-4040-bc9b-1b7e0678b7f3",
+      "SourceNodeId": "2947c8e7-ec42-4cb2-8c08-ad9c0c8cdad8",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "8e60b700-3dc4-4058-8739-e68a72fa3f68",
+      "TargetNodeId": "6f81bf77-f5a9-42a2-9927-86ac319dcde4",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "016edf08-e05f-439f-9c73-8b514202cfa9",
+      "SourceNodeId": "b9b007c5-a996-4c69-821c-0866efd1a75a",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "8e60b700-3dc4-4058-8739-e68a72fa3f68",
+      "TargetNodeId": "6f81bf77-f5a9-42a2-9927-86ac319dcde4",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "f8eadd8c-fac1-4ddb-a1b0-44f4fa3fb2f2",
+      "SourceNodeId": "89103947-a6c7-4ab8-9819-269894a921f7",
       "SourcePortAlignment": "Right",
-      "TargetNodeId": "8e60b700-3dc4-4058-8739-e68a72fa3f68",
+      "TargetNodeId": "6f81bf77-f5a9-42a2-9927-86ac319dcde4",
       "TargetPortAlignment": "Left"
     },
     {
-      "SourceNodeId": "c94eab96-6242-4607-9116-be02b0d31869",
+      "SourceNodeId": "63528b44-8c72-4258-855b-9b53acb6c2ee",
       "SourcePortAlignment": "Top",
-      "TargetNodeId": "6c850831-fd86-4584-b186-a166b8d35efc",
+      "TargetNodeId": "372cd83f-94b2-43b7-8f6c-ff336add6af4",
       "TargetPortAlignment": "Bottom"
     },
     {
-      "SourceNodeId": "6c850831-fd86-4584-b186-a166b8d35efc",
+      "SourceNodeId": "372cd83f-94b2-43b7-8f6c-ff336add6af4",
       "SourcePortAlignment": "Left",
-      "TargetNodeId": "8e60b700-3dc4-4058-8739-e68a72fa3f68",
+      "TargetNodeId": "6f81bf77-f5a9-42a2-9927-86ac319dcde4",
+      "TargetPortAlignment": "Right"
+    },
+    {
+      "SourceNodeId": "4360faef-76ee-446c-a88f-d2ee8cf1593a",
+      "SourcePortAlignment": "Left",
+      "TargetNodeId": "372cd83f-94b2-43b7-8f6c-ff336add6af4",
       "TargetPortAlignment": "Right"
     }
   ],
