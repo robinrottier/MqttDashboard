@@ -485,11 +485,18 @@ public class ApplicationState
 
     public void CheckForLinkAnimation(NodeModel sourceNode, LinkModel link)
     {
-        if (sourceNode is MudNodeModel mudSource &&
-            !string.IsNullOrEmpty(mudSource.LinkAnimation) &&
-            mudSource.LinkAnimation != "None")
+        if (sourceNode is MudNodeModel mudSource
+         && !string.IsNullOrWhiteSpace(mudSource.LinkAnimation)
+         && mudSource.LinkAnimation != "None")
         {
             link.DashPattern = "5,5";
+            link.AddAnimation(new AnimateModel()
+            {
+                AttributeName = "stroke-dashoffset",
+                From = "0",
+                To = "0",
+                Duration = "1s"
+            });
         }
     }
 

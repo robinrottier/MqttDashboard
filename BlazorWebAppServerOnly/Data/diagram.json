@@ -2,10 +2,10 @@
   "Name": "",
   "Nodes": [
     {
-      "Id": "c0778521-ae55-4872-9cf7-7abe1246a8cd",
+      "Id": "9a402500-57d4-40d3-97d8-7aa678cfeb07",
       "Title": "HUB-3",
-      "X": 199.19998,
-      "Y": 151.99998,
+      "X": 202.39999,
+      "Y": 160,
       "Width": 70,
       "Height": 80,
       "Icon": null,
@@ -24,27 +24,15 @@
       "LinkAnimation": null,
       "Ports": [
         {
-          "Id": "677249d6-d57b-4318-a060-725f62fd156f",
-          "Alignment": "Left"
-        },
-        {
-          "Id": "95bc5a8f-ca61-450a-90a3-ac5687240f2b",
+          "Id": "0f33691f-f5a1-4cc8-8caa-150513289a0a",
           "Alignment": "Top"
-        },
-        {
-          "Id": "fe3bab02-5a20-40e1-b4e0-af56cc60226a",
-          "Alignment": "Right"
-        },
-        {
-          "Id": "190c4d66-33ea-43e8-9eb0-3de1e3a8dc21",
-          "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "a4517948-830d-4bbf-90b9-d1cafd005b9d",
+      "Id": "2769a700-1fd2-4a74-82b9-6f7edb1c6ac4",
       "Title": "Grid",
-      "X": 9.19998,
+      "X": 11.59997,
       "Y": 151.99998,
       "Width": 80,
       "Height": 80,
@@ -70,15 +58,15 @@
       "LinkAnimation": null,
       "Ports": [
         {
-          "Id": "6d9b1eed-9c5b-4482-93b4-9bca34e28eb0",
+          "Id": "c934937c-e5ee-4d61-9e43-c8f71101a194",
           "Alignment": "Right"
         }
       ]
     },
     {
-      "Id": "0a460039-cc0c-46b6-b9c9-a097e83e3f22",
+      "Id": "863c142f-1498-40e2-8808-6babb6993889",
       "Title": "",
-      "X": 129.19998,
+      "X": 131.59997,
       "Y": 21.99998,
       "Width": 60,
       "Height": 100,
@@ -98,16 +86,16 @@
       "LinkAnimation": null,
       "Ports": [
         {
-          "Id": "ef81a5fc-553d-4c6f-bddb-0941ffdcb5d3",
+          "Id": "1746f511-e49c-4ea9-95f4-181f18a174f8",
           "Alignment": "Top"
         }
       ]
     },
     {
-      "Id": "d8aeae66-20bb-4b26-9d08-0069839b4b16",
+      "Id": "723058dd-cdf5-45ba-9fdf-5bc407c487a7",
       "Title": "DURA",
-      "X": 339.19998,
-      "Y": 151.99998,
+      "X": 342.39999,
+      "Y": 160,
       "Width": 70,
       "Height": 80,
       "Icon": null,
@@ -126,23 +114,43 @@
       "LinkAnimation": null,
       "Ports": [
         {
-          "Id": "1bf52214-20d0-4add-bf43-50ee1b2cbc14",
-          "Alignment": "Left"
-        },
-        {
-          "Id": "6fdd8418-ecbb-40b7-9389-a2805a9aad4d",
+          "Id": "e01fb21f-b317-4d02-b64c-2e7e0579bfd2",
           "Alignment": "Top"
-        },
+        }
+      ]
+    },
+    {
+      "Id": "44205435-3b18-43b4-a09c-4a444af6260b",
+      "Title": "",
+      "X": 211.59997,
+      "Y": 21.99998,
+      "Width": 60,
+      "Height": 100,
+      "Icon": "\u003Cpath d=\u0022M0 0h24v24H0z\u0022 fill=\u0022none\u0022/\u003E\u003Cpath d=\u0022M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4zM11 20v-5.5H9L13 7v5.5h2L11 20z\u0022/\u003E",
+      "IconName": "Battery",
+      "Description": null,
+      "BackgroundColor": null,
+      "IconColor": null,
+      "Metadata": {},
+      "DataTopic": "ess1/servers/HUB-3/power",
+      "DataTopic2": "ess1/servers/HUB-3/soc",
+      "DataFormat": "{0:0}W",
+      "DataFormat2": "{0:0}%",
+      "FontSize": null,
+      "DataColorRules": [],
+      "DataColorRules2": [],
+      "LinkAnimation": "Reverse",
+      "Ports": [
         {
-          "Id": "12f49131-9b31-4820-b333-45e485e67ecd",
+          "Id": "35881ae2-b686-4d39-b458-d41fb9419c3d",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "7928ca47-897d-4ba4-814b-e966ed02a058",
+      "Id": "9f30d727-77b0-45c4-ba96-b79fd614ebfe",
       "Title": "",
-      "X": 209.19998,
+      "X": 381.59997,
       "Y": 21.99998,
       "Width": 60,
       "Height": 100,
@@ -152,53 +160,25 @@
       "BackgroundColor": null,
       "IconColor": null,
       "Metadata": {},
-      "DataTopic": "ess1/servers/HUB-3/soc",
-      "DataTopic2": "ess1/servers/HUB-3/power",
-      "DataFormat": "{0:0}%",
-      "DataFormat2": "{0:0}W",
+      "DataTopic": "ess1/servers/DURA-1/power",
+      "DataTopic2": "ess1/servers/DURA-1/soc",
+      "DataFormat": "{0:0}W",
+      "DataFormat2": "{0:0}%",
       "FontSize": null,
       "DataColorRules": [],
       "DataColorRules2": [],
-      "LinkAnimation": null,
+      "LinkAnimation": "Reverse",
       "Ports": [
         {
-          "Id": "82b86c10-a160-4270-a117-e90f4c039ced",
-          "Alignment": "Top"
+          "Id": "eeae128d-96b5-4e63-a3a0-27c69d2a857e",
+          "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "d3dc9b3b-dba0-4c89-a3aa-4b4fd5a3465d",
+      "Id": "5b96ec3a-3a56-48b4-8bc3-b35f286ae3a3",
       "Title": "",
-      "X": 379.19998,
-      "Y": 21.99998,
-      "Width": 60,
-      "Height": 100,
-      "Icon": "\u003Cpath d=\u0022M0 0h24v24H0z\u0022 fill=\u0022none\u0022/\u003E\u003Cpath d=\u0022M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4zM11 20v-5.5H9L13 7v5.5h2L11 20z\u0022/\u003E",
-      "IconName": "Battery",
-      "Description": null,
-      "BackgroundColor": null,
-      "IconColor": null,
-      "Metadata": {},
-      "DataTopic": "ess1/servers/DURA-1/soc",
-      "DataTopic2": "ess1/servers/DURA-1/power",
-      "DataFormat": "{0:0}%",
-      "DataFormat2": "{0:0}W",
-      "FontSize": null,
-      "DataColorRules": [],
-      "DataColorRules2": [],
-      "LinkAnimation": null,
-      "Ports": [
-        {
-          "Id": "6a4b4235-641f-4c3c-b92c-6f3aa854967d",
-          "Alignment": "Top"
-        }
-      ]
-    },
-    {
-      "Id": "8bbee9a5-393b-4423-97e2-9af1f91970df",
-      "Title": "",
-      "X": 309.19998,
+      "X": 311.59997,
       "Y": 21.99998,
       "Width": 60,
       "Height": 100,
@@ -210,26 +190,26 @@
       "Metadata": {},
       "DataTopic": "ess1/servers/DURA-1/solar",
       "DataTopic2": null,
-      "DataFormat": null,
+      "DataFormat": "{0:0}W",
       "DataFormat2": null,
       "FontSize": null,
       "DataColorRules": [],
       "DataColorRules2": [],
-      "LinkAnimation": null,
+      "LinkAnimation": "Forward",
       "Ports": [
         {
-          "Id": "e6360566-a5ec-4261-befb-64162f012a92",
+          "Id": "aa06715e-a357-4f66-b3a3-00331427f9f3",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "2f069113-2bf8-4c30-9e32-b418c5bc12ac",
+      "Id": "2d44b1be-0c8d-4157-86e3-de31c04b27d3",
       "Title": "HUB-4",
-      "X": 499.19998,
-      "Y": 171.99998,
+      "X": 502.39999,
+      "Y": 160,
       "Width": 80,
-      "Height": 60,
+      "Height": 80,
       "Icon": null,
       "IconName": null,
       "Description": null,
@@ -246,19 +226,19 @@
       "LinkAnimation": null,
       "Ports": [
         {
-          "Id": "304a20bc-a1d1-45cd-916b-dbd556b30e7a",
+          "Id": "e8548045-396e-45ee-99e7-91fcbc7d2eaa",
           "Alignment": "Top"
         },
         {
-          "Id": "51f8a039-3538-42c4-a8cb-735cb7a635d4",
+          "Id": "28e60cea-3819-4001-ab36-8ef603fd820b",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "40b85c55-d3e7-4183-b436-8b64ca6eb38c",
+      "Id": "b370ea0c-d548-4b6e-b465-9293c1584533",
       "Title": "",
-      "X": 549.19998,
+      "X": 551.59997,
       "Y": 21.99998,
       "Width": 60,
       "Height": 100,
@@ -268,10 +248,10 @@
       "BackgroundColor": null,
       "IconColor": null,
       "Metadata": {},
-      "DataTopic": "ess1/servers/HUB-4/soc",
-      "DataTopic2": "ess1/servers/HUB-4/power",
-      "DataFormat": "{0:0}%",
-      "DataFormat2": "{0:0}W",
+      "DataTopic": "ess1/servers/HUB-4/power",
+      "DataTopic2": "ess1/servers/HUB-4/soc",
+      "DataFormat": "{0:0}W",
+      "DataFormat2": "{0:0}%",
       "FontSize": null,
       "DataColorRules": [
         {
@@ -281,18 +261,18 @@
         }
       ],
       "DataColorRules2": [],
-      "LinkAnimation": null,
+      "LinkAnimation": "Reverse",
       "Ports": [
         {
-          "Id": "d34afdb6-ebfd-4a4d-8e6b-784443a11d61",
+          "Id": "2b2eff59-cf17-43ab-89af-77034d2b682c",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "0e321c12-1d49-40d4-b270-d96a687c3a27",
+      "Id": "ef83bef6-4d03-4eec-8184-13a4e181e2c4",
       "Title": "",
-      "X": 479.19998,
+      "X": 481.59997,
       "Y": 21.99998,
       "Width": 60,
       "Height": 100,
@@ -312,16 +292,16 @@
       "LinkAnimation": "Forward",
       "Ports": [
         {
-          "Id": "6ce16043-6629-4d38-a154-7d0095faa0d8",
+          "Id": "5e66c8f9-0ad0-4c6d-8433-000f5b7e49ae",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "95cf9f2b-19d0-4ce7-9167-a03b77d174ec",
+      "Id": "2ab10f2e-74f9-43aa-b36e-037269c04658",
       "Title": "",
-      "X": 119.19998,
-      "Y": 171.99998,
+      "X": 122.39999,
+      "Y": 180,
       "Width": 60,
       "Height": 45,
       "Icon": null,
@@ -341,10 +321,10 @@
       "Ports": []
     },
     {
-      "Id": "c7c1d700-2c7a-44b2-858c-e196a8afd844",
+      "Id": "9f080eea-eece-4999-a59d-cd3bfd4f1f2c",
       "Title": "Zappi",
-      "X": 149.19998,
-      "Y": 261.99998,
+      "X": 22.39999,
+      "Y": 260,
       "Width": 120,
       "Height": 80,
       "Icon": null,
@@ -366,15 +346,33 @@
   ],
   "Links": [
     {
-      "SourceNodeId": "0e321c12-1d49-40d4-b270-d96a687c3a27",
+      "SourceNodeId": "ef83bef6-4d03-4eec-8184-13a4e181e2c4",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "2f069113-2bf8-4c30-9e32-b418c5bc12ac",
+      "TargetNodeId": "2d44b1be-0c8d-4157-86e3-de31c04b27d3",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "40b85c55-d3e7-4183-b436-8b64ca6eb38c",
+      "SourceNodeId": "b370ea0c-d548-4b6e-b465-9293c1584533",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "2f069113-2bf8-4c30-9e32-b418c5bc12ac",
+      "TargetNodeId": "2d44b1be-0c8d-4157-86e3-de31c04b27d3",
+      "TargetPortAlignment": "Top"
+    },
+    {
+      "SourceNodeId": "9f30d727-77b0-45c4-ba96-b79fd614ebfe",
+      "SourcePortAlignment": "Bottom",
+      "TargetNodeId": "723058dd-cdf5-45ba-9fdf-5bc407c487a7",
+      "TargetPortAlignment": "Top"
+    },
+    {
+      "SourceNodeId": "5b96ec3a-3a56-48b4-8bc3-b35f286ae3a3",
+      "SourcePortAlignment": "Bottom",
+      "TargetNodeId": "723058dd-cdf5-45ba-9fdf-5bc407c487a7",
+      "TargetPortAlignment": "Top"
+    },
+    {
+      "SourceNodeId": "44205435-3b18-43b4-a09c-4a444af6260b",
+      "SourcePortAlignment": "Bottom",
+      "TargetNodeId": "9a402500-57d4-40d3-97d8-7aa678cfeb07",
       "TargetPortAlignment": "Top"
     }
   ],

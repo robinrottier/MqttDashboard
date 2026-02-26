@@ -118,20 +118,47 @@
         InvokeAsync(StateHasChanged);
 
         // find outgoing link and make it dash to indicate data flow
-        foreach (var port in Node.Ports)
+        if (Node.LinkAnimation != null && Node.LinkAnimation != "None")
         {
-            if (port.Links.Count > 0)
+            double d;
+            if (double.TryParse(value.ToString(), out d))
             {
-                foreach (var link in port.Links)
+                if (Node.LinkAnimation == "Reverse")
+                    d = -d;
+
+                // for each port, find each link, get source, anchor, get port, check its same port from here...
+                foreach (var port in Node.Ports)
                 {
-                    var l = link as LinkModel;
-                    if (l != null)
+                    if (port.Links.Count > 0)
                     {
-                        var a = link.Source as SinglePortAnchor;
-                        if (a != null)
+                        foreach (var link in port.Links)
                         {
-                            //l.DashPattern = "5,5";
-                            break;
+                            var l = link as LinkModel;
+                            if (l != null
+                             && l.Animations != null
+                             && l.Animations[0] != null)
+                            {
+                                var ani = l.Animations[0];
+                                var anchor = link.Source as SinglePortAnchor;
+                                if (anchor != null)
+                                {
+                                    if (anchor.Port == port)
+                                    {
+                                        string to;
+                                        if (d > 0)
+                                            to = "-10";
+                                        else if (d == 0)
+                                            to = "0";
+                                        else
+                                            to = "10";
+                                        if (to != null && to != ani.To)
+                                        {
+                                            ani.To = to;
+                                            l.Refresh();
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

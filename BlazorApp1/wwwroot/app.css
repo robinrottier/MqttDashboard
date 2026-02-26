@@ -1,12 +1,4 @@
 
-@keyframes dash-forward { to { stroke-dashoffset: -20; } }
-@keyframes dash-reverse { to { stroke-dashoffset: 20; } }
-
-xxx.g.diagram-link path:not(.selection-helper) {
-    stroke-dasharray: 10;
-    animation: dash-forward 1s linear infinite;
-}
-
 /* Move nested MudMenu submenu expand arrow to the left of the label */
 .mud-list-item-icon {
     order: -1;
