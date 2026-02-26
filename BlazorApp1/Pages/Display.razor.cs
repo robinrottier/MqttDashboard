@@ -102,8 +102,8 @@ public partial class Display : IDisposable
         {
             // Enable grid if not already set
             if (_diagram.Options.GridSize == null)
-                _diagram.Options.GridSize = AppState.GridSize > 0 ? AppState.GridSize : 20;
-            AppState.SetGridSize(_diagram.Options.GridSize.HasValue ? (int)_diagram.Options.GridSize.Value : 0);
+                _diagram.Options.GridSize = AppState.GridSize > 0 ? AppState.GridSize : 10;
+            AppState.SetGridSize(_diagram.Options.GridSize.HasValue ? (int)_diagram.Options.GridSize.Value : 10);
 
             _diagram.Options.AllowMultiSelection = true;
             _diagram.SelectionChanged += OnSelectionChanged;
@@ -253,7 +253,7 @@ public partial class Display : IDisposable
             _diagram = AppState.CreateDiagramFromState(savedState, readOnly: !AppState.IsEditMode);
             var gs = _diagram.Options.GridSize;
             if (AppState.IsEditMode)
-                AppState.SetGridSize(gs.HasValue ? (int)gs.Value : 0);
+                AppState.SetGridSize(gs.HasValue ? (int)gs.Value : 10);
             Snackbar.Add($"Diagram reloaded ({savedState.Nodes.Count} nodes)", Severity.Info);
         }
         else
