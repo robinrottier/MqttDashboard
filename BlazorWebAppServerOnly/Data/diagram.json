@@ -2,7 +2,7 @@
   "Name": "",
   "Nodes": [
     {
-      "Id": "a2dc1863-dbb8-466b-9bc1-4cdea3ca4758",
+      "Id": "8e60b700-3dc4-4058-8739-e68a72fa3f68",
       "Title": "HUB-3",
       "X": 178.39999,
       "Y": 164,
@@ -20,21 +20,21 @@
       "LinkAnimation": null,
       "Ports": [
         {
-          "Id": "990c46f2-a619-42cf-94d6-13aa0d2cc1a0",
+          "Id": "d4b17c3a-a7ef-4ad2-bd07-deb5333d5cfb",
           "Alignment": "Top"
         },
         {
-          "Id": "bbe1e1c5-73f5-452a-b6c5-e1b8d6143b13",
+          "Id": "594a01b2-5f14-4c90-b82a-93e7c4234b6a",
           "Alignment": "Left"
         },
         {
-          "Id": "fc8edc8f-1eed-4023-8f82-65313c43064e",
+          "Id": "dd83892d-eade-48df-ac82-83c6adffacd3",
           "Alignment": "Right"
         }
       ]
     },
     {
-      "Id": "fcb4a7f6-f2e4-4e12-a6cc-67458a7f4ce4",
+      "Id": "f8eadd8c-fac1-4ddb-a1b0-44f4fa3fb2f2",
       "Title": "Grid",
       "X": 28.39999,
       "Y": 164,
@@ -52,13 +52,13 @@
       "LinkAnimation": "Forward",
       "Ports": [
         {
-          "Id": "436091be-aba1-4016-94b7-bcf17b239fa4",
+          "Id": "30225c49-781c-48d9-b4a5-24e2d7d94e69",
           "Alignment": "Right"
         }
       ]
     },
     {
-      "Id": "557a167d-da96-4b3f-875e-0d93450618ad",
+      "Id": "016edf08-e05f-439f-9c73-8b514202cfa9",
       "Title": "",
       "X": 148.39999,
       "Y": 24,
@@ -76,41 +76,45 @@
       "LinkAnimation": "Forward",
       "Ports": [
         {
-          "Id": "5f93a140-2716-4811-a116-bac868413b0f",
+          "Id": "7e96e52b-3f57-4341-b4fe-2cfd49440d8d",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "21d1e7d1-b258-4a57-b846-0f969f0c6ac1",
+      "Id": "6c850831-fd86-4584-b186-a166b8d35efc",
       "Title": "DURA",
-      "X": 341.59998,
+      "X": 330,
       "Y": 170,
-      "Width": 80,
+      "Width": 100,
       "Height": 70,
       "Icon": null,
       "IconName": null,
-      "Text": null,
+      "Text": "{1}\n{0:0}W",
       "BackgroundColor": null,
       "IconColor": null,
       "Metadata": {},
-      "DataTopic": "ess1/servers/DURA-1/active",
-      "DataTopic2": null,
+      "DataTopic": "ess1/servers/DURA-1/grid",
+      "DataTopic2": "ess1/servers/DURA-1/active",
       "FontSize": null,
-      "LinkAnimation": null,
+      "LinkAnimation": "Reverse",
       "Ports": [
         {
-          "Id": "274a1d20-48b2-44ba-a214-69da7f4deb9f",
+          "Id": "94855b07-51db-4bd5-b07e-53c29560dab2",
           "Alignment": "Top"
         },
         {
-          "Id": "e513c423-217c-4cef-b913-7a9c94727bca",
+          "Id": "1c2e22b2-01ce-4463-8ea7-75005fcd25ae",
           "Alignment": "Bottom"
+        },
+        {
+          "Id": "87470535-741a-40ea-b7b1-5d369b0f1a83",
+          "Alignment": "Left"
         }
       ]
     },
     {
-      "Id": "c5e35b58-c1fd-487a-8e9a-230d1241968c",
+      "Id": "7339b16d-624d-4040-bc9b-1b7e0678b7f3",
       "Title": "",
       "X": 228.39999,
       "Y": 24,
@@ -128,13 +132,13 @@
       "LinkAnimation": "Reverse",
       "Ports": [
         {
-          "Id": "0a0c3edb-7bdd-4035-93fd-92e7ca236f6a",
+          "Id": "ec318f55-f204-4038-9384-165b08f80352",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "598d9404-c4cf-48e4-836c-033954ae8efb",
+      "Id": "28bc0015-1625-4556-9485-06f88ac768de",
       "Title": "",
       "X": 378.39999,
       "Y": 24,
@@ -152,13 +156,13 @@
       "LinkAnimation": "Reverse",
       "Ports": [
         {
-          "Id": "445fe270-9b32-4ddf-a626-cc8a071a061a",
+          "Id": "18ca1d7c-55cb-4a9d-ad93-52d4736b2886",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "efc1a23b-1a41-4592-b5dd-dd1107300fc0",
+      "Id": "836f8d79-b0db-410b-838a-6e8546f83788",
       "Title": "",
       "X": 308.39999,
       "Y": 24,
@@ -176,13 +180,13 @@
       "LinkAnimation": "Forward",
       "Ports": [
         {
-          "Id": "e20c7a2a-9213-455b-9f7a-14e9e555748c",
+          "Id": "bcf407bf-f8ba-4e50-85e6-909d9c9c5ce7",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "41649c7b-c839-49ca-9d28-4a0be519c455",
+      "Id": "1ce89786-b6f1-42fd-8885-0190dcc6aa38",
       "Title": "HUB-4",
       "X": 483.19999,
       "Y": 170,
@@ -200,17 +204,17 @@
       "LinkAnimation": null,
       "Ports": [
         {
-          "Id": "aaca3315-7581-4383-a027-5dee5e37e4e5",
+          "Id": "f23517cc-51ea-4390-a8a6-789b1cefb9c3",
           "Alignment": "Top"
         },
         {
-          "Id": "5db89ddc-0a9a-400e-bd8c-36724ca11799",
+          "Id": "d6197a68-c725-4935-aaa6-d6efdf39160f",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "494cd36e-fdda-4fe2-bb54-29d15813ca39",
+      "Id": "a4eba94a-f038-4838-ab05-945306dc50fb",
       "Title": "",
       "X": 528.39999,
       "Y": 24,
@@ -228,13 +232,13 @@
       "LinkAnimation": "Reverse",
       "Ports": [
         {
-          "Id": "27414c69-eaab-4c7f-8d8e-fa09409a2996",
+          "Id": "f2514c74-2700-4874-9e6b-ebdd76aab744",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "f5379c3b-033c-42a0-b68a-85bc0dabab92",
+      "Id": "545cf7bc-ccc9-4fbf-9d6d-feb956a44420",
       "Title": "",
       "X": 458.39999,
       "Y": 24,
@@ -252,13 +256,13 @@
       "LinkAnimation": "Forward",
       "Ports": [
         {
-          "Id": "08493233-ccff-4f59-8525-9edce13c4218",
+          "Id": "0d88da31-3bae-40a6-85e8-474ea20b2239",
           "Alignment": "Bottom"
         }
       ]
     },
     {
-      "Id": "20351467-465e-44bc-8547-a45c37350b9d",
+      "Id": "ad77d13e-90bd-4ef2-84af-f57d5a563851",
       "Title": "Zappi",
       "X": 181.59998,
       "Y": 290,
@@ -277,31 +281,7 @@
       "Ports": []
     },
     {
-      "Id": "8eaf2015-90db-4ddc-b6a8-c4d9217738a2",
-      "Title": "",
-      "X": 321.59998,
-      "Y": 170,
-      "Width": 20,
-      "Height": 70,
-      "Icon": null,
-      "IconName": null,
-      "Text": null,
-      "BackgroundColor": null,
-      "IconColor": null,
-      "Metadata": {},
-      "DataTopic": "ess1/servers/DURA-1/grid",
-      "DataTopic2": null,
-      "FontSize": null,
-      "LinkAnimation": "Forward",
-      "Ports": [
-        {
-          "Id": "c0914eae-bcc8-46bb-9642-4a0b1e5aef71",
-          "Alignment": "Left"
-        }
-      ]
-    },
-    {
-      "Id": "0f3231a8-947a-4aa6-9b9f-b203e10dbb07",
+      "Id": "c94eab96-6242-4607-9116-be02b0d31869",
       "Title": "",
       "X": 340,
       "Y": 290,
@@ -319,7 +299,7 @@
       "LinkAnimation": "Reverse",
       "Ports": [
         {
-          "Id": "8d5c7bcb-4583-4175-9062-f78ccc05fcb1",
+          "Id": "2cfe5b18-2644-4d57-a0ba-4c7dce217113",
           "Alignment": "Top"
         }
       ]
@@ -327,59 +307,59 @@
   ],
   "Links": [
     {
-      "SourceNodeId": "f5379c3b-033c-42a0-b68a-85bc0dabab92",
+      "SourceNodeId": "545cf7bc-ccc9-4fbf-9d6d-feb956a44420",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "41649c7b-c839-49ca-9d28-4a0be519c455",
+      "TargetNodeId": "1ce89786-b6f1-42fd-8885-0190dcc6aa38",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "494cd36e-fdda-4fe2-bb54-29d15813ca39",
+      "SourceNodeId": "a4eba94a-f038-4838-ab05-945306dc50fb",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "41649c7b-c839-49ca-9d28-4a0be519c455",
+      "TargetNodeId": "1ce89786-b6f1-42fd-8885-0190dcc6aa38",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "598d9404-c4cf-48e4-836c-033954ae8efb",
+      "SourceNodeId": "28bc0015-1625-4556-9485-06f88ac768de",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "21d1e7d1-b258-4a57-b846-0f969f0c6ac1",
+      "TargetNodeId": "6c850831-fd86-4584-b186-a166b8d35efc",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "efc1a23b-1a41-4592-b5dd-dd1107300fc0",
+      "SourceNodeId": "836f8d79-b0db-410b-838a-6e8546f83788",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "21d1e7d1-b258-4a57-b846-0f969f0c6ac1",
+      "TargetNodeId": "6c850831-fd86-4584-b186-a166b8d35efc",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "c5e35b58-c1fd-487a-8e9a-230d1241968c",
+      "SourceNodeId": "7339b16d-624d-4040-bc9b-1b7e0678b7f3",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "a2dc1863-dbb8-466b-9bc1-4cdea3ca4758",
+      "TargetNodeId": "8e60b700-3dc4-4058-8739-e68a72fa3f68",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "557a167d-da96-4b3f-875e-0d93450618ad",
+      "SourceNodeId": "016edf08-e05f-439f-9c73-8b514202cfa9",
       "SourcePortAlignment": "Bottom",
-      "TargetNodeId": "a2dc1863-dbb8-466b-9bc1-4cdea3ca4758",
+      "TargetNodeId": "8e60b700-3dc4-4058-8739-e68a72fa3f68",
       "TargetPortAlignment": "Top"
     },
     {
-      "SourceNodeId": "fcb4a7f6-f2e4-4e12-a6cc-67458a7f4ce4",
+      "SourceNodeId": "f8eadd8c-fac1-4ddb-a1b0-44f4fa3fb2f2",
       "SourcePortAlignment": "Right",
-      "TargetNodeId": "a2dc1863-dbb8-466b-9bc1-4cdea3ca4758",
+      "TargetNodeId": "8e60b700-3dc4-4058-8739-e68a72fa3f68",
       "TargetPortAlignment": "Left"
     },
     {
-      "SourceNodeId": "8eaf2015-90db-4ddc-b6a8-c4d9217738a2",
-      "SourcePortAlignment": "Left",
-      "TargetNodeId": "a2dc1863-dbb8-466b-9bc1-4cdea3ca4758",
-      "TargetPortAlignment": "Right"
+      "SourceNodeId": "c94eab96-6242-4607-9116-be02b0d31869",
+      "SourcePortAlignment": "Top",
+      "TargetNodeId": "6c850831-fd86-4584-b186-a166b8d35efc",
+      "TargetPortAlignment": "Bottom"
     },
     {
-      "SourceNodeId": "0f3231a8-947a-4aa6-9b9f-b203e10dbb07",
-      "SourcePortAlignment": "Top",
-      "TargetNodeId": "21d1e7d1-b258-4a57-b846-0f969f0c6ac1",
-      "TargetPortAlignment": "Bottom"
+      "SourceNodeId": "6c850831-fd86-4584-b186-a166b8d35efc",
+      "SourcePortAlignment": "Left",
+      "TargetNodeId": "8e60b700-3dc4-4058-8739-e68a72fa3f68",
+      "TargetPortAlignment": "Right"
     }
   ],
-  "GridSize": 10
+  "GridSize": 20
 }

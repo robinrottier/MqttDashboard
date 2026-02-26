@@ -11,7 +11,7 @@
      @ondblclick="OnDoubleClick">
 
     <MudCard Outlined="false" Elevation="0" Style="@GetCardStyle()" Class="mud-card mud-node-card">
-        @if (!string.IsNullOrEmpty(Node.Icon) && !string.IsNullOrEmpty(Node.Title))
+        @if (!string.IsNullOrEmpty(Node.Icon) || !string.IsNullOrEmpty(Node.Title))
         {
             <MudCardHeader Class="widget-text pa-1">
                 <CardHeaderContent>
