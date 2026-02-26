@@ -6,16 +6,15 @@
 @inject ApplicationState AppState
 @implements IDisposable
 
-<div class="pa-1 mud-node default-node @(Node.Selected ? "selected" : "")"
-     style="@GenerateStyle()"
-     @ondblclick="OnDoubleClick">
-
-    <MudCard Outlined="false" Elevation="0" Style="@GetCardStyle()" Class="mud-card mud-node-card">
+    <MudCard Outlined="false" Elevation="0" 
+            Style="@GenerateStyle()" 
+            Class=@("pa-1 default-node"+(Node.Group != null ? " grouped" : "")+(Node.Selected ? " selected" : ""))
+            @ondblclick="OnDoubleClick">
         @if (!string.IsNullOrEmpty(Node.Icon) || !string.IsNullOrEmpty(Node.Title))
         {
-            <MudCardHeader Class="widget-text pa-1">
+            <MudCardHeader Class="pa-0">
                 <CardHeaderContent>
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="0" Class="widget-text">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="0" Class="pa-1">
                         @if (!string.IsNullOrEmpty(Node.Icon))
                         {
                             <MudIcon Icon="@Node.Icon"
@@ -32,8 +31,8 @@
         }
         @if (!string.IsNullOrEmpty(Node.Text))
         {
-            <MudCardContent Class="widget-text pa-1 mud-node-text-content">
-                <MudText Typo="Typo.body2"
+        <MudCardContent Class="pa-0">
+                <MudText Typo="Typo.body1"
                          Style="@($"font-size:{GetFontSize()}; white-space:pre-wrap; word-break:break-word;")">
                     @FormatText()
                 </MudText>
@@ -45,7 +44,6 @@
             <PortRenderer @key="port" Port="port" Style="@GeneratePortStyle(port as MudPortModel)" />
         }
     </MudCard>
-</div>
 
 @code {
     [Parameter] public MudNodeModel Node { get; set; } = null!;
@@ -242,7 +240,8 @@
     {
         if (Node.Size is not null)
             return $"width:{Node.Size.Width}px; height:{Node.Size.Height}px; {GetCardStyle()}";
-        return string.Empty;
+        else
+            return GetCardStyle();
     }
 
     private string GetCardStyle()
