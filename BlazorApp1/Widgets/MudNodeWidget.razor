@@ -100,8 +100,8 @@
         if (Node.LinkAnimation != null && Node.LinkAnimation != "None")
         {
             double d;
-            if (double.TryParse(value.ToString(), out d))
-            {
+            if (value != null && double.TryParse(value.ToString(), out d))
+        {
                 if (Node.LinkAnimation == "Reverse")
                     d = -d;
 
