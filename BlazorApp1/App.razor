@@ -38,9 +38,9 @@
     <Routes @rendermode="@RenderMode" />
 
     @* Shared library scripts *@
-    <!-- Blazor.Diagrams -->
-    <script src="_framework/blazor.web.js"></script>
+    <!-- Blazor.Diagrams must load before blazor.web.js so ZBlazorDiagrams is defined before Blazor makes interop calls -->
     <script src="_content/Z.Blazor.Diagrams/script.min.js"></script>
+    <script src="_framework/blazor.web.js"></script>
 
     <!-- MudBlazor -->
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
