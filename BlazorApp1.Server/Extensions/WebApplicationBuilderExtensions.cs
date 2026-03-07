@@ -1,5 +1,6 @@
 using BlazorApp1.Services;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BlazorApp1.Server.Extensions;
@@ -20,6 +21,19 @@ public static class WebApplicationBuilderExtensions
         this WebApplicationBuilder builder, 
         BlazorRenderMode renderMode)
     {
+        // Persist Data Protection keys so antiforgery tokens survive container restarts.
+        // Configure DataProtection:KeysDirectory in appsettings/env (e.g. /app/data/keys in Docker).
+        // If not set, keys are stored in the default location (user profile on dev, ephemeral in containers).
+        var keysDir = builder.Configuration["DataProtection:KeysDirectory"];
+        if (!string.IsNullOrWhiteSpace(keysDir))
+        {
+            var keysDirInfo = new DirectoryInfo(keysDir);
+            keysDirInfo.Create(); // ensure it exists
+            builder.Services.AddDataProtection()
+                .PersistKeysToFileSystem(keysDirInfo)
+                .SetApplicationName("BlazorApp1");
+        }
+
         // Add Razor Components with appropriate render mode
         var razorComponentsBuilder = builder.Services.AddRazorComponents();
 

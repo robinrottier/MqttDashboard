@@ -12,13 +12,15 @@ public class DiagramStorageService
     private readonly ILogger<DiagramStorageService> _logger;
     private const string DiagramFileName = "diagram.json";
 
+    public string StoragePath => _storagePath;
+
     public DiagramStorageService(IWebHostEnvironment environment, IConfiguration configuration, ILogger<DiagramStorageService> logger)
     {
         // Priority: environment variable > appsettings.json > default (ContentRoot/Data)
         var envDir = Environment.GetEnvironmentVariable("DIAGRAM_DATA_DIR");
         var configDir = configuration["DiagramStorage:DataDirectory"];
         _storagePath = !string.IsNullOrWhiteSpace(envDir) ? envDir
-                     : !string.IsNullOrWhiteSpace(configDir) ? configDir
+                     : !string.IsNullOrWhiteSpace(configDir) ? Path.GetFullPath(configDir, environment.ContentRootPath)
                      : Path.Combine(environment.ContentRootPath, "Data");
 
         _logger = logger;

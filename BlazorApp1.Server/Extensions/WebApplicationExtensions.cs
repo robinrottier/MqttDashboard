@@ -1,6 +1,7 @@
 using BlazorApp1.Server.Hubs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 
 namespace BlazorApp1.Server.Extensions;
@@ -14,6 +15,26 @@ public static class WebApplicationExtensions
         this WebApplication app,
         BlazorRenderMode renderMode) where TApp : IComponent
     {
+        // Apply X-Forwarded-Prefix as the request path base, but only when the header value
+        // exactly matches the configured AllowedPathBase (e.g. "/rr-dev").
+        // This allows the app to be reached directly (no path base) OR via a reverse proxy
+        // sub-path without accepting arbitrary values from untrusted clients.
+        var allowedPathBase = app.Configuration["AllowedPathBase"]?.Trim('/');
+        if (!string.IsNullOrEmpty(allowedPathBase))
+        {
+            var canonicalPathBase = new PathString("/" + allowedPathBase);
+            app.Use((context, next) =>
+            {
+                if (context.Request.Headers.TryGetValue("X-Forwarded-Prefix", out var prefix))
+                {
+                    var prefixValue = "/" + prefix.ToString().Trim('/');
+                    if (string.Equals(prefixValue, canonicalPathBase, StringComparison.OrdinalIgnoreCase))
+                        context.Request.PathBase = canonicalPathBase;
+                }
+                return next(context);
+            });
+        }
+
         // Configure the HTTP request pipeline
         if (app.Environment.IsDevelopment())
         {
@@ -43,8 +64,9 @@ public static class WebApplicationExtensions
         // Map Controllers
         app.MapControllers();
 
-        // Map SignalR Hub
-        app.MapHub<MqttDataHub>("/mqttdatahub");
+        // Map SignalR Hub — disable antiforgery since SignalR manages its own security
+        // (WebSocket same-origin policy protects against CSRF; antiforgery tokens don't apply here)
+        app.MapHub<MqttDataHub>("/mqttdatahub").DisableAntiforgery();
 
         // Map Razor Components with appropriate render mode
         var razorComponentsEndpoint = app.MapRazorComponents<TApp>();

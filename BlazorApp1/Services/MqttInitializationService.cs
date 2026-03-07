@@ -57,8 +57,10 @@ public class MqttInitializationService
                 _signalRService.OnSubscriptionConfirmed += HandleSubscriptionConfirmed;
                 _signalRService.OnUnsubscriptionConfirmed += HandleUnsubscriptionConfirmed;
 
-                // Connect to SignalR hub
-                var hubUrl = _navigationManager.ToAbsoluteUri("/mqttdatahub");
+                // Connect to SignalR hub.
+                // Use a relative path (no leading /) so NavigationManager prepends the path base,
+                // correctly producing e.g. http://host/rr-dev/mqttdatahub when behind a sub-path proxy.
+                var hubUrl = _navigationManager.ToAbsoluteUri("mqttdatahub");
                 await _signalRService.StartAsync(hubUrl.ToString());
 
                 _appState.SetSignalRService(_signalRService);

@@ -1,10 +1,18 @@
 <Solution>
+  <Folder Name="/Data/">
+    <File Path="data/applicationstate.json" />
+    <File Path="data/diagram.json" />
+  </Folder>
   <Folder Name="/Documents/" />
   <Folder Name="/Solution Items/">
     <File Path="README.md" />
     <File Path="TODO.md" />
+    <File Path="docker-compose.override.yml" />
+    <File Path="docker-compose.yml" />
   </Folder>
   <Folder Name="/Web/">
+    <Project Path="BlazorWebAppAuto/BlazorWebAppAuto.Client/BlazorWebAppAuto.Client.csproj" />
+    <Project Path="BlazorWebAppAuto/BlazorWebAppAuto/BlazorWebAppAuto.csproj" />
     <Project Path="BlazorWebAppServerOnly/BlazorWebAppServerOnly.csproj" Id="d852685b-bffb-48ac-b18b-ceaf0849a450" />
     <Project Path="BlazorWebAppWasmOnly/BlazorWebAppWasmOnly.Client/BlazorWebAppWasmOnly.Client.csproj" Id="349a411c-4ff5-498e-aa65-0554f499a960" />
     <Project Path="BlazorWebAppWasmOnly/BlazorWebAppWasmOnly/BlazorWebAppWasmOnly.csproj" Id="99cd29cc-f025-4fdb-8e58-9e498ff49acf" />

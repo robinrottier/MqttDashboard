@@ -1,0 +1,23 @@
+services:
+  blazorapp1:
+    build:
+      context: .
+      dockerfile: BlazorWebAppAuto/BlazorWebAppAuto/Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      # Persist diagram files between container restarts
+      - ./data:/app/data
+    environment:
+      # Override MQTT broker settings here or in a .env file
+      - MqttSettings__Broker=your-mqtt-broker-host
+      - MqttSettings__Port=1883
+      - MqttSettings__Username=
+      - MqttSettings__Password=
+      # Data directory (matches the volume mount above)
+      - DiagramStorage__DataDirectory=/app/data
+      # Sub-path when accessed behind a reverse proxy (e.g. "rr-dev" for /rr-dev/).
+      # Leave empty for direct root access. The app only accepts this exact value from
+      # the X-Forwarded-Prefix header — arbitrary values from clients are ignored.
+      - AllowedPathBase=
+    restart: unless-stopped

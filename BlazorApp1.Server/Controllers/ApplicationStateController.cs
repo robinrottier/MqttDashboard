@@ -1,8 +1,8 @@
 using BlazorApp1.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Hosting;
 using System.Text.Json;
+using BlazorApp1.Server.Services;
 
 namespace BlazorApp1.Server.Controllers;
 
@@ -13,11 +13,11 @@ public class ApplicationStateController : ControllerBase
     private readonly string _filePath;
     private readonly ILogger<ApplicationStateController> _logger;
 
-    public ApplicationStateController(IWebHostEnvironment env, ILogger<ApplicationStateController> logger)
+    public ApplicationStateController(DiagramStorageService diagramStorage, ILogger<ApplicationStateController> logger)
     {
-        _filePath = Path.Combine(env.ContentRootPath, "Data", "applicationstate.json");
+        _filePath = Path.Combine(diagramStorage.StoragePath, "applicationstate.json");
         _logger = logger;
-        
+
         // Ensure Data directory exists
         var directory = Path.GetDirectoryName(_filePath);
         if (directory != null && !Directory.Exists(directory))

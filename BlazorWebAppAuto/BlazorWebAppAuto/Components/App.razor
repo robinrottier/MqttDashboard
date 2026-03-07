@@ -1,0 +1,14 @@
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
+
+<BlazorApp1.App RenderMode="InteractiveAuto">
+    <AdditionalHeadContentBefore>
+        <ResourcePreloader />
+    </AdditionalHeadContentBefore>
+    <AdditionalStylesheets>
+        <link rel="stylesheet" href="BlazorWebAppAuto.styles.css" />
+        <link rel="stylesheet" href="app.css" />
+    </AdditionalStylesheets>
+    <AdditionalHeadContentAfter>
+        <ImportMap />
+    </AdditionalHeadContentAfter>
+</BlazorApp1.App>

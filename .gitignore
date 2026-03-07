@@ -361,3 +361,10 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Docker secrets and local overrides
+.env
+
+# Diagram data directory (runtime data, not source)
+/data/
+/Data/

@@ -1,0 +1,20 @@
+# Local development override for docker compose.
+# This file is committed so the local dev setup is documented alongside the main compose file.
+# It is automatically merged by: docker compose up
+#
+# The ./data bind-mount ensures the container reads/writes the same files
+# as the dev hosting projects (which also resolve to {repo}/data/ via appsettings.Development.json).
+#
+# For credentials and per-machine overrides, create a .env file (git-ignored) alongside this file.
+
+services:
+  blazorapp1:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      # Override MQTT settings for local dev — or put these in a .env file
+      - MqttSettings__Broker=nas1.local
+      - MqttSettings__Port=1883
+      - MqttSettings__Username=emonpi
+      - MqttSettings__Password=emonpimqtt2016
+      - AllowedPathBase=rr-dev
+
