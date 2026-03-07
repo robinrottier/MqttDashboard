@@ -34,6 +34,36 @@ public static class WebApplicationBuilderExtensions
                 .SetApplicationName("MqttDashboard");
         }
 
+        // Cookie authentication — only configured if AdminPasswordHash is set in config.
+        // When not configured, all users have admin access (no login required).
+        var adminHash = builder.Configuration["Auth:AdminPasswordHash"];
+        if (!string.IsNullOrEmpty(adminHash))
+        {
+            builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie(options =>
+                {
+                    options.Cookie.Name = "MqttDashboard.Auth";
+                    options.Cookie.HttpOnly = true;
+                    options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Strict;
+                    options.ExpireTimeSpan = TimeSpan.FromDays(30);
+                    options.SlidingExpiration = true;
+                    options.LoginPath = "/login";
+                    options.AccessDeniedPath = "/login";
+                    options.Events.OnRedirectToLogin = ctx =>
+                    {
+                        // For API requests, return 401 instead of redirecting to login page
+                        if (ctx.Request.Path.StartsWithSegments("/api"))
+                        {
+                            ctx.Response.StatusCode = 401;
+                            return Task.CompletedTask;
+                        }
+                        ctx.Response.Redirect(ctx.RedirectUri);
+                        return Task.CompletedTask;
+                    };
+                });
+            builder.Services.AddAuthorization();
+        }
+
         // Add Razor Components with appropriate render mode
         var razorComponentsBuilder = builder.Services.AddRazorComponents();
 

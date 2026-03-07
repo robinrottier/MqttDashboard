@@ -59,6 +59,13 @@ public static class WebApplicationExtensions
         // API controllers are exempt via the IgnoreAntiforgeryTokenAttribute global filter
         app.UseAntiforgery();
 
+        // Add authentication/authorization if configured
+        if (!string.IsNullOrEmpty(app.Configuration["Auth:AdminPasswordHash"]))
+        {
+            app.UseAuthentication();
+            app.UseAuthorization();
+        }
+
         app.MapStaticAssets();
 
         // Map Controllers

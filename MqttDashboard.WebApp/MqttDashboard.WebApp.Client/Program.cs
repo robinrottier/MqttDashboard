@@ -14,4 +14,7 @@ builder.Services.AddScoped<DiagramService>();
 // Add ApplicationStateService (needs HttpClient)
 builder.Services.AddScoped<ApplicationStateService>();
 
+// Add AuthService (needs HttpClient)
+builder.Services.AddScoped<AuthService>();
+
 await builder.Build().RunAsync();

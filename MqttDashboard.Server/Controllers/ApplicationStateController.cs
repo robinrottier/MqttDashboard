@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using MqttDashboard.Server.Services;
+using MqttDashboard.Server.Filters;
 
 namespace MqttDashboard.Server.Controllers;
 
@@ -59,6 +60,7 @@ public class ApplicationStateController : ControllerBase
     }
 
     [HttpPost]
+    [ServiceFilter(typeof(RequireAdminFilter))]
     public async Task<IActionResult> Post([FromBody] ApplicationStateData state)
     {
         await _lock.WaitAsync();

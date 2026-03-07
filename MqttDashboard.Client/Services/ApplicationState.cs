@@ -55,6 +55,17 @@ public class ApplicationState
     public bool HasSelectedNode { get; private set; } = false;
     public bool HasSingleSelectedNode { get; private set; } = false;
 
+    // Auth state
+    public bool IsAdmin { get; private set; } = true; // default true when auth not configured
+    public bool AuthEnabled { get; private set; } = false;
+
+    public void SetAuthState(bool isAdmin, bool authEnabled)
+    {
+        IsAdmin = isAdmin;
+        AuthEnabled = authEnabled;
+        NotifyStateChangedAsync();
+    }
+
     // Dirty flag
     public bool IsDirty { get; private set; } = false;
     public void MarkDirty() { IsDirty = true; NotifyStateChangedAsync(); }

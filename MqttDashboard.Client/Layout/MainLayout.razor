@@ -6,7 +6,6 @@
 @inject ApplicationState AppState
 @inject IJSRuntime JS
 @inject NavigationManager Nav
-
 <MudThemeProvider Theme="@_theme" IsDarkMode="@ComputedDarkMode" />
 <MudPopoverProvider />
 <MudDialogProvider />
@@ -36,6 +35,28 @@
             <MudIcon Icon="@MqttStatusIcon" Color="@MqttStatusColor" Size="Size.Medium" Class="mr-3" />
         </MudTooltip>
 
+        <!-- Auth: login/logout button when auth is configured -->
+        @if (AppState.AuthEnabled)
+        {
+            @if (AppState.IsAdmin)
+            {
+                <MudTooltip Text="Logout admin">
+                    <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" Size="Size.Medium"
+                                   OnClick="Logout" Class="mr-1" />
+                </MudTooltip>
+            }
+            else
+            {
+                <MudTooltip Text="Login as admin">
+                    <MudIconButton Icon="@Icons.Material.Filled.Login" Color="Color.Warning" Size="Size.Medium"
+                                   OnClick='() => Nav.NavigateTo("/login")' Class="mr-1" />
+                </MudTooltip>
+            }
+        }
+
+        <!-- Edit mode toggle switch — hidden when auth is enabled and user is not admin -->
+        @if (!AppState.AuthEnabled || AppState.IsAdmin)
+        {
         <!-- Edit mode toggle switch -->
         <MudTooltip Text="@(_isEditMode ? "Switch to view mode" : "Switch to edit mode")">
             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mr-2">
@@ -49,6 +70,7 @@
                            T="bool" />
             </MudStack>
         </MudTooltip>
+        }
 
         <!-- Hamburger menu button (top-right, 3 bars) -->
         <AppMenu />
@@ -113,7 +135,16 @@
 
     private void ToggleEditMode() => AppState.RequestToggleEditMode();
 
-    private string MqttStatusIcon => AppState.IsMqttConnected
+    [Inject] private AuthService AuthService { get; set; } = default!;
+
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        AppState.SetAuthState(false, true);
+        Nav.NavigateTo("/login");
+    }
+
+    private string MqttStatusIcon =>AppState.IsMqttConnected
         ? Icons.Material.Filled.CloudDone
         : AppState.MqttConnectionStatus.Contains("reconnect", StringComparison.OrdinalIgnoreCase)
             ? Icons.Material.Filled.CloudSync

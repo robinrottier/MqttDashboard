@@ -150,6 +150,16 @@ public class SignalRService : IAsyncDisposable
         return "unknown";
     }
 
+    public async Task<int> GetConnectedClientCountAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            try { return await _hubConnection.InvokeAsync<int>("GetConnectedClientCount"); }
+            catch (Exception ex) { _logger.LogError(ex, "[SignalR] Failed to get client count"); return -1; }
+        }
+        return -1;
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_hubConnection is not null)

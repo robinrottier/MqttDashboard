@@ -13,6 +13,7 @@ public class MqttInitializationService
     private readonly ApplicationStateService _appStateService;
     private readonly SignalRService _signalRService;
     private readonly NavigationManager _navigationManager;
+    private readonly AuthService _authService;
     private readonly ILogger<MqttInitializationService>? _logger;
     private bool _initialized = false;
 
@@ -21,12 +22,14 @@ public class MqttInitializationService
         ApplicationStateService appStateService,
         SignalRService signalRService,
         NavigationManager navigationManager,
+        AuthService authService,
         ILogger<MqttInitializationService>? logger = null)
     {
         _appState = appState;
         _appStateService = appStateService;
         _signalRService = signalRService;
         _navigationManager = navigationManager;
+        _authService = authService;
         _logger = logger;
     }
 
@@ -46,6 +49,10 @@ public class MqttInitializationService
 
             await _appState.LoadSubscriptionsAsync();
             _logger?.LogInformation("Loaded {Count} saved subscriptions", _appState.SubscribedTopics.Count);
+
+            var (isAdmin, authEnabled) = await _authService.GetStatusAsync();
+            _appState.SetAuthState(isAdmin, authEnabled);
+            _logger?.LogInformation("Auth state: IsAdmin={IsAdmin}, AuthEnabled={AuthEnabled}", isAdmin, authEnabled);
 
             if (_appState.SignalRService == null)
             {

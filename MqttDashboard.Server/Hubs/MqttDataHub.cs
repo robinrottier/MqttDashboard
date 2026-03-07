@@ -11,17 +11,20 @@ public class MqttDataHub : Hub
     private readonly ILogger<MqttDataHub> _logger;
     private readonly IConfiguration _configuration;
     private readonly MqttConnectionMonitor _connectionMonitor;
+    private readonly ClientConnectionTracker _connectionTracker;
 
     public MqttDataHub(
         MqttTopicSubscriptionManager subscriptionManager,
         ILogger<MqttDataHub> logger,
         IConfiguration configuration,
-        MqttConnectionMonitor connectionMonitor)
+        MqttConnectionMonitor connectionMonitor,
+        ClientConnectionTracker connectionTracker)
     {
         _subscriptionManager = subscriptionManager;
         _logger = logger;
         _configuration = configuration;
         _connectionMonitor = connectionMonitor;
+        _connectionTracker = connectionTracker;
     }
 
     public async Task SubscribeToTopic(string topic)
@@ -64,8 +67,11 @@ public class MqttDataHub : Hub
         return Task.FromResult(_connectionMonitor.State.ToString());
     }
 
+    public Task<int> GetConnectedClientCount() => Task.FromResult(_connectionTracker.ConnectedCount);
+
     public override async Task OnConnectedAsync()
     {
+        _connectionTracker.Increment();
         _logger.LogInformation("Client {ConnectionId} connected to MQTT Hub", Context.ConnectionId);
         // Push current MQTT state to the newly connected client
         await Clients.Caller.SendAsync("MqttConnectionStatus",
@@ -76,6 +82,7 @@ public class MqttDataHub : Hub
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
+        _connectionTracker.Decrement();
         await _subscriptionManager.UnsubscribeClientFromAllTopicsAsync(Context.ConnectionId);
         if (exception != null)
             _logger.LogWarning(exception, "Client {ConnectionId} disconnected with exception", Context.ConnectionId);

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MqttDashboard.Models;
 using MqttDashboard.Server.Services;
+using MqttDashboard.Server.Filters;
 using Microsoft.Extensions.Logging;
 
 namespace MqttDashboard.Server.Controllers;
@@ -44,6 +45,7 @@ public class DiagramController : ControllerBase
     }
 
     [HttpPost]
+    [ServiceFilter(typeof(RequireAdminFilter))]
     public async Task<ActionResult> SaveDiagram([FromBody] DiagramState diagramState)
     {
         _logger.LogInformation("[DiagramController] POST diagram requested with {NodeCount} nodes", 
@@ -92,6 +94,7 @@ public class DiagramController : ControllerBase
     }
 
     [HttpPost("{name}")]
+    [ServiceFilter(typeof(RequireAdminFilter))]
     public async Task<ActionResult> SaveDiagramByName(string name, [FromBody] DiagramState diagramState)
     {
         if (string.IsNullOrWhiteSpace(name)) return BadRequest("Name required");

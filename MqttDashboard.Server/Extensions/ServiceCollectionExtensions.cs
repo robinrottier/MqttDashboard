@@ -1,5 +1,6 @@
 using MqttDashboard.Server.Hubs;
 using MqttDashboard.Server.Services;
+using MqttDashboard.Server.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -13,6 +14,9 @@ public static class ServiceCollectionExtensions
     {
         // Add MQTT Topic Subscription Manager as singleton
         services.AddSingleton<MqttTopicSubscriptionManager>();
+
+        // Add connected client tracker as singleton
+        services.AddSingleton<ClientConnectionTracker>();
 
         // Add MQTT Connection Monitor as singleton
         services.AddSingleton<MqttConnectionMonitor>();
@@ -57,6 +61,22 @@ public static class ServiceCollectionExtensions
 
             return new ApplicationStateService(httpClient, sp.GetService<ILogger<ApplicationStateService>>());
         });
+
+        // Add AuthService for server-side (calls its own API)
+        services.AddScoped<AuthService>(sp =>
+        {
+            var httpContextAccessor = sp.GetService<IHttpContextAccessor>();
+            var httpClient = new HttpClient();
+            if (httpContextAccessor?.HttpContext != null)
+            {
+                var request = httpContextAccessor.HttpContext.Request;
+                httpClient.BaseAddress = new Uri($"{request.Scheme}://{request.Host}");
+            }
+            return new AuthService(httpClient, sp.GetService<ILogger<AuthService>>());
+        });
+
+        // Add RequireAdminFilter as scoped service
+        services.AddScoped<RequireAdminFilter>();
 
         return services;
     }

@@ -1,6 +1,7 @@
 @page "/about"
 @inject MqttDashboard.Services.ApplicationState AppState
 @inject NavigationManager NavManager
+@inject MqttDashboard.Services.SignalRService SignalRService
 
 <PageTitle>@(AppState.DisplayName) - About</PageTitle>
 
@@ -37,6 +38,13 @@
                       Variant="Variant.Filled" Dense="true">
                 @AppState.MqttConnectionStatus
             </MudAlert>
+            @if (_clientCount >= 0)
+            {
+                <MudText Typo="Typo.body2" Class="mt-2">
+                    <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small" Class="mr-1" />
+                    Connected clients: @_clientCount
+                </MudText>
+            }
         </MudCardContent>
     </MudCard>
 
@@ -71,9 +79,12 @@
     private List<InfoItem> _appInfo = new();
     private List<InfoItem> _debugInfo = new();
     private bool _showDebugInfo;
+    private int _clientCount = -1;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        _clientCount = await SignalRService.GetConnectedClientCountAsync();
+
         var appAssembly = typeof(About).Assembly;
         var appName = AppState.DisplayName;
         var appVersion = appAssembly.GetName().Version?.ToString() ?? "unknown";
@@ -100,6 +111,7 @@
         _debugInfo = new List<InfoItem>
         {
             new("Render Mode", renderMode),
+            new("Server Hostname", new Uri(NavManager.BaseUri).Host),
             new("Server Host", baseUri),
             new("Current URL", currentUri),
         };
