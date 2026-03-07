@@ -1,8 +1,8 @@
-﻿<Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(BlazorApp1.Pages.NotFound)"
-        AdditionalAssemblies="@(new[] { typeof(BlazorApp1._Imports).Assembly })">
+<Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(MqttDashboard.Pages.NotFound)"
+        AdditionalAssemblies="@(new[] { typeof(MqttDashboard._Imports).Assembly })">
 
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(BlazorApp1.Layout.MainLayout)" />
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MqttDashboard.Layout.MainLayout)" />
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
     </Found>
 </Router>

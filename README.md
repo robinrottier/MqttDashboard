@@ -1,4 +1,4 @@
-# BlazorApp1
+# MqttDashboard
 
 Blazor test project
 

@@ -1,16 +1,16 @@
-# BlazorApp1.Server Project - Server-Side Library
+# MqttDashboard.Server Project - Server-Side Library
 
 ## Overview
 
-Created a new `BlazorApp1.Server` class library to contain server-side only code, properly separating client-side and server-side concerns in the Blazor solution architecture.
+Created a new `MqttDashboard.Server` class library to contain server-side only code, properly separating client-side and server-side concerns in the Blazor solution architecture.
 
 ## Architecture
 
 ### Project Structure
 
 ```
-BlazorApp1/
-├── BlazorApp1/                          # Client-side library (WebAssembly compatible)
+MqttDashboard/
+├── MqttDashboard/                          # Client-side library (WebAssembly compatible)
 │   ├── Pages/                           # Blazor pages and components
 │   ├── Services/                        # Client-side services
 │   │   ├── ApplicationState.cs          # Shared application state
@@ -19,7 +19,7 @@ BlazorApp1/
 │   │   └── ServiceCollectionExtensions.cs  # Client service registration
 │   └── Models/                          # Shared data models
 │
-├── BlazorApp1.Server/                   # Server-side library (NEW)
+├── MqttDashboard.Server/                   # Server-side library (NEW)
 │   ├── Hubs/                            # SignalR Hubs
 │   │   ├── MqttDataHub.cs              # SignalR Hub for MQTT
 │   │   └── MqttTopicSubscriptionManager.cs  # Topic subscription manager
@@ -28,35 +28,35 @@ BlazorApp1/
 │   └── Extensions/                      # Service registration extensions
 │       └── ServiceCollectionExtensions.cs  # Server service registration
 │
-└── BlazorWebAppWasmOnly/               # Server application
-    ├── BlazorWebAppWasmOnly/           # Server project
+└── MqttDashboard.WebAppWasmOnly/               # Server application
+    ├── MqttDashboard.WebAppWasmOnly/           # Server project
     │   └── Program.cs                   # Server startup
-    └── BlazorWebAppWasmOnly.Client/    # WebAssembly client project
+    └── MqttDashboard.WebAppWasmOnly.Client/    # WebAssembly client project
         └── Program.cs                   # Client startup
 ```
 
 ## What Was Moved
 
-### From BlazorApp1 → BlazorApp1.Server
+### From MqttDashboard → MqttDashboard.Server
 
 **Files Moved:**
 - `Hubs\MqttDataHub.cs` - SignalR Hub
 - `Hubs\MqttTopicSubscriptionManager.cs` - Subscription manager
 
 **Namespace Changed:**
-- Old: `BlazorApp1.Hubs`
-- New: `BlazorApp1.Server.Hubs`
+- Old: `MqttDashboard.Hubs`
+- New: `MqttDashboard.Server.Hubs`
 
-### From BlazorWebAppWasmOnly → BlazorApp1.Server
+### From MqttDashboard.WebAppWasmOnly → MqttDashboard.Server
 
 **Files Moved:**
 - `Services\MqttClientService.cs` - MQTT client background service
 
 **Namespace Changed:**
-- Old: `BlazorWebAppWasmOnly.Services`
-- New: `BlazorApp1.Server.Services`
+- Old: `MqttDashboard.WebAppWasmOnly.Services`
+- New: `MqttDashboard.Server.Services`
 
-## BlazorApp1.Server Project Configuration
+## MqttDashboard.Server Project Configuration
 
 ### Project File
 ```xml
@@ -81,7 +81,7 @@ BlazorApp1/
 - **Framework**: Microsoft.AspNetCore.App (Full ASP.NET Core)
 - **Package**: MQTTnet (MQTT client library)
 
-## BlazorApp1 Project Configuration (Updated)
+## MqttDashboard Project Configuration (Updated)
 
 ### Project File
 ```xml
@@ -104,7 +104,7 @@ BlazorApp1/
 </Project>
 ```
 
-### What Was Removed from BlazorApp1
+### What Was Removed from MqttDashboard
 - ❌ `Microsoft.AspNetCore.SignalR.Core` package (server-side)
 - ❌ `MQTTnet` package (server-side)
 - ❌ `SERVER_SIDE` compilation constant (no longer needed)
@@ -112,14 +112,14 @@ BlazorApp1/
 
 ## Service Registration
 
-### Client-Side Services (BlazorApp1)
+### Client-Side Services (MqttDashboard)
 
 **Extension Method:**
 ```csharp
-// BlazorApp1\Services\ServiceCollectionExtensions.cs
+// MqttDashboard\Services\ServiceCollectionExtensions.cs
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddBlazorApp1Services(this IServiceCollection services)
+    public static IServiceCollection AddMqttDashboardServices(this IServiceCollection services)
     {
         services.AddMudServices();
         services.AddScoped<ApplicationState>();
@@ -132,18 +132,18 @@ public static class ServiceCollectionExtensions
 
 **Usage in WebAssembly Client:**
 ```csharp
-// BlazorWebAppWasmOnly.Client\Program.cs
-builder.Services.AddBlazorApp1Services();
+// MqttDashboard.WebAppWasmOnly.Client\Program.cs
+builder.Services.AddMqttDashboardServices();
 ```
 
-### Server-Side Services (BlazorApp1.Server)
+### Server-Side Services (MqttDashboard.Server)
 
 **Extension Method:**
 ```csharp
-// BlazorApp1.Server\Extensions\ServiceCollectionExtensions.cs
+// MqttDashboard.Server\Extensions\ServiceCollectionExtensions.cs
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddBlazorApp1ServerServices(this IServiceCollection services)
+    public static IServiceCollection AddMqttDashboardServerServices(this IServiceCollection services)
     {
         services.AddSingleton<MqttTopicSubscriptionManager>();
         services.AddHostedService<MqttClientService>();
@@ -154,13 +154,13 @@ public static class ServiceCollectionExtensions
 
 **Usage in Server:**
 ```csharp
-// BlazorWebAppWasmOnly\Program.cs
-using BlazorApp1.Services;
-using BlazorApp1.Server.Hubs;
-using BlazorApp1.Server.Extensions;
+// MqttDashboard.WebAppWasmOnly\Program.cs
+using MqttDashboard.Services;
+using MqttDashboard.Server.Hubs;
+using MqttDashboard.Server.Extensions;
 
-builder.Services.AddBlazorApp1Services();        // Client services
-builder.Services.AddBlazorApp1ServerServices();  // Server services
+builder.Services.AddMqttDashboardServices();        // Client services
+builder.Services.AddMqttDashboardServerServices();  // Server services
 builder.Services.AddSignalR();
 
 // ...
@@ -170,7 +170,7 @@ app.MapHub<MqttDataHub>("/mqttdatahub");
 
 ## Component Responsibilities
 
-### BlazorApp1 (Client Library)
+### MqttDashboard (Client Library)
 ✅ **Can Contain:**
 - Razor components (.razor files)
 - Client-side services (SignalR client, LocalStorage)
@@ -185,7 +185,7 @@ app.MapHub<MqttDataHub>("/mqttdatahub");
 - Server-side database access
 - Server-only dependencies
 
-### BlazorApp1.Server (Server Library)
+### MqttDashboard.Server (Server Library)
 ✅ **Can Contain:**
 - SignalR Hubs
 - Background services (IHostedService)
@@ -199,7 +199,7 @@ app.MapHub<MqttDataHub>("/mqttdatahub");
 - Browser-specific code (LocalStorage, JS interop)
 - WebAssembly-specific dependencies
 
-### BlazorWebAppWasmOnly (Server Application)
+### MqttDashboard.WebAppWasmOnly (Server Application)
 ✅ **Can Contain:**
 - Server startup configuration
 - Middleware configuration
@@ -207,8 +207,8 @@ app.MapHub<MqttDataHub>("/mqttdatahub");
 - Hosting configuration
 
 ❌ **Should Not Contain:**
-- Reusable server-side services (move to BlazorApp1.Server)
-- Reusable client components (move to BlazorApp1)
+- Reusable server-side services (move to MqttDashboard.Server)
+- Reusable client components (move to MqttDashboard)
 
 ## Benefits of This Architecture
 
@@ -217,7 +217,7 @@ app.MapHub<MqttDataHub>("/mqttdatahub");
    - No mixing of incompatible dependencies
 
 2. **Reusability**
-   - `BlazorApp1.Server` can be referenced by multiple server projects
+   - `MqttDashboard.Server` can be referenced by multiple server projects
    - Server logic is portable across different hosting scenarios
 
 3. **Maintainability**
@@ -225,7 +225,7 @@ app.MapHub<MqttDataHub>("/mqttdatahub");
    - Fewer build issues with platform compatibility
 
 4. **Type Safety**
-   - Shared types can still be in `BlazorApp1`
+   - Shared types can still be in `MqttDashboard`
    - Server and client can reference common models
 
 5. **Testability**
@@ -236,9 +236,9 @@ app.MapHub<MqttDataHub>("/mqttdatahub");
 
 To adopt this architecture in other projects:
 
-1. **Create BlazorApp1.Server project:**
+1. **Create MqttDashboard.Server project:**
    ```bash
-   dotnet new classlib -n BlazorApp1.Server -f net10.0
+   dotnet new classlib -n MqttDashboard.Server -f net10.0
    ```
 
 2. **Add ASP.NET Core framework reference:**
@@ -247,34 +247,34 @@ To adopt this architecture in other projects:
    ```
 
 3. **Move server-side code:**
-   - SignalR Hubs → `BlazorApp1.Server\Hubs\`
-   - Background services → `BlazorApp1.Server\Services\`
-   - Server-only logic → `BlazorApp1.Server\`
+   - SignalR Hubs → `MqttDashboard.Server\Hubs\`
+   - Background services → `MqttDashboard.Server\Services\`
+   - Server-only logic → `MqttDashboard.Server\`
 
 4. **Update namespaces:**
    ```csharp
    // Old
-   namespace BlazorApp1.Hubs;
+   namespace MqttDashboard.Hubs;
    
    // New
-   namespace BlazorApp1.Server.Hubs;
+   namespace MqttDashboard.Server.Hubs;
    ```
 
 5. **Add project reference:**
    ```xml
-   <ProjectReference Include="..\..\BlazorApp1.Server\BlazorApp1.Server.csproj" />
+   <ProjectReference Include="..\..\MqttDashboard.Server\MqttDashboard.Server.csproj" />
    ```
 
 6. **Update using statements:**
    ```csharp
-   using BlazorApp1.Server.Hubs;
-   using BlazorApp1.Server.Services;
-   using BlazorApp1.Server.Extensions;
+   using MqttDashboard.Server.Hubs;
+   using MqttDashboard.Server.Services;
+   using MqttDashboard.Server.Extensions;
    ```
 
 7. **Register services:**
    ```csharp
-   builder.Services.AddBlazorApp1ServerServices();
+   builder.Services.AddMqttDashboardServerServices();
    ```
 
 ## Build Status
@@ -285,10 +285,10 @@ All projects compile correctly with the new architecture.
 
 ## Testing Checklist
 
-- [x] BlazorApp1 builds successfully
-- [x] BlazorApp1.Server builds successfully
-- [x] BlazorWebAppWasmOnly server builds successfully
-- [x] BlazorWebAppWasmOnly client builds successfully
+- [x] MqttDashboard builds successfully
+- [x] MqttDashboard.Server builds successfully
+- [x] MqttDashboard.WebAppWasmOnly server builds successfully
+- [x] MqttDashboard.WebAppWasmOnly client builds successfully
 - [ ] Server can access MqttDataHub
 - [ ] Client can connect to SignalR hub
 - [ ] MQTT messages flow correctly
@@ -298,12 +298,12 @@ All projects compile correctly with the new architecture.
 ## Future Enhancements
 
 1. **Additional Server Services**
-   - Create database access services in BlazorApp1.Server
+   - Create database access services in MqttDashboard.Server
    - Add authentication/authorization services
    - Create API integration services
 
 2. **Shared Contracts**
-   - Consider `BlazorApp1.Contracts` for shared DTOs/interfaces
+   - Consider `MqttDashboard.Contracts` for shared DTOs/interfaces
    - Versioning strategy for contracts
 
 3. **Multiple Server Implementations**
@@ -312,6 +312,6 @@ All projects compile correctly with the new architecture.
    - Different cloud providers
 
 4. **Testing**
-   - Unit tests for BlazorApp1.Server services
+   - Unit tests for MqttDashboard.Server services
    - Integration tests for SignalR hubs
    - MQTT mock/simulator for testing

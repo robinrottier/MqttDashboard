@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/Data/">
+    <File Path="data/applicationstate.json" />
+    <File Path="data/diagram.json" />
+  </Folder>
+  <Folder Name="/Documents/" />
+  <Folder Name="/Solution Items/">
+    <File Path="README.md" />
+    <File Path="TODO.md" />
+    <File Path="docker-compose.override.yml" />
+    <File Path="docker-compose.yml" />
+  </Folder>
+  <Folder Name="/Web/">
+    <Project Path="MqttDashboard.WebApp/MqttDashboard.WebApp.Client/MqttDashboard.WebApp.Client.csproj" />
+    <Project Path="MqttDashboard.WebApp/MqttDashboard.WebApp/MqttDashboard.WebApp.csproj" />
+    <Project Path="MqttDashboard.WebAppServerOnly/MqttDashboard.WebAppServerOnly.csproj" Id="d852685b-bffb-48ac-b18b-ceaf0849a450" />
+    <Project Path="MqttDashboard.WebAppWasmOnly/MqttDashboard.WebAppWasmOnly.Client/MqttDashboard.WebAppWasmOnly.Client.csproj" Id="349a411c-4ff5-498e-aa65-0554f499a960" />
+    <Project Path="MqttDashboard.WebAppWasmOnly/MqttDashboard.WebAppWasmOnly/MqttDashboard.WebAppWasmOnly.csproj" Id="99cd29cc-f025-4fdb-8e58-9e498ff49acf" />
+  </Folder>
+  <Project Path="MqttDashboard.Server/MqttDashboard.Server.csproj" />
+  <Project Path="MqttDashboard.Client/MqttDashboard.Client.csproj" Id="2f6581b9-8858-4bf5-b893-ed1004f44552" />
+</Solution>

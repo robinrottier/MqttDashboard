@@ -12,7 +12,7 @@ This solution implements a real-time data layer that connects your Blazor WebAss
 ## Configuration
 
 ### 1. MQTT Broker Settings
-Edit `BlazorWebAppWasmOnly\BlazorWebAppWasmOnly\appsettings.json`:
+Edit `MqttDashboard.WebAppWasmOnly\MqttDashboard.WebAppWasmOnly\appsettings.json`:
 
 ```json
 {
@@ -76,7 +76,7 @@ Download and install [MQTT Explorer](http://mqtt-explorer.com/) to easily send t
 
 1. **Start the application**:
    ```bash
-   dotnet run --project BlazorWebAppWasmOnly\BlazorWebAppWasmOnly
+   dotnet run --project MqttDashboard.WebAppWasmOnly\MqttDashboard.WebAppWasmOnly
    ```
 
 2. **Navigate to the MQTT Data page**:
@@ -177,13 +177,13 @@ For production use, consider:
 ## Files Created/Modified
 
 ### Created:
-- `BlazorWebAppWasmOnly.Client\Models\MqttDataMessage.cs`
-- `BlazorWebAppWasmOnly.Client\Services\SignalRService.cs`
-- `BlazorWebAppWasmOnly.Client\Pages\MqttData.razor`
-- `BlazorWebAppWasmOnly\Hubs\MqttDataHub.cs`
-- `BlazorWebAppWasmOnly\Services\MqttClientService.cs`
+- `MqttDashboard.WebAppWasmOnly.Client\Models\MqttDataMessage.cs`
+- `MqttDashboard.WebAppWasmOnly.Client\Services\SignalRService.cs`
+- `MqttDashboard.WebAppWasmOnly.Client\Pages\MqttData.razor`
+- `MqttDashboard.WebAppWasmOnly\Hubs\MqttDataHub.cs`
+- `MqttDashboard.WebAppWasmOnly\Services\MqttClientService.cs`
 
 ### Modified:
-- `BlazorWebAppWasmOnly\Program.cs` - Added SignalR and MQTT service
-- `BlazorWebAppWasmOnly.Client\Program.cs` - Added SignalR client service
-- `BlazorWebAppWasmOnly\appsettings.json` - Added MQTT configuration
+- `MqttDashboard.WebAppWasmOnly\Program.cs` - Added SignalR and MQTT service
+- `MqttDashboard.WebAppWasmOnly.Client\Program.cs` - Added SignalR client service
+- `MqttDashboard.WebAppWasmOnly\appsettings.json` - Added MQTT configuration

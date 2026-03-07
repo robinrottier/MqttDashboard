@@ -8,7 +8,7 @@ The MQTT system has been refactored to support dynamic topic subscriptions from 
 ### Server-Side Components
 
 #### 1. **MqttTopicSubscriptionManager** (New)
-- **Location**: `BlazorWebAppWasmOnly\BlazorWebAppWasmOnly\Services\MqttTopicSubscriptionManager.cs`
+- **Location**: `MqttDashboard.WebAppWasmOnly\MqttDashboard.WebAppWasmOnly\Services\MqttTopicSubscriptionManager.cs`
 - **Purpose**: Manages client topic subscriptions with reference counting
 - **Key Features**:
   - Tracks which clients are subscribed to which topics
@@ -18,7 +18,7 @@ The MQTT system has been refactored to support dynamic topic subscriptions from 
   - Automatic cleanup when clients disconnect
 
 #### 2. **MqttClientService** (Updated)
-- **Location**: `BlazorWebAppWasmOnly\BlazorWebAppWasmOnly\Services\MqttClientService.cs`
+- **Location**: `MqttDashboard.WebAppWasmOnly\MqttDashboard.WebAppWasmOnly\Services\MqttClientService.cs`
 - **Changes**:
   - Removed static topic configuration from `appsettings.json`
   - Dynamic topic subscription/unsubscription based on client requests
@@ -28,7 +28,7 @@ The MQTT system has been refactored to support dynamic topic subscriptions from 
   - Unsubscribes from MQTT broker when last client unsubscribes from a topic
 
 #### 3. **MqttDataHub** (Updated)
-- **Location**: `BlazorWebAppWasmOnly\BlazorWebAppWasmOnly\Hubs\MqttDataHub.cs`
+- **Location**: `MqttDashboard.WebAppWasmOnly\MqttDashboard.WebAppWasmOnly\Hubs\MqttDataHub.cs`
 - **New Methods**:
   - `SubscribeToTopic(string topic)`: Client requests to subscribe to a topic
   - `UnsubscribeFromTopic(string topic)`: Client requests to unsubscribe from a topic
@@ -37,7 +37,7 @@ The MQTT system has been refactored to support dynamic topic subscriptions from 
 ### Client-Side Components
 
 #### 1. **SignalRService** (Updated)
-- **Location**: `BlazorApp1\Services\SignalRService.cs`
+- **Location**: `MqttDashboard\Services\SignalRService.cs`
 - **New Features**:
   - `SubscribeToTopicAsync(string topic)`: Request subscription to a topic
   - `UnsubscribeFromTopicAsync(string topic)`: Request unsubscription from a topic
@@ -45,7 +45,7 @@ The MQTT system has been refactored to support dynamic topic subscriptions from 
   - Existing message receiving functionality preserved
 
 #### 2. **MqttData.razor** (Updated)
-- **Location**: `BlazorApp1\Pages\MqttData.razor`
+- **Location**: `MqttDashboard\Pages\MqttData.razor`
 - **New UI Features**:
   - Text input for entering MQTT topics
   - Subscribe button (disabled when not connected)

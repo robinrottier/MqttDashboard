@@ -8,7 +8,7 @@
 # For credentials and per-machine overrides, create a .env file (git-ignored) alongside this file.
 
 services:
-  blazorapp1:
+  MqttDashboard:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       # Override MQTT settings for local dev — or put these in a .env file

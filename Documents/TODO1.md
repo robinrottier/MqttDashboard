@@ -76,7 +76,7 @@
 # Completed
 
 ## App Layout
-- overall title reads app name from assembly (BlazorApp1.csproj → `GetType().Assembly.GetName().Name`)
+- overall title reads app name from assembly (MqttDashboard.csproj → `GetType().Assembly.GetName().Name`)
 - removed the "..." (MoreVert) button from top right corner
 - removed Weather page from project and menus
 - menu now shows: Home | Diagram Edit | Data | About
@@ -136,5 +136,5 @@
 - "Edit Node Properties" button only enabled when exactly one node is selected (disabled for 0 or 2+ nodes)
 
 ## Logging
-- `BlazorApp1.Server.Services.MqttClientService` per-message log calls changed from `LogInformation` to `LogTrace`
-- `appsettings.Development.json` updated to set `BlazorApp1.Server.Services.MqttClientService` log level to `Trace`
+- `MqttDashboard.Server.Services.MqttClientService` per-message log calls changed from `LogInformation` to `LogTrace`
+- `appsettings.Development.json` updated to set `MqttDashboard.Server.Services.MqttClientService` log level to `Trace`

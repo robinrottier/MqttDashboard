@@ -7,7 +7,7 @@ if not exist *.slnx (
 	exit /b 1
 )
 
-set sln=.\BlazorApp1_withBlazorDiagrams.slnx
+set sln=.\MqttDashboard_withBlazorDiagrams.slnx
 if not exist "%sln%" (
 	echo Solution file "%sln%" not found.
 	exit /b 1

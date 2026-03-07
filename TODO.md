@@ -20,16 +20,16 @@
 ### Medium Priority (features / usability)
 
 **Rename**
-- rename "BlazorApp1" to "MqttDashboard" and propagate that change through-out all the code
+- rename "MqttDashboard" to "MqttDashboard" and propagate that change through-out all the code
 	- projects names
-		- "BlazorApp1" becomes "MqttDashBoard.Client"
-		- "BlazorApp1.Server" becomes "MqttDashBoard.Server"
-		- "BlazorWebAppAuto" becomes just "MqttDashboard.WebAppAuto"
-		- "BlazorWebAppServerOnly" becomes just "MqttDashboard.WebAppServerOnly"
-		- "BlazorWebAppWasmOnly" becomes just "MqttDashboard.WebAppWasmOnly"
+		- "MqttDashboard" becomes "MqttDashBoard.Client"
+		- "MqttDashboard.Server" becomes "MqttDashBoard.Server"
+		- "MqttDashboard.WebApp" becomes just "MqttDashboard.WebAppAuto"
+		- "MqttDashboard.WebAppServerOnly" becomes just "MqttDashboard.WebAppServerOnly"
+		- "MqttDashboard.WebAppWasmOnly" becomes just "MqttDashboard.WebAppWasmOnly"
 	- class names
 	- namespaces
-	- comments refering to BlazorApp1 just change to MqttDashboard
+	- comments refering to MqttDashboard just change to MqttDashboard
 - The display name for the app is then "Mqtt Dashboard"
 - This is a big change and requires a checkpoint with GIT commit before and after, for all of it when complete before starting anything else
 

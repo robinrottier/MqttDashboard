@@ -1,0 +1,108 @@
+@page "/about"
+@inject MqttDashboard.Services.ApplicationState AppState
+@inject NavigationManager NavManager
+
+<PageTitle>@(AppState.DisplayName) - About</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="mt-4">
+    <MudCard Class="mb-2">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Application</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent Class="pa-0">
+            <MudSimpleTable Dense="true" Hover="true" Style="overflow: hidden;">
+                <tbody>
+                    @foreach (var item in _appInfo)
+                    {
+                        <tr>
+                            <td style="width: 40%; font-weight: 500; padding: 6px 16px;">@item.Label</td>
+                            <td style="padding: 6px 16px; font-family: monospace;">@item.Value</td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+        </MudCardContent>
+    </MudCard>
+
+    <MudCard Class="mb-4">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Server</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudAlert Severity="@(AppState.IsMqttConnected ? Severity.Success : Severity.Warning)"
+                      Variant="Variant.Filled" Dense="true">
+                @AppState.MqttConnectionStatus
+            </MudAlert>
+        </MudCardContent>
+    </MudCard>
+
+@if (_showDebugInfo)
+{
+    <MudCard Class="mb-4">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Runtime (Debug)</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent Class="pa-0">
+            <MudSimpleTable Dense="true" Hover="true" Style="overflow: hidden;">
+                <tbody>
+                    @foreach (var item in _debugInfo)
+                    {
+                        <tr>
+                            <td style="width: 40%; font-weight: 500; padding: 6px 16px;">@item.Label</td>
+                            <td style="padding: 6px 16px; font-family: monospace;">@item.Value</td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+        </MudCardContent>
+    </MudCard>
+}
+</MudContainer>
+
+@code {
+    private record InfoItem(string Label, string Value);
+
+    private List<InfoItem> _appInfo = new();
+    private List<InfoItem> _debugInfo = new();
+    private bool _showDebugInfo;
+
+    protected override void OnInitialized()
+    {
+        var appAssembly = typeof(About).Assembly;
+        var appName = AppState.DisplayName;
+        var appVersion = appAssembly.GetName().Version?.ToString() ?? "unknown";
+        var dotNetVersion = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
+
+        var mudBlazorVersion = typeof(MudBlazor.MudText).Assembly.GetName().Version?.ToString() ?? "unknown";
+        var diagramsVersion = typeof(Blazor.Diagrams.BlazorDiagram).Assembly.GetName().Version?.ToString() ?? "unknown";
+
+        _appInfo = new List<InfoItem>
+        {
+            new("Application", appName),
+            new("Version", appVersion),
+            new(".NET", dotNetVersion),
+            new("MudBlazor", mudBlazorVersion),
+            new("Blazor Diagrams", diagramsVersion),
+        };
+
+#if DEBUG
+        _showDebugInfo = true;
+        var renderMode = OperatingSystem.IsBrowser() ? "WebAssembly" : "Server";
+        var baseUri = NavManager.BaseUri;
+        var currentUri = NavManager.Uri;
+
+        _debugInfo = new List<InfoItem>
+        {
+            new("Render Mode", renderMode),
+            new("Server Host", baseUri),
+            new("Current URL", currentUri),
+        };
+#endif
+    }
+}

@@ -2,14 +2,14 @@
 
 ## Overview
 
-Successfully moved `App.razor` and `Error.razor` from individual server projects to the shared **BlazorApp1** library, allowing both BlazorWebAppWasmOnly and BlazorWebAppServerOnly to reuse the same root components.
+Successfully moved `App.razor` and `Error.razor` from individual server projects to the shared **MqttDashboard** library, allowing both MqttDashboard.WebAppWasmOnly and MqttDashboard.WebAppServerOnly to reuse the same root components.
 
 ## Architecture
 
-### Shared Components in BlazorApp1
+### Shared Components in MqttDashboard
 
 ```
-BlazorApp1/
+MqttDashboard/
 ├── App/
 │   ├── App.razor                    # NEW: Shared root component
 │   ├── AppHeadContent.razor         # Shared head content (existing)
@@ -24,29 +24,29 @@ BlazorApp1/
 
 ### Usage in Server Projects
 
-**BlazorWebAppWasmOnly (WebAssembly):**
+**MqttDashboard.WebAppWasmOnly (WebAssembly):**
 ```razor
-@using BlazorApp1.App
+@using MqttDashboard.App
 
-<BlazorApp1.App.App RenderMode="InteractiveWebAssembly">
+<MqttDashboard.App.App RenderMode="InteractiveWebAssembly">
     <AdditionalStylesheets>
-        <link rel="stylesheet" href="BlazorWebAppWasmOnly.styles.css" />
+        <link rel="stylesheet" href="MqttDashboard.WebAppWasmOnly.styles.css" />
         <link rel="stylesheet" href="app.css" />
     </AdditionalStylesheets>
-</BlazorApp1.App.App>
+</MqttDashboard.App.App>
 ```
 
-**BlazorWebAppServerOnly (Server-side Blazor):**
+**MqttDashboard.WebAppServerOnly (Server-side Blazor):**
 ```razor
-@using BlazorApp1.App
-@using BlazorWebAppServerOnly.Components.Layout
+@using MqttDashboard.App
+@using MqttDashboard.WebAppServerOnly.Components.Layout
 
-<BlazorApp1.App.App RenderMode="InteractiveServer">
+<MqttDashboard.App.App RenderMode="InteractiveServer">
     <AdditionalStylesheets>
         <link rel="stylesheet" href="app.css" />
-        <link rel="stylesheet" href="BlazorWebAppServerOnly.styles.css" />
+        <link rel="stylesheet" href="MqttDashboard.WebAppServerOnly.styles.css" />
     </AdditionalStylesheets>
-</BlazorApp1.App.App>
+</MqttDashboard.App.App>
 
 @* Server-specific reconnection modal *@
 <ReconnectModal />
@@ -73,7 +73,7 @@ BlazorApp1/
 ### Implementation
 
 ```razor
-@using BlazorApp1.App
+@using MqttDashboard.App
 @using Microsoft.AspNetCore.Components.Web
 
 <!DOCTYPE html>
@@ -198,12 +198,12 @@ BlazorApp1/
 
 ### WebAssembly Project
 ```razor
-<BlazorApp1.App.App RenderMode="InteractiveWebAssembly">
+<MqttDashboard.App.App RenderMode="InteractiveWebAssembly">
     <AdditionalStylesheets>
-        <link rel="stylesheet" href="BlazorWebAppWasmOnly.styles.css" />
+        <link rel="stylesheet" href="MqttDashboard.WebAppWasmOnly.styles.css" />
         <link rel="stylesheet" href="app.css" />
     </AdditionalStylesheets>
-</BlazorApp1.App.App>
+</MqttDashboard.App.App>
 ```
 
 **Characteristics:**
@@ -213,12 +213,12 @@ BlazorApp1/
 
 ### Server Project
 ```razor
-<BlazorApp1.App.App RenderMode="InteractiveServer">
+<MqttDashboard.App.App RenderMode="InteractiveServer">
     <AdditionalStylesheets>
         <link rel="stylesheet" href="app.css" />
-        <link rel="stylesheet" href="BlazorWebAppServerOnly.styles.css" />
+        <link rel="stylesheet" href="MqttDashboard.WebAppServerOnly.styles.css" />
     </AdditionalStylesheets>
-</BlazorApp1.App.App>
+</MqttDashboard.App.App>
 
 <ReconnectModal />
 ```
@@ -231,29 +231,29 @@ BlazorApp1/
 ## Migration Steps Taken
 
 1. **Created Shared App.razor**
-   - Added to `BlazorApp1\App\App.razor`
+   - Added to `MqttDashboard\App\App.razor`
    - Made render mode parameterized
    - Added flexible stylesheet injection
 
 2. **Created Shared Error.razor**
-   - Added to `BlazorApp1\Pages\Error.razor`
+   - Added to `MqttDashboard\Pages\Error.razor`
    - Removed server-specific HttpContext dependency
    - Styled with MudBlazor components
 
-3. **Updated BlazorWebAppWasmOnly**
+3. **Updated MqttDashboard.WebAppWasmOnly**
    - Replaced full App.razor with wrapper
    - Removed local Error.razor
    - Specified WebAssembly render mode
 
-4. **Updated BlazorWebAppServerOnly**
+4. **Updated MqttDashboard.WebAppServerOnly**
    - Replaced full App.razor with wrapper
    - Removed local Error.razor
    - Specified Server render mode
    - Kept ReconnectModal for server-specific functionality
 
 5. **Removed Duplicate Files**
-   - Deleted `BlazorWebAppWasmOnly\Components\Pages\Error.razor`
-   - Deleted `BlazorWebAppServerOnly\Components\Pages\Error.razor`
+   - Deleted `MqttDashboard.WebAppWasmOnly\Components\Pages\Error.razor`
+   - Deleted `MqttDashboard.WebAppServerOnly\Components\Pages\Error.razor`
 
 ## Extending to Other Projects
 
@@ -261,14 +261,14 @@ To use the shared components in other projects:
 
 ```razor
 @* In your project's App.razor *@
-@using BlazorApp1.App
+@using MqttDashboard.App
 
-<BlazorApp1.App.App RenderMode="YourRenderMode">
+<MqttDashboard.App.App RenderMode="YourRenderMode">
     <AdditionalStylesheets>
         <link rel="stylesheet" href="your-project.styles.css" />
         <link rel="stylesheet" href="your-custom.css" />
     </AdditionalStylesheets>
-</BlazorApp1.App.App>
+</MqttDashboard.App.App>
 
 @* Add any project-specific components here *@
 <YourCustomComponent />
@@ -293,8 +293,8 @@ To use the shared components in other projects:
 ## Testing Checklist
 
 - [x] Build successful
-- [ ] BlazorWebAppWasmOnly loads correctly
-- [ ] BlazorWebAppServerOnly loads correctly
+- [ ] MqttDashboard.WebAppWasmOnly loads correctly
+- [ ] MqttDashboard.WebAppServerOnly loads correctly
 - [ ] Error page displays in WebAssembly project
 - [ ] Error page displays in Server project
 - [ ] Request ID shows when error occurs

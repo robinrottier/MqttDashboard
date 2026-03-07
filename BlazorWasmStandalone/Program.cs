@@ -1,13 +1,13 @@
 using BlazorWasmStandalone;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using BlazorApp1.Services;
+using MqttDashboard.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
-builder.Services.AddBlazorApp1Services();
+builder.Services.AddMqttDashboardServices();
 
 await builder.Build().RunAsync();

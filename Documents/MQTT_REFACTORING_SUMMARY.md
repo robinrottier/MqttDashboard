@@ -5,20 +5,20 @@
 ### 1. Renamed DiagramStateService to ApplicationState
 
 **File Renamed:**
-- `BlazorApp1\Services\DiagramStateService.cs` → `BlazorApp1\Services\ApplicationState.cs`
+- `MqttDashboard\Services\DiagramStateService.cs` → `MqttDashboard\Services\ApplicationState.cs`
 
 **Class Renamed:**
 - `DiagramStateService` → `ApplicationState`
 
 **Updated References:**
 All Program.cs files and component files updated to use `ApplicationState`:
-- `BlazorWebAppWasmOnly\BlazorWebAppWasmOnly.Client\Program.cs`
-- `BlazorWebAppWasmOnly\BlazorWebAppWasmOnly\Program.cs`
-- `BlazorWebAppServerOnly\Program.cs`
+- `MqttDashboard.WebAppWasmOnly\MqttDashboard.WebAppWasmOnly.Client\Program.cs`
+- `MqttDashboard.WebAppWasmOnly\MqttDashboard.WebAppWasmOnly\Program.cs`
+- `MqttDashboard.WebAppServerOnly\Program.cs`
 - `BlazorWasmStandalone\Program.cs`
-- `BlazorApp1\Pages\Home.razor`
-- `BlazorApp1\Pages\Diagram.razor`
-- `BlazorApp1\Pages\MqttData.razor`
+- `MqttDashboard\Pages\Home.razor`
+- `MqttDashboard\Pages\Diagram.razor`
+- `MqttDashboard\Pages\MqttData.razor`
 
 ### 2. Enhanced ApplicationState with MQTT Persistence
 

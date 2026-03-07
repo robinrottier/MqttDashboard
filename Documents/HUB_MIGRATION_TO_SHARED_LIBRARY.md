@@ -2,11 +2,11 @@
 
 ## Summary
 
-Successfully moved the SignalR Hub and MQTT Topic Subscription Manager from the server-specific project (`BlazorWebAppWasmOnly`) to the shared `BlazorApp1` library, making them reusable across multiple server projects.
+Successfully moved the SignalR Hub and MQTT Topic Subscription Manager from the server-specific project (`MqttDashboard.WebAppWasmOnly`) to the shared `MqttDashboard` library, making them reusable across multiple server projects.
 
 ## Changes Made
 
-### 1. Updated BlazorApp1.csproj
+### 1. Updated MqttDashboard.csproj
 
 **Removed:**
 - `<SupportedPlatform Include="browser" />` restriction
@@ -38,52 +38,52 @@ Successfully moved the SignalR Hub and MQTT Topic Subscription Manager from the 
 </Project>
 ```
 
-### 2. Moved Files to BlazorApp1\Hubs\
+### 2. Moved Files to MqttDashboard\Hubs\
 
-**From:** `BlazorWebAppWasmOnly\BlazorWebAppWasmOnly\Hubs\`  
-**To:** `BlazorApp1\Hubs\`
+**From:** `MqttDashboard.WebAppWasmOnly\MqttDashboard.WebAppWasmOnly\Hubs\`  
+**To:** `MqttDashboard\Hubs\`
 
 Files moved:
 - `MqttDataHub.cs` - SignalR Hub for MQTT topic subscriptions
 - `MqttTopicSubscriptionManager.cs` - Reference-counted topic subscription manager
 
 **Namespace Changes:**
-- Old: `BlazorWebAppWasmOnly.Hubs`
-- New: `BlazorApp1.Hubs`
+- Old: `MqttDashboard.WebAppWasmOnly.Hubs`
+- New: `MqttDashboard.Hubs`
 
 ### 3. Updated Server Project References
 
-**File:** `BlazorWebAppWasmOnly\BlazorWebAppWasmOnly\Program.cs`
+**File:** `MqttDashboard.WebAppWasmOnly\MqttDashboard.WebAppWasmOnly\Program.cs`
 
 ```csharp
 // Before
-using BlazorWebAppWasmOnly.Hubs;
-using BlazorWebAppWasmOnly.Services;
+using MqttDashboard.WebAppWasmOnly.Hubs;
+using MqttDashboard.WebAppWasmOnly.Services;
 
 // After
-using BlazorApp1.Hubs;
-using BlazorWebAppWasmOnly.Services;
+using MqttDashboard.Hubs;
+using MqttDashboard.WebAppWasmOnly.Services;
 ```
 
-**File:** `BlazorWebAppWasmOnly\BlazorWebAppWasmOnly\Services\MqttClientService.cs`
+**File:** `MqttDashboard.WebAppWasmOnly\MqttDashboard.WebAppWasmOnly\Services\MqttClientService.cs`
 
 ```csharp
 // Before
-using BlazorWebAppWasmOnly.Hubs;
+using MqttDashboard.WebAppWasmOnly.Hubs;
 
 // After
-using BlazorApp1.Hubs;
+using MqttDashboard.Hubs;
 ```
 
 ### 4. Removed Duplicate Files
 
-Deleted from `BlazorWebAppWasmOnly\BlazorWebAppWasmOnly\`:
+Deleted from `MqttDashboard.WebAppWasmOnly\MqttDashboard.WebAppWasmOnly\`:
 - `Hubs\MqttDataHub.cs`
 - `Services\MqttTopicSubscriptionManager.cs`
 
 ## Architecture
 
-### BlazorApp1 - Shared Library
+### MqttDashboard - Shared Library
 
 Now contains both client-side and server-side components:
 
@@ -97,14 +97,14 @@ Now contains both client-side and server-side components:
 - `MqttDataHub` (SignalR Hub)
 - `MqttTopicSubscriptionManager`
 
-### BlazorWebAppWasmOnly - Server Project
+### MqttDashboard.WebAppWasmOnly - Server Project
 
 **Retains:**
 - `MqttClientService` (BackgroundService for MQTT broker connection)
 - Server-specific configuration and startup
 
 **References:**
-- BlazorApp1 library for Hub and shared components
+- MqttDashboard library for Hub and shared components
 
 ## Benefits
 
@@ -116,8 +116,8 @@ Now contains both client-side and server-side components:
 
 ## Compatibility
 
-✅ **WebAssembly Client** - Can still reference BlazorApp1 for components and client services  
-✅ **Server Projects** - Can reference BlazorApp1 for Hub and shared components  
+✅ **WebAssembly Client** - Can still reference MqttDashboard for components and client services  
+✅ **Server Projects** - Can reference MqttDashboard for Hub and shared components  
 ✅ **SignalR Client** - Uses `Microsoft.AspNetCore.SignalR.Client` (works in WASM)  
 ✅ **SignalR Hub** - Uses `Microsoft.AspNetCore.SignalR.Core` (works on server)
 
@@ -129,7 +129,7 @@ Now contains both client-side and server-side components:
 
 ## Important Notes
 
-⚠️ **Do Not Add** `<FrameworkReference Include="Microsoft.AspNetCore.App" />` to BlazorApp1  
+⚠️ **Do Not Add** `<FrameworkReference Include="Microsoft.AspNetCore.App" />` to MqttDashboard  
 - This causes "browser-wasm" runtime pack errors when WebAssembly projects reference it
 - Use package references instead
 
@@ -151,4 +151,4 @@ Now contains both client-side and server-side components:
 
 1. **Multi-Targeting** - Could target `net10.0` and `net10.0-browser` separately
 2. **Conditional Compilation** - Use `#if SERVER_SIDE` if needed
-3. **Separate Projects** - Consider splitting into BlazorApp1.Client and BlazorApp1.Server if complexity grows
+3. **Separate Projects** - Consider splitting into MqttDashboard.Client and MqttDashboard.Server if complexity grows
