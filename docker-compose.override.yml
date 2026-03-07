@@ -18,3 +18,16 @@ services:
       - MqttSettings__Password=emonpimqtt2016
       - AllowedPathBase=rr-dev
 
+  # Watchtower monitors the mqttdashboard image on GHCR and restarts the container
+  # when a new version is pushed. Only active in local dev / production override.
+  # To enable: uncomment this block and set WATCHTOWER_POLL_INTERVAL as needed.
+  # watchtower:
+  #   image: containrrr/watchtower
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   environment:
+  #     - WATCHTOWER_CLEANUP=true
+  #     - WATCHTOWER_POLL_INTERVAL=300   # check every 5 minutes
+  #     - WATCHTOWER_SCOPE=mqttdashboard # only watch this container
+  #   command: --scope mqttdashboard
+  #   restart: unless-stopped

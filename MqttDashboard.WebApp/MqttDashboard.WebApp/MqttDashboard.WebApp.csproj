@@ -11,6 +11,7 @@
     <ProjectReference Include="..\MqttDashboard.WebApp.Client\MqttDashboard.WebApp.Client.csproj" />
     <ProjectReference Include="..\..\MqttDashboard.Server\MqttDashboard.Server.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.3" />
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
   </ItemGroup>
 
 </Project>

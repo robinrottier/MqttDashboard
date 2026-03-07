@@ -64,6 +64,8 @@ public static class WebApplicationExtensions
         // Map Controllers
         app.MapControllers();
 
+        app.MapHealthChecks("/healthz");
+
         // Map SignalR Hub — disable antiforgery since SignalR manages its own security
         // (WebSocket same-origin policy protects against CSRF; antiforgery tokens don't apply here)
         app.MapHub<MqttDataHub>("/mqttdatahub").DisableAntiforgery();

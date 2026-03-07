@@ -59,6 +59,10 @@ public static class WebApplicationBuilderExtensions
         // Add SignalR
         builder.Services.AddSignalR();
 
+        // Add health checks
+        builder.Services.AddHealthChecks()
+            .AddCheck<MqttDashboard.Server.Health.MqttConnectionHealthCheck>("mqtt");
+
         // Add Controllers for API endpoints
         builder.Services.AddControllers(options =>
         {
