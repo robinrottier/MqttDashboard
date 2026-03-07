@@ -10,6 +10,7 @@ public class DiagramStorageService
 {
     private readonly string _storagePath;
     private readonly ILogger<DiagramStorageService> _logger;
+    private readonly SemaphoreSlim _lock = new(1, 1);
     private const string DiagramFileName = "diagram.json";
 
     public string StoragePath => _storagePath;
@@ -37,23 +38,31 @@ public class DiagramStorageService
     {
         var filePath = Path.Combine(_storagePath, DiagramFileName);
 
-        if (!File.Exists(filePath))
-        {
-            _logger.LogInformation("No saved diagram found at {Path}", filePath);
-            return null;
-        }
-
+        await _lock.WaitAsync();
         try
         {
-            var json = await File.ReadAllTextAsync(filePath);
-            var diagramState = JsonSerializer.Deserialize<DiagramState>(json);
-            _logger.LogInformation("Loaded diagram from {Path}", filePath);
-            return diagramState;
+            if (!File.Exists(filePath))
+            {
+                _logger.LogInformation("No saved diagram found at {Path}", filePath);
+                return null;
+            }
+
+            try
+            {
+                var json = await File.ReadAllTextAsync(filePath);
+                var diagramState = JsonSerializer.Deserialize<DiagramState>(json);
+                _logger.LogInformation("Loaded diagram from {Path}", filePath);
+                return diagramState;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load diagram from {Path}", filePath);
+                return null;
+            }
         }
-        catch (Exception ex)
+        finally
         {
-            _logger.LogError(ex, "Failed to load diagram from {Path}", filePath);
-            return null;
+            _lock.Release();
         }
     }
 
@@ -61,21 +70,29 @@ public class DiagramStorageService
     {
         var filePath = Path.Combine(_storagePath, DiagramFileName);
 
+        await _lock.WaitAsync();
         try
         {
-            var options = new JsonSerializerOptions
+            try
             {
-                WriteIndented = true
-            };
-            var json = JsonSerializer.Serialize(diagramState, options);
-            await File.WriteAllTextAsync(filePath, json);
-            _logger.LogInformation("Saved diagram to {Path}", filePath);
-            return true;
+                var options = new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                };
+                var json = JsonSerializer.Serialize(diagramState, options);
+                await File.WriteAllTextAsync(filePath, json);
+                _logger.LogInformation("Saved diagram to {Path}", filePath);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to save diagram to {Path}", filePath);
+                return false;
+            }
         }
-        catch (Exception ex)
+        finally
         {
-            _logger.LogError(ex, "Failed to save diagram to {Path}", filePath);
-            return false;
+            _lock.Release();
         }
     }
 }

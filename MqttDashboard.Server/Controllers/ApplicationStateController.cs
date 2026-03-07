@@ -10,6 +10,7 @@ namespace MqttDashboard.Server.Controllers;
 [ApiController]
 public class ApplicationStateController : ControllerBase
 {
+    private static readonly SemaphoreSlim _lock = new(1, 1);
     private readonly string _filePath;
     private readonly ILogger<ApplicationStateController> _logger;
 
@@ -29,6 +30,7 @@ public class ApplicationStateController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<ApplicationStateData>> Get()
     {
+        await _lock.WaitAsync();
         try
         {
             if (!System.IO.File.Exists(_filePath))
@@ -50,11 +52,16 @@ public class ApplicationStateController : ControllerBase
             _logger.LogError(ex, "Error loading application state");
             return StatusCode(500, "Error loading application state");
         }
+        finally
+        {
+            _lock.Release();
+        }
     }
 
     [HttpPost]
     public async Task<IActionResult> Post([FromBody] ApplicationStateData state)
     {
+        await _lock.WaitAsync();
         try
         {
             var json = JsonSerializer.Serialize(state, new JsonSerializerOptions
@@ -71,6 +78,10 @@ public class ApplicationStateController : ControllerBase
         {
             _logger.LogError(ex, "Error saving application state");
             return StatusCode(500, "Error saving application state");
+        }
+        finally
+        {
+            _lock.Release();
         }
     }
 }

@@ -14,6 +14,9 @@ public static class ServiceCollectionExtensions
         // Add MQTT Topic Subscription Manager as singleton
         services.AddSingleton<MqttTopicSubscriptionManager>();
 
+        // Add MQTT Connection Monitor as singleton
+        services.AddSingleton<MqttConnectionMonitor>();
+
         // Add MQTT Client Service as hosted service
         services.AddHostedService<MqttClientService>();
 

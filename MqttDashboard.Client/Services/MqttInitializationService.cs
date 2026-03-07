@@ -42,24 +42,19 @@ public class MqttInitializationService
         {
             _logger?.LogInformation("Starting MQTT initialization...");
 
-            // Set the application state service for persistence
             _appState.SetApplicationStateService(_appStateService);
 
-            // Load saved subscriptions
             await _appState.LoadSubscriptionsAsync();
             _logger?.LogInformation("Loaded {Count} saved subscriptions", _appState.SubscribedTopics.Count);
 
-            // Only initialize SignalR if not already connected
             if (_appState.SignalRService == null)
             {
-                // Setup event handlers
                 _signalRService.OnDataReceived += HandleDataReceived;
                 _signalRService.OnSubscriptionConfirmed += HandleSubscriptionConfirmed;
                 _signalRService.OnUnsubscriptionConfirmed += HandleUnsubscriptionConfirmed;
+                _signalRService.OnReconnected += HandleReconnected;
+                _signalRService.OnMqttConnectionStatusChanged += HandleMqttConnectionStatusChanged;
 
-                // Connect to SignalR hub.
-                // Use a relative path (no leading /) so NavigationManager prepends the path base,
-                // correctly producing e.g. http://host/rr-dev/mqttdatahub when behind a sub-path proxy.
                 var hubUrl = _navigationManager.ToAbsoluteUri("mqttdatahub");
                 await _signalRService.StartAsync(hubUrl.ToString());
 
@@ -71,7 +66,6 @@ public class MqttInitializationService
 
                 _logger?.LogInformation("SignalR connected successfully");
 
-                // Restore subscriptions after connection
                 await RestoreSubscriptionsAsync();
             }
 
@@ -89,7 +83,6 @@ public class MqttInitializationService
     {
         var topics = _appState.SubscribedTopics.ToList();
         _logger?.LogInformation("Restoring {Count} subscriptions", topics.Count);
-
         foreach (var topic in topics)
         {
             try
@@ -97,7 +90,7 @@ public class MqttInitializationService
                 if (_appState.SignalRService != null)
                 {
                     await _appState.SignalRService.SubscribeToTopicAsync(topic);
-                    _logger?.LogInformation("Restored subscription to: {Topic}", topic);
+                    _logger?.LogDebug("Restored subscription to: {Topic}", topic);
                 }
             }
             catch (Exception ex)
@@ -107,21 +100,50 @@ public class MqttInitializationService
         }
     }
 
-    private void HandleDataReceived(MqttDataMessage message)
+    private void HandleDataReceived(MqttDataMessage message) => _appState.AddMessage(message);
+
+    // Trampoline: event must be void, but we need async work
+    private void HandleSubscriptionConfirmed(string topic) => _ = HandleSubscriptionConfirmedAsync(topic);
+
+    private async Task HandleSubscriptionConfirmedAsync(string topic)
     {
-        _appState.AddMessage(message);
+        try
+        {
+            await _appState.AddSubscriptionAsync(topic);
+            _appState.SetMqttConnectionStatus($"Connected - Subscribed to: {topic}", true);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Error handling subscription confirmation for {Topic}", topic);
+        }
     }
 
-    private async void HandleSubscriptionConfirmed(string topic)
+    private void HandleUnsubscriptionConfirmed(string topic) => _ = HandleUnsubscriptionConfirmedAsync(topic);
+
+    private async Task HandleUnsubscriptionConfirmedAsync(string topic)
     {
-        await _appState.AddSubscriptionAsync(topic);
-        _appState.SetMqttConnectionStatus($"Connected - Subscribed to: {topic}", true);
+        try
+        {
+            await _appState.RemoveSubscriptionAsync(topic);
+            _appState.SetMqttConnectionStatus($"Connected - Unsubscribed from: {topic}", true);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Error handling unsubscription confirmation for {Topic}", topic);
+        }
     }
 
-    private async void HandleUnsubscriptionConfirmed(string topic)
+    private void HandleReconnected() => _ = RestoreSubscriptionsAsync();
+
+    private void HandleMqttConnectionStatusChanged(string state, int reconnectAttempts)
     {
-        await _appState.RemoveSubscriptionAsync(topic);
-        _appState.SetMqttConnectionStatus($"Connected - Unsubscribed from: {topic}", true);
+        var connected = state == "Connected";
+        var status = connected
+            ? _appState.MqttConnectionStatus // keep existing connected message
+            : reconnectAttempts > 0
+                ? $"MQTT reconnecting (attempt {reconnectAttempts})..."
+                : $"MQTT {state}";
+        _appState.SetMqttConnectionStatus(status, connected);
     }
 
     public bool IsInitialized => _initialized;

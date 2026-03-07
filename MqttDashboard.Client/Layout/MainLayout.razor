@@ -29,6 +29,11 @@
 
         <MudSpacer />
 
+        <!-- MQTT connection status indicator -->
+        <MudTooltip Text="@AppState.MqttConnectionStatus">
+            <MudIcon Icon="@MqttStatusIcon" Color="@MqttStatusColor" Size="Size.Medium" Class="mr-3" />
+        </MudTooltip>
+
         <!-- Edit mode toggle switch -->
         <MudTooltip Text="@(_isEditMode ? "Switch to view mode" : "Switch to edit mode")">
             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mr-2">
@@ -105,6 +110,18 @@
     private void OnAppStateChanged() => InvokeAsync(StateHasChanged);
 
     private void ToggleEditMode() => AppState.RequestToggleEditMode();
+
+    private string MqttStatusIcon => AppState.IsMqttConnected
+        ? Icons.Material.Filled.CloudDone
+        : AppState.MqttConnectionStatus.Contains("reconnect", StringComparison.OrdinalIgnoreCase)
+            ? Icons.Material.Filled.CloudSync
+            : Icons.Material.Filled.CloudOff;
+
+    private Color MqttStatusColor => AppState.IsMqttConnected
+        ? Color.Success
+        : AppState.MqttConnectionStatus.Contains("reconnect", StringComparison.OrdinalIgnoreCase)
+            ? Color.Warning
+            : Color.Error;
 
     public void Dispose()
     {

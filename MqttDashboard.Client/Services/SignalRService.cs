@@ -12,6 +12,8 @@ public class SignalRService : IAsyncDisposable
     public event Action<MqttDataMessage>? OnDataReceived;
     public event Action<string>? OnSubscriptionConfirmed;
     public event Action<string>? OnUnsubscriptionConfirmed;
+    public event Action? OnReconnected;
+    public event Action<string, int>? OnMqttConnectionStatusChanged;
 
     public SignalRService(ILogger<SignalRService> logger)
     {
@@ -25,60 +27,54 @@ public class SignalRService : IAsyncDisposable
         _hubConnection = new HubConnectionBuilder()
             .WithUrl(hubUrl)
             .WithAutomaticReconnect()
-            .ConfigureLogging(logging =>
-            {
-                // Enable detailed SignalR client logging
-                logging.SetMinimumLevel(LogLevel.Debug);
-            })
+            .ConfigureLogging(logging => logging.SetMinimumLevel(LogLevel.Debug))
             .Build();
 
         _hubConnection.On<string, string, DateTime>("ReceiveMqttData", (topic, payload, timestamp) =>
         {
-            _logger.LogDebug("[SignalR] Received MQTT data: Topic={Topic}, Payload={Payload}, Timestamp={Timestamp}", 
-                topic, payload, timestamp);
-            //Console.WriteLine($"[SignalR] Received MQTT data: Topic={topic}, Payload={payload}");
-
-            var message = new MqttDataMessage
+            _logger.LogDebug("[SignalR] Received MQTT data: Topic={Topic}, Payload={Payload}", topic, payload);
+            OnDataReceived?.Invoke(new MqttDataMessage
             {
                 Topic = topic,
                 Payload = payload,
                 Timestamp = timestamp
-            };
-            OnDataReceived?.Invoke(message);
+            });
         });
 
-        _hubConnection.On<string>("SubscriptionConfirmed", (topic) =>
+        _hubConnection.On<string>("SubscriptionConfirmed", topic =>
         {
             _logger.LogInformation("[SignalR] Subscription confirmed: {Topic}", topic);
-            //Console.WriteLine($"[SignalR] Subscription confirmed: {topic}");
             OnSubscriptionConfirmed?.Invoke(topic);
         });
 
-        _hubConnection.On<string>("UnsubscriptionConfirmed", (topic) =>
+        _hubConnection.On<string>("UnsubscriptionConfirmed", topic =>
         {
             _logger.LogInformation("[SignalR] Unsubscription confirmed: {Topic}", topic);
-            //Console.WriteLine($"[SignalR] Unsubscription confirmed: {topic}");
             OnUnsubscriptionConfirmed?.Invoke(topic);
+        });
+
+        _hubConnection.On<string, int>("MqttConnectionStatus", (state, attempts) =>
+        {
+            _logger.LogInformation("[SignalR] MQTT connection status: {State}, attempts: {Attempts}", state, attempts);
+            OnMqttConnectionStatusChanged?.Invoke(state, attempts);
         });
 
         _hubConnection.Reconnecting += error =>
         {
             _logger.LogWarning(error, "[SignalR] Connection lost. Reconnecting...");
-            Console.WriteLine($"[SignalR] Connection lost. Reconnecting... Error: {error?.Message}");
             return Task.CompletedTask;
         };
 
         _hubConnection.Reconnected += connectionId =>
         {
             _logger.LogInformation("[SignalR] Reconnected. ConnectionId: {ConnectionId}", connectionId);
-            Console.WriteLine($"[SignalR] Reconnected. ConnectionId: {connectionId}");
+            OnReconnected?.Invoke();
             return Task.CompletedTask;
         };
 
         _hubConnection.Closed += error =>
         {
             _logger.LogError(error, "[SignalR] Connection closed");
-            Console.WriteLine($"[SignalR] Connection closed. Error: {error?.Message}");
             return Task.CompletedTask;
         };
 
@@ -87,7 +83,6 @@ public class SignalRService : IAsyncDisposable
             _logger.LogDebug("[SignalR] Initiating connection...");
             await _hubConnection.StartAsync();
             _logger.LogInformation("[SignalR] Connected successfully. ConnectionId: {ConnectionId}", _hubConnection.ConnectionId);
-            Console.WriteLine($"[SignalR] Connected. ConnectionId: {_hubConnection.ConnectionId}");
         }
         catch (Exception ex)
         {
@@ -100,12 +95,10 @@ public class SignalRService : IAsyncDisposable
     {
         if (_hubConnection is not null)
         {
-            _logger.LogDebug("[SignalR] Invoking SubscribeToTopic for: {Topic}", topic);
-            Console.WriteLine($"[SignalR] Subscribing to topic: {topic}");
+            _logger.LogDebug("[SignalR] Subscribing to topic: {Topic}", topic);
             try
             {
                 await _hubConnection.InvokeAsync("SubscribeToTopic", topic);
-                _logger.LogDebug("[SignalR] SubscribeToTopic invocation completed for: {Topic}", topic);
             }
             catch (Exception ex)
             {
@@ -123,12 +116,10 @@ public class SignalRService : IAsyncDisposable
     {
         if (_hubConnection is not null)
         {
-            _logger.LogDebug("[SignalR] Invoking UnsubscribeFromTopic for: {Topic}", topic);
-            Console.WriteLine($"[SignalR] Unsubscribing from topic: {topic}");
+            _logger.LogDebug("[SignalR] Unsubscribing from topic: {Topic}", topic);
             try
             {
                 await _hubConnection.InvokeAsync("UnsubscribeFromTopic", topic);
-                _logger.LogDebug("[SignalR] UnsubscribeFromTopic invocation completed for: {Topic}", topic);
             }
             catch (Exception ex)
             {
@@ -164,7 +155,6 @@ public class SignalRService : IAsyncDisposable
         if (_hubConnection is not null)
         {
             _logger.LogInformation("[SignalR] Disposing connection. State: {State}", _hubConnection.State);
-            Console.WriteLine("[SignalR] Disposing connection");
             await _hubConnection.DisposeAsync();
         }
     }

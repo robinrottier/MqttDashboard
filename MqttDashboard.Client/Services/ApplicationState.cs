@@ -17,6 +17,14 @@ public enum ThemeMode { Light, Dark, Auto }
 
 public class ApplicationState
 {
+    private readonly int _maxMessageHistory;
+
+    public ApplicationState(Microsoft.Extensions.Configuration.IConfiguration? configuration = null)
+    {
+        var raw = configuration?["App:MaxMessageHistory"];
+        _maxMessageHistory = int.TryParse(raw, out var v) && v > 0 ? v : 500;
+    }
+
     public string DisplayName => GetType().Assembly.GetName().Name ?? "MqttDashboard";
     public int Counter { get; set; } = 0;
     public bool IsInteractive { get; private set; } = false;
@@ -393,7 +401,7 @@ public class ApplicationState
         lock (Messages)
         {
             Messages.Add(message);
-            while (Messages.Count > 100)
+            while (Messages.Count > _maxMessageHistory)
             {
                 Messages.RemoveAt(0);
             }
