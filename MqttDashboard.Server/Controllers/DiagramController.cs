@@ -75,4 +75,27 @@ public class DiagramController : ControllerBase
             return StatusCode(500, $"Error: {ex.Message}");
         }
     }
+
+    [HttpGet("list")]
+    public async Task<ActionResult<List<string>>> ListDiagrams()
+    {
+        var names = await _storageService.ListDiagramNamesAsync();
+        return Ok(names);
+    }
+
+    [HttpGet("{name}")]
+    public async Task<ActionResult<DiagramState>> GetDiagramByName(string name)
+    {
+        var diagram = await _storageService.LoadDiagramByNameAsync(name);
+        if (diagram == null) return NotFound();
+        return Ok(diagram);
+    }
+
+    [HttpPost("{name}")]
+    public async Task<ActionResult> SaveDiagramByName(string name, [FromBody] DiagramState diagramState)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return BadRequest("Name required");
+        var success = await _storageService.SaveDiagramByNameAsync(name, diagramState);
+        return success ? Ok() : StatusCode(500, "Failed to save");
+    }
 }

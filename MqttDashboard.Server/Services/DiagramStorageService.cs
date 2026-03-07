@@ -95,4 +95,60 @@ public class DiagramStorageService
             _lock.Release();
         }
     }
+
+    public async Task<List<string>> ListDiagramNamesAsync()
+    {
+        await _lock.WaitAsync();
+        try
+        {
+            var files = Directory.GetFiles(_storagePath, "*.json")
+                .Select(f => Path.GetFileNameWithoutExtension(f))
+                .Where(n => !string.IsNullOrEmpty(n))
+                .OrderBy(n => n)
+                .ToList();
+            return files!;
+        }
+        finally { _lock.Release(); }
+    }
+
+    public async Task<DiagramState?> LoadDiagramByNameAsync(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return null;
+        var filePath = Path.Combine(_storagePath, $"{name}.json");
+        await _lock.WaitAsync();
+        try
+        {
+            if (!File.Exists(filePath)) return null;
+            var json = await File.ReadAllTextAsync(filePath);
+            return JsonSerializer.Deserialize<DiagramState>(json);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load diagram '{Name}'", name);
+            return null;
+        }
+        finally { _lock.Release(); }
+    }
+
+    public async Task<bool> SaveDiagramByNameAsync(string name, DiagramState diagramState)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return false;
+        var safeName = new string(name.Where(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == ' ').ToArray()).Trim();
+        if (string.IsNullOrWhiteSpace(safeName)) return false;
+        var filePath = Path.Combine(_storagePath, $"{safeName}.json");
+        await _lock.WaitAsync();
+        try
+        {
+            var json = JsonSerializer.Serialize(diagramState, new JsonSerializerOptions { WriteIndented = true });
+            await File.WriteAllTextAsync(filePath, json);
+            _logger.LogInformation("Saved diagram '{Name}' to {Path}", safeName, filePath);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save diagram '{Name}'", name);
+            return false;
+        }
+        finally { _lock.Release(); }
+    }
 }

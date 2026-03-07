@@ -2,81 +2,102 @@
 @using MqttDashboard.Models
 @using Blazor.Diagrams.Core.Models
 @inject ApplicationState AppState
+@inject NavigationManager Nav
 
 <MudMenu Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
 
-        <!-- File -->
-        <MudMenu Label="File" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
-            <MudMenuItem Label="New"           OnClick="NewDiagram" />
-            <MudMenuItem Label="Open / Reload" OnClick="ReloadDiagram" />
-            <MudMenuItem Label="Save"          OnClick="SaveDiagram" />
-            <MudMenuItem Label="Save As\u2026" Disabled="true" />
-        </MudMenu>
+    <!-- File -->
+    <MudMenu Label="File" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
+        <MudMenuItem Label="New"     OnClick="NewDiagram" Disabled="@(!IsEditMode)" />
+        <MudMenuItem Label="Open\u2026"   OnClick="OpenDiagram"   Disabled="@(!IsEditMode)" />
+        <MudMenuItem Label="Save"    OnClick="SaveDiagram"   Disabled="@(!IsEditMode)" />
+        <MudMenuItem Label="Save As\u2026" OnClick="SaveAsDiagram" Disabled="@(!IsEditMode)" />
+    </MudMenu>
 
-        <!-- Edit -->
-        <MudMenu Label="Edit" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
-            <MudMenuItem Label="Add Node"    OnClick="MenuAddNode"    Disabled="@(!IsEditMode)" />
-            <MudMenuItem Label="Delete Node" OnClick="MenuDeleteNode" Disabled="@(!AppState.HasSelectedNode)" />
-            <MudDivider />
-            <MudMenuItem Label="Cut"   OnClick="MenuCutSelected"  Disabled="@(!AppState.HasSelectedNode)" />
-            <MudMenuItem Label="Copy"  OnClick="MenuCopySelected" Disabled="@(!AppState.HasSelectedNode)" />
-            <MudMenuItem Label="Paste" Disabled="true" />
-            <MudDivider />
-            <MudMenu Label="Add Port"    Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight" Disabled="@(!AppState.HasSingleSelectedNode)">
-                <MudMenuItem Label="Top"    OnClick="() => MenuAddPort(PortAlignment.Top)" />
-                <MudMenuItem Label="Left"   OnClick="() => MenuAddPort(PortAlignment.Left)" />
-                <MudMenuItem Label="Bottom" OnClick="() => MenuAddPort(PortAlignment.Bottom)" />
-                <MudMenuItem Label="Right"  OnClick="() => MenuAddPort(PortAlignment.Right)" />
-            </MudMenu>
-            <MudMenu Label="Delete Port" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight" Disabled="@(!AppState.HasSingleSelectedNode)">
-                <MudMenuItem Label="Top"    OnClick="() => MenuDeletePort(PortAlignment.Top)" />
-                <MudMenuItem Label="Left"   OnClick="() => MenuDeletePort(PortAlignment.Left)" />
-                <MudMenuItem Label="Bottom" OnClick="() => MenuDeletePort(PortAlignment.Bottom)" />
-                <MudMenuItem Label="Right"  OnClick="() => MenuDeletePort(PortAlignment.Right)" />
-            </MudMenu>
-            <MudDivider />
-            <MudMenuItem Label="Properties" OnClick="MenuEditProperties" Disabled="@(!AppState.HasSingleSelectedNode)" />
-        </MudMenu>
-
-        <!-- Options -->
-        <MudMenu Label="Options" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
-            <MudMenu Label="Theme" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
-                <MudMenuItem Label="Light" OnClick="() => SetTheme(ThemeMode.Light)" />
-                <MudMenuItem Label="Dark"  OnClick="() => SetTheme(ThemeMode.Dark)" />
-                <MudMenuItem Label="Auto"  OnClick="() => SetTheme(ThemeMode.Auto)" />
-            </MudMenu>
-            <MudMenu Label="Show" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
-                <MudMenuItem Label="Diagram Name" OnClick="ToggleDiagramName" />
-            </MudMenu>
-            <MudMenu Label="Grid" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight" Disabled="@(!IsEditMode)">
-                <MudMenuItem Label="None"           OnClick="() => SetGrid(0)" />
-                <MudMenuItem Label="Small (5 px)"   OnClick="() => SetGrid(5)" />
-                <MudMenuItem Label="Medium (10 px)" OnClick="() => SetGrid(10)" />
-                <MudMenuItem Label="Large (20 px)"  OnClick="() => SetGrid(20)" />
-            </MudMenu>
-        </MudMenu>
-
+    <!-- Edit -->
+    <MudMenu Label="Edit" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
+        <MudMenuItem Label="Undo" OnClick="Undo" Disabled="@(!AppState.CanUndo)" />
+        <MudMenuItem Label="Redo" OnClick="Redo" Disabled="@(!AppState.CanRedo)" />
         <MudDivider />
-        <MudMenuItem Label="Data"  Href="data" />
-        <MudMenuItem Label="About" Href="about" />
+        <MudMenuItem Label="Add Node"    OnClick="MenuAddNode"    Disabled="@(!IsEditMode)" />
+        <MudMenuItem Label="Delete Node" OnClick="MenuDeleteNode" Disabled="@(!AppState.HasSelectedNode)" />
+        <MudDivider />
+        <MudMenuItem Label="Cut"   OnClick="MenuCutSelected"  Disabled="@(!AppState.HasSelectedNode)" />
+        <MudMenuItem Label="Copy"  OnClick="MenuCopySelected" Disabled="@(!AppState.HasSelectedNode)" />
+        <MudMenuItem Label="Paste" OnClick="MenuPasteSelected" Disabled="@(!AppState.HasClipboard || !IsEditMode)" />
+        <MudDivider />
+        <MudMenu Label="Add Port"    Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight" Disabled="@(!AppState.HasSingleSelectedNode)">
+            <MudMenuItem Label="Top"    OnClick="() => MenuAddPort(PortAlignment.Top)" />
+            <MudMenuItem Label="Left"   OnClick="() => MenuAddPort(PortAlignment.Left)" />
+            <MudMenuItem Label="Bottom" OnClick="() => MenuAddPort(PortAlignment.Bottom)" />
+            <MudMenuItem Label="Right"  OnClick="() => MenuAddPort(PortAlignment.Right)" />
+        </MudMenu>
+        <MudMenu Label="Delete Port" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight" Disabled="@(!AppState.HasSingleSelectedNode)">
+            <MudMenuItem Label="Top"    OnClick="() => MenuDeletePort(PortAlignment.Top)" />
+            <MudMenuItem Label="Left"   OnClick="() => MenuDeletePort(PortAlignment.Left)" />
+            <MudMenuItem Label="Bottom" OnClick="() => MenuDeletePort(PortAlignment.Bottom)" />
+            <MudMenuItem Label="Right"  OnClick="() => MenuDeletePort(PortAlignment.Right)" />
+        </MudMenu>
+        <MudDivider />
+        <MudMenuItem Label="Properties" OnClick="MenuEditProperties" Disabled="@(!AppState.HasSingleSelectedNode)" />
+    </MudMenu>
+
+    <!-- View -->
+    <MudMenu Label="View" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
+        <MudMenuItem Label="Home"  OnClick='() => Nav.NavigateTo("/")' />
+        <MudMenuItem Label="Data"  OnClick='() => Nav.NavigateTo("/data")' />
+        <MudMenuItem Label="About" OnClick='() => Nav.NavigateTo("/about")' />
+    </MudMenu>
+
+    <!-- Options -->
+    <MudMenu Label="Options" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
+        <MudMenu Label="Theme" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
+            <MudMenuItem Label="Light" OnClick="() => SetTheme(ThemeMode.Light)" />
+            <MudMenuItem Label="Dark"  OnClick="() => SetTheme(ThemeMode.Dark)" />
+            <MudMenuItem Label="Auto"  OnClick="() => SetTheme(ThemeMode.Auto)" />
+        </MudMenu>
+        <MudMenu Label="Show" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
+            <MudMenuItem OnClick="ToggleDiagramName">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    @if (AppState.ShowDiagramName)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" />
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="visibility:hidden" />
+                    }
+                    <MudText>Diagram Name</MudText>
+                </MudStack>
+            </MudMenuItem>
+        </MudMenu>
+        <MudMenu Label="Grid" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight" Disabled="@(!IsEditMode)">
+            <MudMenuItem Label="None"           OnClick="() => SetGrid(0)" />
+            <MudMenuItem Label="Small (5 px)"   OnClick="() => SetGrid(5)" />
+            <MudMenuItem Label="Medium (10 px)" OnClick="() => SetGrid(10)" />
+            <MudMenuItem Label="Large (20 px)"  OnClick="() => SetGrid(20)" />
+        </MudMenu>
+    </MudMenu>
 
 </MudMenu>
 
 @code {
     private bool IsEditMode => AppState.IsEditMode;
 
-    private void NewDiagram()=> AppState.TriggerNewDiagram();
-    private void ReloadDiagram()      => AppState.TriggerReloadDiagram();
+    private void NewDiagram()         => AppState.TriggerNewDiagram();
+    private void OpenDiagram()        => AppState.TriggerOpen();
     private void SaveDiagram()        => AppState.TriggerSaveDiagram();
+    private void SaveAsDiagram()      => AppState.TriggerSaveAs();
+    private void Undo()               => AppState.TriggerUndo();
+    private void Redo()               => AppState.TriggerRedo();
     private void MenuAddNode()        => AppState.TriggerAddNode();
     private void MenuDeleteNode()     => AppState.TriggerDeleteNode();
     private void MenuCutSelected()    => AppState.TriggerCutSelected();
     private void MenuCopySelected()   => AppState.TriggerCopySelected();
+    private void MenuPasteSelected()  => AppState.TriggerPasteSelected();
     private void MenuEditProperties() => AppState.TriggerEditProperties();
-
     private void MenuAddPort(PortAlignment a)    => AppState.TriggerAddPort(a);
     private void MenuDeletePort(PortAlignment a) => AppState.TriggerDeletePort(a);
-
     private void SetTheme(ThemeMode m)  => AppState.SetTheme(m);
     private void ToggleDiagramName()    => AppState.ToggleShowDiagramName();
     private void SetGrid(int s)         => AppState.SetGridSize(s);

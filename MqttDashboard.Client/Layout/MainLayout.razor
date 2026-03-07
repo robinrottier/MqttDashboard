@@ -5,6 +5,7 @@
 @inject MqttInitializationService MqttInit
 @inject ApplicationState AppState
 @inject IJSRuntime JS
+@inject NavigationManager Nav
 
 <MudThemeProvider Theme="@_theme" IsDarkMode="@ComputedDarkMode" />
 <MudPopoverProvider />
@@ -14,12 +15,13 @@
 <MudLayout>
     <MudAppBar Elevation="1" Dense="false">
         <!-- Diagram icon -->
-        <MudIcon Icon="@Icons.Material.Filled.AccountTree" Color="Color.Primary" Size="Size.Large" Class="mr-2" />
+        <MudIconButton Icon="@Icons.Material.Filled.AccountTree" Color="Color.Primary" Size="Size.Large" Class="mr-2"
+                       OnClick='() => Nav.NavigateTo("/")' Title="Go to home" />
 
         <!-- App name + optional diagram name -->
         <MudText Typo="Typo.h6" Class="d-flex align-center gap-2">
             @AppName
-            @if (AppState.ShowDiagramName && !string.IsNullOrEmpty(AppState.DiagramName))
+            @if ((AppState.IsEditMode || AppState.ShowDiagramName) && !string.IsNullOrEmpty(AppState.DiagramName))
             {
                 <MudText Typo="Typo.h6" Color="Color.Secondary" Style="display:inline">
                     &mdash; @AppState.DiagramName

@@ -55,6 +55,58 @@ public class ApplicationState
     public bool HasSelectedNode { get; private set; } = false;
     public bool HasSingleSelectedNode { get; private set; } = false;
 
+    // Dirty flag
+    public bool IsDirty { get; private set; } = false;
+    public void MarkDirty() { IsDirty = true; NotifyStateChangedAsync(); }
+    public void MarkClean() { IsDirty = false; NotifyStateChangedAsync(); }
+
+    // Clipboard
+    private List<NodeState> _clipboard = new();
+    public bool HasClipboard => _clipboard.Count > 0;
+    public IReadOnlyList<NodeState> Clipboard => _clipboard.AsReadOnly();
+    public void SetClipboard(IEnumerable<NodeState> nodes) { _clipboard = nodes.ToList(); NotifyStateChangedAsync(); }
+
+    // Undo/Redo stacks
+    private readonly Stack<DiagramState> _undoStack = new();
+    private readonly Stack<DiagramState> _redoStack = new();
+    private int _maxUndoDepth = 20;
+    public bool CanUndo => _undoStack.Count > 0;
+    public bool CanRedo => _redoStack.Count > 0;
+
+    public void PushUndoSnapshot(DiagramState snapshot)
+    {
+        _undoStack.Push(snapshot);
+        while (_undoStack.Count > _maxUndoDepth)
+        {
+            var items = _undoStack.ToList();
+            _undoStack.Clear();
+            foreach (var item in items.Take(items.Count - 1).AsEnumerable().Reverse())
+                _undoStack.Push(item);
+        }
+        _redoStack.Clear();
+        NotifyStateChangedAsync();
+    }
+
+    public DiagramState? PopUndo(DiagramState currentState)
+    {
+        if (!CanUndo) return null;
+        _redoStack.Push(currentState);
+        var state = _undoStack.Pop();
+        NotifyStateChangedAsync();
+        return state;
+    }
+
+    public DiagramState? PopRedo(DiagramState currentState)
+    {
+        if (!CanRedo) return null;
+        _undoStack.Push(currentState);
+        var state = _redoStack.Pop();
+        NotifyStateChangedAsync();
+        return state;
+    }
+
+    public void ClearUndoRedo() { _undoStack.Clear(); _redoStack.Clear(); NotifyStateChangedAsync(); }
+
     // Edit mode toggle event — fired by MainLayout, handled by Display page
     public event Action? OnToggleEditModeRequested;
     public void RequestToggleEditMode() => OnToggleEditModeRequested?.Invoke();
@@ -71,6 +123,10 @@ public class ApplicationState
     public event Action? MenuSaveDiagram;
     public event Action? MenuNewDiagram;
     public event Action? MenuReloadDiagram;
+    public event Action? MenuUndo;
+    public event Action? MenuRedo;
+    public event Action? MenuSaveAs;
+    public event Action? MenuOpen;
 
     public event Action? OnStateChanged;
 
@@ -130,6 +186,10 @@ public class ApplicationState
     public void TriggerSaveDiagram() => MenuSaveDiagram?.Invoke();
     public void TriggerNewDiagram() => MenuNewDiagram?.Invoke();
     public void TriggerReloadDiagram() => MenuReloadDiagram?.Invoke();
+    public void TriggerUndo() => MenuUndo?.Invoke();
+    public void TriggerRedo() => MenuRedo?.Invoke();
+    public void TriggerSaveAs() => MenuSaveAs?.Invoke();
+    public void TriggerOpen() => MenuOpen?.Invoke();
 
     public BlazorDiagram GetOrCreateDiagram()
     {

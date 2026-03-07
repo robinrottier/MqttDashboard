@@ -37,6 +37,28 @@ public class DiagramService
         }
     }
 
+    public async Task<List<string>> ListDiagramsAsync()
+    {
+        try { return await _httpClient.GetFromJsonAsync<List<string>>("api/diagram/list") ?? []; }
+        catch (Exception ex) { _logger?.LogError(ex, "Error listing diagrams"); return []; }
+    }
+
+    public async Task<DiagramState?> LoadDiagramByNameAsync(string name)
+    {
+        try { return await _httpClient.GetFromJsonAsync<DiagramState>($"api/diagram/{Uri.EscapeDataString(name)}"); }
+        catch (Exception ex) { _logger?.LogError(ex, "Error loading diagram '{Name}'", name); return null; }
+    }
+
+    public async Task<bool> SaveDiagramByNameAsync(string name, DiagramState diagramState)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync($"api/diagram/{Uri.EscapeDataString(name)}", diagramState);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex) { _logger?.LogError(ex, "Error saving diagram '{Name}'", name); return false; }
+    }
+
     public async Task<bool> SaveDiagramAsync(DiagramState diagramState)
     {
         try
