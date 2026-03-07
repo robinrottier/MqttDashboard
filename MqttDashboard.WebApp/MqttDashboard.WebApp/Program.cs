@@ -3,12 +3,13 @@ using MqttDashboard.Server.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add all MqttDashboard services with InteractiveAuto render mode
-builder.AddMqttDashboard(BlazorRenderMode.InteractiveAuto);
+var renderModeConfig = builder.Configuration["RenderMode"] ?? "Auto";
+var renderMode = renderModeConfig.Equals("WebAssembly", StringComparison.OrdinalIgnoreCase)
+    ? BlazorRenderMode.InteractiveWebAssembly
+    : BlazorRenderMode.InteractiveAuto;
+
+builder.AddMqttDashboard(renderMode);
 
 var app = builder.Build();
-
-// Configure the HTTP request pipeline with InteractiveAuto render mode
-app.UseMqttDashboard<App>(BlazorRenderMode.InteractiveAuto);
-
+app.UseMqttDashboard<App>(renderMode);
 app.Run();
