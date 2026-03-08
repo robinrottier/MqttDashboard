@@ -396,23 +396,23 @@ public class ApplicationState
             var linkState = new LinkState();
 
             // Get source node and port
-            if (link.Source.Model is PortModel sourcePort)
+            if (link.Source?.Model is PortModel sourcePort)
             {
                 linkState.SourceNodeId = sourcePort.Parent.Id;
                 linkState.SourcePortAlignment = sourcePort.Alignment.ToString();
             }
-            else if (link.Source.Model is NodeModel sourceNode)
+            else if (link.Source?.Model is NodeModel sourceNode)
             {
                 linkState.SourceNodeId = sourceNode.Id;
             }
 
             // Get target node and port
-            if (link.Target.Model is PortModel targetPort)
+            if (link.Target?.Model is PortModel targetPort)
             {
                 linkState.TargetNodeId = targetPort.Parent.Id;
                 linkState.TargetPortAlignment = targetPort.Alignment.ToString();
             }
-            else if (link.Target.Model is NodeModel targetNode)
+            else if (link.Target?.Model is NodeModel targetNode)
             {
                 linkState.TargetNodeId = targetNode.Id;
             }

@@ -157,7 +157,7 @@ public partial class Display : IDisposable
 
     private void UnsubscribeEditEvents()
     {
-        if (_diagram != null) _diagram.Links.Added -= OnLinkAdded;
+        _diagram?.Links.Added -= OnLinkAdded;
         AppState.MenuAddNode       -= AddNode;
         AppState.MenuDeleteNode    -= DeleteSelectedNode;
         AppState.MenuCutSelected   -= CutSelectedNodes;
@@ -196,8 +196,7 @@ public partial class Display : IDisposable
     private void OnLinkAdded(Blazor.Diagrams.Core.Models.Base.BaseLinkModel link)
     {
         if (link is not LinkModel lm) return;
-        var sourceNode = (link.Source.Model is PortModel port ? port.Parent : link.Source.Model) as NodeModel;
-        if (sourceNode != null)
+        if ((link.Source?.Model is PortModel port ? port.Parent : link.Source?.Model) is NodeModel sourceNode)
             AppState.CheckForLinkAnimation(sourceNode, lm);
     }
 
@@ -308,7 +307,7 @@ public partial class Display : IDisposable
     {
         if (_diagram == null) return;
         var selected = _diagram.GetSelectedModels().OfType<MudNodeModel>().ToList();
-        if (!selected.Any()) return;
+        if (selected.Count == 0) return;
         _pasteGeneration = 0;
         var snapshots = selected.Select(n => new NodeState
         {
@@ -471,7 +470,7 @@ public partial class Display : IDisposable
             if (!confirmed) return;
         }
         var names = await DiagramService.ListDiagramsAsync();
-        if (!names.Any())
+        if (names.Count == 0)
         {
             Snackbar.Add("No saved diagrams found", Severity.Warning);
             return;
@@ -600,6 +599,8 @@ public partial class Display : IDisposable
             _diagram.SelectionChanged -= OnSelectionChanged;
             _diagram.Changed -= OnDiagramChanged;
         }
+
+        GC.SuppressFinalize(this);
     }
 }
 
