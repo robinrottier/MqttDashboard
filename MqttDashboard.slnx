@@ -7,6 +7,7 @@
   <Folder Name="/Solution Items/">
     <File Path="README.md" />
     <File Path="TODO.md" />
+    <File Path="Directory.Build.props" />
     <File Path="docker-compose.override.yml" />
     <File Path="docker-compose.yml" />
   </Folder>
@@ -14,12 +15,11 @@
     <Project Path="MqttDashboard.WebApp/MqttDashboard.WebApp.Client/MqttDashboard.WebApp.Client.csproj" />
     <Project Path="MqttDashboard.WebApp/MqttDashboard.WebApp/MqttDashboard.WebApp.csproj" />
     <Project Path="MqttDashboard.WebAppServerOnly/MqttDashboard.WebAppServerOnly.csproj" Id="d852685b-bffb-48ac-b18b-ceaf0849a450" />
-
   </Folder>
-  <Project Path="MqttDashboard.Server/MqttDashboard.Server.csproj" />
-  <Project Path="MqttDashboard.Client/MqttDashboard.Client.csproj" Id="2f6581b9-8858-4bf5-b893-ed1004f44552" />
   <Folder Name="/Tests/">
     <Project Path="Tests/MqttDashboard.Client.Tests/MqttDashboard.Client.Tests.csproj" />
     <Project Path="Tests/MqttDashboard.Server.Tests/MqttDashboard.Server.Tests.csproj" />
   </Folder>
+  <Project Path="MqttDashboard.Client/MqttDashboard.Client.csproj" Id="2f6581b9-8858-4bf5-b893-ed1004f44552" />
+  <Project Path="MqttDashboard.Server/MqttDashboard.Server.csproj" />
 </Solution>
