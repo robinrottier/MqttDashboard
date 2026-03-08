@@ -10,6 +10,7 @@ using Blazor.Diagrams.Options;
 using MqttDashboard.Models;
 using MqttDashboard.Widgets;
 using System.Collections.Concurrent;
+using System.Reflection;
 
 namespace MqttDashboard.Services;
 
@@ -25,7 +26,9 @@ public class ApplicationState
         _maxMessageHistory = int.TryParse(raw, out var v) && v > 0 ? v : 500;
     }
 
-    public string DisplayName => GetType().Assembly.GetName().Name ?? "MqttDashboard";
+    public string DisplayName => GetType().Assembly
+        .GetCustomAttribute<System.Reflection.AssemblyProductAttribute>()?.Product
+        ?? "Mqtt Dashboard";
     public int Counter { get; set; } = 0;
     public bool IsInteractive { get; private set; } = false;
 
@@ -66,10 +69,10 @@ public class ApplicationState
         NotifyStateChangedAsync();
     }
 
-    // Dirty flag
-    public bool IsDirty { get; private set; } = false;
-    public void MarkDirty() { IsDirty = true; NotifyStateChangedAsync(); }
-    public void MarkClean() { IsDirty = false; NotifyStateChangedAsync(); }
+    // Edited flag (was IsDirty)
+    public bool IsEdited { get; private set; } = false;
+    public void MarkEdited() { IsEdited = true; NotifyStateChangedAsync(); }
+    public void MarkSaved() { IsEdited = false; NotifyStateChangedAsync(); }
 
     // Clipboard
     private List<NodeState> _clipboard = new();

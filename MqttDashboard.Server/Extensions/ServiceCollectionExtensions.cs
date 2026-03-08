@@ -30,6 +30,19 @@ public static class ServiceCollectionExtensions
         // Add HttpContextAccessor for DiagramService
         services.AddHttpContextAccessor();
 
+        // Register a scoped HttpClient for use in Blazor components (server-side rendering)
+        services.AddScoped<HttpClient>(sp =>
+        {
+            var httpContextAccessor = sp.GetService<IHttpContextAccessor>();
+            var httpClient = new HttpClient();
+            if (httpContextAccessor?.HttpContext != null)
+            {
+                var request = httpContextAccessor.HttpContext.Request;
+                httpClient.BaseAddress = new Uri($"{request.Scheme}://{request.Host}");
+            }
+            return httpClient;
+        });
+
         // Add DiagramService for server-side (calls its own API)
         services.AddScoped<DiagramService>(sp =>
         {

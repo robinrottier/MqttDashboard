@@ -1,17 +1,20 @@
 @using MqttDashboard.Services
 @using MqttDashboard.Models
 @using Blazor.Diagrams.Core.Models
+@using MqttDashboard.Components
 @inject ApplicationState AppState
 @inject NavigationManager Nav
+@inject IDialogService DialogService
+@implements IDisposable
 
 <MudMenu Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
 
     <!-- File -->
     <MudMenu Label="File" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
-        <MudMenuItem Label="New"     OnClick="NewDiagram" Disabled="@(!IsEditMode)" />
-        <MudMenuItem Label="Open\u2026"   OnClick="OpenDiagram"   Disabled="@(!IsEditMode)" />
-        <MudMenuItem Label="Save"    OnClick="SaveDiagram"   Disabled="@(!IsEditMode)" />
-        <MudMenuItem Label="Save As\u2026" OnClick="SaveAsDiagram" Disabled="@(!IsEditMode)" />
+        <MudMenuItem Label="New"      OnClick="NewDiagram"    Disabled="@(!IsEditMode)" />
+        <MudMenuItem Label="Open…"    OnClick="OpenDiagram"   Disabled="@(!IsEditMode)" />
+        <MudMenuItem Label="Save"     OnClick="SaveDiagram"   Disabled="@(!IsEditMode)" />
+        <MudMenuItem Label="Save As…" OnClick="SaveAsDiagram" Disabled="@(!IsEditMode)" />
     </MudMenu>
 
     <!-- Edit -->
@@ -42,12 +45,24 @@
         <MudMenuItem Label="Properties" OnClick="MenuEditProperties" Disabled="@(!AppState.HasSingleSelectedNode)" />
     </MudMenu>
 
-    <!-- View -->
-    <MudMenu Label="View" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
-        <MudMenuItem Label="Home"  OnClick='() => Nav.NavigateTo("/")' />
-        <MudMenuItem Label="Data"  OnClick='() => Nav.NavigateTo("/data")' />
-        <MudMenuItem Label="About" OnClick='() => Nav.NavigateTo("/about")' />
+    <!-- Page (was View) -->
+    <MudMenu Label="Page" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
+        <MudMenuItem OnClick='() => Nav.NavigateTo("/")'>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(IsCurrentPage("/") ? "" : "visibility:hidden")" />
+                <MudText>Home</MudText>
+            </MudStack>
+        </MudMenuItem>
+        <MudMenuItem OnClick='() => Nav.NavigateTo("/data")'>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(IsCurrentPage("/data") ? "" : "visibility:hidden")" />
+                <MudText>Data</MudText>
+            </MudStack>
+        </MudMenuItem>
     </MudMenu>
+
+    <!-- About (top-level) -->
+    <MudMenuItem OnClick="ShowAbout">About</MudMenuItem>
 
     <!-- Options -->
     <MudMenu Label="Options" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
@@ -83,6 +98,28 @@
 
 @code {
     private bool IsEditMode => AppState.IsEditMode;
+
+    protected override void OnInitialized()
+    {
+        AppState.OnStateChanged += OnAppStateChanged;
+    }
+
+    private void OnAppStateChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        AppState.OnStateChanged -= OnAppStateChanged;
+    }
+
+    private bool IsCurrentPage(string path)
+    {
+        var uri = new Uri(Nav.Uri);
+        return path == "/"
+            ? (uri.AbsolutePath == "/" || uri.AbsolutePath == "")
+            : uri.AbsolutePath.StartsWith(path, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private Task ShowAbout() => DialogService.ShowAsync<AboutDialog>("About");
 
     private void NewDiagram()         => AppState.TriggerNewDiagram();
     private void OpenDiagram()        => AppState.TriggerOpen();

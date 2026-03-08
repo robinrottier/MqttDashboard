@@ -23,6 +23,7 @@ public partial class Display : IDisposable
 
     private BlazorDiagram? _diagram;
     private int _nodeCounter = 1;
+    private int _pasteGeneration = 0;
 
     // Stored handler references for clean unsubscription
     private Action? _onMenuSaveDiagram;
@@ -188,7 +189,7 @@ public partial class Display : IDisposable
 
     private void OnDiagramChanged()
     {
-        AppState.MarkDirty();
+        AppState.MarkEdited();
         InvokeAsync(StateHasChanged);
     }
 
@@ -238,7 +239,7 @@ public partial class Display : IDisposable
     {
         InvokeAsync(async () =>
         {
-            if (AppState.IsDirty)
+            if (AppState.IsEdited)
             {
                 bool confirmed = await ConfirmDiscardChanges("New diagram");
                 if (!confirmed) return;
@@ -251,7 +252,7 @@ public partial class Display : IDisposable
             }
             AppState.ResetDiagram();
             AppState.SetDiagramName(string.Empty);
-            AppState.MarkClean();
+            AppState.MarkSaved();
             AppState.ClearUndoRedo();
             _diagram = AppState.GetOrCreateDiagram();
             _diagram.SelectionChanged += OnSelectionChanged;
@@ -265,7 +266,7 @@ public partial class Display : IDisposable
 
     private async Task ReloadDiagram()
     {
-        if (AppState.IsDirty)
+        if (AppState.IsEdited)
         {
             bool confirmed = await ConfirmDiscardChanges("Reload diagram");
             if (!confirmed) return;
@@ -276,7 +277,7 @@ public partial class Display : IDisposable
             _diagram.Changed -= OnDiagramChanged;
         }
         AppState.ResetDiagram();
-        AppState.MarkClean();
+        AppState.MarkSaved();
         AppState.ClearUndoRedo();
         var savedState = await DiagramService.LoadDiagramAsync();
         if (savedState != null && savedState.Nodes.Count > 0)
@@ -308,6 +309,7 @@ public partial class Display : IDisposable
         if (_diagram == null) return;
         var selected = _diagram.GetSelectedModels().OfType<MudNodeModel>().ToList();
         if (!selected.Any()) return;
+        _pasteGeneration = 0;
         var snapshots = selected.Select(n => new NodeState
         {
             Id = n.Id,
@@ -334,6 +336,7 @@ public partial class Display : IDisposable
 
     private void CutSelectedNodes()
     {
+        _pasteGeneration = 0;
         CopySelectedNodes();
         PushUndoSnapshot();
         foreach (var n in _diagram!.GetSelectedModels().OfType<NodeModel>().ToList())
@@ -346,8 +349,9 @@ public partial class Display : IDisposable
     {
         if (_diagram == null || !AppState.HasClipboard) return;
         PushUndoSnapshot();
+        _pasteGeneration++;
         _diagram.UnselectAll();
-        const double offset = 30;
+        double offset = 30 * _pasteGeneration;
         foreach (var ns in AppState.Clipboard)
         {
             var node = new MudNodeModel(new Point(ns.X + offset, ns.Y + offset))
@@ -449,7 +453,7 @@ public partial class Display : IDisposable
             if (success)
             {
                 AppState.SetDiagramName(name);
-                AppState.MarkClean();
+                AppState.MarkSaved();
                 Snackbar.Add($"Saved as '{name}'", Severity.Success);
             }
             else
@@ -461,7 +465,7 @@ public partial class Display : IDisposable
 
     private async Task OpenDiagram()
     {
-        if (AppState.IsDirty)
+        if (AppState.IsEdited)
         {
             bool confirmed = await ConfirmDiscardChanges("Open diagram");
             if (!confirmed) return;
@@ -486,7 +490,7 @@ public partial class Display : IDisposable
             {
                 AppState.ClearUndoRedo();
                 await ApplyDiagramState(state);
-                AppState.MarkClean();
+                AppState.MarkSaved();
                 Snackbar.Add($"Opened '{name}' ({state.Nodes.Count} nodes)", Severity.Info);
             }
             else
@@ -506,7 +510,7 @@ public partial class Display : IDisposable
             var success = await DiagramService.SaveDiagramAsync(state);
             if (success)
             {
-                AppState.MarkClean();
+                AppState.MarkSaved();
                 Snackbar.Add($"Diagram saved ({state.Nodes.Count} nodes, {state.Links.Count} links)", Severity.Success);
             }
             else

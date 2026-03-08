@@ -29,6 +29,9 @@ try
         ? BlazorRenderMode.InteractiveWebAssembly
         : BlazorRenderMode.InteractiveAuto;
 
+    // Load user-specific settings (e.g. admin password hash set via setup page)
+    builder.Configuration.AddJsonFile("appsettings.user.json", optional: true, reloadOnChange: true);
+
     builder.AddMqttDashboard(renderMode);
 
     var app = builder.Build();

@@ -1,0 +1,127 @@
+@using MqttDashboard.Services
+@using Blazor.Diagrams
+@inject ApplicationState AppState
+@inject NavigationManager NavManager
+@inject SignalRService SignalRService
+
+<MudDialog>
+    <DialogContent>
+        <MudCard Class="mb-2">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">Application</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent Class="pa-0">
+                <MudSimpleTable Dense="true" Hover="true" Style="overflow: hidden;">
+                    <tbody>
+                        @foreach (var item in _appInfo)
+                        {
+                            <tr>
+                                <td style="width: 40%; font-weight: 500; padding: 6px 16px;">@item.Label</td>
+                                <td style="padding: 6px 16px; font-family: monospace;">@item.Value</td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            </MudCardContent>
+        </MudCard>
+
+        <MudCard Class="mb-2">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">Server</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudAlert Severity="@(AppState.IsMqttConnected ? Severity.Success : Severity.Warning)"
+                          Variant="Variant.Filled" Dense="true">
+                    @AppState.MqttConnectionStatus
+                </MudAlert>
+                @if (_clientCount >= 0)
+                {
+                    <MudText Typo="Typo.body2" Class="mt-2">
+                        <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small" Class="mr-1" />
+                        Connected clients: @_clientCount
+                    </MudText>
+                }
+            </MudCardContent>
+        </MudCard>
+
+        @if (_showDebugInfo)
+        {
+            <MudCard Class="mb-2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Runtime (Debug)</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent Class="pa-0">
+                    <MudSimpleTable Dense="true" Hover="true" Style="overflow: hidden;">
+                        <tbody>
+                            @foreach (var item in _debugInfo)
+                            {
+                                <tr>
+                                    <td style="width: 40%; font-weight: 500; padding: 6px 16px;">@item.Label</td>
+                                    <td style="padding: 6px 16px; font-family: monospace;">@item.Value</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                </MudCardContent>
+            </MudCard>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close" Variant="Variant.Filled" Color="Color.Primary">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private record InfoItem(string Label, string Value);
+
+    private List<InfoItem> _appInfo = new();
+    private List<InfoItem> _debugInfo = new();
+    private bool _showDebugInfo;
+    private int _clientCount = -1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _clientCount = await SignalRService.GetConnectedClientCountAsync();
+
+        var appAssembly = typeof(AboutDialog).Assembly;
+        var appName = AppState.DisplayName;
+        var appVersion = appAssembly.GetName().Version?.ToString() ?? "unknown";
+        var dotNetVersion = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
+        var mudBlazorVersion = typeof(MudBlazor.MudText).Assembly.GetName().Version?.ToString() ?? "unknown";
+        var diagramsVersion = typeof(BlazorDiagram).Assembly.GetName().Version?.ToString() ?? "unknown";
+
+        _appInfo = new List<InfoItem>
+        {
+            new("Application", appName),
+            new("Version", appVersion),
+            new(".NET", dotNetVersion),
+            new("MudBlazor", mudBlazorVersion),
+            new("Blazor Diagrams", diagramsVersion),
+        };
+
+#if DEBUG
+        _showDebugInfo = true;
+        var renderMode = OperatingSystem.IsBrowser() ? "WebAssembly" : "Server";
+        var baseUri = NavManager.BaseUri;
+        var currentUri = NavManager.Uri;
+
+        _debugInfo = new List<InfoItem>
+        {
+            new("Render Mode", renderMode),
+            new("Server Hostname", new Uri(NavManager.BaseUri).Host),
+            new("Server Host", baseUri),
+            new("Current URL", currentUri),
+        };
+#endif
+    }
+
+    private void Close() => MudDialog.Close();
+}

@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <Product>Mqtt Dashboard</Product>
+    <AssemblyTitle>Mqtt Dashboard</AssemblyTitle>
+  </PropertyGroup>
+</Project>

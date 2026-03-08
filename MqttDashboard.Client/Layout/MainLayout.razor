@@ -2,10 +2,12 @@
 @implements IDisposable
 @using MqttDashboard.Services
 @using MqttDashboard.Models
+@using System.Reflection
 @inject MqttInitializationService MqttInit
 @inject ApplicationState AppState
 @inject IJSRuntime JS
 @inject NavigationManager Nav
+@inject HttpClient Http
 <MudThemeProvider Theme="@_theme" IsDarkMode="@ComputedDarkMode" />
 <MudPopoverProvider />
 <MudDialogProvider />
@@ -20,10 +22,10 @@
         <!-- App name + optional diagram name -->
         <MudText Typo="Typo.h6" Class="d-flex align-center gap-2">
             @AppName
-            @if ((AppState.IsEditMode || AppState.ShowDiagramName) && !string.IsNullOrEmpty(AppState.DiagramName))
+            @if (AppState.IsEditMode || AppState.ShowDiagramName)
             {
                 <MudText Typo="Typo.h6" Color="Color.Secondary" Style="display:inline">
-                    &mdash; @AppState.DiagramName
+                    &mdash; @(string.IsNullOrEmpty(AppState.DiagramName) ? "Untitled" : AppState.DiagramName)
                 </MudText>
             }
         </MudText>
@@ -66,7 +68,7 @@
                 </MudText>
                 <MudSwitch Value="_isEditMode"
                            ValueChanged="@((bool v) => ToggleEditMode())"
-                           Color="Color.Primary"
+                           Color="@(AppState.IsEdited ? Color.Warning : Color.Primary)"
                            T="bool" />
             </MudStack>
         </MudTooltip>
@@ -77,6 +79,12 @@
     </MudAppBar>
 
     <MudMainContent Class="pt-16 pa-2">
+        @if (_setupNeeded)
+        {
+            <MudAlert Severity="Severity.Warning" Class="ma-2">
+                Admin password not configured. <MudLink Href="/setup">Set up now →</MudLink>
+            </MudAlert>
+        }
         @Body
     </MudMainContent>
 </MudLayout>
@@ -90,8 +98,11 @@
 @code {
     private bool _systemDarkMode = false;
     private MudTheme? _theme = null;
+    private bool _setupNeeded = false;
 
-    private string AppName => GetType().Assembly.GetName().Name ?? "Application";
+    private string AppName => GetType().Assembly
+        .GetCustomAttribute<System.Reflection.AssemblyProductAttribute>()?.Product
+        ?? "Mqtt Dashboard";
     private bool _isEditMode => AppState.IsEditMode;
 
     private bool ComputedDarkMode => AppState.ThemeMode switch
@@ -127,6 +138,17 @@
                 StateHasChanged();
             }
             catch { /* ignore — JS not available during prerender */ }
+
+            try
+            {
+                var resp = await Http.GetFromJsonAsync<SetupNeededResponse>("/api/setup/needed");
+                if (resp?.Needed == true)
+                {
+                    _setupNeeded = true;
+                    StateHasChanged();
+                }
+            }
+            catch { /* ignore if not available */ }
         }
         await base.OnAfterRenderAsync(firstRender);
     }
@@ -160,6 +182,8 @@
     {
         AppState.OnStateChanged -= OnAppStateChanged;
     }
+
+    private record SetupNeededResponse(bool Needed);
 
     private readonly PaletteLight _lightPalette = new()
     {

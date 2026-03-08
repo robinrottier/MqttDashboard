@@ -6,6 +6,30 @@
 @inject ApplicationState AppState
 @implements IDisposable
 
+    <MudTooltip Delay="500" Arrow="true" Placement="Placement.Top">
+        <TooltipContent>
+            @if (!string.IsNullOrEmpty(Node.DataTopic))
+            {
+                <div>
+                    <strong>Topic:</strong> @Node.DataTopic<br/>
+                    <strong>Value:</strong> @(Node.DataValue?.ToString() ?? "—")<br/>
+                    <strong>Updated:</strong> @(Node.DataLastUpdated.HasValue ? Node.DataLastUpdated.Value.ToString("HH:mm:ss") : "—")
+                </div>
+                @if (!string.IsNullOrEmpty(Node.DataTopic2))
+                {
+                    <div style="margin-top:4px; border-top:1px solid rgba(255,255,255,0.2); padding-top:4px;">
+                        <strong>Topic 2:</strong> @Node.DataTopic2<br/>
+                        <strong>Value 2:</strong> @(Node.DataValue2?.ToString() ?? "—")<br/>
+                        <strong>Updated:</strong> @(Node.DataLastUpdated2.HasValue ? Node.DataLastUpdated2.Value.ToString("HH:mm:ss") : "—")
+                    </div>
+                }
+            }
+            else
+            {
+                <span>No data topic configured</span>
+            }
+        </TooltipContent>
+        <ChildContent>
     <MudCard Outlined="false" Elevation="0" 
             Style="@GenerateStyle()" 
             Class=@("pa-1 default-node"+(Node.Group != null ? " grouped" : "")+(Node.Selected ? " selected" : ""))
@@ -44,6 +68,8 @@
             <PortRenderer @key="port" Port="port" Style="@GeneratePortStyle(port as MudPortModel)" />
         }
     </MudCard>
+        </ChildContent>
+    </MudTooltip>
 
 @code {
     [Parameter] public MudNodeModel Node { get; set; } = null!;
