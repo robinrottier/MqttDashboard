@@ -1,5 +1,6 @@
 @using MqttDashboard.Services
 @using Blazor.Diagrams
+@using System.Reflection
 @inject ApplicationState AppState
 @inject NavigationManager NavManager
 @inject SignalRService SignalRService
@@ -96,7 +97,14 @@
         var appVersion = appAssembly.GetName().Version?.ToString() ?? "unknown";
         var dotNetVersion = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
         var mudBlazorVersion = typeof(MudBlazor.MudText).Assembly.GetName().Version?.ToString() ?? "unknown";
-        var diagramsVersion = typeof(BlazorDiagram).Assembly.GetName().Version?.ToString() ?? "unknown";
+        var diagramsAssembly = typeof(BlazorDiagram).Assembly;
+        var diagramsVersion = diagramsAssembly
+            .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion
+            ?? diagramsAssembly.GetName().Version?.ToString()
+            ?? "unknown";
+        if (diagramsVersion.Contains('+'))
+            diagramsVersion = diagramsVersion[..diagramsVersion.IndexOf('+')];
 
         _appInfo = new List<InfoItem>
         {

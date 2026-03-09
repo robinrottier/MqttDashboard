@@ -1,0 +1,59 @@
+@using MudBlazor
+@using MqttDashboard.Services
+@using MqttDashboard.Components
+@inject ApplicationState AppState
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudTextField @bind-Value="_name" Label="Diagram Name" Variant="Variant.Outlined" />
+
+            <MudText Typo="Typo.subtitle2">Title Bar</MudText>
+            <MudCheckBox @bind-Value="_showDiagramName" Label="Show diagram name in title bar" />
+
+            <MudText Typo="Typo.subtitle2">Canvas Background</MudText>
+            <ColorPicker @bind-Value="_backgroundColor" />
+
+            <MudText Typo="Typo.subtitle2">Grid</MudText>
+            <MudSelect T="int" @bind-Value="_gridSize" Label="Grid Size" Variant="Variant.Outlined" Dense="true">
+                <MudSelectItem T="int" Value="0">None</MudSelectItem>
+                <MudSelectItem T="int" Value="5">Small (5px)</MudSelectItem>
+                <MudSelectItem T="int" Value="10">Medium (10px)</MudSelectItem>
+                <MudSelectItem T="int" Value="20">Large (20px)</MudSelectItem>
+            </MudSelect>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Apply">Apply</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private string _name = "";
+    private bool _showDiagramName;
+    private string _backgroundColor = "";
+    private int _gridSize = 20;
+
+    protected override void OnInitialized()
+    {
+        _name = AppState.DiagramName;
+        _showDiagramName = AppState.ShowDiagramName;
+        _backgroundColor = AppState.CanvasBackgroundColor;
+        _gridSize = AppState.GridSize;
+    }
+
+    private void Apply()
+    {
+        if (_name != AppState.DiagramName) AppState.SetDiagramName(_name);
+        AppState.SetShowDiagramName(_showDiagramName);
+        AppState.SetCanvasBackground(_backgroundColor);
+        AppState.SetGridSize(_gridSize);
+        AppState.MarkEdited();
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

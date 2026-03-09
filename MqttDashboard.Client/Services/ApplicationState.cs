@@ -52,6 +52,7 @@ public class ApplicationState
     public bool ShowDiagramName { get; private set; } = false;
     public string DiagramName { get; private set; } = string.Empty;
     public int GridSize { get; private set; } = 20;
+    public string CanvasBackgroundColor { get; private set; } = string.Empty;
 
     // Edit mode state (set by Edit page)
     public bool IsEditMode { get; private set; } = false;
@@ -141,6 +142,7 @@ public class ApplicationState
     public event Action? MenuRedo;
     public event Action? MenuSaveAs;
     public event Action? MenuOpen;
+    public event Action? MenuDiagramProperties;
 
     public event Action? OnStateChanged;
 
@@ -171,6 +173,12 @@ public class ApplicationState
         NotifyStateChangedAsync();
     }
 
+    public void SetShowDiagramName(bool show)
+    {
+        ShowDiagramName = show;
+        NotifyStateChangedAsync();
+    }
+
     public void SetDiagramName(string name)
     {
         DiagramName = name;
@@ -185,6 +193,12 @@ public class ApplicationState
             _diagram.Options.GridSize = size == 0 ? null : size;
             _diagram.Refresh();
         }
+        NotifyStateChangedAsync();
+    }
+
+    public void SetCanvasBackground(string color)
+    {
+        CanvasBackgroundColor = color ?? string.Empty;
         NotifyStateChangedAsync();
     }
 
@@ -204,6 +218,7 @@ public class ApplicationState
     public void TriggerRedo() => MenuRedo?.Invoke();
     public void TriggerSaveAs() => MenuSaveAs?.Invoke();
     public void TriggerOpen() => MenuOpen?.Invoke();
+    public void TriggerDiagramProperties() => MenuDiagramProperties?.Invoke();
 
     public BlazorDiagram GetOrCreateDiagram()
     {
@@ -315,9 +330,12 @@ public class ApplicationState
             }
         }
 
-        // Update diagram name from state
+        // Update diagram name and properties from state
         if (state != null)
+        {
             DiagramName = state.Name;
+            CanvasBackgroundColor = state.BackgroundColor ?? string.Empty;
+        }
 
         _diagram = diagram;
         return _diagram;
@@ -427,6 +445,7 @@ public class ApplicationState
         if (panX != 0 || panY != 0)
             _diagram.SetPan(0, 0);
 
+        state.BackgroundColor = CanvasBackgroundColor;
         return state;
     }
 

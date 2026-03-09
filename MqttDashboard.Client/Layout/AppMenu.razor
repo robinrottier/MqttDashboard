@@ -9,15 +9,27 @@
 
 <MudMenu Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
 
-    <!-- File -->
-    <MudMenu Label="File" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
-        <MudMenuItem Label="New"      OnClick="NewDiagram"    Disabled="@(!IsEditMode)" />
-        <MudMenuItem Label="Open…"    OnClick="OpenDiagram"   Disabled="@(!IsEditMode)" />
-        <MudMenuItem Label="Save"     OnClick="SaveDiagram"   Disabled="@(!IsEditMode)" />
-        <MudMenuItem Label="Save As…" OnClick="SaveAsDiagram" Disabled="@(!IsEditMode)" />
-    </MudMenu>
+    <!-- File menu: full in edit mode, Open-only in view mode -->
+    @if (IsEditMode)
+    {
+        <MudMenu Label="File" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
+            <MudMenuItem Label="New"              OnClick="NewDiagram"             />
+            <MudMenuItem Label="Open…"            OnClick="OpenDiagram"            />
+            <MudMenuItem Label="Save"             OnClick="SaveDiagram"            />
+            <MudMenuItem Label="Save As…"         OnClick="SaveAsDiagram"          />
+            <MudMenuItem Label="Reload from Disk" OnClick="ReloadDiagram"          />
+            <MudDivider />
+            <MudMenuItem Label="Diagram Properties…" OnClick="MenuDiagramProperties" />
+        </MudMenu>
+    }
+    else
+    {
+        <MudMenuItem Label="Open…" OnClick="OpenDiagram" />
+    }
 
-    <!-- Edit -->
+    <!-- Edit: only shown in edit mode -->
+    @if (IsEditMode)
+    {
     <MudMenu Label="Edit" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
         <MudMenuItem Label="Undo" OnClick="Undo" Disabled="@(!AppState.CanUndo)" />
         <MudMenuItem Label="Redo" OnClick="Redo" Disabled="@(!AppState.CanRedo)" />
@@ -44,6 +56,7 @@
         <MudDivider />
         <MudMenuItem Label="Properties" OnClick="MenuEditProperties" Disabled="@(!AppState.HasSingleSelectedNode)" />
     </MudMenu>
+    }
 
     <!-- Page (was View) -->
     <MudMenu Label="Page" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
@@ -125,6 +138,8 @@
     private void OpenDiagram()        => AppState.TriggerOpen();
     private void SaveDiagram()        => AppState.TriggerSaveDiagram();
     private void SaveAsDiagram()      => AppState.TriggerSaveAs();
+    private void ReloadDiagram()          => AppState.TriggerReloadDiagram();
+    private void MenuDiagramProperties()  => AppState.TriggerDiagramProperties();
     private void Undo()               => AppState.TriggerUndo();
     private void Redo()               => AppState.TriggerRedo();
     private void MenuAddNode()        => AppState.TriggerAddNode();

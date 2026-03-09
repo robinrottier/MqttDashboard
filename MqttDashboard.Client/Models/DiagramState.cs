@@ -15,6 +15,7 @@ public class DiagramState
     public List<NodeState> Nodes { get; set; } = new();
     public List<LinkState> Links { get; set; } = new();
     public int GridSize { get; set; } = 20; // Default 20px grid; 0 for no grid
+    public string BackgroundColor { get; set; } = string.Empty;
 }
 
 public class NodeState

@@ -10,6 +10,7 @@ using MqttDashboard.Services;
 using MqttDashboard.Widgets;
 using MqttDashboard.Components;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using MudBlazor;
 
 namespace MqttDashboard.Pages;
@@ -20,6 +21,7 @@ public partial class Display : IDisposable
     [Inject] private DiagramService DiagramService { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
     [Inject] private IDialogService DialogService { get; set; } = default!;
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
 
     private BlazorDiagram? _diagram;
     private int _nodeCounter = 1;
@@ -33,6 +35,11 @@ public partial class Display : IDisposable
     private Action? _onMenuOpen;
     private Action? _onMenuUndo;
     private Action? _onMenuRedo;
+    private Action? _onMenuDiagramProperties;
+    private DateTimeOffset _lastUndoPushByMove = DateTimeOffset.MinValue;
+    private readonly List<(NodeModel Node, Action<Blazor.Diagrams.Core.Models.Base.Model> Handler)> _nodeChangedSubscriptions = new();
+
+    private const string LastDiagramKey = "mqttdashboard_lastDiagram";
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -55,6 +62,22 @@ public partial class Display : IDisposable
             {
                 _diagram = AppState.CreateDiagramFromState(null, readOnly: true);
                 StateHasChanged();
+            }
+
+            // Try to auto-open the last named diagram if none was loaded by name
+            if (string.IsNullOrEmpty(AppState.DiagramName))
+            {
+                var lastName = await GetLastDiagramName();
+                if (!string.IsNullOrEmpty(lastName))
+                {
+                    var lastState = await DiagramService.LoadDiagramByNameAsync(lastName);
+                    if (lastState != null)
+                    {
+                        _diagram = AppState.CreateDiagramFromState(lastState, readOnly: true);
+                        AppState.MarkSaved();
+                        StateHasChanged();
+                    }
+                }
             }
         }
         await base.OnAfterRenderAsync(firstRender);
@@ -153,6 +176,16 @@ public partial class Display : IDisposable
         AppState.MenuOpen           += _onMenuOpen;
         AppState.MenuUndo           += _onMenuUndo;
         AppState.MenuRedo           += _onMenuRedo;
+
+        // Subscribe to diagram properties menu
+        _onMenuDiagramProperties = () => InvokeAsync(ShowDiagramPropertiesAsync);
+        AppState.MenuDiagramProperties += _onMenuDiagramProperties;
+
+        // Subscribe to existing nodes' Changed events to detect moves
+        foreach (var node in _diagram!.Nodes.OfType<NodeModel>())
+            SubscribeToNodeChanges(node);
+        // Subscribe to future nodes
+        _diagram.Nodes.Added += OnNodeAddedInEditMode;
     }
 
     private void UnsubscribeEditEvents()
@@ -175,8 +208,14 @@ public partial class Display : IDisposable
         if (_onMenuUndo           != null) AppState.MenuUndo           -= _onMenuUndo;
         if (_onMenuRedo           != null) AppState.MenuRedo           -= _onMenuRedo;
 
+        if (_onMenuDiagramProperties != null) AppState.MenuDiagramProperties -= _onMenuDiagramProperties;
+        _diagram?.Nodes.Added -= OnNodeAddedInEditMode;
+        foreach (var (node, handler) in _nodeChangedSubscriptions)
+            node.Changed -= handler;
+        _nodeChangedSubscriptions.Clear();
+
         _onMenuSaveDiagram = _onMenuReloadDiagram = _onMenuEditProperties = null;
-        _onMenuSaveAs = _onMenuOpen = _onMenuUndo = _onMenuRedo = null;
+        _onMenuSaveAs = _onMenuOpen = _onMenuUndo = _onMenuRedo = _onMenuDiagramProperties = null;
     }
 
     // ── Diagram event handlers ────────────────────────────────────────────────
@@ -453,6 +492,7 @@ public partial class Display : IDisposable
             {
                 AppState.SetDiagramName(name);
                 AppState.MarkSaved();
+                await SaveLastDiagramName(name);
                 Snackbar.Add($"Saved as '{name}'", Severity.Success);
             }
             else
@@ -490,6 +530,7 @@ public partial class Display : IDisposable
                 AppState.ClearUndoRedo();
                 await ApplyDiagramState(state);
                 AppState.MarkSaved();
+                await SaveLastDiagramName(name);
                 Snackbar.Add($"Opened '{name}' ({state.Nodes.Count} nodes)", Severity.Info);
             }
             else
@@ -510,6 +551,7 @@ public partial class Display : IDisposable
             if (success)
             {
                 AppState.MarkSaved();
+                await SaveLastDiagramName(AppState.DiagramName);
                 Snackbar.Add($"Diagram saved ({state.Nodes.Count} nodes, {state.Links.Count} links)", Severity.Success);
             }
             else
@@ -568,7 +610,56 @@ public partial class Display : IDisposable
         }
     }
 
+    private string CanvasStyle =>
+        string.IsNullOrEmpty(AppState.CanvasBackgroundColor)
+            ? "width: 100%; height: calc(100vh - 100px); overflow: hidden;"
+            : $"width: 100%; height: calc(100vh - 100px); overflow: hidden; background-color: {AppState.CanvasBackgroundColor};";
+
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private void SubscribeToNodeChanges(NodeModel node)
+    {
+        if (_nodeChangedSubscriptions.Any(x => x.Node == node)) return;
+        Action<Blazor.Diagrams.Core.Models.Base.Model> handler = _ => OnNodeChanged(node);
+        node.Changed += handler;
+        _nodeChangedSubscriptions.Add((node, handler));
+    }
+
+    private void OnNodeAddedInEditMode(Blazor.Diagrams.Core.Models.Base.Model model)
+    {
+        if (model is NodeModel node)
+            SubscribeToNodeChanges(node);
+    }
+
+    private void OnNodeChanged(NodeModel node)
+    {
+        AppState.MarkEdited();
+        var now = DateTimeOffset.UtcNow;
+        if ((now - _lastUndoPushByMove).TotalSeconds >= 1.5)
+        {
+            _lastUndoPushByMove = now;
+            PushUndoSnapshot();
+        }
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ShowDiagramPropertiesAsync()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+        await DialogService.ShowAsync<DiagramPropertiesDialog>("Diagram Properties", options);
+    }
+
+    private async Task SaveLastDiagramName(string name)
+    {
+        try { await JSRuntime.InvokeVoidAsync("localStorage.setItem", LastDiagramKey, name); }
+        catch { /* ignore */ }
+    }
+
+    private async Task<string?> GetLastDiagramName()
+    {
+        try { return await JSRuntime.InvokeAsync<string?>("localStorage.getItem", LastDiagramKey); }
+        catch { return null; }
+    }
 
     private async Task<bool> ConfirmDiscardChanges(string action)
     {
