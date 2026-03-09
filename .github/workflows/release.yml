@@ -44,9 +44,10 @@ jobs:
             -r ${{ matrix.runtime }} \
             --self-contained true \
             -p:PublishSingleFile=true \
+            -p:UseAppHost=true \
             -p:IncludeNativeLibrariesForSelfExtract=true \
             -o artifacts/${{ matrix.runtime }}
-
+            
       - name: Write sample appsettings
         shell: bash
         run: |
