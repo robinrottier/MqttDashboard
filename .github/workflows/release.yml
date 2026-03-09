@@ -44,8 +44,6 @@ jobs:
             -c Release \
             -r ${{ matrix.runtime }} \
             --self-contained true \
-            -p:PublishSingleFile=true \
-            -p:UseAppHost=true \
             -p:IncludeNativeLibrariesForSelfExtract=true \
             -o artifacts/${{ matrix.runtime }}
             

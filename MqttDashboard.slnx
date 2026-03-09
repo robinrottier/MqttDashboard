@@ -7,6 +7,7 @@
   <Folder Name="/Documents/" />
   <Folder Name="/Solution Items/">
     <File Path="README.md" />
+    <File Path="test-publish.cmd" />
     <File Path="TODO.md" />
     <File Path="Directory.Build.props" />
     <File Path="docker-compose.override.yml" />
