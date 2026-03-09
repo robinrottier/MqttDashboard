@@ -2,6 +2,7 @@
   <Folder Name="/Data/">
     <File Path="data/applicationstate.json" />
     <File Path="data/diagram.json" />
+    <File Path="data/Diagram2.json" />
   </Folder>
   <Folder Name="/Documents/" />
   <Folder Name="/Solution Items/">
