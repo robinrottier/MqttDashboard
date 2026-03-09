@@ -4,6 +4,7 @@
 @inject ApplicationState AppState
 @inject NavigationManager NavManager
 @inject SignalRService SignalRService
+@inject HttpClient Http
 
 <MudDialog>
     <DialogContent>
@@ -72,6 +73,70 @@
                 </MudCardContent>
             </MudCard>
         }
+
+        <MudCard Class="mb-2">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">Updates</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                @if (_checkingUpdate)
+                {
+                    <MudProgressLinear Indeterminate="true" Class="mb-2" />
+                    <MudText Typo="Typo.body2">Checking for updates...</MudText>
+                }
+                else if (_updateError != null)
+                {
+                    <MudAlert Severity="Severity.Warning" Dense="true">@_updateError</MudAlert>
+                }
+                else
+                {
+                    <MudSimpleTable Dense="true" Hover="true" Style="overflow: hidden;">
+                        <tbody>
+                            <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Current Version</td>
+                                <td style="padding:6px 16px;font-family:monospace;">@(_updateStatus?.CurrentVersion ?? "unknown")</td></tr>
+                            <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Latest Version</td>
+                                <td style="padding:6px 16px;font-family:monospace;">@(_updateStatus?.LatestVersion ?? "—")</td></tr>
+                            <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Deployment</td>
+                                <td style="padding:6px 16px;font-family:monospace;">@(_updateStatus?.DeploymentType ?? "—")</td></tr>
+                            <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Last Checked</td>
+                                <td style="padding:6px 16px;font-family:monospace;">@(_updateStatus?.LastChecked?.LocalDateTime.ToString("yyyy-MM-dd HH:mm") ?? "Not yet")</td></tr>
+                        </tbody>
+                    </MudSimpleTable>
+                    @if (_updateStatus?.UpdateAvailable == true)
+                    {
+                        <MudAlert Severity="Severity.Info" Class="mt-2" Dense="true">
+                            Update available: @_updateStatus.LatestVersion
+                            @if (_updateStatus.DeploymentType == "Standalone")
+                            {
+                                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary"
+                                           OnClick="DownloadUpdate" Class="ml-2" Disabled="_downloadingUpdate">
+                                    @(_downloadingUpdate ? "Downloading..." : "Download Update")
+                                </MudButton>
+                            }
+                        </MudAlert>
+                        @if (!string.IsNullOrEmpty(_downloadResult))
+                        {
+                            <MudAlert Severity="Severity.Success" Class="mt-1" Dense="true">
+                                @_downloadResult
+                            </MudAlert>
+                        }
+                    }
+                    else if (_updateStatus?.LastChecked != null)
+                    {
+                        <MudText Typo="Typo.body2" Class="mt-2" Color="Color.Success">
+                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="mr-1" />
+                            Up to date
+                        </MudText>
+                    }
+                }
+                <MudButton Variant="Variant.Outlined" Size="Size.Small" Class="mt-2"
+                           OnClick="CheckForUpdates" Disabled="_checkingUpdate">
+                    Check for updates
+                </MudButton>
+            </MudCardContent>
+        </MudCard>
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Close" Variant="Variant.Filled" Color="Color.Primary">Close</MudButton>
@@ -82,11 +147,20 @@
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
 
     private record InfoItem(string Label, string Value);
+    private record UpdateStatusDto(string CurrentVersion, string? LatestVersion, bool UpdateAvailable,
+        string DeploymentType, DateTimeOffset? LastChecked, string? ReleaseUrl, string RuntimeIdentifier);
+    private record DownloadResult(bool Success, string? Instructions, string? Error);
 
     private List<InfoItem> _appInfo = new();
     private List<InfoItem> _debugInfo = new();
     private bool _showDebugInfo;
     private int _clientCount = -1;
+
+    private UpdateStatusDto? _updateStatus;
+    private bool _checkingUpdate = false;
+    private bool _downloadingUpdate = false;
+    private string? _updateError;
+    private string? _downloadResult;
 
     protected override async Task OnInitializedAsync()
     {
@@ -129,6 +203,55 @@
             new("Current URL", currentUri),
         };
 #endif
+
+        await CheckForUpdates();
+    }
+
+    private async Task CheckForUpdates()
+    {
+        _checkingUpdate = true;
+        _updateError = null;
+        StateHasChanged();
+        try
+        {
+            // Trigger a fresh check on the server
+            await Http.PostAsync("/api/update/check", null);
+            _updateStatus = await Http.GetFromJsonAsync<UpdateStatusDto>("/api/update/status");
+        }
+        catch (Exception ex)
+        {
+            _updateError = $"Could not check for updates: {ex.Message}";
+        }
+        finally
+        {
+            _checkingUpdate = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DownloadUpdate()
+    {
+        _downloadingUpdate = true;
+        _downloadResult = null;
+        StateHasChanged();
+        try
+        {
+            var resp = await Http.PostAsync("/api/update/download", null);
+            var result = await resp.Content.ReadFromJsonAsync<DownloadResult>();
+            if (resp.IsSuccessStatusCode && result?.Success == true)
+                _downloadResult = result.Instructions;
+            else
+                _updateError = result?.Error ?? "Download failed.";
+        }
+        catch (Exception ex)
+        {
+            _updateError = $"Download failed: {ex.Message}";
+        }
+        finally
+        {
+            _downloadingUpdate = false;
+            StateHasChanged();
+        }
     }
 
     private void Close() => MudDialog.Close();

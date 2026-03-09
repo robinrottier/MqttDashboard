@@ -91,6 +91,11 @@ public static class ServiceCollectionExtensions
         // Add RequireAdminFilter as scoped service
         services.AddScoped<RequireAdminFilter>();
 
+        // Update check service
+        services.AddHttpClient("UpdateCheck");
+        services.AddSingleton<UpdateCheckService>();
+        services.AddHostedService(sp => sp.GetRequiredService<UpdateCheckService>());
+
         return services;
     }
 }

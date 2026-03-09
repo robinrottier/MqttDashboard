@@ -2,5 +2,11 @@
   <PropertyGroup>
     <Product>Mqtt Dashboard</Product>
     <AssemblyTitle>Mqtt Dashboard</AssemblyTitle>
+    <!-- MinVer: derives Version from git tags (e.g. v1.0.0 → 1.0.0) -->
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <MinVerDefaultPreReleaseIdentifiers>dev</MinVerDefaultPreReleaseIdentifiers>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MinVer" Version="5.0.0" PrivateAssets="All" Condition="$(MSBuildProjectExtension) == '.csproj'" />
+  </ItemGroup>
 </Project>

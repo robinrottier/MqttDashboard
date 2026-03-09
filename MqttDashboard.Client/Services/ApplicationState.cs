@@ -70,6 +70,24 @@ public class ApplicationState
         NotifyStateChangedAsync();
     }
 
+    // Update state
+    public string? UpdateAvailableVersion { get; private set; }
+    public string? CurrentVersion { get; private set; }
+    public string? DeploymentType { get; private set; }
+    public string? UpdateReleaseUrl { get; private set; }
+    public DateTimeOffset? UpdateLastChecked { get; private set; }
+
+    public void SetUpdateState(string currentVersion, string? latestVersion, bool updateAvailable,
+        string deploymentType, DateTimeOffset? lastChecked, string? releaseUrl)
+    {
+        CurrentVersion = currentVersion;
+        UpdateAvailableVersion = updateAvailable ? latestVersion : null;
+        DeploymentType = deploymentType;
+        UpdateLastChecked = lastChecked;
+        UpdateReleaseUrl = releaseUrl;
+        NotifyStateChangedAsync();
+    }
+
     // Edited flag (was IsDirty)
     public bool IsEdited { get; private set; } = false;
     public void MarkEdited() { IsEdited = true; NotifyStateChangedAsync(); }
