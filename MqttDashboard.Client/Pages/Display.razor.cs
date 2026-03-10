@@ -33,6 +33,7 @@ public partial class Display : IDisposable
     private Action? _onMenuEditProperties;
     private Action? _onMenuSaveAs;
     private Action? _onMenuOpen;
+    private Action<string>? _onMenuOpenRecent;
     private Action? _onMenuUndo;
     private Action? _onMenuRedo;
     private Action? _onMenuDiagramProperties;
@@ -40,6 +41,7 @@ public partial class Display : IDisposable
     private readonly List<(NodeModel Node, Action<Blazor.Diagrams.Core.Models.Base.Model> Handler)> _nodeChangedSubscriptions = new();
 
     private const string LastDiagramKey = "mqttdashboard_lastDiagram";
+    private const string RecentFilesKey = "mqttdashboard_recentFiles";
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -48,6 +50,16 @@ public partial class Display : IDisposable
             AppState.SetInteractive();
             AppState.OnToggleEditModeRequested += OnToggleEditModeRequested;
             AppState.OnStateChanged += OnAppStateChanged;
+
+            // Subscribe Open / OpenRecent for all modes (not just edit mode)
+            _onMenuOpen = () => InvokeAsync(OpenDiagram);
+            _onMenuOpenRecent = name => InvokeAsync(() => OpenRecentFile(name));
+            AppState.MenuOpen += _onMenuOpen;
+            AppState.MenuOpenRecent += _onMenuOpenRecent;
+
+            // Load recent files from localStorage
+            var recentFiles = await LoadRecentFiles();
+            AppState.SetRecentFiles(recentFiles);
 
             var savedState = await DiagramService.LoadDiagramAsync();
             if (savedState != null && savedState.Nodes.Count > 0)
@@ -165,7 +177,6 @@ public partial class Display : IDisposable
         _onMenuReloadDiagram  = () => InvokeAsync(ReloadDiagram);
         _onMenuEditProperties = () => InvokeAsync(EditNodeProperties);
         _onMenuSaveAs         = () => InvokeAsync(SaveAsDiagram);
-        _onMenuOpen           = () => InvokeAsync(OpenDiagram);
         _onMenuUndo           = () => InvokeAsync(UndoAction);
         _onMenuRedo           = () => InvokeAsync(RedoAction);
 
@@ -173,7 +184,6 @@ public partial class Display : IDisposable
         AppState.MenuReloadDiagram  += _onMenuReloadDiagram;
         AppState.MenuEditProperties += _onMenuEditProperties;
         AppState.MenuSaveAs         += _onMenuSaveAs;
-        AppState.MenuOpen           += _onMenuOpen;
         AppState.MenuUndo           += _onMenuUndo;
         AppState.MenuRedo           += _onMenuRedo;
 
@@ -204,7 +214,6 @@ public partial class Display : IDisposable
         if (_onMenuReloadDiagram  != null) AppState.MenuReloadDiagram  -= _onMenuReloadDiagram;
         if (_onMenuEditProperties != null) AppState.MenuEditProperties -= _onMenuEditProperties;
         if (_onMenuSaveAs         != null) AppState.MenuSaveAs         -= _onMenuSaveAs;
-        if (_onMenuOpen           != null) AppState.MenuOpen           -= _onMenuOpen;
         if (_onMenuUndo           != null) AppState.MenuUndo           -= _onMenuUndo;
         if (_onMenuRedo           != null) AppState.MenuRedo           -= _onMenuRedo;
 
@@ -215,7 +224,7 @@ public partial class Display : IDisposable
         _nodeChangedSubscriptions.Clear();
 
         _onMenuSaveDiagram = _onMenuReloadDiagram = _onMenuEditProperties = null;
-        _onMenuSaveAs = _onMenuOpen = _onMenuUndo = _onMenuRedo = _onMenuDiagramProperties = null;
+        _onMenuSaveAs = _onMenuUndo = _onMenuRedo = _onMenuDiagramProperties = null;
     }
 
     // ── Diagram event handlers ────────────────────────────────────────────────
@@ -531,12 +540,38 @@ public partial class Display : IDisposable
                 await ApplyDiagramState(state);
                 AppState.MarkSaved();
                 await SaveLastDiagramName(name);
+                AppState.AddRecentFile(name);
+                await SaveRecentFiles();
                 Snackbar.Add($"Opened '{name}' ({state.Nodes.Count} nodes)", Severity.Info);
             }
             else
             {
                 Snackbar.Add($"Failed to load '{name}'", Severity.Error);
             }
+        }
+    }
+
+    private async Task OpenRecentFile(string name)
+    {
+        if (AppState.IsEdited)
+        {
+            bool confirmed = await ConfirmDiscardChanges("Open diagram");
+            if (!confirmed) return;
+        }
+        var state = await DiagramService.LoadDiagramByNameAsync(name);
+        if (state != null)
+        {
+            AppState.ClearUndoRedo();
+            await ApplyDiagramState(state);
+            AppState.MarkSaved();
+            await SaveLastDiagramName(name);
+            AppState.AddRecentFile(name);
+            await SaveRecentFiles();
+            Snackbar.Add($"Opened '{name}' ({state.Nodes.Count} nodes)", Severity.Info);
+        }
+        else
+        {
+            Snackbar.Add($"Failed to load '{name}'", Severity.Error);
         }
     }
 
@@ -661,6 +696,27 @@ public partial class Display : IDisposable
         catch { return null; }
     }
 
+    private async Task<List<string>> LoadRecentFiles()
+    {
+        try
+        {
+            var json = await JSRuntime.InvokeAsync<string?>("localStorage.getItem", RecentFilesKey);
+            if (string.IsNullOrEmpty(json)) return [];
+            return System.Text.Json.JsonSerializer.Deserialize<List<string>>(json) ?? [];
+        }
+        catch { return []; }
+    }
+
+    private async Task SaveRecentFiles()
+    {
+        try
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(AppState.RecentFiles.ToList());
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", RecentFilesKey, json);
+        }
+        catch { /* ignore */ }
+    }
+
     private async Task<bool> ConfirmDiscardChanges(string action)
     {
         var result = await DialogService.ShowMessageBoxAsync(
@@ -676,6 +732,10 @@ public partial class Display : IDisposable
     {
         AppState.OnToggleEditModeRequested -= OnToggleEditModeRequested;
         AppState.OnStateChanged -= OnAppStateChanged;
+
+        // These are subscribed regardless of edit mode
+        if (_onMenuOpen       != null) AppState.MenuOpen       -= _onMenuOpen;
+        if (_onMenuOpenRecent != null) AppState.MenuOpenRecent -= _onMenuOpenRecent;
 
         if (AppState.IsEditMode)
         {

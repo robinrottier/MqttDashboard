@@ -18,6 +18,10 @@
     <Project Path="MqttDashboard.WebApp/MqttDashboard.WebApp/MqttDashboard.WebApp.csproj" />
     <Project Path="MqttDashboard.WebAppServerOnly/MqttDashboard.WebAppServerOnly.csproj" Id="d852685b-bffb-48ac-b18b-ceaf0849a450" />
   </Folder>
+  <Folder Name="/Solution Items/Workflows/">
+    <File Path=".github/workflows/docker.yml" />
+    <File Path=".github/workflows/release.yml" />
+  </Folder>
   <Folder Name="/Tests/">
     <Project Path="Tests/MqttDashboard.Client.Tests/MqttDashboard.Client.Tests.csproj" />
     <Project Path="Tests/MqttDashboard.Server.Tests/MqttDashboard.Server.Tests.csproj" />

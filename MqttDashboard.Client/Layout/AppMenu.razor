@@ -9,23 +9,33 @@
 
 <MudMenu Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
 
-    <!-- File menu: full in edit mode, Open-only in view mode -->
-    @if (IsEditMode)
-    {
-        <MudMenu Label="File" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
-            <MudMenuItem Label="New"              OnClick="NewDiagram"             />
-            <MudMenuItem Label="Open…"            OnClick="OpenDiagram"            />
-            <MudMenuItem Label="Save"             OnClick="SaveDiagram"            />
-            <MudMenuItem Label="Save As…"         OnClick="SaveAsDiagram"          />
-            <MudMenuItem Label="Reload from Disk" OnClick="ReloadDiagram"          />
+    <!-- File menu: always a submenu; recent files + More... in both modes -->
+    <MudMenu Label="File" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
+        @if (IsEditMode)
+        {
+            <MudMenuItem Label="New" OnClick="NewDiagram" />
             <MudDivider />
-            <MudMenuItem Label="Diagram Properties…" OnClick="MenuDiagramProperties" />
-        </MudMenu>
-    }
-    else
-    {
-        <MudMenuItem Label="Open…" OnClick="OpenDiagram" />
-    }
+        }
+        @foreach (var recentName in AppState.RecentFiles)
+        {
+            var name = recentName;
+            <MudMenuItem OnClick="() => OpenRecentFile(name)">@name</MudMenuItem>
+        }
+        @if (AppState.RecentFiles.Any())
+        {
+            <MudDivider />
+        }
+        <MudMenuItem Label="More…" OnClick="OpenDiagram" />
+        @if (IsEditMode)
+        {
+            <MudDivider />
+            <MudMenuItem Label="Save"                 OnClick="SaveDiagram"            />
+            <MudMenuItem Label="Save As…"             OnClick="SaveAsDiagram"          />
+            <MudMenuItem Label="Reload from Disk"     OnClick="ReloadDiagram"          />
+            <MudDivider />
+            <MudMenuItem Label="Diagram Properties…"  OnClick="MenuDiagramProperties"  />
+        }
+    </MudMenu>
 
     <!-- Edit: only shown in edit mode -->
     @if (IsEditMode)
@@ -58,7 +68,7 @@
     </MudMenu>
     }
 
-    <!-- Page (was View) -->
+    <!-- Page -->
     <MudMenu Label="Page" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
         <MudMenuItem OnClick='() => Nav.NavigateTo("/")'>
             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
@@ -74,38 +84,49 @@
         </MudMenuItem>
     </MudMenu>
 
-    <!-- About (top-level) -->
-    <MudMenuItem OnClick="ShowAbout">About</MudMenuItem>
-
-    <!-- Options -->
+    <!-- Options (before About) -->
     <MudMenu Label="Options" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
         <MudMenu Label="Theme" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
-            <MudMenuItem Label="Light" OnClick="() => SetTheme(ThemeMode.Light)" />
-            <MudMenuItem Label="Dark"  OnClick="() => SetTheme(ThemeMode.Dark)" />
-            <MudMenuItem Label="Auto"  OnClick="() => SetTheme(ThemeMode.Auto)" />
-        </MudMenu>
-        <MudMenu Label="Show" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
-            <MudMenuItem OnClick="ToggleDiagramName">
+            <MudMenuItem OnClick="() => SetTheme(ThemeMode.Light)">
                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                    @if (AppState.ShowDiagramName)
-                    {
-                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" />
-                    }
-                    else
-                    {
-                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="visibility:hidden" />
-                    }
-                    <MudText>Diagram Name</MudText>
+                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.ThemeMode == ThemeMode.Light ? "" : "visibility:hidden")" />
+                    <MudText>Light</MudText>
+                </MudStack>
+            </MudMenuItem>
+            <MudMenuItem OnClick="() => SetTheme(ThemeMode.Dark)">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.ThemeMode == ThemeMode.Dark ? "" : "visibility:hidden")" />
+                    <MudText>Dark</MudText>
+                </MudStack>
+            </MudMenuItem>
+            <MudMenuItem OnClick="() => SetTheme(ThemeMode.Auto)">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.ThemeMode == ThemeMode.Auto ? "" : "visibility:hidden")" />
+                    <MudText>Auto</MudText>
                 </MudStack>
             </MudMenuItem>
         </MudMenu>
-        <MudMenu Label="Grid" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight" Disabled="@(!IsEditMode)">
-            <MudMenuItem Label="None"           OnClick="() => SetGrid(0)" />
-            <MudMenuItem Label="Small (5 px)"   OnClick="() => SetGrid(5)" />
-            <MudMenuItem Label="Medium (10 px)" OnClick="() => SetGrid(10)" />
-            <MudMenuItem Label="Large (20 px)"  OnClick="() => SetGrid(20)" />
-        </MudMenu>
+        @if (IsEditMode)
+        {
+            <MudMenu Label="Show" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
+                <MudMenuItem OnClick="ToggleDiagramName">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.ShowDiagramName ? "" : "visibility:hidden")" />
+                        <MudText>Diagram Name</MudText>
+                    </MudStack>
+                </MudMenuItem>
+            </MudMenu>
+            <MudMenu Label="Grid" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
+                <MudMenuItem Label="None"           OnClick="() => SetGrid(0)" />
+                <MudMenuItem Label="Small (5 px)"   OnClick="() => SetGrid(5)" />
+                <MudMenuItem Label="Medium (10 px)" OnClick="() => SetGrid(10)" />
+                <MudMenuItem Label="Large (20 px)"  OnClick="() => SetGrid(20)" />
+            </MudMenu>
+        }
     </MudMenu>
+
+    <!-- About (last) -->
+    <MudMenuItem OnClick="ShowAbout">About</MudMenuItem>
 
 </MudMenu>
 
@@ -136,6 +157,7 @@
 
     private void NewDiagram()         => AppState.TriggerNewDiagram();
     private void OpenDiagram()        => AppState.TriggerOpen();
+    private void OpenRecentFile(string name) => AppState.TriggerOpenRecent(name);
     private void SaveDiagram()        => AppState.TriggerSaveDiagram();
     private void SaveAsDiagram()      => AppState.TriggerSaveAs();
     private void ReloadDiagram()          => AppState.TriggerReloadDiagram();

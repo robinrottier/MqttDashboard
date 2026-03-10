@@ -5,6 +5,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+  </PropertyGroup>
+
+  <!-- Single-file packaging only when publishing for a specific RID (release binaries).
+       Docker publishes without -r and uses the standard .dll + aspnet runtime image. -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
     <PublishSingleFile>true</PublishSingleFile>
     <UseAppHost>true</UseAppHost>
   </PropertyGroup>

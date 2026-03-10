@@ -24,8 +24,66 @@
                                 <td style="padding: 6px 16px; font-family: monospace;">@item.Value</td>
                             </tr>
                         }
+                        @if (_checkingUpdate)
+                        {
+                            <tr>
+                                <td colspan="2" style="padding: 6px 16px;">
+                                    <MudProgressLinear Indeterminate="true" Class="mb-1" />
+                                    <MudText Typo="Typo.body2">Checking for updates…</MudText>
+                                </td>
+                            </tr>
+                        }
+                        else if (_updateError != null)
+                        {
+                            <tr>
+                                <td colspan="2" style="padding: 6px 16px;">
+                                    <MudAlert Severity="Severity.Warning" Dense="true">@_updateError</MudAlert>
+                                </td>
+                            </tr>
+                        }
+                        else if (_updateStatus != null)
+                        {
+                            <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Latest Version</td>
+                                <td style="padding:6px 16px;font-family:monospace;">@(_updateStatus.LatestVersion ?? "—")</td></tr>
+                            <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Deployment</td>
+                                <td style="padding:6px 16px;font-family:monospace;">@_updateStatus.DeploymentType</td></tr>
+                            <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Last Checked</td>
+                                <td style="padding:6px 16px;font-family:monospace;">@(_updateStatus.LastChecked?.LocalDateTime.ToString("yyyy-MM-dd HH:mm") ?? "Not yet")</td></tr>
+                        }
                     </tbody>
                 </MudSimpleTable>
+                @if (_updateStatus?.UpdateAvailable == true)
+                {
+                    <MudAlert Severity="Severity.Info" Class="mt-2 mx-2 mb-1" Dense="true">
+                        Update available: @_updateStatus.LatestVersion
+                        @if (_updateStatus.DeploymentType == "Standalone")
+                        {
+                            <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary"
+                                       OnClick="DownloadUpdate" Class="ml-2" Disabled="_downloadingUpdate">
+                                @(_downloadingUpdate ? "Downloading..." : "Download Update")
+                            </MudButton>
+                        }
+                    </MudAlert>
+                    @if (!string.IsNullOrEmpty(_downloadResult))
+                    {
+                        <MudAlert Severity="Severity.Success" Class="mx-2 mb-1" Dense="true">
+                            @_downloadResult
+                        </MudAlert>
+                    }
+                }
+                else if (_updateStatus?.LastChecked != null && !_checkingUpdate)
+                {
+                    <MudText Typo="Typo.body2" Class="mt-1 mx-4 mb-2" Color="Color.Success">
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="mr-1" />
+                        Up to date
+                    </MudText>
+                }
+                <div class="mx-2 mb-2 mt-1">
+                    <MudButton Variant="Variant.Outlined" Size="Size.Small"
+                               OnClick="CheckForUpdates" Disabled="_checkingUpdate">
+                        Check for updates
+                    </MudButton>
+                </div>
             </MudCardContent>
         </MudCard>
 
@@ -74,69 +132,6 @@
             </MudCard>
         }
 
-        <MudCard Class="mb-2">
-            <MudCardHeader>
-                <CardHeaderContent>
-                    <MudText Typo="Typo.h6">Updates</MudText>
-                </CardHeaderContent>
-            </MudCardHeader>
-            <MudCardContent>
-                @if (_checkingUpdate)
-                {
-                    <MudProgressLinear Indeterminate="true" Class="mb-2" />
-                    <MudText Typo="Typo.body2">Checking for updates...</MudText>
-                }
-                else if (_updateError != null)
-                {
-                    <MudAlert Severity="Severity.Warning" Dense="true">@_updateError</MudAlert>
-                }
-                else
-                {
-                    <MudSimpleTable Dense="true" Hover="true" Style="overflow: hidden;">
-                        <tbody>
-                            <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Current Version</td>
-                                <td style="padding:6px 16px;font-family:monospace;">@(_updateStatus?.CurrentVersion ?? "unknown")</td></tr>
-                            <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Latest Version</td>
-                                <td style="padding:6px 16px;font-family:monospace;">@(_updateStatus?.LatestVersion ?? "—")</td></tr>
-                            <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Deployment</td>
-                                <td style="padding:6px 16px;font-family:monospace;">@(_updateStatus?.DeploymentType ?? "—")</td></tr>
-                            <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Last Checked</td>
-                                <td style="padding:6px 16px;font-family:monospace;">@(_updateStatus?.LastChecked?.LocalDateTime.ToString("yyyy-MM-dd HH:mm") ?? "Not yet")</td></tr>
-                        </tbody>
-                    </MudSimpleTable>
-                    @if (_updateStatus?.UpdateAvailable == true)
-                    {
-                        <MudAlert Severity="Severity.Info" Class="mt-2" Dense="true">
-                            Update available: @_updateStatus.LatestVersion
-                            @if (_updateStatus.DeploymentType == "Standalone")
-                            {
-                                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary"
-                                           OnClick="DownloadUpdate" Class="ml-2" Disabled="_downloadingUpdate">
-                                    @(_downloadingUpdate ? "Downloading..." : "Download Update")
-                                </MudButton>
-                            }
-                        </MudAlert>
-                        @if (!string.IsNullOrEmpty(_downloadResult))
-                        {
-                            <MudAlert Severity="Severity.Success" Class="mt-1" Dense="true">
-                                @_downloadResult
-                            </MudAlert>
-                        }
-                    }
-                    else if (_updateStatus?.LastChecked != null)
-                    {
-                        <MudText Typo="Typo.body2" Class="mt-2" Color="Color.Success">
-                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="mr-1" />
-                            Up to date
-                        </MudText>
-                    }
-                }
-                <MudButton Variant="Variant.Outlined" Size="Size.Small" Class="mt-2"
-                           OnClick="CheckForUpdates" Disabled="_checkingUpdate">
-                    Check for updates
-                </MudButton>
-            </MudCardContent>
-        </MudCard>
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Close" Variant="Variant.Filled" Color="Color.Primary">Close</MudButton>

@@ -93,6 +93,26 @@ public class ApplicationState
     public void MarkEdited() { IsEdited = true; NotifyStateChangedAsync(); }
     public void MarkSaved() { IsEdited = false; NotifyStateChangedAsync(); }
 
+    // Recent files (persisted to localStorage by the Display page)
+    private readonly List<string> _recentFiles = new();
+    public IReadOnlyList<string> RecentFiles => _recentFiles.AsReadOnly();
+
+    public void SetRecentFiles(IEnumerable<string> files)
+    {
+        _recentFiles.Clear();
+        _recentFiles.AddRange(files.Take(10));
+        NotifyStateChangedAsync();
+    }
+
+    public void AddRecentFile(string name)
+    {
+        _recentFiles.Remove(name);
+        _recentFiles.Insert(0, name);
+        while (_recentFiles.Count > 10)
+            _recentFiles.RemoveAt(_recentFiles.Count - 1);
+        NotifyStateChangedAsync();
+    }
+
     // Clipboard
     private List<NodeState> _clipboard = new();
     public bool HasClipboard => _clipboard.Count > 0;
@@ -161,6 +181,7 @@ public class ApplicationState
     public event Action? MenuSaveAs;
     public event Action? MenuOpen;
     public event Action? MenuDiagramProperties;
+    public event Action<string>? MenuOpenRecent;
 
     public event Action? OnStateChanged;
 
@@ -236,6 +257,7 @@ public class ApplicationState
     public void TriggerRedo() => MenuRedo?.Invoke();
     public void TriggerSaveAs() => MenuSaveAs?.Invoke();
     public void TriggerOpen() => MenuOpen?.Invoke();
+    public void TriggerOpenRecent(string name) => MenuOpenRecent?.Invoke(name);
     public void TriggerDiagramProperties() => MenuDiagramProperties?.Invoke();
 
     public BlazorDiagram GetOrCreateDiagram()
