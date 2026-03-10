@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MqttDashboard.Client\MqttDashboard.Client.csproj" />
-    <ProjectReference Include="..\MqttDashboard.Server\MqttDashboard.Server.csproj" />
+    <ProjectReference Include="..\..\MqttDashboard.Client\MqttDashboard.Client.csproj" />
+    <ProjectReference Include="..\..\MqttDashboard.Server\MqttDashboard.Server.csproj" />
   </ItemGroup>
 
 </Project>

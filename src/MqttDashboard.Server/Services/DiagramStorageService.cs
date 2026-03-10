@@ -27,7 +27,11 @@ public class DiagramStorageService
         _logger = logger;
 
         // Ensure the data directory exists
-        if (!Directory.Exists(_storagePath))
+        if (Directory.Exists(_storagePath))
+        {
+            _logger.LogInformation("Using data directory at {Path}", _storagePath);
+        }
+        else
         {
             Directory.CreateDirectory(_storagePath);
             _logger.LogInformation("Created data directory at {Path}", _storagePath);

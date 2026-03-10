@@ -1,28 +1,25 @@
 <Solution>
-  <Folder Name="/Solution Items/">
+  <Folder Name="/solution items/">
     <File Path="README.md" />
-    <File Path="TODO.md" />
-    <File Path="Directory.Build.props" />
     <File Path="docker-compose.override.yml" />
     <File Path="docker-compose.yml" />
   </Folder>
-  <Folder Name="/Solution Items/Workflows/">
+  <Folder Name="/solution items/workflows/">
     <File Path=".github/workflows/docker.yml" />
     <File Path=".github/workflows/release.yml" />
   </Folder>
-  <Folder Name="/Tests/">
-    <Project Path="Tests/MqttDashboard.Client.Tests/MqttDashboard.Client.Tests.csproj" />
-    <Project Path="Tests/MqttDashboard.Server.Tests/MqttDashboard.Server.Tests.csproj" />
+  <Folder Name="/tests/">
+    <Project Path="tests/MqttDashboard.Client.Tests/MqttDashboard.Client.Tests.csproj" />
+    <Project Path="tests/MqttDashboard.Server.Tests/MqttDashboard.Server.Tests.csproj" />
   </Folder>
   <Folder Name="/src/">
+    <File Path="src/Directory.Build.props" />
     <Project Path="src/MqttDashboard.Client/MqttDashboard.Client.csproj" />
     <Project Path="src/MqttDashboard.Server/MqttDashboard.Server.csproj" />
   </Folder>
   <Folder Name="/src/WebApp/">
-    <Project Path="src/MqttDashboard.WebApp/MqttDashboard.WebApp.Client/MqttDashboard.WebApp.Client.csproj" />
     <Project Path="src/MqttDashboard.WebApp/MqttDashboard.WebApp/MqttDashboard.WebApp.csproj" />
-  </Folder>
-  <Folder Name="/src/WebAppServerOnly/">
-    <Project Path="src/MqttDashboard.WebAppServerOnly/MqttDashboard.WebAppServerOnly.csproj" />
+    <Project Path="src/MqttDashboard.WebApp/MqttDashboard.WebApp.Client/MqttDashboard.WebApp.Client.csproj" />
+    <Project Path="src/MqttDashboard.WebApp/MqttDashboard.WebAppServerOnly/MqttDashboard.WebAppServerOnly.csproj" />
   </Folder>
 </Solution>
