@@ -56,6 +56,17 @@ public class MqttInitializationService
 
             if (_appState.SignalRService == null)
             {
+                // SignalR connects in the browser (WASM). During server-side rendering or
+                // Blazor Server circuits the hub URL would route through the reverse proxy,
+                // which can cause 405 / routing issues. Skip here; WASM re-initialises with
+                // a fresh scope and connects SignalR correctly from the browser.
+                if (!OperatingSystem.IsBrowser())
+                {
+                    _initialized = true;
+                    _logger?.LogInformation("MQTT initialization deferred: SignalR will connect in browser");
+                    return;
+                }
+
                 _signalRService.OnDataReceived += HandleDataReceived;
                 _signalRService.OnSubscriptionConfirmed += HandleSubscriptionConfirmed;
                 _signalRService.OnUnsubscriptionConfirmed += HandleUnsubscriptionConfirmed;

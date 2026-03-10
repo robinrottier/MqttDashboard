@@ -1,4 +1,5 @@
 @using Microsoft.AspNetCore.Components.Web
+@inject NavigationManager NavigationManager
 
 <!DOCTYPE html>
 <html lang="en">
@@ -6,7 +7,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <base href="/" />
+    <base href="@(new Uri(NavigationManager.BaseUri).AbsolutePath)" />
 
     @* Allow projects to inject head content before shared head *@
     @AdditionalHeadContentBefore

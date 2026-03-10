@@ -31,62 +31,19 @@ public static class ServiceCollectionExtensions
         services.AddHttpContextAccessor();
 
         // Register a scoped HttpClient for use in Blazor components (server-side rendering)
-        services.AddScoped<HttpClient>(sp =>
-        {
-            var httpContextAccessor = sp.GetService<IHttpContextAccessor>();
-            var httpClient = new HttpClient();
-            if (httpContextAccessor?.HttpContext != null)
-            {
-                var request = httpContextAccessor.HttpContext.Request;
-                httpClient.BaseAddress = new Uri($"{request.Scheme}://{request.Host}");
-            }
-            return httpClient;
-        });
+        services.AddScoped<HttpClient>(sp => CreateLoopbackHttpClient(sp));
 
-        // Add DiagramService for server-side (calls its own API)
+        // Add DiagramService for server-side (calls its own API via loopback)
         services.AddScoped<DiagramService>(sp =>
-        {
-            var httpContextAccessor = sp.GetService<IHttpContextAccessor>();
-            var httpClient = new HttpClient();
+            new DiagramService(CreateLoopbackHttpClient(sp), sp.GetService<ILogger<DiagramService>>()));
 
-            // Use the current request's base address if available (for server-side)
-            if (httpContextAccessor?.HttpContext != null)
-            {
-                var request = httpContextAccessor.HttpContext.Request;
-                httpClient.BaseAddress = new Uri($"{request.Scheme}://{request.Host}");
-            }
-
-            return new DiagramService(httpClient, sp.GetService<ILogger<DiagramService>>());
-        });
-
-        // Add ApplicationStateService for server-side (calls its own API)
+        // Add ApplicationStateService for server-side (calls its own API via loopback)
         services.AddScoped<ApplicationStateService>(sp =>
-        {
-            var httpContextAccessor = sp.GetService<IHttpContextAccessor>();
-            var httpClient = new HttpClient();
+            new ApplicationStateService(CreateLoopbackHttpClient(sp), sp.GetService<ILogger<ApplicationStateService>>()));
 
-            // Use the current request's base address if available (for server-side)
-            if (httpContextAccessor?.HttpContext != null)
-            {
-                var request = httpContextAccessor.HttpContext.Request;
-                httpClient.BaseAddress = new Uri($"{request.Scheme}://{request.Host}");
-            }
-
-            return new ApplicationStateService(httpClient, sp.GetService<ILogger<ApplicationStateService>>());
-        });
-
-        // Add AuthService for server-side (calls its own API)
+        // Add AuthService for server-side (calls its own API via loopback)
         services.AddScoped<AuthService>(sp =>
-        {
-            var httpContextAccessor = sp.GetService<IHttpContextAccessor>();
-            var httpClient = new HttpClient();
-            if (httpContextAccessor?.HttpContext != null)
-            {
-                var request = httpContextAccessor.HttpContext.Request;
-                httpClient.BaseAddress = new Uri($"{request.Scheme}://{request.Host}");
-            }
-            return new AuthService(httpClient, sp.GetService<ILogger<AuthService>>());
-        });
+            new AuthService(CreateLoopbackHttpClient(sp), sp.GetService<ILogger<AuthService>>()));
 
         // Add RequireAdminFilter as scoped service
         services.AddScoped<RequireAdminFilter>();
@@ -97,5 +54,20 @@ public static class ServiceCollectionExtensions
         services.AddHostedService(sp => sp.GetRequiredService<UpdateCheckService>());
 
         return services;
+    }
+
+    /// <summary>
+    /// Creates an HttpClient whose base address points to the local server port.
+    /// Using Connection.LocalPort bypasses any reverse proxy so server-side self-calls
+    /// always reach the app directly, regardless of public hostname or subpath.
+    /// </summary>
+    private static HttpClient CreateLoopbackHttpClient(IServiceProvider sp)
+    {
+        var ctx = sp.GetService<IHttpContextAccessor>()?.HttpContext;
+        var port = ctx?.Connection.LocalPort ?? 0;
+        return new HttpClient
+        {
+            BaseAddress = port > 0 ? new Uri($"http://localhost:{port}/") : null
+        };
     }
 }
