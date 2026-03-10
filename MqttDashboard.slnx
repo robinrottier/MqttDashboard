@@ -1,4 +1,5 @@
 <Solution>
+  <Folder Name="/data/" />
   <Folder Name="/solution items/">
     <File Path="README.md" />
     <File Path="docker-compose.override.yml" />
@@ -18,8 +19,8 @@
     <Project Path="src/MqttDashboard.Server/MqttDashboard.Server.csproj" />
   </Folder>
   <Folder Name="/src/WebApp/">
-    <Project Path="src/MqttDashboard.WebApp/MqttDashboard.WebApp/MqttDashboard.WebApp.csproj" />
     <Project Path="src/MqttDashboard.WebApp/MqttDashboard.WebApp.Client/MqttDashboard.WebApp.Client.csproj" />
+    <Project Path="src/MqttDashboard.WebApp/MqttDashboard.WebApp/MqttDashboard.WebApp.csproj" />
     <Project Path="src/MqttDashboard.WebApp/MqttDashboard.WebAppServerOnly/MqttDashboard.WebAppServerOnly.csproj" />
   </Folder>
 </Solution>

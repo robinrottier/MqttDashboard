@@ -1,6 +1,8 @@
 using MqttDashboard.Server.Hubs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -16,9 +18,36 @@ public static class WebApplicationExtensions
         this WebApplication app,
         BlazorRenderMode renderMode) where TApp : IComponent
     {
-        // Cache the local port on the first request so Blazor Server circuits can build loopback
-        // URLs (IHttpContextAccessor.HttpContext is null during circuit rendering because rendering
-        // happens in a different async context from the HTTP request handler).
+        // At startup, proactively cache the HTTP (non-TLS) loopback port from Kestrel's address
+        // features. We prefer HTTP to avoid TLS overhead and certificate issues for server-to-self
+        // SignalR connections from Blazor Server circuits.
+        var renderModeOptions = app.Services.GetService<MqttDashboard.Services.RenderModeOptions>();
+        app.Lifetime.ApplicationStarted.Register(() =>
+        {
+            try
+            {
+                var addresses = app.Services.GetService<IServer>()
+                    ?.Features?.Get<IServerAddressesFeature>()?.Addresses;
+                if (addresses == null) return;
+
+                foreach (var address in addresses)
+                {
+                    if (!address.StartsWith("http://", StringComparison.OrdinalIgnoreCase)) continue;
+                    var normalized = address.Replace("+", "localhost").Replace("*", "localhost")
+                                            .Replace("[::]", "localhost").Replace("0.0.0.0", "localhost");
+                    if (Uri.TryCreate(normalized, UriKind.Absolute, out var uri) && uri.Port > 0)
+                    {
+                        renderModeOptions?.CacheLoopbackPort(uri.Port);
+                        return;
+                    }
+                }
+            }
+            catch { /* non-critical — middleware fallback will cache on the first request */ }
+        });
+
+        // Fallback: cache the local port on the first request in case the startup callback didn't
+        // find an HTTP address (e.g. HTTPS-only deployment). CacheLoopbackPort is once-only
+        // (CompareExchange), so this won't overwrite the port already set by the startup callback.
         app.Use(async (ctx, next) =>
         {
             ctx.RequestServices.GetService<MqttDashboard.Services.RenderModeOptions>()

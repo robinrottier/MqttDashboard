@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 
@@ -14,24 +15,25 @@ namespace MqttDashboard.Server.Services;
 /// Reads auth status directly from IConfiguration and the current user principal,
 /// eliminating the loopback HTTP call that caused "Failed to get auth status" warnings.
 /// During SSR pre-render, HttpContext is available and carries the real user identity.
-/// During Blazor Server circuits, AuthenticationStateProvider supplies the circuit user.
+/// During Blazor Server circuits, AuthenticationStateProvider is resolved lazily via
+/// IServiceProvider so that missing auth configuration does not break DI resolution.
 /// </summary>
 public class ServerAuthService : IAuthService
 {
     private readonly IConfiguration _configuration;
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly AuthenticationStateProvider? _authStateProvider;
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ServerAuthService>? _logger;
 
     public ServerAuthService(
         IConfiguration configuration,
         IHttpContextAccessor httpContextAccessor,
-        AuthenticationStateProvider? authStateProvider = null,
+        IServiceProvider serviceProvider,
         ILogger<ServerAuthService>? logger = null)
     {
         _configuration = configuration;
         _httpContextAccessor = httpContextAccessor;
-        _authStateProvider = authStateProvider;
+        _serviceProvider = serviceProvider;
         _logger = logger;
     }
 
@@ -47,12 +49,20 @@ public class ServerAuthService : IAuthService
             return (httpContext.User.Identity?.IsAuthenticated == true, true);
 
         // During Blazor Server interactive circuit: HttpContext is null.
-        // AuthenticationStateProvider tracks the circuit user identity, initialized
-        // from the SSR HTTP request's authenticated principal.
-        if (_authStateProvider != null)
+        // Try to resolve AuthenticationStateProvider lazily — it may not be available
+        // if authentication services were not configured (no Auth:AdminPasswordHash).
+        try
         {
-            var state = await _authStateProvider.GetAuthenticationStateAsync();
-            return (state.User.Identity?.IsAuthenticated == true, true);
+            var asp = _serviceProvider.GetService<AuthenticationStateProvider>();
+            if (asp != null)
+            {
+                var state = await asp.GetAuthenticationStateAsync();
+                return (state.User.Identity?.IsAuthenticated == true, true);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogDebug(ex, "AuthenticationStateProvider unavailable in circuit; defaulting to unauthenticated");
         }
 
         return (false, true);

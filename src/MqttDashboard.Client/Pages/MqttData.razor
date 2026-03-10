@@ -195,7 +195,7 @@
 
         if (!MqttInit.IsInitialized)
         {
-            await MqttInit.InitializeAsync();
+            await MqttInit.InitializeAsync(RendererInfo.IsInteractive);
         }
 
         _orderedTopics = AppState.SubscribedTopics.ToList();

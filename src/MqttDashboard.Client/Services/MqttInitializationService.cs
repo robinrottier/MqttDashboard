@@ -39,7 +39,11 @@ public class MqttInitializationService
         _logger = logger;
     }
 
-    public async Task InitializeAsync()
+    /// <summary>
+    /// Initializes MQTT. Pass <c>RendererInfo.IsInteractive</c> from the calling component
+    /// so the service can reliably distinguish SSR pre-render from interactive circuit/WASM mode.
+    /// </summary>
+    public async Task InitializeAsync(bool isInteractive = false)
     {
         if (_initialized)
         {
@@ -62,7 +66,9 @@ public class MqttInitializationService
 
             if (_appState.SignalRService == null)
             {
-                if (!OperatingSystem.IsBrowser())
+                // On the server, !isInteractive means we're in SSR pre-render, not an interactive circuit.
+                // RendererInfo.IsInteractive is the reliable signal; HttpContext.IsNull is NOT reliable here.
+                if (!OperatingSystem.IsBrowser() && !isInteractive)
                 {
                     if (_renderModeOptions?.IsWasmCapable == true)
                     {
@@ -72,17 +78,13 @@ public class MqttInitializationService
                         return;
                     }
 
-                    if (_serverContext?.IsInServerHttpRequest == true)
-                    {
-                        // SSR pre-render for Blazor Server mode: the Blazor Server circuit hasn't been
-                        // established yet. Cache the port now and let the circuit reinitialize fully.
-                        _serverContext.CacheLocalPort();
-                        _logger?.LogInformation("MQTT initialization deferred: SSR pre-render, circuit will initialize");
-                        return; // Don't set _initialized = true — circuit scope will re-run this
-                    }
+                    // SSR pre-render for Blazor Server mode: the Blazor Server circuit hasn't been
+                    // established yet. Cache the port now and let the circuit reinitialize fully.
+                    _serverContext?.CacheLocalPort();
+                    _logger?.LogInformation("MQTT initialization deferred: SSR pre-render, circuit will initialize");
+                    return; // Don't set _initialized = true — circuit scope will re-run this
 
-                    // Blazor Server interactive circuit: HttpContext is null (no active HTTP request).
-                    // Proceed with server-side SignalR connection using the cached loopback port.
+                    // (fall-through when isInteractive=true: Blazor Server interactive circuit)
                 }
 
                 _signalRService.OnDataReceived += HandleDataReceived;

@@ -150,7 +150,7 @@
         };
 
         AppState.OnStateChanged += OnAppStateChanged;
-        await MqttInit.InitializeAsync();
+        await MqttInit.InitializeAsync(RendererInfo.IsInteractive);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
