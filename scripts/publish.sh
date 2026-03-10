@@ -7,7 +7,7 @@ CONFIGURATION="Release"
 VERSION=""
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
-PROJECT="$REPO_ROOT/MqttDashboard.WebApp/MqttDashboard.WebApp/MqttDashboard.WebApp.csproj"
+PROJECT="$REPO_ROOT/src/MqttDashboard.WebApp/MqttDashboard.WebApp/MqttDashboard.WebApp.csproj"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in

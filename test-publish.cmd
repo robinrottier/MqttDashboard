@@ -1,1 +1,1 @@
-dotnet publish MqttDashboard.WebApp/MqttDashboard.WebApp/MqttDashboard.WebApp.csproj -c Release -r win-x64 --self-contained true -p:IncludeNativeLibrariesForSelfExtract=true -o artifacts/win-xdir64
+dotnet publish src/MqttDashboard.WebApp/MqttDashboard.WebApp/MqttDashboard.WebApp.csproj -c Release -r win-x64 --self-contained true -p:IncludeNativeLibrariesForSelfExtract=true -o artifacts/win-xdir64

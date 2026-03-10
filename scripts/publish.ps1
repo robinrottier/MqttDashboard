@@ -16,7 +16,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$ProjectPath = "$PSScriptRoot\..\MqttDashboard.WebApp\MqttDashboard.WebApp\MqttDashboard.WebApp.csproj"
+$ProjectPath = "$PSScriptRoot\..\src\MqttDashboard.WebApp\MqttDashboard.WebApp\MqttDashboard.WebApp.csproj"
 $OutputDir = "$PSScriptRoot\..\artifacts\$Runtime"
 $ArtifactsDir = "$PSScriptRoot\..\artifacts"
 

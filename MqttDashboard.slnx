@@ -1,22 +1,10 @@
 <Solution>
-  <Folder Name="/Data/">
-    <File Path="data/applicationstate.json" />
-    <File Path="data/diagram.json" />
-    <File Path="data/Diagram2.json" />
-  </Folder>
-  <Folder Name="/Documents/" />
   <Folder Name="/Solution Items/">
     <File Path="README.md" />
-    <File Path="test-publish.cmd" />
     <File Path="TODO.md" />
     <File Path="Directory.Build.props" />
     <File Path="docker-compose.override.yml" />
     <File Path="docker-compose.yml" />
-  </Folder>
-  <Folder Name="/Web/">
-    <Project Path="MqttDashboard.WebApp/MqttDashboard.WebApp.Client/MqttDashboard.WebApp.Client.csproj" />
-    <Project Path="MqttDashboard.WebApp/MqttDashboard.WebApp/MqttDashboard.WebApp.csproj" />
-    <Project Path="MqttDashboard.WebAppServerOnly/MqttDashboard.WebAppServerOnly.csproj" Id="d852685b-bffb-48ac-b18b-ceaf0849a450" />
   </Folder>
   <Folder Name="/Solution Items/Workflows/">
     <File Path=".github/workflows/docker.yml" />
@@ -26,6 +14,15 @@
     <Project Path="Tests/MqttDashboard.Client.Tests/MqttDashboard.Client.Tests.csproj" />
     <Project Path="Tests/MqttDashboard.Server.Tests/MqttDashboard.Server.Tests.csproj" />
   </Folder>
-  <Project Path="MqttDashboard.Client/MqttDashboard.Client.csproj" Id="2f6581b9-8858-4bf5-b893-ed1004f44552" />
-  <Project Path="MqttDashboard.Server/MqttDashboard.Server.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src/MqttDashboard.Client/MqttDashboard.Client.csproj" />
+    <Project Path="src/MqttDashboard.Server/MqttDashboard.Server.csproj" />
+  </Folder>
+  <Folder Name="/src/WebApp/">
+    <Project Path="src/MqttDashboard.WebApp/MqttDashboard.WebApp.Client/MqttDashboard.WebApp.Client.csproj" />
+    <Project Path="src/MqttDashboard.WebApp/MqttDashboard.WebApp/MqttDashboard.WebApp.csproj" />
+  </Folder>
+  <Folder Name="/src/WebAppServerOnly/">
+    <Project Path="src/MqttDashboard.WebAppServerOnly/MqttDashboard.WebAppServerOnly.csproj" />
+  </Folder>
 </Solution>

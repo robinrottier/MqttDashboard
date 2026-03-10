@@ -2,7 +2,7 @@ services:
   mqttdashboard:
     build:
       context: .
-      dockerfile: MqttDashboard.WebApp/MqttDashboard.WebApp/Dockerfile
+      dockerfile: src/MqttDashboard.WebApp/MqttDashboard.WebApp/Dockerfile
     ports:
       - "8080:8080"
     volumes:
