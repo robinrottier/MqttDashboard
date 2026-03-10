@@ -45,7 +45,7 @@ public class ApplicationState
     public MqttDataCache DataCache { get; } = new();
 
     // Application State Persistence
-    private ApplicationStateService? _stateService;
+    private IApplicationStateService? _stateService;
 
     // Theme & UI preferences
     public ThemeMode ThemeMode { get; private set; } = ThemeMode.Auto;
@@ -500,7 +500,7 @@ public class ApplicationState
         SignalRService = service;
     }
 
-    public void SetApplicationStateService(ApplicationStateService service)
+    public void SetApplicationStateService(IApplicationStateService service)
     {
         _stateService = service;
     }

@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace MqttDashboard.Services;
 
-public class ApplicationStateService
+public class ApplicationStateService : IApplicationStateService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<ApplicationStateService>? _logger;

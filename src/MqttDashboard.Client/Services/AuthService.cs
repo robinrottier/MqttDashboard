@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace MqttDashboard.Services;
 
-public class AuthService
+public class AuthService : IAuthService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<AuthService>? _logger;

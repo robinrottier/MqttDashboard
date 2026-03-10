@@ -1,13 +1,13 @@
 @echo off
 setlocal
 set dp0=%~dp0
-cd /d %dp0%
+cd /d %dp0%\..
 if not exist *.slnx (
 	echo No solution file found in the current directory.
 	exit /b 1
 )
 
-set sln=.\MqttDashboard_withBlazorDiagrams.slnx
+set sln=.\MqttDashboard.slnx
 if not exist "%sln%" (
 	echo Solution file "%sln%" not found.
 	exit /b 1

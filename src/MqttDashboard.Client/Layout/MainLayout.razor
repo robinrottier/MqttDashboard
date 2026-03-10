@@ -196,7 +196,7 @@
 
     private void ToggleEditMode() => AppState.RequestToggleEditMode();
 
-    [Inject] private AuthService AuthService { get; set; } = default!;
+    [Inject] private IAuthService AuthService { get; set; } = default!;
 
     private async Task Logout()
     {

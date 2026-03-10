@@ -18,7 +18,7 @@ namespace MqttDashboard.Pages;
 public partial class Display : IDisposable
 {
     [Inject] private ApplicationState AppState { get; set; } = default!;
-    [Inject] private DiagramService DiagramService { get; set; } = default!;
+    [Inject] private IDiagramService DiagramService { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
     [Inject] private IDialogService DialogService { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;

@@ -3,7 +3,6 @@ using MqttDashboard.Server.Services;
 using MqttDashboard.Server.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
 using MqttDashboard.Services;
 
 namespace MqttDashboard.Server.Extensions;
@@ -36,17 +35,14 @@ public static class ServiceCollectionExtensions
         // Register a scoped HttpClient for use in Blazor components (server-side rendering)
         services.AddScoped<HttpClient>(sp => CreateLoopbackHttpClient(sp));
 
-        // Add DiagramService for server-side (calls its own API via loopback)
-        services.AddScoped<DiagramService>(sp =>
-            new DiagramService(CreateLoopbackHttpClient(sp), sp.GetService<ILogger<DiagramService>>()));
+        // Add DiagramService for server-side (in-process, no loopback HTTP)
+        services.AddScoped<IDiagramService, ServerDiagramService>();
 
-        // Add ApplicationStateService for server-side (calls its own API via loopback)
-        services.AddScoped<ApplicationStateService>(sp =>
-            new ApplicationStateService(CreateLoopbackHttpClient(sp), sp.GetService<ILogger<ApplicationStateService>>()));
+        // Add ApplicationStateService for server-side (in-process, no loopback HTTP)
+        services.AddScoped<IApplicationStateService, ServerApplicationStateService>();
 
-        // Add AuthService for server-side (calls its own API via loopback)
-        services.AddScoped<AuthService>(sp =>
-            new AuthService(CreateLoopbackHttpClient(sp), sp.GetService<ILogger<AuthService>>()));
+        // Add AuthService for server-side (in-process, no loopback HTTP)
+        services.AddScoped<IAuthService, ServerAuthService>();
 
         // Add RequireAdminFilter as scoped service
         services.AddScoped<RequireAdminFilter>();

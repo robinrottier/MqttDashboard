@@ -10,10 +10,10 @@ namespace MqttDashboard.Services;
 public class MqttInitializationService
 {
     private readonly ApplicationState _appState;
-    private readonly ApplicationStateService _appStateService;
+    private readonly IApplicationStateService _appStateService;
     private readonly SignalRService _signalRService;
     private readonly NavigationManager _navigationManager;
-    private readonly AuthService _authService;
+    private readonly IAuthService _authService;
     private readonly RenderModeOptions? _renderModeOptions;
     private readonly IServerContextAccessor? _serverContext;
     private readonly ILogger<MqttInitializationService>? _logger;
@@ -21,10 +21,10 @@ public class MqttInitializationService
 
     public MqttInitializationService(
         ApplicationState appState,
-        ApplicationStateService appStateService,
+        IApplicationStateService appStateService,
         SignalRService signalRService,
         NavigationManager navigationManager,
-        AuthService authService,
+        IAuthService authService,
         RenderModeOptions? renderModeOptions = null,
         IServerContextAccessor? serverContext = null,
         ILogger<MqttInitializationService>? logger = null)

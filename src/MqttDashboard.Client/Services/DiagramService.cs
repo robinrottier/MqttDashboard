@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace MqttDashboard.Services;
 
-public class DiagramService
+public class DiagramService : IDiagramService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<DiagramService>? _logger;
