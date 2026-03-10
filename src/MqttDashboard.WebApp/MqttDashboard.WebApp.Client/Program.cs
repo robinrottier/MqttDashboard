@@ -8,6 +8,9 @@ builder.Services.AddMqttDashboardServices();
 // Add HttpClient for API calls
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
+// Add SignalRService (HTTP WebSocket client, runs in browser)
+builder.Services.AddScoped<ISignalRService, SignalRService>();
+
 // Add DiagramService (needs HttpClient)
 builder.Services.AddScoped<IDiagramService, DiagramService>();
 

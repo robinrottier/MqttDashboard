@@ -11,22 +11,20 @@ public class MqttInitializationService
 {
     private readonly ApplicationState _appState;
     private readonly IApplicationStateService _appStateService;
-    private readonly SignalRService _signalRService;
+    private readonly ISignalRService _signalRService;
     private readonly NavigationManager _navigationManager;
     private readonly IAuthService _authService;
     private readonly RenderModeOptions? _renderModeOptions;
-    private readonly IServerContextAccessor? _serverContext;
     private readonly ILogger<MqttInitializationService>? _logger;
     private bool _initialized = false;
 
     public MqttInitializationService(
         ApplicationState appState,
         IApplicationStateService appStateService,
-        SignalRService signalRService,
+        ISignalRService signalRService,
         NavigationManager navigationManager,
         IAuthService authService,
         RenderModeOptions? renderModeOptions = null,
-        IServerContextAccessor? serverContext = null,
         ILogger<MqttInitializationService>? logger = null)
     {
         _appState = appState;
@@ -35,7 +33,6 @@ public class MqttInitializationService
         _navigationManager = navigationManager;
         _authService = authService;
         _renderModeOptions = renderModeOptions;
-        _serverContext = serverContext;
         _logger = logger;
     }
 
@@ -79,8 +76,7 @@ public class MqttInitializationService
                     }
 
                     // SSR pre-render for Blazor Server mode: the Blazor Server circuit hasn't been
-                    // established yet. Cache the port now and let the circuit reinitialize fully.
-                    _serverContext?.CacheLocalPort();
+                    // established yet. Let the circuit reinitialize fully.
                     _logger?.LogInformation("MQTT initialization deferred: SSR pre-render, circuit will initialize");
                     return; // Don't set _initialized = true — circuit scope will re-run this
 
@@ -118,23 +114,12 @@ public class MqttInitializationService
     }
 
     /// <summary>
-    /// Builds the SignalR hub URL. In the browser (WASM) the NavigationManager resolves correctly.
-    /// On the server (Blazor Server circuit) we use the loopback port to bypass reverse proxies.
+    /// Builds the SignalR hub URL for WASM clients. In Blazor Server, ServerSignalRService
+    /// is used instead and this URL is ignored.
     /// </summary>
     private string BuildHubUrl()
     {
-        var externalUri = _navigationManager.ToAbsoluteUri("mqttdatahub");
-        if (OperatingSystem.IsBrowser())
-            return externalUri.ToString();
-
-        // Blazor Server circuit: build loopback URL using the port cached during SSR pre-render.
-        // This avoids routing through any reverse proxy (nginx) from inside the container.
-        var port = _renderModeOptions?.LoopbackPort ?? 0;
-        if (port > 0)
-            return $"http://localhost:{port}{externalUri.AbsolutePath}";
-
-        // Fallback: external URL (works for direct access without a reverse proxy)
-        return externalUri.ToString();
+        return _navigationManager.ToAbsoluteUri("mqttdatahub").ToString();
     }
 
     private async Task RestoreSubscriptionsAsync()

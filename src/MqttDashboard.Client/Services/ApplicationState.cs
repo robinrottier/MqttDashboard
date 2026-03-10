@@ -35,7 +35,7 @@ public class ApplicationState
     private BlazorDiagram? _diagram;
 
     // MQTT State
-    public SignalRService? SignalRService { get; private set; }
+    public ISignalRService? SignalRService { get; private set; }
     public List<MqttDataMessage> Messages { get; private set; } = new();
     public HashSet<string> SubscribedTopics { get; private set; } = new();
     public bool IsMqttConnected { get; set; } = false;
@@ -495,7 +495,7 @@ public class ApplicationState
     }
 
     // MQTT Methods
-    public void SetSignalRService(SignalRService service)
+    public void SetSignalRService(ISignalRService service)
     {
         SignalRService = service;
     }

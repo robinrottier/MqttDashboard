@@ -20,6 +20,12 @@ public class MqttClientService : BackgroundService
     private readonly ConcurrentDictionary<string, bool> _subscribedTopics = new();
     private CancellationToken _stoppingToken;
 
+    /// <summary>
+    /// Fires when an MQTT message is received from the broker. Used by in-process subscribers
+    /// (e.g. ServerSignalRService) to receive data without going through the SignalR hub over HTTP.
+    /// </summary>
+    public event Func<string, string, DateTime, Task>? OnMessagePublished;
+
     public MqttClientService(
         IHubContext<MqttDataHub> hubContext,
         ILogger<MqttClientService> logger,
@@ -131,6 +137,14 @@ public class MqttClientService : BackgroundService
                 else
                 {
                     _logger.LogTrace("No interested clients found for topic {Topic}", topic);
+                }
+
+                // Notify in-process subscribers (e.g. ServerSignalRService) regardless of SignalR clients.
+                var inProcessHandler = OnMessagePublished;
+                if (inProcessHandler != null)
+                {
+                    try { await inProcessHandler.Invoke(topic, payload, timestamp); }
+                    catch (Exception ex) { _logger.LogError(ex, "Error notifying in-process subscriber for topic {Topic}", topic); }
                 }
             };
 

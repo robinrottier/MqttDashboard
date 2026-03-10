@@ -4,7 +4,7 @@ using MqttDashboard.Models;
 
 namespace MqttDashboard.Services;
 
-public class SignalRService : IAsyncDisposable
+public class SignalRService : ISignalRService
 {
     private HubConnection? _hubConnection;
     private readonly ILogger<SignalRService> _logger;

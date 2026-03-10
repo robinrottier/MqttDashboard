@@ -20,8 +20,10 @@ public static class ServiceCollectionExtensions
         // Add MQTT Connection Monitor as singleton
         services.AddSingleton<MqttConnectionMonitor>();
 
-        // Add MQTT Client Service as hosted service
-        services.AddHostedService<MqttClientService>();
+        // Register MqttClientService as both a singleton (injectable) and a hosted service.
+        // The singleton registration allows ServerSignalRService to subscribe to its events in-process.
+        services.AddSingleton<MqttClientService>();
+        services.AddHostedService(sp => sp.GetRequiredService<MqttClientService>());
 
         // Add Diagram Storage Service
         services.AddSingleton<DiagramStorageService>();
@@ -29,11 +31,11 @@ public static class ServiceCollectionExtensions
         // Add HttpContextAccessor for DiagramService
         services.AddHttpContextAccessor();
 
-        // Provides HTTP context detection to client services without leaking server-only types
-        services.AddScoped<IServerContextAccessor, ServerContextAccessor>();
-
         // Register a scoped HttpClient for use in Blazor components (server-side rendering)
         services.AddScoped<HttpClient>(sp => CreateLoopbackHttpClient(sp));
+
+        // Add SignalR data service for server-side (in-process, no HTTP loopback)
+        services.AddScoped<ISignalRService, ServerSignalRService>();
 
         // Add DiagramService for server-side (in-process, no loopback HTTP)
         services.AddScoped<IDiagramService, ServerDiagramService>();
