@@ -82,6 +82,13 @@ public static class WebApplicationBuilderExtensions
                 break;
         }
 
+        // Register render mode options so client services can distinguish SSR from Blazor Server circuits
+        // and can find the loopback port when IHttpContextAccessor is unavailable.
+        builder.Services.AddSingleton(new MqttDashboard.Services.RenderModeOptions
+        {
+            IsWasmCapable = renderMode is BlazorRenderMode.InteractiveAuto or BlazorRenderMode.InteractiveWebAssembly
+        });
+
         // Add core services
         builder.Services.AddMqttDashboardServices();
         builder.Services.AddMqttDashboardServerServices();

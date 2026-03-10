@@ -30,6 +30,9 @@ public static class ServiceCollectionExtensions
         // Add HttpContextAccessor for DiagramService
         services.AddHttpContextAccessor();
 
+        // Provides HTTP context detection to client services without leaking server-only types
+        services.AddScoped<IServerContextAccessor, ServerContextAccessor>();
+
         // Register a scoped HttpClient for use in Blazor components (server-side rendering)
         services.AddScoped<HttpClient>(sp => CreateLoopbackHttpClient(sp));
 
@@ -60,11 +63,15 @@ public static class ServiceCollectionExtensions
     /// Creates an HttpClient whose base address points to the local server port.
     /// Using Connection.LocalPort bypasses any reverse proxy so server-side self-calls
     /// always reach the app directly, regardless of public hostname or subpath.
+    /// Falls back to the cached port in RenderModeOptions for Blazor Server circuits
+    /// where IHttpContextAccessor.HttpContext is null (no active HTTP request).
     /// </summary>
     private static HttpClient CreateLoopbackHttpClient(IServiceProvider sp)
     {
         var ctx = sp.GetService<IHttpContextAccessor>()?.HttpContext;
         var port = ctx?.Connection.LocalPort ?? 0;
+        if (port == 0)
+            port = sp.GetService<MqttDashboard.Services.RenderModeOptions>()?.LoopbackPort ?? 0;
         return new HttpClient
         {
             BaseAddress = port > 0 ? new Uri($"http://localhost:{port}/") : null

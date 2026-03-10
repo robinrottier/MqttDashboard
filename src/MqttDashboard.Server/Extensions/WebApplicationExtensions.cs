@@ -2,6 +2,7 @@ using MqttDashboard.Server.Hubs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace MqttDashboard.Server.Extensions;
@@ -15,6 +16,16 @@ public static class WebApplicationExtensions
         this WebApplication app,
         BlazorRenderMode renderMode) where TApp : IComponent
     {
+        // Cache the local port on the first request so Blazor Server circuits can build loopback
+        // URLs (IHttpContextAccessor.HttpContext is null during circuit rendering because rendering
+        // happens in a different async context from the HTTP request handler).
+        app.Use(async (ctx, next) =>
+        {
+            ctx.RequestServices.GetService<MqttDashboard.Services.RenderModeOptions>()
+                ?.CacheLoopbackPort(ctx.Connection.LocalPort);
+            await next();
+        });
+
         // Apply X-Forwarded-Prefix as the request path base, but only when the header value
         // exactly matches the configured AllowedPathBase (e.g. "/rr-dev").
         // This allows the app to be reached directly (no path base) OR via a reverse proxy
