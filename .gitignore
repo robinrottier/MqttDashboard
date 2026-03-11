@@ -366,7 +366,9 @@ FodyWeavers.xsd
 .env
 
 # Diagram data directory (runtime data, not source)
-/data/
-/Data/
-/MqttDashboard.WebApp/MqttDashboard.WebApp/appsettings.user.json
-/docker-compose.override.yml
+/[Dd]ata/
+
+# user/dev only config files...
+appsettings.user.json
+docker-compose.override.yml
+
