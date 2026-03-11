@@ -14,6 +14,7 @@
     <File Path="scripts/test-publish.cmd" />
   </Folder>
   <Folder Name="/solution items/workflows/">
+    <File Path=".github/workflows/ci.yml" />
     <File Path=".github/workflows/docker.yml" />
     <File Path=".github/workflows/release.yml" />
   </Folder>
