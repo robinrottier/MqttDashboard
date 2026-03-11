@@ -1,5 +1,7 @@
 {
-  // edit this file and save ...at runtime appears to be simply reloaded immediately,
+  // Copy this file to appsettings.Development.json and fill in your local values.
+  // appsettings.Development.json is git-ignored; this example file is committed for documentation.
+  // edit this file and save — at runtime it appears to be simply reloaded immediately,
   // -- no hot reload required
   "Logging":
   {
@@ -25,9 +27,9 @@
   },
   "MqttSettings":
   {
-    "Broker": "nas1.local",
+    "Broker": "your-mqtt-broker-host",
     "Port": "1883",
-    "Username": "emonpi",
-    "Password": "emonpimqtt2016"
+    "Username": "",
+    "Password": ""
   }
 }
