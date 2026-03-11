@@ -368,4 +368,4 @@ FodyWeavers.xsd
 # Diagram data directory (runtime data, not source)
 /data/
 /Data/
-/MqttDashboard.WebApp/MqttDashboard.WebApp/appsettings.user.json
+**/appsettings.user.json
