@@ -128,3 +128,29 @@ You will not see any workflows happen on main branch, just develop...
    feature/** → develop (CI) → PR to main (CI check) → merge → [nothing] → git tag v1.0.0 → push tag → release.yml + docker.yml fire
 
   That's the correct GitFlow-style setup.
+
+
+### Can I do the tag and release on github? how does this fit in with github "create release"
+
+● Yes, GitHub's UI is actually the easiest way to do it. Here's how it fits together:
+
+  On GitHub → Releases → "Draft a new release"
+
+   1. Click "Choose a tag" → type v1.0.0 → click "Create new tag: v1.0.0 on publish"
+   2. Set target branch to main
+   3. Click "Generate release notes" (auto-fills from PR titles/commits)
+   4. Click "Publish release"
+
+  That's it — GitHub creates the tag on main at that moment, which immediately triggers both release.yml and docker.yml.
+
+  What happens to the GitHub Release GitHub just created?
+
+  Your release.yml then runs softprops/action-gh-release which updates the same release (it finds the existing one by tag name) and attaches the
+  built zip artifacts to it. The release notes you generated stay intact.
+
+  Pre-release via UI
+
+  Same flow but check "Set as a pre-release" and use a tag like v1.0.0-beta.1 — both workflows handle it correctly as discussed.
+
+  TL;DR: GitHub "Create release" UI = creates the tag + triggers your workflows. It's the cleanest way to release.
+
