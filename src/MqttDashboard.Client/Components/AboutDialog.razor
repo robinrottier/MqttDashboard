@@ -184,8 +184,6 @@
             new("Blazor Diagrams", diagramsVersion),
         };
 
-#if DEBUG
-        _showDebugInfo = true;
         var renderMode = OperatingSystem.IsBrowser() ? "WebAssembly" : "Server";
         var baseUri = NavManager.BaseUri;
         var currentUri = NavManager.Uri;
@@ -197,6 +195,12 @@
             new("Server Host", baseUri),
             new("Current URL", currentUri),
         };
+
+#if DEBUG
+        _showDebugInfo = true;
+        _debugInfo.Add(new("Build", "DEBUG"));
+#else
+        _showDebugInfo = AppState.IsAdmin;
 #endif
 
         await CheckForUpdates();
