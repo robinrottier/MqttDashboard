@@ -369,6 +369,7 @@ FodyWeavers.xsd
 /[Dd]ata/
 
 # user/dev only config files...
-appsettings.user.json
+**/appsettings.user.json
+**/appsettings.Development.json
 docker-compose.override.yml
 
