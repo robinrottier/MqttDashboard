@@ -5,6 +5,14 @@
     <File Path="docker-compose.override.yml" />
     <File Path="docker-compose.yml" />
   </Folder>
+  <Folder Name="/solution items/scripts/">
+    <File Path="scripts/clean_and_build.bat" />
+    <File Path="scripts/docker-build.ps1" />
+    <File Path="scripts/docker-build.sh" />
+    <File Path="scripts/publish.ps1" />
+    <File Path="scripts/publish.sh" />
+    <File Path="scripts/test-publish.cmd" />
+  </Folder>
   <Folder Name="/solution items/workflows/">
     <File Path=".github/workflows/docker.yml" />
     <File Path=".github/workflows/release.yml" />
