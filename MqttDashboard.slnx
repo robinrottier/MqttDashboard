@@ -5,6 +5,9 @@
     <File Path="docker-compose.override.yml" />
     <File Path="docker-compose.yml" />
   </Folder>
+  <Folder Name="/solution items/documentation/">
+    <File Path="documents/Github and releases.md" />
+  </Folder>
   <Folder Name="/solution items/scripts/">
     <File Path="scripts/clean_and_build.bat" />
     <File Path="scripts/docker-build.ps1" />
