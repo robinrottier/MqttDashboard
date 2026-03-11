@@ -369,3 +369,4 @@ FodyWeavers.xsd
 /data/
 /Data/
 /MqttDashboard.WebApp/MqttDashboard.WebApp/appsettings.user.json
+/docker-compose.override.yml
