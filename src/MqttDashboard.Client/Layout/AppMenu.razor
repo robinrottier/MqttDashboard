@@ -126,6 +126,11 @@
                 <MudMenuItem Label="Large (20 px)"  OnClick="() => SetGrid(20)" />
             </MudMenu>
         }
+        @if (AppState.AuthEnabled && AppState.IsAdmin)
+        {
+            <MudDivider />
+            <MudMenuItem OnClick='() => Nav.NavigateTo("/change-password")'>Change Password…</MudMenuItem>
+        }
     </MudMenu>
 
     <!-- About (last) -->
