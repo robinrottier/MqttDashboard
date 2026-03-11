@@ -14,24 +14,27 @@
         @if (IsEditMode)
         {
             <MudMenuItem Label="New" OnClick="NewDiagram" />
-            <MudDivider />
-        }
-        @foreach (var recentName in AppState.RecentFiles)
-        {
-            var name = recentName;
-            <MudMenuItem OnClick="() => OpenRecentFile(name)">@name</MudMenuItem>
         }
         @if (AppState.RecentFiles.Any())
         {
+            @if (IsEditMode)
+            {
+                <MudDivider />
+            }
+            @foreach (var recentName in AppState.RecentFiles)
+            {
+                var name = recentName;
+                <MudMenuItem OnClick="() => OpenRecentFile(name)">@name</MudMenuItem>
+            }
             <MudDivider />
         }
-        <MudMenuItem Label="More…" OnClick="OpenDiagram" />
+        <MudMenuItem Label="Open…" OnClick="OpenDiagram" />
         @if (IsEditMode)
         {
+            <MudMenuItem Label="Reload from Disk" OnClick="ReloadDiagram" />
             <MudDivider />
             <MudMenuItem Label="Save"                 OnClick="SaveDiagram"            />
             <MudMenuItem Label="Save As…"             OnClick="SaveAsDiagram"          />
-            <MudMenuItem Label="Reload from Disk"     OnClick="ReloadDiagram"          />
             <MudDivider />
             <MudMenuItem Label="Diagram Properties…"  OnClick="MenuDiagramProperties"  />
         }
