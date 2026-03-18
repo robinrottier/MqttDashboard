@@ -364,12 +364,14 @@ FodyWeavers.xsd
 
 # Docker secrets and local overrides
 .env
+.env.*
+*.local.*
 
 # Diagram data directory (runtime data, not source)
 /[Dd]ata/
 
 # user/dev only config files...
 **/appsettings.user.json
-**/appsettings.Development.json
+**/appsettings.[Dd]evelopment.json
 docker-compose.override.yml
 
