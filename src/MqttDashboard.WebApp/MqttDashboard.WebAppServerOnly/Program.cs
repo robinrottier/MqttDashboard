@@ -1,0 +1,69 @@
+using MqttDashboard.WebAppServerOnly.Components;
+using MqttDashboard.Server.Extensions;
+using Serilog;
+
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
+
+try
+{
+    var builder = WebApplication.CreateBuilder(args);
+
+    builder.Host.UseSerilog((ctx, services, config) =>
+    {
+        config.ReadFrom.Configuration(ctx.Configuration)
+              .ReadFrom.Services(services)
+              .Enrich.FromLogContext();
+
+        if (ctx.HostingEnvironment.IsProduction())
+            config.WriteTo.Console(new Serilog.Formatting.Json.JsonFormatter());
+        else
+            config.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}");
+    });
+
+    builder.Configuration.AddJsonFile("appsettings.user.json", optional: true, reloadOnChange: true);
+
+    // Home Assistant add-on support: /data/options.json is written by the HA supervisor
+    var haOptionsPath = "/data/options.json";
+    if (File.Exists(haOptionsPath))
+    {
+        try
+        {
+            var json = File.ReadAllText(haOptionsPath);
+            var haOptions = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, System.Text.Json.JsonElement>>(json);
+            if (haOptions != null)
+            {
+                void SetIfPresent(string key, string envVar)
+                {
+                    if (haOptions.TryGetValue(key, out var val))
+                        Environment.SetEnvironmentVariable(envVar, val.ToString());
+                }
+                SetIfPresent("mqtt_broker",   "MqttSettings__Broker");
+                SetIfPresent("mqtt_port",     "MqttSettings__Port");
+                SetIfPresent("mqtt_username", "MqttSettings__Username");
+                SetIfPresent("mqtt_password", "MqttSettings__Password");
+            }
+            Log.Information("Home Assistant options loaded from {Path}", haOptionsPath);
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Failed to read Home Assistant options from {Path}", haOptionsPath);
+        }
+    }
+
+    builder.AddMqttDashboard(BlazorRenderMode.InteractiveServer);
+
+    var app = builder.Build();
+    app.UseSerilogRequestLogging();
+    app.UseMqttDashboard<App>(BlazorRenderMode.InteractiveServer);
+    app.Run();
+}
+catch (Exception ex) when (ex is not HostAbortedException)
+{
+    Log.Fatal(ex, "Application startup failed");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

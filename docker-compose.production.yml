@@ -1,0 +1,17 @@
+# Production compose: pulls pre-built image from GHCR.
+# Usage: docker compose -f docker-compose.production.yml up -d
+services:
+  mqttdashboard:
+    image: ghcr.io/robinrottier/mqttdashboard:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - MqttSettings__Broker=your-mqtt-broker-host
+      - MqttSettings__Port=1883
+      - MqttSettings__Username=
+      - MqttSettings__Password=
+      - DiagramStorage__DataDirectory=/app/data
+      - AllowedPathBase=
+    restart: unless-stopped

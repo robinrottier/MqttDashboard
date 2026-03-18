@@ -1,0 +1,186 @@
+@using MqttDashboard.Services
+@using MqttDashboard.Models
+@using Blazor.Diagrams.Core.Models
+@using MqttDashboard.Components
+@inject ApplicationState AppState
+@inject NavigationManager Nav
+@inject IDialogService DialogService
+@implements IDisposable
+
+<MudMenu Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+
+    <!-- File menu: always a submenu; recent files + More... in both modes -->
+    <MudMenu Label="File" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
+        @if (IsEditMode)
+        {
+            <MudMenuItem Label="New" OnClick="NewDiagram" />
+        }
+        @if (AppState.RecentFiles.Any())
+        {
+            @if (IsEditMode)
+            {
+                <MudDivider />
+            }
+            @foreach (var recentName in AppState.RecentFiles)
+            {
+                var name = recentName;
+                <MudMenuItem OnClick="() => OpenRecentFile(name)">@name</MudMenuItem>
+            }
+            <MudDivider />
+        }
+        <MudMenuItem Label="Open…" OnClick="OpenDiagram" />
+        @if (IsEditMode)
+        {
+            <MudMenuItem Label="Reload from Disk" OnClick="ReloadDiagram" />
+            <MudDivider />
+            <MudMenuItem Label="Save"                 OnClick="SaveDiagram"            />
+            <MudMenuItem Label="Save As…"             OnClick="SaveAsDiagram"          />
+            <MudDivider />
+            <MudMenuItem Label="Dashboard Properties…"  OnClick="MenuDiagramProperties"  />
+        }
+    </MudMenu>
+
+    <!-- Edit: only shown in edit mode -->
+    @if (IsEditMode)
+    {
+    <MudMenu Label="Edit" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
+        <MudMenuItem Label="Undo" OnClick="Undo" Disabled="@(!AppState.CanUndo)" />
+        <MudMenuItem Label="Redo" OnClick="Redo" Disabled="@(!AppState.CanRedo)" />
+        <MudDivider />
+        <MudMenuItem Label="Add Node"    OnClick="MenuAddNode"    Disabled="@(!IsEditMode)" />
+        <MudMenuItem Label="Delete Node" OnClick="MenuDeleteNode" Disabled="@(!AppState.HasSelectedNode)" />
+        <MudDivider />
+        <MudMenuItem Label="Cut"   OnClick="MenuCutSelected"  Disabled="@(!AppState.HasSelectedNode)" />
+        <MudMenuItem Label="Copy"  OnClick="MenuCopySelected" Disabled="@(!AppState.HasSelectedNode)" />
+        <MudMenuItem Label="Paste" OnClick="MenuPasteSelected" Disabled="@(!AppState.HasClipboard || !IsEditMode)" />
+        <MudDivider />
+        <MudMenu Label="Add Port"    Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight" Disabled="@(!AppState.HasSingleSelectedNode)">
+            <MudMenuItem Label="Top"    OnClick="() => MenuAddPort(PortAlignment.Top)" />
+            <MudMenuItem Label="Left"   OnClick="() => MenuAddPort(PortAlignment.Left)" />
+            <MudMenuItem Label="Bottom" OnClick="() => MenuAddPort(PortAlignment.Bottom)" />
+            <MudMenuItem Label="Right"  OnClick="() => MenuAddPort(PortAlignment.Right)" />
+        </MudMenu>
+        <MudMenu Label="Delete Port" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight" Disabled="@(!AppState.HasSingleSelectedNode)">
+            <MudMenuItem Label="Top"    OnClick="() => MenuDeletePort(PortAlignment.Top)" />
+            <MudMenuItem Label="Left"   OnClick="() => MenuDeletePort(PortAlignment.Left)" />
+            <MudMenuItem Label="Bottom" OnClick="() => MenuDeletePort(PortAlignment.Bottom)" />
+            <MudMenuItem Label="Right"  OnClick="() => MenuDeletePort(PortAlignment.Right)" />
+        </MudMenu>
+        <MudDivider />
+        <MudMenuItem Label="Properties" OnClick="MenuEditProperties" Disabled="@(!AppState.HasSingleSelectedNode)" />
+    </MudMenu>
+    }
+
+    <!-- Page -->
+    <MudMenu Label="Page" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
+        <MudMenuItem OnClick='() => Nav.NavigateTo("/")'>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(IsCurrentPage("/") ? "" : "visibility:hidden")" />
+                <MudText>Home</MudText>
+            </MudStack>
+        </MudMenuItem>
+        <MudMenuItem OnClick='() => Nav.NavigateTo("/data")'>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(IsCurrentPage("/data") ? "" : "visibility:hidden")" />
+                <MudText>Data</MudText>
+            </MudStack>
+        </MudMenuItem>
+    </MudMenu>
+
+    <!-- Options (before About) -->
+    <MudMenu Label="Options" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
+        <MudMenu Label="Theme" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
+            <MudMenuItem OnClick="() => SetTheme(ThemeMode.Light)">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.ThemeMode == ThemeMode.Light ? "" : "visibility:hidden")" />
+                    <MudText>Light</MudText>
+                </MudStack>
+            </MudMenuItem>
+            <MudMenuItem OnClick="() => SetTheme(ThemeMode.Dark)">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.ThemeMode == ThemeMode.Dark ? "" : "visibility:hidden")" />
+                    <MudText>Dark</MudText>
+                </MudStack>
+            </MudMenuItem>
+            <MudMenuItem OnClick="() => SetTheme(ThemeMode.Auto)">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.ThemeMode == ThemeMode.Auto ? "" : "visibility:hidden")" />
+                    <MudText>Auto</MudText>
+                </MudStack>
+            </MudMenuItem>
+        </MudMenu>
+        @if (IsEditMode)
+        {
+            <MudMenu Label="Show" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
+                <MudMenuItem OnClick="ToggleDiagramName">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.ShowDiagramName ? "" : "visibility:hidden")" />
+                        <MudText>Dashboard Name</MudText>
+                    </MudStack>
+                </MudMenuItem>
+            </MudMenu>
+            <MudMenu Label="Grid" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
+                <MudMenuItem Label="None"           OnClick="() => SetGrid(0)" />
+                <MudMenuItem Label="Small (5 px)"   OnClick="() => SetGrid(5)" />
+                <MudMenuItem Label="Medium (10 px)" OnClick="() => SetGrid(10)" />
+                <MudMenuItem Label="Large (20 px)"  OnClick="() => SetGrid(20)" />
+            </MudMenu>
+        }
+        @if (AppState.AuthEnabled && AppState.IsAdmin)
+        {
+            <MudDivider />
+            <MudMenuItem OnClick='() => Nav.NavigateTo("/change-password")'>Change Password…</MudMenuItem>
+        }
+    </MudMenu>
+
+    <!-- About (last) -->
+    <MudMenuItem OnClick="ShowAbout">About</MudMenuItem>
+
+</MudMenu>
+
+@code {
+    private bool IsEditMode => AppState.IsEditMode;
+
+    protected override void OnInitialized()
+    {
+        AppState.OnStateChanged += OnAppStateChanged;
+    }
+
+    private void OnAppStateChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        AppState.OnStateChanged -= OnAppStateChanged;
+    }
+
+    private bool IsCurrentPage(string path)
+    {
+        var uri = new Uri(Nav.Uri);
+        return path == "/"
+            ? (uri.AbsolutePath == "/" || uri.AbsolutePath == "")
+            : uri.AbsolutePath.StartsWith(path, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private Task ShowAbout() => DialogService.ShowAsync<AboutDialog>("About");
+
+    private void NewDiagram()         => AppState.TriggerNewDiagram();
+    private void OpenDiagram()        => AppState.TriggerOpen();
+    private void OpenRecentFile(string name) => AppState.TriggerOpenRecent(name);
+    private void SaveDiagram()        => AppState.TriggerSaveDiagram();
+    private void SaveAsDiagram()      => AppState.TriggerSaveAs();
+    private void ReloadDiagram()          => AppState.TriggerReloadDiagram();
+    private void MenuDiagramProperties()  => AppState.TriggerDiagramProperties();
+    private void Undo()               => AppState.TriggerUndo();
+    private void Redo()               => AppState.TriggerRedo();
+    private void MenuAddNode()        => AppState.TriggerAddNode();
+    private void MenuDeleteNode()     => AppState.TriggerDeleteNode();
+    private void MenuCutSelected()    => AppState.TriggerCutSelected();
+    private void MenuCopySelected()   => AppState.TriggerCopySelected();
+    private void MenuPasteSelected()  => AppState.TriggerPasteSelected();
+    private void MenuEditProperties() => AppState.TriggerEditProperties();
+    private void MenuAddPort(PortAlignment a)    => AppState.TriggerAddPort(a);
+    private void MenuDeletePort(PortAlignment a) => AppState.TriggerDeletePort(a);
+    private void SetTheme(ThemeMode m)  => AppState.SetTheme(m);
+    private void ToggleDiagramName()    => AppState.ToggleShowDiagramName();
+    private void SetGrid(int s)         => AppState.SetGridSize(s);
+}

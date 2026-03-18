@@ -1,0 +1,7 @@
+
+/* Move nested MudMenu submenu expand arrow to the left of the label */
+.mud-list-item-icon {
+    order: -1;
+    margin-left: 0 !important;
+    margin-right: 8px;
+}
