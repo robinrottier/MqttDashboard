@@ -4,6 +4,7 @@
     <File Path="README.md" />
     <File Path="docker-compose.override.yml" />
     <File Path="docker-compose.yml" />
+    <File Path="TODO.md" />
   </Folder>
   <Folder Name="/solution items/documentation/">
     <File Path="documents/Github and releases.md" />
