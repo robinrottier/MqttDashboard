@@ -24,66 +24,72 @@
                                 <td style="padding: 6px 16px; font-family: monospace;">@item.Value</td>
                             </tr>
                         }
-                        @if (_checkingUpdate)
+                        @if (AppState.IsAdmin)
                         {
-                            <tr>
-                                <td colspan="2" style="padding: 6px 16px;">
-                                    <MudProgressLinear Indeterminate="true" Class="mb-1" />
-                                    <MudText Typo="Typo.body2">Checking for updates…</MudText>
-                                </td>
-                            </tr>
-                        }
-                        else if (_updateError != null)
-                        {
-                            <tr>
-                                <td colspan="2" style="padding: 6px 16px;">
-                                    <MudAlert Severity="Severity.Warning" Dense="true">@_updateError</MudAlert>
-                                </td>
-                            </tr>
-                        }
-                        else if (_updateStatus != null)
-                        {
-                            <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Latest Version</td>
-                                <td style="padding:6px 16px;font-family:monospace;">@(_updateStatus.LatestVersion ?? "—")</td></tr>
-                            <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Deployment</td>
-                                <td style="padding:6px 16px;font-family:monospace;">@_updateStatus.DeploymentType</td></tr>
-                            <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Last Checked</td>
-                                <td style="padding:6px 16px;font-family:monospace;">@(_updateStatus.LastChecked?.LocalDateTime.ToString("yyyy-MM-dd HH:mm") ?? "Not yet")</td></tr>
+                            @if (_checkingUpdate)
+                            {
+                                <tr>
+                                    <td colspan="2" style="padding: 6px 16px;">
+                                        <MudProgressLinear Indeterminate="true" Class="mb-1" />
+                                        <MudText Typo="Typo.body2">Checking for updates…</MudText>
+                                    </td>
+                                </tr>
+                            }
+                            else if (_updateError != null)
+                            {
+                                <tr>
+                                    <td colspan="2" style="padding: 6px 16px;">
+                                        <MudAlert Severity="Severity.Warning" Dense="true">@_updateError</MudAlert>
+                                    </td>
+                                </tr>
+                            }
+                            else if (_updateStatus != null)
+                            {
+                                <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Latest Version</td>
+                                    <td style="padding:6px 16px;font-family:monospace;">@(_updateStatus.LatestVersion ?? "—")</td></tr>
+                                <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Deployment</td>
+                                    <td style="padding:6px 16px;font-family:monospace;">@_updateStatus.DeploymentType</td></tr>
+                                <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Last Checked</td>
+                                    <td style="padding:6px 16px;font-family:monospace;">@(_updateStatus.LastChecked?.LocalDateTime.ToString("yyyy-MM-dd HH:mm") ?? "Not yet")</td></tr>
+                            }
                         }
                     </tbody>
                 </MudSimpleTable>
-                @if (_updateStatus?.UpdateAvailable == true)
+                @if (AppState.IsAdmin)
                 {
-                    <MudAlert Severity="Severity.Info" Class="mt-2 mx-2 mb-1" Dense="true">
-                        Update available: @_updateStatus.LatestVersion
-                        @if (_updateStatus.DeploymentType == "Standalone")
-                        {
-                            <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary"
-                                       OnClick="DownloadUpdate" Class="ml-2" Disabled="_downloadingUpdate">
-                                @(_downloadingUpdate ? "Downloading..." : "Download Update")
-                            </MudButton>
-                        }
-                    </MudAlert>
-                    @if (!string.IsNullOrEmpty(_downloadResult))
+                    @if (_updateStatus?.UpdateAvailable == true)
                     {
-                        <MudAlert Severity="Severity.Success" Class="mx-2 mb-1" Dense="true">
-                            @_downloadResult
+                        <MudAlert Severity="Severity.Info" Class="mt-2 mx-2 mb-1" Dense="true">
+                            Update available: @_updateStatus.LatestVersion
+                            @if (_updateStatus.DeploymentType == "Standalone")
+                            {
+                                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary"
+                                           OnClick="DownloadUpdate" Class="ml-2" Disabled="_downloadingUpdate">
+                                    @(_downloadingUpdate ? "Downloading..." : "Download Update")
+                                </MudButton>
+                            }
                         </MudAlert>
+                        @if (!string.IsNullOrEmpty(_downloadResult))
+                        {
+                            <MudAlert Severity="Severity.Success" Class="mx-2 mb-1" Dense="true">
+                                @_downloadResult
+                            </MudAlert>
+                        }
                     }
+                    else if (_updateStatus?.LastChecked != null && !_checkingUpdate)
+                    {
+                        <MudText Typo="Typo.body2" Class="mt-1 mx-4 mb-2" Color="Color.Success">
+                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="mr-1" />
+                            Up to date
+                        </MudText>
+                    }
+                    <div class="mx-2 mb-2 mt-1">
+                        <MudButton Variant="Variant.Outlined" Size="Size.Small"
+                                   OnClick="CheckForUpdates" Disabled="_checkingUpdate">
+                            Check for updates
+                        </MudButton>
+                    </div>
                 }
-                else if (_updateStatus?.LastChecked != null && !_checkingUpdate)
-                {
-                    <MudText Typo="Typo.body2" Class="mt-1 mx-4 mb-2" Color="Color.Success">
-                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="mr-1" />
-                        Up to date
-                    </MudText>
-                }
-                <div class="mx-2 mb-2 mt-1">
-                    <MudButton Variant="Variant.Outlined" Size="Size.Small"
-                               OnClick="CheckForUpdates" Disabled="_checkingUpdate">
-                        Check for updates
-                    </MudButton>
-                </div>
             </MudCardContent>
         </MudCard>
 
@@ -143,7 +149,8 @@
 
     private record InfoItem(string Label, string Value);
     private record UpdateStatusDto(string CurrentVersion, string? LatestVersion, bool UpdateAvailable,
-        string DeploymentType, DateTimeOffset? LastChecked, string? ReleaseUrl, string RuntimeIdentifier);
+        string DeploymentType, DateTimeOffset? LastChecked, string? ReleaseUrl, string RuntimeIdentifier,
+        string? MachineName, string? DataDirectory, string? DotNetVersion, string? OsDescription);
     private record DownloadResult(bool Success, string? Instructions, string? Error);
 
     private List<InfoItem> _appInfo = new();
@@ -163,7 +170,13 @@
 
         var appAssembly = typeof(AboutDialog).Assembly;
         var appName = AppState.DisplayName;
-        var appVersion = appAssembly.GetName().Version?.ToString() ?? "unknown";
+        var appVersion = appAssembly
+            .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion
+            ?? appAssembly.GetName().Version?.ToString()
+            ?? "unknown";
+        if (appVersion.Contains('+'))
+            appVersion = appVersion[..appVersion.IndexOf('+')];
         var dotNetVersion = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
         var mudBlazorVersion = typeof(MudBlazor.MudText).Assembly.GetName().Version?.ToString() ?? "unknown";
         var diagramsAssembly = typeof(BlazorDiagram).Assembly;
@@ -203,7 +216,24 @@
         _showDebugInfo = AppState.IsAdmin;
 #endif
 
-        await CheckForUpdates();
+        if (AppState.IsAdmin)
+        {
+            await CheckForUpdates();
+
+            // Enrich debug info with server deployment details (available after update status call)
+            if (_updateStatus != null)
+            {
+                if (!string.IsNullOrEmpty(_updateStatus.MachineName))
+                    _debugInfo.Add(new("Machine Name", _updateStatus.MachineName));
+                if (!string.IsNullOrEmpty(_updateStatus.DataDirectory))
+                    _debugInfo.Add(new("Data Directory", _updateStatus.DataDirectory));
+                if (!string.IsNullOrEmpty(_updateStatus.OsDescription))
+                    _debugInfo.Add(new("OS", _updateStatus.OsDescription));
+                if (!string.IsNullOrEmpty(_updateStatus.RuntimeIdentifier))
+                    _debugInfo.Add(new("Runtime ID", _updateStatus.RuntimeIdentifier));
+            }
+        }
+        StateHasChanged();
     }
 
     private async Task CheckForUpdates()

@@ -40,9 +40,6 @@ public static class ServiceCollectionExtensions
         // Add DiagramService for server-side (in-process, no loopback HTTP)
         services.AddScoped<IDiagramService, ServerDiagramService>();
 
-        // Add ApplicationStateService for server-side (in-process, no loopback HTTP)
-        services.AddScoped<IApplicationStateService, ServerApplicationStateService>();
-
         // Add AuthService for server-side (in-process, no loopback HTTP)
         services.AddScoped<IAuthService, ServerAuthService>();
 

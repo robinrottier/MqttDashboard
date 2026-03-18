@@ -1,5 +1,9 @@
 <Solution>
-  <Folder Name="/data/" />
+  <Folder Name="/data/">
+    <File Path="data/applicationstate.json" />
+    <File Path="data/dashboards/Dash1.json" />
+    <File Path="data/dashboards/Dashy McDashface.json" />
+  </Folder>
   <Folder Name="/solution items/">
     <File Path="README.md" />
     <File Path="docker-compose.override.yml" />

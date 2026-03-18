@@ -14,9 +14,6 @@ builder.Services.AddScoped<ISignalRService, SignalRService>();
 // Add DiagramService (needs HttpClient)
 builder.Services.AddScoped<IDiagramService, DiagramService>();
 
-// Add ApplicationStateService (needs HttpClient)
-builder.Services.AddScoped<IApplicationStateService, ApplicationStateService>();
-
 // Add AuthService (needs HttpClient)
 builder.Services.AddScoped<IAuthService, AuthService>();
 

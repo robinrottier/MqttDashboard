@@ -63,6 +63,45 @@ public class DiagramStorageServiceTests : IDisposable
     }
 
     [Fact]
+    public void DashboardsPath_IsSubdirectoryOfStoragePath()
+    {
+        Assert.Equal(Path.Combine(_tempDir, "dashboards"), _service.DashboardsPath);
+    }
+
+    [Fact]
+    public async Task MigrateLegacyFiles_MovesJsonFilesToDashboardsSubdir()
+    {
+        // Create a new temp dir with legacy dashboard files in the root
+        var migrationDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        Directory.CreateDirectory(migrationDir);
+        var legacyFile = Path.Combine(migrationDir, "myboard.json");
+        var stateFile = Path.Combine(migrationDir, "applicationstate.json");
+        await File.WriteAllTextAsync(legacyFile, "{}");
+        await File.WriteAllTextAsync(stateFile, "{}");
+
+        try
+        {
+            var env = new Mock<IWebHostEnvironment>();
+            env.Setup(e => e.ContentRootPath).Returns(migrationDir);
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?> { ["DiagramStorage:DataDirectory"] = migrationDir })
+                .Build();
+
+            _ = new DiagramStorageService(env.Object, config, NullLogger<DiagramStorageService>.Instance);
+
+            // Dashboard file should have been moved to dashboards/
+            Assert.True(File.Exists(Path.Combine(migrationDir, "dashboards", "myboard.json")));
+            Assert.False(File.Exists(legacyFile));
+            // applicationstate.json should remain in the root (not migrated)
+            Assert.True(File.Exists(stateFile));
+        }
+        finally
+        {
+            Directory.Delete(migrationDir, recursive: true);
+        }
+    }
+
+    [Fact]
     public void StoragePath_UsesConfiguredDirectory()
     {
         Assert.Equal(_tempDir, _service.StoragePath);

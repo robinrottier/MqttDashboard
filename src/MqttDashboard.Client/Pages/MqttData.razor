@@ -3,7 +3,6 @@
 @using MqttDashboard.Services
 @inject ISignalRService SignalRService
 @inject ApplicationState AppState
-@inject IApplicationStateService AppStateService
 @inject MqttInitializationService MqttInit
 @inject IDiagramService DiagramService
 @inject NavigationManager NavigationManager
@@ -61,7 +60,7 @@
                                                 <span @onclick:stopPropagation="true">
                                                     <MudIconButton Size="Size.Small"
                                                                    Icon="@Icons.Material.Filled.Add"
-                                                                   title="Add to diagram"
+                                                                   title="Add to dashboard"
                                                                    OnClick="@(async () => await AddTopicToDiagram(item.Value!.FullPath, item.Value.Name))" />
                                                 </span>
                                             }
@@ -373,7 +372,7 @@
     private async Task AddTopicToDiagram(string topicPath, string nodeName)
     {
         await AppState.AddTopicToDiagram(topicPath, nodeName);
-        Snackbar.Add($"Added '{nodeName}' to diagram", Severity.Success);
+        Snackbar.Add($"Added '{nodeName}' to dashboard", Severity.Success);
     }
 
     private string FormatTimestamp(DateTime timestamp)

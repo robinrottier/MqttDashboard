@@ -57,8 +57,15 @@ public partial class Display : IDisposable
             AppState.MenuOpen += _onMenuOpen;
             AppState.MenuOpenRecent += _onMenuOpenRecent;
 
-            // Load recent files from localStorage
+            // Load recent files from localStorage and filter to only existing dashboards
             var recentFiles = await LoadRecentFiles();
+            if (recentFiles.Count > 0)
+            {
+                var existingNames = await DiagramService.ListDiagramsAsync();
+                var existingSet = new HashSet<string>(existingNames, StringComparer.OrdinalIgnoreCase);
+                recentFiles = recentFiles.Where(f => existingSet.Contains(f)).ToList();
+                await SaveRecentFiles(recentFiles);
+            }
             AppState.SetRecentFiles(recentFiles);
 
             var savedState = await DiagramService.LoadDiagramAsync();
@@ -288,7 +295,7 @@ public partial class Display : IDisposable
         {
             if (AppState.IsEdited)
             {
-                bool confirmed = await ConfirmDiscardChanges("New diagram");
+                bool confirmed = await ConfirmDiscardChanges("New dashboard");
                 if (!confirmed) return;
             }
             PushUndoSnapshot();
@@ -306,7 +313,7 @@ public partial class Display : IDisposable
             _diagram.Changed += OnDiagramChanged;
             _nodeCounter = 1;
             UpdateSelectionState();
-            Snackbar.Add("New diagram created", Severity.Info);
+            Snackbar.Add("New dashboard created", Severity.Info);
             StateHasChanged();
         });
     }
@@ -315,7 +322,7 @@ public partial class Display : IDisposable
     {
         if (AppState.IsEdited)
         {
-            bool confirmed = await ConfirmDiscardChanges("Reload diagram");
+            bool confirmed = await ConfirmDiscardChanges("Reload dashboard");
             if (!confirmed) return;
         }
         if (_diagram != null)
@@ -333,12 +340,12 @@ public partial class Display : IDisposable
             var gs = _diagram.Options.GridSize;
             if (AppState.IsEditMode)
                 AppState.SetGridSize(gs.HasValue ? (int)gs.Value : 10);
-            Snackbar.Add($"Diagram reloaded ({savedState.Nodes.Count} nodes)", Severity.Info);
+            Snackbar.Add($"Dashboard reloaded ({savedState.Nodes.Count} nodes)", Severity.Info);
         }
         else
         {
             _diagram = AppState.GetOrCreateDiagram();
-            Snackbar.Add("No saved diagram found", Severity.Warning);
+            Snackbar.Add("No saved dashboard found", Severity.Warning);
         }
         if (AppState.IsEditMode)
         {
@@ -465,8 +472,10 @@ public partial class Display : IDisposable
             _diagram.SelectionChanged -= OnSelectionChanged;
             _diagram.Changed -= OnDiagramChanged;
         }
+        var previousTopics = AppState.SubscribedTopics.ToHashSet();
         AppState.ResetDiagram();
         _diagram = AppState.CreateDiagramFromState(state, readOnly: !AppState.IsEditMode);
+        await SyncSubscriptionsAsync(previousTopics, AppState.SubscribedTopics);
         if (AppState.IsEditMode)
         {
             _diagram.SelectionChanged += OnSelectionChanged;
@@ -479,14 +488,24 @@ public partial class Display : IDisposable
         StateHasChanged();
     }
 
+    private async Task SyncSubscriptionsAsync(HashSet<string> previous, IReadOnlyCollection<string> current)
+    {
+        if (AppState.SignalRService == null) return;
+        var currentSet = new HashSet<string>(current);
+        foreach (var topic in previous.Where(t => !currentSet.Contains(t)))
+            await AppState.SignalRService.UnsubscribeFromTopicAsync(topic);
+        foreach (var topic in currentSet.Where(t => !previous.Contains(t)))
+            await AppState.SignalRService.SubscribeToTopicAsync(topic);
+    }
+
     // ── Save As / Open ────────────────────────────────────────────────────────
 
     private async Task SaveAsDiagram()
     {
         var parameters = new DialogParameters<SimpleInputDialog>
         {
-            { d => d.Title, "Save Diagram As" },
-            { d => d.Label, "Diagram name" },
+            { d => d.Title, "Save Dashboard As" },
+            { d => d.Label, "Dashboard name" },
             { d => d.Value, AppState.DiagramName }
         };
         var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseButton = true };
@@ -506,7 +525,7 @@ public partial class Display : IDisposable
             }
             else
             {
-                Snackbar.Add("Failed to save diagram", Severity.Error);
+                Snackbar.Add("Failed to save dashboard", Severity.Error);
             }
         }
     }
@@ -515,13 +534,13 @@ public partial class Display : IDisposable
     {
         if (AppState.IsEdited)
         {
-            bool confirmed = await ConfirmDiscardChanges("Open diagram");
+            bool confirmed = await ConfirmDiscardChanges("Open dashboard");
             if (!confirmed) return;
         }
         var names = await DiagramService.ListDiagramsAsync();
         if (names.Count == 0)
         {
-            Snackbar.Add("No saved diagrams found", Severity.Warning);
+            Snackbar.Add("No saved dashboards found", Severity.Warning);
             return;
         }
         var parameters = new DialogParameters<DiagramPickerDialog>
@@ -529,7 +548,7 @@ public partial class Display : IDisposable
             { d => d.DiagramNames, names }
         };
         var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseButton = true };
-        var dialog = await DialogService.ShowAsync<DiagramPickerDialog>("Open Diagram", parameters, options);
+        var dialog = await DialogService.ShowAsync<DiagramPickerDialog>("Open Dashboard", parameters, options);
         var result = await dialog.Result;
         if (result is { Canceled: false, Data: string name } && !string.IsNullOrWhiteSpace(name))
         {
@@ -555,7 +574,7 @@ public partial class Display : IDisposable
     {
         if (AppState.IsEdited)
         {
-            bool confirmed = await ConfirmDiscardChanges("Open diagram");
+            bool confirmed = await ConfirmDiscardChanges("Open dashboard");
             if (!confirmed) return;
         }
         var state = await DiagramService.LoadDiagramByNameAsync(name);
@@ -571,11 +590,12 @@ public partial class Display : IDisposable
         }
         else
         {
-            Snackbar.Add($"Failed to load '{name}'", Severity.Error);
+            // File was deleted — remove from MRU and persist
+            AppState.SetRecentFiles(AppState.RecentFiles.Where(f => f != name));
+            await SaveRecentFiles();
+            Snackbar.Add($"'{name}' not found — removed from recent files", Severity.Warning);
         }
     }
-
-    // ── Save ──────────────────────────────────────────────────────────────────
 
     private async Task SaveDiagram()
     {
@@ -587,16 +607,16 @@ public partial class Display : IDisposable
             {
                 AppState.MarkSaved();
                 await SaveLastDiagramName(AppState.DiagramName);
-                Snackbar.Add($"Diagram saved ({state.Nodes.Count} nodes, {state.Links.Count} links)", Severity.Success);
+                Snackbar.Add($"Dashboard saved ({state.Nodes.Count} nodes, {state.Links.Count} links)", Severity.Success);
             }
             else
             {
-                Snackbar.Add("Failed to save diagram", Severity.Error);
+                Snackbar.Add("Failed to save dashboard", Severity.Error);
             }
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error saving diagram: {ex.Message}", Severity.Error);
+            Snackbar.Add($"Error saving dashboard: {ex.Message}", Severity.Error);
         }
     }
 
@@ -681,7 +701,7 @@ public partial class Display : IDisposable
     private async Task ShowDiagramPropertiesAsync()
     {
         var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
-        await DialogService.ShowAsync<DiagramPropertiesDialog>("Diagram Properties", options);
+        await DialogService.ShowAsync<DiagramPropertiesDialog>("Dashboard Properties", options);
     }
 
     private async Task SaveLastDiagramName(string name)
@@ -707,11 +727,12 @@ public partial class Display : IDisposable
         catch { return []; }
     }
 
-    private async Task SaveRecentFiles()
+    private async Task SaveRecentFiles(IEnumerable<string>? files = null)
     {
         try
         {
-            var json = System.Text.Json.JsonSerializer.Serialize(AppState.RecentFiles.ToList());
+            var list = files?.ToList() ?? AppState.RecentFiles.ToList();
+            var json = System.Text.Json.JsonSerializer.Serialize(list);
             await JSRuntime.InvokeVoidAsync("localStorage.setItem", RecentFilesKey, json);
         }
         catch { /* ignore */ }

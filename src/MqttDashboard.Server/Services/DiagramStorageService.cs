@@ -9,11 +9,13 @@ namespace MqttDashboard.Server.Services;
 public class DiagramStorageService
 {
     private readonly string _storagePath;
+    private readonly string _dashboardsPath;
     private readonly ILogger<DiagramStorageService> _logger;
     private readonly SemaphoreSlim _lock = new(1, 1);
     private const string DiagramFileName = "diagram.json";
 
     public string StoragePath => _storagePath;
+    public string DashboardsPath => _dashboardsPath;
 
     public DiagramStorageService(IWebHostEnvironment environment, IConfiguration configuration, ILogger<DiagramStorageService> logger)
     {
@@ -24,23 +26,61 @@ public class DiagramStorageService
                      : !string.IsNullOrWhiteSpace(configDir) ? Path.GetFullPath(configDir, environment.ContentRootPath)
                      : Path.Combine(environment.ContentRootPath, "Data");
 
+        _dashboardsPath = Path.Combine(_storagePath, "dashboards");
+
         _logger = logger;
 
-        // Ensure the data directory exists
-        if (Directory.Exists(_storagePath))
-        {
-            _logger.LogInformation("Using data directory at {Path}", _storagePath);
-        }
-        else
+        if (!Directory.Exists(_storagePath))
         {
             Directory.CreateDirectory(_storagePath);
             _logger.LogInformation("Created data directory at {Path}", _storagePath);
+        }
+        else
+        {
+            _logger.LogInformation("Using data directory at {Path}", _storagePath);
+        }
+
+        if (!Directory.Exists(_dashboardsPath))
+        {
+            Directory.CreateDirectory(_dashboardsPath);
+            _logger.LogInformation("Created dashboards directory at {Path}", _dashboardsPath);
+        }
+
+        MigrateLegacyDashboardFiles();
+    }
+
+    /// <summary>
+    /// Moves any .json dashboard files from the root data directory into the dashboards/ subdirectory,
+    /// skipping known non-dashboard files like applicationstate.json.
+    /// </summary>
+    private void MigrateLegacyDashboardFiles()
+    {
+        var excludedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "applicationstate.json" };
+
+        foreach (var file in Directory.GetFiles(_storagePath, "*.json"))
+        {
+            var fileName = Path.GetFileName(file);
+            if (excludedFiles.Contains(fileName)) continue;
+
+            var dest = Path.Combine(_dashboardsPath, fileName);
+            if (!File.Exists(dest))
+            {
+                try
+                {
+                    File.Move(file, dest);
+                    _logger.LogInformation("Migrated dashboard file {File} to dashboards/ subdirectory", fileName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to migrate dashboard file {File}", fileName);
+                }
+            }
         }
     }
 
     public async Task<DiagramState?> LoadDiagramAsync()
     {
-        var filePath = Path.Combine(_storagePath, DiagramFileName);
+        var filePath = Path.Combine(_dashboardsPath, DiagramFileName);
 
         await _lock.WaitAsync();
         try
@@ -72,7 +112,7 @@ public class DiagramStorageService
 
     public async Task<bool> SaveDiagramAsync(DiagramState diagramState)
     {
-        var filePath = Path.Combine(_storagePath, DiagramFileName);
+        var filePath = Path.Combine(_dashboardsPath, DiagramFileName);
 
         await _lock.WaitAsync();
         try
@@ -105,7 +145,7 @@ public class DiagramStorageService
         await _lock.WaitAsync();
         try
         {
-            var files = Directory.GetFiles(_storagePath, "*.json")
+            var files = Directory.GetFiles(_dashboardsPath, "*.json")
                 .Select(f => Path.GetFileNameWithoutExtension(f))
                 .Where(n => !string.IsNullOrEmpty(n))
                 .OrderBy(n => n)
@@ -118,7 +158,7 @@ public class DiagramStorageService
     public async Task<DiagramState?> LoadDiagramByNameAsync(string name)
     {
         if (string.IsNullOrWhiteSpace(name)) return null;
-        var filePath = Path.Combine(_storagePath, $"{name}.json");
+        var filePath = Path.Combine(_dashboardsPath, $"{name}.json");
         await _lock.WaitAsync();
         try
         {
@@ -139,7 +179,7 @@ public class DiagramStorageService
         if (string.IsNullOrWhiteSpace(name)) return false;
         var safeName = new string(name.Where(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == ' ').ToArray()).Trim();
         if (string.IsNullOrWhiteSpace(safeName)) return false;
-        var filePath = Path.Combine(_storagePath, $"{safeName}.json");
+        var filePath = Path.Combine(_dashboardsPath, $"{safeName}.json");
         await _lock.WaitAsync();
         try
         {

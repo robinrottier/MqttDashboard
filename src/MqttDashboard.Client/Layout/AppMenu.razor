@@ -36,7 +36,7 @@
             <MudMenuItem Label="Save"                 OnClick="SaveDiagram"            />
             <MudMenuItem Label="Save As…"             OnClick="SaveAsDiagram"          />
             <MudDivider />
-            <MudMenuItem Label="Diagram Properties…"  OnClick="MenuDiagramProperties"  />
+            <MudMenuItem Label="Dashboard Properties…"  OnClick="MenuDiagramProperties"  />
         }
     </MudMenu>
 
@@ -115,7 +115,7 @@
                 <MudMenuItem OnClick="ToggleDiagramName">
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                         <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.ShowDiagramName ? "" : "visibility:hidden")" />
-                        <MudText>Diagram Name</MudText>
+                        <MudText>Dashboard Name</MudText>
                     </MudStack>
                 </MudMenuItem>
             </MudMenu>

@@ -12,6 +12,15 @@ public class NodeColorRule
 public class DiagramState
 {
     public string Name { get; set; } = string.Empty;
+    public bool ShowDiagramName { get; set; } = false;
+
+    /// <summary>
+    /// User-managed list of MQTT topic subscriptions for this dashboard.
+    /// Stored here so subscriptions travel with the dashboard file.
+    /// Null means the field was absent (old file); empty means explicitly no subscriptions.
+    /// </summary>
+    public HashSet<string>? MqttSubscriptions { get; set; }
+
     public List<NodeState> Nodes { get; set; } = new();
     public List<LinkState> Links { get; set; } = new();
     public int GridSize { get; set; } = 20; // Default 20px grid; 0 for no grid

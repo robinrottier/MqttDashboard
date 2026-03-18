@@ -11,11 +11,13 @@ namespace MqttDashboard.Server.Controllers;
 public class UpdateController : ControllerBase
 {
     private readonly UpdateCheckService _updateService;
+    private readonly DiagramStorageService _diagramStorage;
     private readonly ILogger<UpdateController> _logger;
 
-    public UpdateController(UpdateCheckService updateService, ILogger<UpdateController> logger)
+    public UpdateController(UpdateCheckService updateService, DiagramStorageService diagramStorage, ILogger<UpdateController> logger)
     {
         _updateService = updateService;
+        _diagramStorage = diagramStorage;
         _logger = logger;
     }
 
@@ -31,7 +33,11 @@ public class UpdateController : ControllerBase
             deploymentType = info.DeploymentType.ToString(),
             lastChecked = info.LastChecked,
             releaseUrl = info.ReleaseUrl,
-            runtimeIdentifier = info.RuntimeIdentifier
+            runtimeIdentifier = info.RuntimeIdentifier,
+            machineName = Environment.MachineName,
+            dataDirectory = _diagramStorage.StoragePath,
+            dotNetVersion = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription,
+            osDescription = System.Runtime.InteropServices.RuntimeInformation.OSDescription
         });
     }
 

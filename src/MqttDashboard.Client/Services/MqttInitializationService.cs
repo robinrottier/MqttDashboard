@@ -10,7 +10,7 @@ namespace MqttDashboard.Services;
 public class MqttInitializationService
 {
     private readonly ApplicationState _appState;
-    private readonly IApplicationStateService _appStateService;
+    private readonly IDiagramService _diagramService;
     private readonly ISignalRService _signalRService;
     private readonly NavigationManager _navigationManager;
     private readonly IAuthService _authService;
@@ -20,7 +20,7 @@ public class MqttInitializationService
 
     public MqttInitializationService(
         ApplicationState appState,
-        IApplicationStateService appStateService,
+        IDiagramService diagramService,
         ISignalRService signalRService,
         NavigationManager navigationManager,
         IAuthService authService,
@@ -28,7 +28,7 @@ public class MqttInitializationService
         ILogger<MqttInitializationService>? logger = null)
     {
         _appState = appState;
-        _appStateService = appStateService;
+        _diagramService = diagramService;
         _signalRService = signalRService;
         _navigationManager = navigationManager;
         _authService = authService;
@@ -52,14 +52,17 @@ public class MqttInitializationService
         {
             _logger?.LogInformation("Starting MQTT initialization...");
 
-            _appState.SetApplicationStateService(_appStateService);
-
-            await _appState.LoadSubscriptionsAsync();
-            _logger?.LogInformation("Loaded {Count} saved subscriptions", _appState.SubscribedTopics.Count);
-
             var (isAdmin, authEnabled) = await _authService.GetStatusAsync();
             _appState.SetAuthState(isAdmin, authEnabled);
             _logger?.LogInformation("Auth state: IsAdmin={IsAdmin}, AuthEnabled={AuthEnabled}", isAdmin, authEnabled);
+
+            // Load subscriptions from the default dashboard file
+            var defaultDashboard = await _diagramService.LoadDiagramAsync();
+            if (defaultDashboard?.MqttSubscriptions?.Count > 0)
+            {
+                _appState.SetSubscribedTopics(defaultDashboard.MqttSubscriptions);
+            }
+            _logger?.LogInformation("Loaded {Count} saved subscriptions", _appState.SubscribedTopics.Count);
 
             if (_appState.SignalRService == null)
             {

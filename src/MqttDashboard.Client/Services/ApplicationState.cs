@@ -44,9 +44,6 @@ public class ApplicationState
     // MQTT Data Cache
     public MqttDataCache DataCache { get; } = new();
 
-    // Application State Persistence
-    private IApplicationStateService? _stateService;
-
     // Theme & UI preferences
     public ThemeMode ThemeMode { get; private set; } = ThemeMode.Auto;
     public bool ShowDiagramName { get; private set; } = false;
@@ -375,6 +372,11 @@ public class ApplicationState
         {
             DiagramName = state.Name;
             CanvasBackgroundColor = state.BackgroundColor ?? string.Empty;
+            ShowDiagramName = state.ShowDiagramName;
+            // Only replace subscriptions if the field was present in the file.
+            // Null means an old file that predates subscription storage — preserve existing topics.
+            if (state.MqttSubscriptions != null)
+                SubscribedTopics = new HashSet<string>(state.MqttSubscriptions);
         }
 
         _diagram = diagram;
@@ -486,6 +488,8 @@ public class ApplicationState
             _diagram.SetPan(0, 0);
 
         state.BackgroundColor = CanvasBackgroundColor;
+        state.ShowDiagramName = ShowDiagramName;
+        state.MqttSubscriptions = new HashSet<string>(SubscribedTopics);
         return state;
     }
 
@@ -500,33 +504,26 @@ public class ApplicationState
         SignalRService = service;
     }
 
-    public void SetApplicationStateService(IApplicationStateService service)
+    public void SetSubscribedTopics(IEnumerable<string> topics)
     {
-        _stateService = service;
+        SubscribedTopics = new HashSet<string>(topics);
+        NotifyStateChangedAsync();
     }
 
-    public async Task LoadSubscriptionsAsync()
+    public async Task AddSubscriptionAsync(string topic)
     {
-        if (_stateService == null) return;
-
-        var state = await _stateService.LoadStateAsync();
-        if (state != null && state.MqttSubscriptions.Any())
-        {
-            SubscribedTopics = new HashSet<string>(state.MqttSubscriptions);
-            NotifyStateChangedAsync();
-        }
+        SubscribedTopics.Add(topic);
+        MarkEdited();
+        NotifyStateChangedAsync();
+        await Task.CompletedTask;
     }
 
-    private async Task SaveSubscriptionsAsync()
+    public async Task RemoveSubscriptionAsync(string topic)
     {
-        if (_stateService == null) return;
-
-        var state = new ApplicationStateData
-        {
-            MqttSubscriptions = SubscribedTopics
-        };
-
-        await _stateService.SaveStateAsync(state);
+        SubscribedTopics.Remove(topic);
+        MarkEdited();
+        NotifyStateChangedAsync();
+        await Task.CompletedTask;
     }
 
     public void AddMessage(MqttDataMessage message)
@@ -553,20 +550,6 @@ public class ApplicationState
             return Messages.TakeLast(n).ToList();
         }
     }
-    public async Task AddSubscriptionAsync(string topic)
-    {
-        SubscribedTopics.Add(topic);
-        await SaveSubscriptionsAsync();
-        NotifyStateChangedAsync();
-    }
-
-    public async Task RemoveSubscriptionAsync(string topic)
-    {
-        SubscribedTopics.Remove(topic);
-        await SaveSubscriptionsAsync();
-        NotifyStateChangedAsync();
-    }
-
     public void SetMqttConnectionStatus(string status, bool connected)
     {
         MqttConnectionStatus = status;
