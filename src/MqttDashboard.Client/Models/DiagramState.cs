@@ -93,11 +93,20 @@ public class NodeState
     public double? MinValue { get; set; }
     public double? MaxValue { get; set; }
     public string? Unit { get; set; }
+    public double? MidPoint { get; set; }
+    public string? NegativeColor { get; set; }
+    public string? PositiveColor { get; set; }
 
     // Switch-specific
     public string? PublishTopic { get; set; }
     public string? OnValue { get; set; }
     public string? OffValue { get; set; }
+    public string? SwitchStyle { get; set; }
+    public string? OnText { get; set; }
+    public string? OffText { get; set; }
+
+    // Title position (all node types)
+    public string? TitlePosition { get; set; }
 
     public List<PortState> Ports { get; set; } = new();
 }

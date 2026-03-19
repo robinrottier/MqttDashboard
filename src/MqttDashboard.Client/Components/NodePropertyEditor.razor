@@ -15,6 +15,18 @@
                           Variant="Variant.Outlined"
                           Margin="Margin.Dense" />
 
+            <!-- Title Position -->
+            <MudSelect @bind-Value="@Node.TitlePosition"
+                       Label="Title Position"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       Dense="true">
+                <MudSelectItem Value="@("Above")">Above</MudSelectItem>
+                <MudSelectItem Value="@("Below")">Below</MudSelectItem>
+                <MudSelectItem Value="@("Left")">Left</MudSelectItem>
+                <MudSelectItem Value="@("Right")">Right</MudSelectItem>
+            </MudSelect>
+
             <!-- Icon and Icon Color -->
             <MudGrid Spacing="2">
                 <MudItem xs="6">
@@ -181,6 +193,34 @@
                         <MudTextField @bind-Value="gaugeNode.Unit" Label="Unit" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="e.g. °C, W, %" />
                     </MudItem>
                 </MudGrid>
+                <MudGrid Spacing="2" Class="mt-1">
+                    <MudItem xs="4">
+                        <MudNumericField @bind-Value="gaugeNode.MidPoint"
+                                         Label="Mid Point"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         Placeholder="none (threshold coloring)" />
+                    </MudItem>
+                    <MudItem xs="4">
+                        <MudTextField @bind-Value="gaugeNode.NegativeColor"
+                                      Label="Below Mid Color"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Placeholder="default: red" />
+                    </MudItem>
+                    <MudItem xs="4">
+                        <MudTextField @bind-Value="gaugeNode.PositiveColor"
+                                      Label="Above Mid Color"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Placeholder="default: green" />
+                    </MudItem>
+                </MudGrid>
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1">
+                    Colors accept CSS values (e.g. red, #FF0000) or MudBlazor vars (e.g. var(--mud-palette-success)).
+                    When Mid Point is set, arc is colored based on whether the value is above or below it.
+                    The "Text" field above is displayed as a static label below the gauge arc.
+                </MudText>
             }
 
             <!-- Switch-specific settings -->
@@ -197,7 +237,24 @@
                         <MudTextField @bind-Value="switchNode.OffValue" Label="OFF Value" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="0" />
                     </MudItem>
                 </MudGrid>
-                <MudText Typo="Typo.caption" Class="mt-1">Display text for ON state is taken from the "Text" field above. Leave empty for "ON".</MudText>
+                <MudSelect @bind-Value="switchNode.SwitchStyle"
+                           Label="Switch Style"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Dense="true"
+                           Class="mt-1">
+                    <MudSelectItem Value="@("Full")">Full (chip + icon)</MudSelectItem>
+                    <MudSelectItem Value="@("Compact")">Compact (text + icon)</MudSelectItem>
+                    <MudSelectItem Value="@("IconOnly")">Icon Only</MudSelectItem>
+                </MudSelect>
+                <MudGrid Spacing="2" Class="mt-1">
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="switchNode.OnText" Label="ON Text" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="ON" />
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="switchNode.OffText" Label="OFF Text" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="OFF" />
+                    </MudItem>
+                </MudGrid>
             }
 
             <!-- Custom Metadata -->

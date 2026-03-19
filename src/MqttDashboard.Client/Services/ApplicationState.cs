@@ -306,12 +306,18 @@ public class ApplicationState
                         MinValue = nodeState.MinValue ?? 0,
                         MaxValue = nodeState.MaxValue ?? 100,
                         Unit = nodeState.Unit,
+                        MidPoint = nodeState.MidPoint,
+                        NegativeColor = nodeState.NegativeColor,
+                        PositiveColor = nodeState.PositiveColor,
                     },
                     "Switch" => new SwitchNodeModel(position: new Point(nodeState.X, nodeState.Y))
                     {
                         PublishTopic = nodeState.PublishTopic,
                         OnValue = nodeState.OnValue ?? "1",
                         OffValue = nodeState.OffValue ?? "0",
+                        SwitchStyle = nodeState.SwitchStyle ?? "Full",
+                        OnText = nodeState.OnText ?? "ON",
+                        OffText = nodeState.OffText ?? "OFF",
                     },
                     _ => new MudNodeModel(position: new Point(nodeState.X, nodeState.Y)),
                 };
@@ -330,6 +336,7 @@ public class ApplicationState
                 node.FontSize = nodeState.FontSize;
                 node.LinkAnimation = nodeState.LinkAnimation;
                 node.NodeType = nodeState.NodeType ?? "Text";
+                node.TitlePosition = nodeState.TitlePosition ?? "Above";
 
                 diagram.Nodes.Add(node);
                 nodeMap[nodeState.Id] = node;
@@ -453,6 +460,7 @@ public class ApplicationState
                 FontSize = node.FontSize,
                 LinkAnimation = node.LinkAnimation,
                 NodeType = node.NodeType ?? "Text",
+                TitlePosition = node.TitlePosition,
             };
 
             // Type-specific properties
@@ -461,12 +469,18 @@ public class ApplicationState
                 nodeState.MinValue = g.MinValue;
                 nodeState.MaxValue = g.MaxValue;
                 nodeState.Unit = g.Unit;
+                nodeState.MidPoint = g.MidPoint;
+                nodeState.NegativeColor = g.NegativeColor;
+                nodeState.PositiveColor = g.PositiveColor;
             }
             else if (node is SwitchNodeModel s)
             {
                 nodeState.PublishTopic = s.PublishTopic;
                 nodeState.OnValue = s.OnValue;
                 nodeState.OffValue = s.OffValue;
+                nodeState.SwitchStyle = s.SwitchStyle;
+                nodeState.OnText = s.OnText;
+                nodeState.OffText = s.OffText;
             }
 
             // Save ports

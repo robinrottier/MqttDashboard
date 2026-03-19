@@ -272,13 +272,25 @@ public class MqttClientService : BackgroundService
 
     public async Task PublishMessageAsync(string topic, string payload)
     {
-        if (_mqttClient == null || !_mqttClient.IsConnected) return;
-        var message = new MqttApplicationMessageBuilder()
-            .WithTopic(topic)
-            .WithPayload(payload)
-            .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
-            .Build();
-        await _mqttClient.PublishAsync(message);
-        _logger.LogDebug("Published MQTT message to topic {Topic}: {Payload}", topic, payload);
+        if (_mqttClient == null || !_mqttClient.IsConnected)
+        {
+            _logger.LogWarning("Cannot publish to {Topic}: MQTT client is not connected", topic);
+            return;
+        }
+        try
+        {
+            var message = new MqttApplicationMessageBuilder()
+                .WithTopic(topic)
+                .WithPayload(payload)
+                .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                .Build();
+            var result = await _mqttClient.PublishAsync(message);
+            _logger.LogInformation("Published to {Topic}: {Payload} (ReasonCode: {ReasonCode})", topic, payload, result.ReasonCode);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to publish MQTT message to {Topic}", topic);
+            throw;
+        }
     }
 }

@@ -14,9 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - **Switch node** — shows current ON/OFF state from a data topic; toggle button publishes a configurable payload back to MQTT
 - **MQTT publish** — new `PublishMessageAsync` path through SignalR hub → `MqttClientService` → broker (used by Switch node)
 - Node type picker dialog shown when adding a new node in edit mode
+- **Gauge: MidPoint** — optional midpoint value; when set, arc is split into negative (red by default) and positive (green by default) regions with a tick mark at the midpoint; colours configurable via `NegativeColor` / `PositiveColor` properties
+- **Gauge: Text label** — static text label rendered below the arc (previously unused)
+- **Widget base classes** — `BaseNodeWidget<T>` and `BaseNodeWithDataWidget<T>` reduce duplication across all widget types; all widgets refactored to inherit from these bases
 
 ### Changed
-- Node property editor now shows type-specific settings (Gauge: min/max/unit; Switch: publish topic, ON/OFF values)
+- Node property editor now shows type-specific settings (Gauge: min/max/unit, midpoint, colours; Switch: publish topic, ON/OFF values)
+- Gauge title is centred above the arc
 
 ---
 

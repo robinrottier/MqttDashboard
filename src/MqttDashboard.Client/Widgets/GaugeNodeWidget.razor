@@ -1,8 +1,7 @@
 @using MqttDashboard.Models
 @using MqttDashboard.Services
 @using Blazor.Diagrams.Components.Renderers
-@inject ApplicationState AppState
-@implements IDisposable
+@inherits BaseNodeWithDataWidget<GaugeNodeModel>
 
 <MudTooltip Delay="500" Arrow="true" Placement="Placement.Top">
     <TooltipContent>
@@ -20,23 +19,35 @@
         <div style="@ContainerStyle()"
              class=@("pa-1 default-node gauge-node"+(Node.Group != null ? " grouped" : "")+(Node.Selected ? " selected" : ""))
              @ondblclick="OnDoubleClick">
-            @if (!string.IsNullOrEmpty(Node.Title))
-            {
-                <div style="text-align:center;font-size:0.75rem;font-weight:500;padding:2px 4px 0;">@Node.Title</div>
-            }
-            <svg viewBox="0 0 120 75" style="width:100%;height:auto;display:block;">
-                <!-- Background arc (full 180° semicircle) -->
-                <path d="M 10 65 A 55 55 0 0 1 110 65"
-                      stroke="rgba(128,128,128,0.25)" stroke-width="10" fill="none" stroke-linecap="round"/>
-                <!-- Value arc -->
-                @if (_percent > 0.001)
+            <div style="@OuterFlexStyle()">
+                @if (ShowTitleFirst())
                 {
-                    <path d="@BuildValueArcPath()"
-                          stroke="@GetArcColor()" stroke-width="10" fill="none" stroke-linecap="round"/>
+                    <div style="@TitleDivStyle()">@Node.Title</div>
                 }
-                <!-- Value text and labels rendered via MarkupString to avoid Razor <text> parsing conflict -->
-                @RenderSvgLabels()
-            </svg>
+                <div style="flex:1;min-height:0;min-width:0;">
+                    <svg viewBox="0 0 120 75" style="width:100%;height:auto;display:block;">
+                        <!-- Background arc (full 180° semicircle) -->
+                        <path d="M 10 65 A 55 55 0 0 1 110 65"
+                              stroke="rgba(128,128,128,0.25)" stroke-width="10" fill="none" stroke-linecap="round"/>
+                        <!-- Value arc -->
+                        @if (_percent > 0.001)
+                        {
+                            <path d="@BuildValueArcPath()"
+                                  stroke="@GetArcColor()" stroke-width="10" fill="none" stroke-linecap="round"/>
+                        }
+                        <!-- Value text and labels rendered via MarkupString to avoid Razor <text> parsing conflict -->
+                        @RenderSvgLabels()
+                    </svg>
+                    @if (!string.IsNullOrEmpty(Node.Text))
+                    {
+                        <div style="text-align:center;font-size:0.75rem;padding:1px 4px;word-break:break-word;">@Node.Text</div>
+                    }
+                </div>
+                @if (!ShowTitleFirst() && !string.IsNullOrEmpty(Node.Title))
+                {
+                    <div style="@TitleDivStyle()">@Node.Title</div>
+                }
+            </div>
             @foreach (var port in Node.Ports)
             {
                 <PortRenderer @key="port" Port="port" Style="@PortStyle(port as MudPortModel)" />
@@ -46,45 +57,17 @@
 </MudTooltip>
 
 @code {
-    [Parameter] public GaugeNodeModel Node { get; set; } = null!;
-
-    private IDisposable? _dataWatcher;
     private double _percent = 0;
 
     protected override void OnInitialized()
     {
-        base.OnInitialized();
         Node.MinimumDimensions = new(80, 80);
         if (Node.Size == null || Node.Size.Width < 80 || Node.Size.Height < 80)
             Node.Size = new(120, 100);
-        SetupWatcher();
+        base.OnInitialized();
     }
 
-    protected override void OnParametersSet()
-    {
-        base.OnParametersSet();
-        SetupWatcher();
-    }
-
-    private void SetupWatcher()
-    {
-        _dataWatcher?.Dispose();
-        _dataWatcher = null;
-        if (!string.IsNullOrEmpty(Node.DataTopic))
-        {
-            var v = AppState.DataCache.GetValue(Node.DataTopic);
-            if (v != null) { Node.DataValue = v; Node.DataLastUpdated = DateTime.Now; UpdatePercent(); }
-            _dataWatcher = AppState.DataCache.Watch(Node.DataTopic, OnDataReceived);
-        }
-    }
-
-    private void OnDataReceived(string topic, object value)
-    {
-        Node.DataValue = value;
-        Node.DataLastUpdated = DateTime.Now;
-        UpdatePercent();
-        InvokeAsync(StateHasChanged);
-    }
+    protected override void OnData1Updated() => UpdatePercent();
 
     private void UpdatePercent()
     {
@@ -110,6 +93,13 @@
 
     private string GetArcColor()
     {
+        if (Node.MidPoint.HasValue && Node.DataValue != null &&
+            double.TryParse(Node.DataValue.ToString(), out var d))
+        {
+            return d >= Node.MidPoint.Value
+                ? (Node.PositiveColor ?? "var(--mud-palette-success)")
+                : (Node.NegativeColor ?? "var(--mud-palette-error)");
+        }
         return _percent switch
         {
             >= 0.8 => "var(--mud-palette-error)",
@@ -123,6 +113,21 @@
         var fontSize = Node.FontSize.HasValue ? Node.FontSize.Value : 16;
         var value = System.Net.WebUtility.HtmlEncode(FormatValue());
         var sb = new System.Text.StringBuilder();
+
+        if (Node.MidPoint.HasValue)
+        {
+            var range = Node.MaxValue - Node.MinValue;
+            if (range != 0)
+            {
+                var mp = Math.Clamp((Node.MidPoint.Value - Node.MinValue) / range, 0.0, 1.0);
+                var θ = (1.0 - mp) * Math.PI;
+                var cosθ = Math.Cos(θ); var sinθ = Math.Sin(θ);
+                var x1 = 60 + 48 * cosθ; var y1 = 65 - 48 * sinθ;
+                var x2 = 60 + 62 * cosθ; var y2 = 65 - 62 * sinθ;
+                sb.Append($"<line x1=\"{x1:F1}\" y1=\"{y1:F1}\" x2=\"{x2:F1}\" y2=\"{y2:F1}\" stroke=\"rgba(128,128,128,0.8)\" stroke-width=\"2\" stroke-linecap=\"round\"/>");
+            }
+        }
+
         sb.Append($"<text x=\"60\" y=\"60\" text-anchor=\"middle\" dominant-baseline=\"auto\" font-size=\"{fontSize}\" font-weight=\"bold\" fill=\"currentColor\">{value}</text>");
         if (!string.IsNullOrEmpty(Node.Unit))
             sb.Append($"<text x=\"60\" y=\"72\" text-anchor=\"middle\" font-size=\"9\" fill=\"currentColor\" opacity=\"0.7\">{System.Net.WebUtility.HtmlEncode(Node.Unit)}</text>");
@@ -139,20 +144,17 @@
         return Node.DataValue.ToString() ?? "—";
     }
 
-    private string ContainerStyle()
+    private string TitlePos => string.IsNullOrEmpty(Node.TitlePosition) ? "Above" : Node.TitlePosition;
+    private bool ShowTitleFirst() => (TitlePos == "Above" || TitlePos == "Left") && !string.IsNullOrEmpty(Node.Title);
+    private string OuterFlexStyle() => TitlePos switch
     {
-        var size = Node.Size != null ? $"width:{Node.Size.Width}px;height:{Node.Size.Height}px;" : "";
-        var bg = !string.IsNullOrEmpty(Node.BackgroundColor) ? $"background-color:{Node.BackgroundColor};" : "";
-        return size + bg;
-    }
-
-    private void OnDoubleClick()
+        "Left"  => "display:flex;flex-direction:row;align-items:center;height:100%;",
+        "Right" => "display:flex;flex-direction:row;align-items:center;height:100%;",
+        _       => "display:flex;flex-direction:column;height:100%;"
+    };
+    private string TitleDivStyle() => TitlePos switch
     {
-        if (AppState.IsEditMode) AppState.TriggerEditProperties();
-    }
-
-    private static string PortStyle(MudPortModel? port) =>
-        port == null ? string.Empty : $"width:{(int)port.Size.Width}px; height:{(int)port.Size.Height}px;";
-
-    public void Dispose() => _dataWatcher?.Dispose();
+        "Left" or "Right" => "text-align:center;font-size:0.75rem;font-weight:500;padding:2px 4px;max-width:4rem;word-wrap:break-word;",
+        _ => "text-align:center;font-size:0.75rem;font-weight:500;padding:2px 4px 0;"
+    };
 }

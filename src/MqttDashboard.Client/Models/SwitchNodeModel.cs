@@ -17,4 +17,13 @@ public class SwitchNodeModel : MudNodeModel
 
     /// <summary>Payload to publish when switched OFF.</summary>
     public string OffValue { get; set; } = "0";
+
+    /// <summary>Display style: "Full" (chip + icon), "Compact" (single row with text+icon), "IconOnly" (icon only).</summary>
+    public string SwitchStyle { get; set; } = "Full";
+
+    /// <summary>Text shown when state is ON.</summary>
+    public string OnText { get; set; } = "ON";
+
+    /// <summary>Text shown when state is OFF.</summary>
+    public string OffText { get; set; } = "OFF";
 }
