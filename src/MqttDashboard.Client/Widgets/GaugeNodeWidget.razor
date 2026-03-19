@@ -30,9 +30,12 @@
                         <path d="M 10 65 A 55 55 0 0 1 110 65"
                               stroke="rgba(128,128,128,0.25)" stroke-width="10" fill="none" stroke-linecap="round"/>
                         <!-- Value arc -->
-                        @if (_percent > 0.001)
+                        @{
+                            var arcPath = BuildValueArcPath();
+                        }
+                        @if (!string.IsNullOrEmpty(arcPath))
                         {
-                            <path d="@BuildValueArcPath()"
+                            <path d="@arcPath"
                                   stroke="@GetArcColor()" stroke-width="10" fill="none" stroke-linecap="round"/>
                         }
                         <!-- Value text and labels rendered via MarkupString to avoid Razor <text> parsing conflict -->
@@ -40,7 +43,7 @@
                     </svg>
                     @if (!string.IsNullOrEmpty(Node.Text))
                     {
-                        <div style="text-align:center;font-size:0.75rem;padding:1px 4px;word-break:break-word;">@Node.Text</div>
+                        <div style="text-align:center;font-size:0.75rem;padding:1px 4px;word-break:break-word;">@FormatText()</div>
                     }
                 </div>
                 @if (!ShowTitleFirst() && !string.IsNullOrEmpty(Node.Title))
@@ -81,18 +84,57 @@
 
     private string BuildValueArcPath()
     {
+        var origin = Node.ArcOrigin ?? Node.MinValue;
+        var range = Node.MaxValue - Node.MinValue;
+
+        // With ArcOrigin: draw from origin point to current value point
+        if (Node.ArcOrigin.HasValue && range != 0)
+        {
+            var originPercent = Math.Clamp((origin - Node.MinValue) / range, 0.0, 1.0);
+            var valuePercent = Math.Clamp(_percent, 0.0, 1.0);
+
+            if (Math.Abs(valuePercent - originPercent) < 0.001) return "";
+
+            var originAngle = (1.0 - originPercent) * Math.PI;
+            var valueAngle = (1.0 - valuePercent) * Math.PI;
+
+            var ox = 60 + 55 * Math.Cos(originAngle);
+            var oy = 65 - 55 * Math.Sin(originAngle);
+            var vx = 60 + 55 * Math.Cos(valueAngle);
+            var vy = 65 - 55 * Math.Sin(valueAngle);
+
+            // sweep=1 clockwise (value > origin = arc going right), sweep=0 counter-clockwise
+            var sweep = valuePercent > originPercent ? 1 : 0;
+            return $"M {ox:F2} {oy:F2} A 55 55 0 0 {sweep} {vx:F2} {vy:F2}";
+        }
+
+        // Default: arc from left end (MinValue) to current value
         var p = Math.Clamp(_percent, 0.0, 1.0);
         if (p >= 0.9999) return "M 5 65 A 55 55 0 0 1 115 65";
         var angleDeg = 180.0 - 180.0 * p;
         var angleRad = angleDeg * Math.PI / 180.0;
         var x = 60 + 55 * Math.Cos(angleRad);
         var y = 65 - 55 * Math.Sin(angleRad);
-        var largeArc = p > 1.0 ? 1 : 0;
+        var largeArc = p > 0.5 ? 1 : 0;
         return $"M 5 65 A 55 55 0 {largeArc} 1 {x:F2} {y:F2}";
     }
 
     private string GetArcColor()
     {
+        if (Node.ColorThresholds.Count > 0 && Node.DataValue != null &&
+            double.TryParse(Node.DataValue.ToString(), out var dThresh))
+        {
+            var origin = Node.ArcOrigin ?? Node.MinValue;
+            var distance = Math.Abs(dThresh - origin);
+            var ordered = Node.ColorThresholds.OrderBy(t => t.Value).ToList();
+            string color = ordered[0].Color;
+            foreach (var t in ordered)
+            {
+                if (distance >= t.Value) color = t.Color;
+                else break;
+            }
+            return color;
+        }
         if (Node.MidPoint.HasValue && Node.DataValue != null &&
             double.TryParse(Node.DataValue.ToString(), out var d))
         {
@@ -114,12 +156,14 @@
         var value = System.Net.WebUtility.HtmlEncode(FormatValue());
         var sb = new System.Text.StringBuilder();
 
-        if (Node.MidPoint.HasValue)
+        // Draw tick mark: prefer ArcOrigin tick; fall back to MidPoint tick
+        var tickValue = Node.ArcOrigin ?? Node.MidPoint;
+        if (tickValue.HasValue)
         {
             var range = Node.MaxValue - Node.MinValue;
             if (range != 0)
             {
-                var mp = Math.Clamp((Node.MidPoint.Value - Node.MinValue) / range, 0.0, 1.0);
+                var mp = Math.Clamp((tickValue.Value - Node.MinValue) / range, 0.0, 1.0);
                 var θ = (1.0 - mp) * Math.PI;
                 var cosθ = Math.Cos(θ); var sinθ = Math.Sin(θ);
                 var x1 = 60 + 48 * cosθ; var y1 = 65 - 48 * sinθ;

@@ -4,6 +4,14 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ---
 
+## 🟡 Bugs/improvements
+
+- [ ] There should be a system wide property that selects whether to open a specific file when a new client connects or if it remembers the last file and re-uses that
+- [ ] Node properties dialog
+	- [ ] Can this dialog be moveable and apply changes dynamically (whilst still being able to cancel everything since opening)
+	- [ ] Data binding should not just be 2 items but a list that can be added to. So "+" in the properties dialog to configure another, "x" to remove a current one and handle list of items with an index in changed event for example
+
+
 ## 🟡 Features
 
 ### FEAT-A: MQTT topic wildcards per node
@@ -16,16 +24,15 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Option: "virtual topics" defined at dashboard level, computed from raw MQTT values, reusable across nodes
 - [ ] Option to write calculated values back to the MQTT broker
 
-### FEAT-C: Additional node types _(Gauge and Switch done — see CHANGELOG)_
+### FEAT-C: Additional node types _(Gauge, Switch, Battery done — see CHANGELOG)_
 - [ ] **Grid** — table with rows/columns mapped to MQTT values
 - [ ] **Log** — scrolling history list of a topic's messages (configurable max history)
-- [ ] **Battery** — percentage + visual battery icon
 - [ ] **Chart** — in-memory time-series sparkline graph
 - [ ] **Image** — display an image from a URL
 - [ ] **Markdown / HTML** — formatted static content, optionally with data substitution
 - [ ] **IFrame** — embed another web page
 - [ ] **Tree view** — hierarchical display of MQTT topics and values from a root subscription
-- [ ] Different node shapes (circle, oval, diamond, etc.)
+- [ ] **Text node** - different node shapes (circle, diamond, etc.)
 
 ### FEAT-D: Multiple dashboard pages
 - [ ] `DiagramState` becomes a list of pages, each with its own canvas

@@ -1,6 +1,4 @@
 @using Blazor.Diagrams.Components.Renderers;
-@using Blazor.Diagrams.Core.Anchors
-@using Blazor.Diagrams.Core.Models
 @using MqttDashboard.Models
 @using MqttDashboard.Services
 @inherits BaseNodeWithDataWidget<MudNodeModel>
@@ -81,128 +79,9 @@
         base.OnInitialized();
     }
 
-    protected override void OnData1Updated()
-    {
-        if (Node.LinkAnimation == null || Node.LinkAnimation == "None") return;
-        if (Node.DataValue != null && double.TryParse(Node.DataValue.ToString(), out var d))
-        {
-            if (Node.LinkAnimation == "Reverse")
-                d = -d;
-
-            foreach (var port in Node.Ports)
-            {
-                if (port.Links.Count > 0)
-                {
-                    foreach (var link in port.Links)
-                    {
-                        var l = link as LinkModel;
-                        if (l != null
-                         && l.Animations != null
-                         && l.Animations[0] != null)
-                        {
-                            var ani = l.Animations[0];
-                            var anchor = link.Source as SinglePortAnchor;
-                            if (anchor != null)
-                            {
-                                if (anchor.Port == port)
-                                {
-                                    string to;
-                                    if (d > 0)
-                                        to = "-10";
-                                    else if (d == 0)
-                                        to = "0";
-                                    else
-                                        to = "10";
-                                    if (to != null && to != ani.To)
-                                    {
-                                        ani.To = to;
-                                        l.Refresh();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     private string GetFontSize() =>
         Node.FontSize.HasValue ? $"{Node.FontSize.Value}px" : "inherit";
-
-    /// <summary>
-    /// Wraps an arbitrary value for use with string.Format numeric/integer format specifiers.
-    /// </summary>
-    class FormattableValue : IFormattable
-    {
-        public FormattableValue(object? value) { _value = value; }
-        object? _value;
-
-        public string ToString(string? format, IFormatProvider? provider)
-        {
-            try
-            {
-                if (format != null)
-                {
-                    switch (format[0])
-                    {
-                        case 'E':
-                        case 'F':
-                        case 'G':
-                        case 'N':
-                        case '0':
-                            if (_value?.GetType() == typeof(string))
-                            {
-                                if (double.TryParse(_value.ToString(), out double d))
-                                    return d.ToString(format, provider);
-                            }
-                            else if (_value?.GetType() == typeof(int))
-                            {
-                                double d = (int)_value;
-                                return d.ToString(format, provider);
-                            }
-                            break;
-                        case 'I':
-                        case 'X':
-                            if (_value?.GetType() == typeof(string))
-                            {
-                                if (int.TryParse(_value.ToString(), out int i))
-                                    return i.ToString(format, provider);
-                            }
-                            else if (_value?.GetType() == typeof(double))
-                            {
-                                int i = (int)(double)_value;
-                                return i.ToString(format, provider);
-                            }
-                            break;
-                    }
-                }
-            }
-            catch
-            {
-                System.Diagnostics.Debug.WriteLine("Exception in FormattableValue ignored");
-            }
-
-            if (_value == null) return "";
-            var fv = _value as IFormattable;
-            return fv != null ? fv.ToString(format, provider) : (_value.ToString() ?? "");
-        }
-    }
-
-    private string FormatText()
-    {
-        if (string.IsNullOrEmpty(Node.Text)) return string.Empty;
-        try
-        {
-            return string.Format(Node.Text,
-                new FormattableValue(Node.DataValue),
-                new FormattableValue(Node.DataValue2));
-        }
-        catch
-        {
-            return Node.Text;
-        }
-    }
 
     private string GenerateStyle()
     {

@@ -19,6 +19,7 @@ public class MqttClientService : BackgroundService
     private MqttClientOptions? _mqttOptions;
     private readonly ConcurrentDictionary<string, bool> _subscribedTopics = new();
     private CancellationToken _stoppingToken;
+    private int _isReconnecting = 0; // 0 = false, 1 = true (Interlocked flag)
 
     /// <summary>
     /// Fires when an MQTT message is received from the broker. Used by in-process subscribers
@@ -79,16 +80,26 @@ public class MqttClientService : BackgroundService
 
             _mqttClient.DisconnectedAsync += async e =>
             {
-                _logger.LogWarning("MQTT client disconnected. Reason: {Reason}, Was clean: {WasClean}",
-                    e.Reason, e.ClientWasConnected);
-                if (e.Exception != null)
-                    _logger.LogError(e.Exception, "MQTT disconnection error");
+                _logger.LogWarning("MQTT client disconnected. Reason: {Reason}, Was connected: {WasConnected}{ExMsg}",
+                    e.Reason, e.ClientWasConnected,
+                    e.Exception != null ? $", Exception: {e.Exception.Message}" : "");
 
-                await ReconnectWithBackoffAsync();
+                // Guard: only one reconnect loop at a time (MQTTnet v5 fires DisconnectedAsync
+                // even on failed ConnectAsync attempts, which would spawn cascading loops)
+                if (Interlocked.CompareExchange(ref _isReconnecting, 1, 0) == 0)
+                {
+                    try { await ReconnectWithBackoffAsync(); }
+                    finally { Interlocked.Exchange(ref _isReconnecting, 0); }
+                }
+                else
+                {
+                    _logger.LogDebug("MQTT DisconnectedAsync fired but reconnect loop already running — skipping");
+                }
             };
 
             _mqttClient.ConnectedAsync += async e =>
             {
+                Interlocked.Exchange(ref _isReconnecting, 0); // allow future reconnects
                 _logger.LogInformation("MQTT client connected. Session present: {SessionPresent}",
                     e.ConnectResult.IsSessionPresent);
                 await _connectionMonitor.UpdateStateAsync(MqttConnectionState.Connected);

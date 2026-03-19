@@ -292,6 +292,7 @@ public class ApplicationState
         diagram.RegisterComponent<MudNodeModel, MudNodeWidget>();
         diagram.RegisterComponent<GaugeNodeModel, GaugeNodeWidget>();
         diagram.RegisterComponent<SwitchNodeModel, SwitchNodeWidget>();
+        diagram.RegisterComponent<BatteryNodeModel, BatteryNodeWidget>();
 
         if (state != null)
         {
@@ -309,6 +310,8 @@ public class ApplicationState
                         MidPoint = nodeState.MidPoint,
                         NegativeColor = nodeState.NegativeColor,
                         PositiveColor = nodeState.PositiveColor,
+                        ArcOrigin = nodeState.ArcOrigin,
+                        ColorThresholds = nodeState.ColorThresholds?.Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color }).ToList() ?? new(),
                     },
                     "Switch" => new SwitchNodeModel(position: new Point(nodeState.X, nodeState.Y))
                     {
@@ -318,6 +321,16 @@ public class ApplicationState
                         SwitchStyle = nodeState.SwitchStyle ?? "Full",
                         OnText = nodeState.OnText ?? "ON",
                         OffText = nodeState.OffText ?? "OFF",
+                        IsReadOnly = nodeState.SwitchIsReadOnly ?? false,
+                    },
+                    "Battery" => new BatteryNodeModel(position: new Point(nodeState.X, nodeState.Y))
+                    {
+                        MinValue = nodeState.MinValue ?? 0,
+                        MaxValue = nodeState.MaxValue ?? 100,
+                        LowColor = nodeState.LowColor,
+                        MedColor = nodeState.MedColor,
+                        HighColor = nodeState.HighColor,
+                        ShowPercent = nodeState.BatteryShowPercent ?? true,
                     },
                     _ => new MudNodeModel(position: new Point(nodeState.X, nodeState.Y)),
                 };
@@ -472,6 +485,10 @@ public class ApplicationState
                 nodeState.MidPoint = g.MidPoint;
                 nodeState.NegativeColor = g.NegativeColor;
                 nodeState.PositiveColor = g.PositiveColor;
+                nodeState.ArcOrigin = g.ArcOrigin;
+                nodeState.ColorThresholds = g.ColorThresholds.Count > 0
+                    ? g.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color }).ToList()
+                    : null;
             }
             else if (node is SwitchNodeModel s)
             {
@@ -481,6 +498,16 @@ public class ApplicationState
                 nodeState.SwitchStyle = s.SwitchStyle;
                 nodeState.OnText = s.OnText;
                 nodeState.OffText = s.OffText;
+                nodeState.SwitchIsReadOnly = s.IsReadOnly;
+            }
+            else if (node is BatteryNodeModel b)
+            {
+                nodeState.MinValue = b.MinValue;
+                nodeState.MaxValue = b.MaxValue;
+                nodeState.LowColor = b.LowColor;
+                nodeState.MedColor = b.MedColor;
+                nodeState.HighColor = b.HighColor;
+                nodeState.BatteryShowPercent = b.ShowPercent;
             }
 
             // Save ports

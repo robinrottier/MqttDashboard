@@ -123,6 +123,19 @@ public partial class Display : IDisposable
     {
         if (_diagram == null) return;
 
+        if (!enterEditMode && AppState.IsEdited)
+        {
+            var confirm = await DialogService.ShowMessageBoxAsync(
+                "Unsaved Changes",
+                "You have unsaved changes. Save before leaving edit mode?",
+                yesText: "Save",
+                noText: "Discard",
+                cancelText: "Cancel");
+            if (confirm == null) return; // Cancel — stay in edit mode
+            if (confirm == true) await SaveDiagram();
+            // false = Discard, continue exiting edit mode
+        }
+
         if (AppState.IsEditMode)
             UnsubscribeEditEvents();
 
@@ -279,9 +292,10 @@ public partial class Display : IDisposable
 
         MudNodeModel node = nodeType switch
         {
-            "Gauge"  => new GaugeNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400))) { Title = $"Gauge {_nodeCounter++}" },
-            "Switch" => new SwitchNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400))) { Title = $"Switch {_nodeCounter++}" },
-            _        => new MudNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))   { Title = $"Node {_nodeCounter++}" },
+            "Gauge"   => new GaugeNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))   { Title = $"Gauge {_nodeCounter++}" },
+            "Switch"  => new SwitchNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))  { Title = $"Switch {_nodeCounter++}" },
+            "Battery" => new BatteryNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400))) { Title = $"Battery {_nodeCounter++}" },
+            _         => new MudNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))     { Title = $"Node {_nodeCounter++}" },
         };
 
         _diagram.Nodes.Add(node);
@@ -440,6 +454,15 @@ public partial class Display : IDisposable
                     OnValue = ns.OnValue ?? "1",
                     OffValue = ns.OffValue ?? "0",
                 },
+                "Battery" => new BatteryNodeModel(new Point(ns.X + offset, ns.Y + offset))
+                {
+                    MinValue = ns.MinValue ?? 0,
+                    MaxValue = ns.MaxValue ?? 100,
+                    LowColor = ns.LowColor,
+                    MedColor = ns.MedColor,
+                    HighColor = ns.HighColor,
+                    ShowPercent = ns.BatteryShowPercent ?? true,
+                },
                 _ => new MudNodeModel(new Point(ns.X + offset, ns.Y + offset)),
             };
             node.Title = ns.Title;
@@ -589,6 +612,7 @@ public partial class Display : IDisposable
             {
                 AppState.ClearUndoRedo();
                 await ApplyDiagramState(state);
+                AppState.SetDiagramName(name);
                 AppState.MarkSaved();
                 await SaveLastDiagramName(name);
                 AppState.AddRecentFile(name);
@@ -614,6 +638,7 @@ public partial class Display : IDisposable
         {
             AppState.ClearUndoRedo();
             await ApplyDiagramState(state);
+            AppState.SetDiagramName(name);
             AppState.MarkSaved();
             await SaveLastDiagramName(name);
             AppState.AddRecentFile(name);
@@ -634,12 +659,12 @@ public partial class Display : IDisposable
         try
         {
             var state = AppState.GetDiagramState();
-            var success = await DiagramService.SaveDiagramAsync(state);
+            var success = await DiagramService.SaveDiagramByNameAsync(AppState.DiagramName, state);
             if (success)
             {
                 AppState.MarkSaved();
                 await SaveLastDiagramName(AppState.DiagramName);
-                Snackbar.Add($"Dashboard saved ({state.Nodes.Count} nodes, {state.Links.Count} links)", Severity.Success);
+                Snackbar.Add($"Saved '{AppState.DiagramName}' ({state.Nodes.Count} nodes, {state.Links.Count} links)", Severity.Success);
             }
             else
             {

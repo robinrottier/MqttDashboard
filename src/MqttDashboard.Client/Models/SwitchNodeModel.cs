@@ -26,4 +26,7 @@ public class SwitchNodeModel : MudNodeModel
 
     /// <summary>Text shown when state is OFF.</summary>
     public string OffText { get; set; } = "OFF";
+
+    /// <summary>If true, the switch cannot be toggled by the user and does not publish to MQTT.</summary>
+    public bool IsReadOnly { get; set; } = false;
 }

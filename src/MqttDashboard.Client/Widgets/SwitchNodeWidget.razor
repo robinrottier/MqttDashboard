@@ -29,19 +29,21 @@
                     @if (Node.SwitchStyle == "Compact")
                     {
                         <div style="display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:4px;padding:2px 4px;width:100%;">
-                            <span style="font-size:0.75rem;font-weight:500;color:@(_isOn ? "var(--mud-palette-success-text)" : "currentColor");">
+                            <span style="font-size:0.75rem;font-weight:500;color:@(_isOn ? "var(--mud-palette-success-text)" : "currentColor");min-width:2.5rem;display:inline-block;text-align:center;">
                                 @(_isOn ? Node.OnText : Node.OffText)
                             </span>
                             <MudIconButton Icon="@(_isOn ? Icons.Material.Filled.ToggleOn : Icons.Material.Filled.ToggleOff)"
                                            Color="@(_isOn ? Color.Success : Color.Default)"
-                                           Size="Size.Small" Style="padding:0;" OnClick="Toggle" />
+                                           Size="Size.Medium" Style="padding:0;" OnClick="Toggle"
+                                           Disabled="Node.IsReadOnly" />
                         </div>
                     }
                     else if (Node.SwitchStyle == "IconOnly")
                     {
                         <MudIconButton Icon="@(_isOn ? Icons.Material.Filled.ToggleOn : Icons.Material.Filled.ToggleOff)"
                                        Color="@(_isOn ? Color.Success : Color.Default)"
-                                       Size="Size.Large" Style="padding:0;" OnClick="Toggle" />
+                                       Size="Size.Large" Style="padding:0;" OnClick="Toggle"
+                                       Disabled="Node.IsReadOnly" />
                     }
                     else
                     {
@@ -53,7 +55,8 @@
                             {
                                 <MudIconButton Icon="@(_isOn ? Icons.Material.Filled.ToggleOn : Icons.Material.Filled.ToggleOff)"
                                                Color="@(_isOn ? Color.Success : Color.Default)"
-                                               Size="Size.Medium" Style="padding:0;" OnClick="Toggle" />
+                                               Size="Size.Large" Style="padding:0;" OnClick="Toggle"
+                                               Disabled="Node.IsReadOnly" />
                             }
                         </div>
                     }
@@ -94,6 +97,7 @@
 
     private async Task Toggle()
     {
+        if (Node.IsReadOnly) return;
         var publishTopic = !string.IsNullOrEmpty(Node.PublishTopic) ? Node.PublishTopic : Node.DataTopic;
         if (string.IsNullOrEmpty(publishTopic)) return;
         var payload = _isOn

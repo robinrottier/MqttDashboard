@@ -12,15 +12,31 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - **Text node** — existing display node (icon + formatted text with MQTT value substitution)
   - **Gauge node** — SVG semicircular arc gauge with configurable min/max/unit; arc colour shifts green→yellow→red as value approaches max
   - **Switch node** — shows current ON/OFF state from a data topic; toggle button publishes a configurable payload back to MQTT
+  - **Battery node** — SVG battery icon with colour-coded fill level (red/amber/green); configurable min/max, low/med/high colours, optional percentage display
 - **MQTT publish** — new `PublishMessageAsync` path through SignalR hub → `MqttClientService` → broker (used by Switch node)
 - Node type picker dialog shown when adding a new node in edit mode
-- **Gauge: MidPoint** — optional midpoint value; when set, arc is split into negative (red by default) and positive (green by default) regions with a tick mark at the midpoint; colours configurable via `NegativeColor` / `PositiveColor` properties
-- **Gauge: Text label** — static text label rendered below the arc (previously unused)
-- **Widget base classes** — `BaseNodeWidget<T>` and `BaseNodeWithDataWidget<T>` reduce duplication across all widget types; all widgets refactored to inherit from these bases
+- **Gauge: ArcOrigin / colour thresholds** — arc can be drawn from a configurable value (e.g. 0 in a ±1000 range) rather than always from the minimum; ordered list of colour threshold breakpoints (value → colour); arc goes red below origin, green above by default when midpoint is set
+- **Gauge: MidPoint** — optional midpoint value; when set, arc is split into negative/positive regions with a tick mark; colours configurable via `NegativeColor` / `PositiveColor` properties
+- **Gauge/Switch: title position** — `TitlePosition` property (Above / Below / Left / Right) on all nodes; title drawn horizontally in all positions
+- **Switch: style modes** — `SwitchStyle` property: Full (icon + text), Compact (icon + small text), Icon-only; `OnText` / `OffText` properties for configurable labels
+- **Switch: read-only mode** — `IsReadOnly` property; when set, toggle is disabled and no MQTT publish occurs
+- **Gauge: Text label** — static or formatted text rendered below the arc (supports `{0:F1}` / `{0:0}` MQTT value substitution)
+- **Widget base classes** — `BaseNodeWidget<T>` and `BaseNodeWithDataWidget<T>` reduce duplication; all widgets inherit from these bases
+- **FormatText in base class** — `FormatText()` and `FormattableValue` helper moved to `BaseNodeWithDataWidget`; format syntax (`{0:0}`, `{0:F2}`, etc.) now works identically in Text, Gauge, and Battery node text fields
+- **Link animation in base class** — `TriggerLinkAnimation()` moved to `BaseNodeWithDataWidget`; all node types now support the Link Animation property without per-widget code
+- **Exit-edit prompt** — switching out of edit mode (or clicking the view button) when the dashboard has unsaved changes now shows a Save / Discard / Cancel dialog
+- File/Save now saves to the currently-open filename (was always saving to `diagram.json`); snackbar confirms the filename saved
+
+### Fixed
+- MQTT reconnect storm — `MQTTnet` v5 fires `DisconnectedAsync` even on failed `ConnectAsync` attempts; added `_isReconnecting` interlocked flag to prevent cascading parallel reconnect loops
+- Blazor Server JSInterop errors after circuit disconnect — `InvokeAsync(StateHasChanged)` now guarded by `_disposed` flag and wrapped in try/catch; prevents `InvalidOperationException` spam in logs
+- Battery / Gauge `Text` property did not accept `{0:0}` numeric format syntax — now handled via shared `FormatText()` base class method
+- Switch compact layout stability — min-width on text span prevents reflow when toggling ON/OFF
+- Switch icon size — Full style uses Large icon, Compact uses Medium
 
 ### Changed
-- Node property editor now shows type-specific settings (Gauge: min/max/unit, midpoint, colours; Switch: publish topic, ON/OFF values)
-- Gauge title is centred above the arc
+- Node property editor shows type-specific settings for all node types (Gauge: arc origin, colour thresholds; Switch: style, read-only, on/off text; Battery: min/max, colours, show-percent)
+- About dialog: title is "About Mqtt Dashboard"; application section header removed; layout condensed; "Up to date" chip inline with version; "Check" button inline with last-checked date; Deployment row reordered above Latest version
 
 ---
 

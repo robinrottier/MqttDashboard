@@ -221,6 +221,72 @@
                     When Mid Point is set, arc is colored based on whether the value is above or below it.
                     The "Text" field above is displayed as a static label below the gauge arc.
                 </MudText>
+                <MudDivider Class="my-1" />
+                <MudText Typo="Typo.caption" Class="mb-1">Arc Origin &amp; Color Thresholds</MudText>
+                <MudNumericField @bind-Value="gaugeNode.ArcOrigin"
+                                 Label="Arc Origin (optional)"
+                                 Variant="Variant.Outlined"
+                                 Margin="Margin.Dense"
+                                 Placeholder="none (arc from MinValue)" />
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1 mb-1">
+                    Color Thresholds (by distance from Arc Origin):
+                </MudText>
+                @foreach (var threshold in gaugeNode.ColorThresholds.ToList())
+                {
+                    <MudGrid Spacing="1" Class="mb-1">
+                        <MudItem xs="5">
+                            <MudNumericField T="double" Value="threshold.Value"
+                                             ValueChanged="v => threshold.Value = v"
+                                             Label="≥ Value" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                        </MudItem>
+                        <MudItem xs="5">
+                            <MudTextField T="string" Value="threshold.Color"
+                                          ValueChanged="v => threshold.Color = v"
+                                          Label="Color" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="e.g. red" />
+                        </MudItem>
+                        <MudItem xs="2" Class="d-flex align-center">
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                           OnClick="@(() => gaugeNode.ColorThresholds.Remove(threshold))"
+                                           Size="MudBlazor.Size.Small" />
+                        </MudItem>
+                    </MudGrid>
+                }
+                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                           OnClick="@(() => gaugeNode.ColorThresholds.Add(new MqttDashboard.Models.GaugeColorThreshold()))"
+                           Color="Color.Primary" Variant="Variant.Text" Size="MudBlazor.Size.Small">
+                    Add Threshold
+                </MudButton>
+            }
+
+            <!-- Battery-specific settings -->
+            @if (Node is BatteryNodeModel batteryNode)
+            {
+                <MudDivider Class="my-2" />
+                <MudText Typo="Typo.caption" Class="mb-1">Battery Settings</MudText>
+                <MudGrid Spacing="2">
+                    <MudItem xs="6">
+                        <MudNumericField @bind-Value="batteryNode.MinValue" Label="Min Value" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudNumericField @bind-Value="batteryNode.MaxValue" Label="Max Value" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                </MudGrid>
+                <MudGrid Spacing="2" Class="mt-1">
+                    <MudItem xs="4">
+                        <MudTextField @bind-Value="batteryNode.LowColor" Label="Low Color" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="default: red" />
+                    </MudItem>
+                    <MudItem xs="4">
+                        <MudTextField @bind-Value="batteryNode.MedColor" Label="Med Color" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="default: orange" />
+                    </MudItem>
+                    <MudItem xs="4">
+                        <MudTextField @bind-Value="batteryNode.HighColor" Label="High Color" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="default: green" />
+                    </MudItem>
+                </MudGrid>
+                <MudCheckBox T="bool" @bind-Value="batteryNode.ShowPercent" Label="Show Percentage" Dense="true" Class="mt-1" />
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1">
+                    Colors accept CSS values (e.g. red, #FF0000) or MudBlazor vars.
+                    Low = below 20%, Med = 20–50%, High = above 50%.
+                </MudText>
             }
 
             <!-- Switch-specific settings -->
@@ -255,6 +321,7 @@
                         <MudTextField @bind-Value="switchNode.OffText" Label="OFF Text" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="OFF" />
                     </MudItem>
                 </MudGrid>
+                <MudCheckBox T="bool" @bind-Value="switchNode.IsReadOnly" Label="Read Only (display only, no toggle)" Dense="true" Class="mt-1" />
             }
 
             <!-- Custom Metadata -->
