@@ -13,7 +13,13 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Node properties dialog
 	- [ ] Can this dialog be moveable and apply changes dynamically (whilst still being able to cancel everything since opening)
 	- [ ] Data binding should not just be 2 items but a list that can be added to. So "+" in the properties dialog to configure another, "x" to remove a current one and handle list of items with an index in changed event for example
-
+- [ ] The "transition" feature for guage properties is great and supercedes the "Mid point & colour choice" done ioriginally, so delete that
+- [ ] LIkewise the battery node should have a transition/colour choice logic instead of the fixed 3 range.
+- [ ] Therefore make the transition/color a resusable component
+- [ ] each transition needs a optin for ">=" and "<=" depending whcih way values go
+- [ ] in future may be other optins that a value transition selects so bear that in mind (e.g. intensity, flashing, shading)
+- [ ] the color boxes should have a choose popoup to hep with selecting the various types and well know values
+- [ ] 
 
 ## 🟡 Features
 
