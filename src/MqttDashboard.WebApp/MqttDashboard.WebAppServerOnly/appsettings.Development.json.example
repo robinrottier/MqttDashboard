@@ -3,6 +3,18 @@
   // appsettings.Development.json is git-ignored; this example file is committed for documentation.
   // edit this file and save — at runtime it appears to be simply reloaded immediately,
   // -- no hot reload required
+  "Serilog": {
+    "MinimumLevel":
+    {
+      "Default": "Information",
+      "Override":
+      {
+        "Microsoft": "Information",
+        "Microsoft.AspNetCore": "Warning",
+        "System": "Warning"
+      }
+    }
+  },
   "Logging":
   {
     "LogLevel":
