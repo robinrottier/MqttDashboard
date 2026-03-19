@@ -11,10 +11,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **OS clipboard integration** — copy/paste of nodes now writes to and reads from the browser's native clipboard (via `navigator.clipboard`), enabling cross-window and cross-tab paste. Falls back gracefully to in-memory clipboard if the Clipboard API is unavailable or permission is denied.
 - **Startup dashboard setting** — admin-configurable system-wide startup behaviour: *Last Used* (per-browser localStorage restore, previous behaviour), *Specific File* (always open a named dashboard for every new session), or *None* (blank canvas). Configure via **Startup Settings…** in the admin menu. Setting is stored in `appsettings.user.json`.
 - `GET /api/settings/startup` and `POST /api/settings/startup` API endpoints.
+- **Log node** — new widget showing a scrolling timestamped history of messages received on a topic. Configurable max entries, optional date and time columns.
+- **TreeView node** — new widget displaying all live MQTT topics and values under a configurable root prefix in a collapsible tree. Optional value column.
+- **Multi-page dashboards** — a dashboard file now holds multiple named pages, each with its own independent canvas. Page tabs appear above the canvas (always visible in edit mode; hidden when only one page in view mode). Add/remove pages from the edit menu or page tab bar. All pages are saved and loaded together in a single `.json` file. Legacy single-page files load transparently as a one-page dashboard.
+- **Colour transition direction** — each `GaugeColorThreshold` entry now has a `Direction` property (`>=` or `<=`) so thresholds can match values going upward *or* downward. "Last match wins" evaluation order.
+- **Battery colour thresholds** — the Battery node now uses the same ordered `ColorThresholds` list as the Gauge instead of the fixed low/medium/high three-band system. Old `LowColor`/`MedColor`/`HighColor` properties are deprecated (still loaded for backward compatibility and auto-converted to thresholds).
+- **`ColorTransitionEditor` component** — reusable MudBlazor component for editing an ordered list of value→colour thresholds with direction selectors; used by both Gauge and Battery property editors.
 
 ### Fixed
 - **Auth on clean start** — cookie authentication services were only registered when `Auth:AdminPasswordHash` was already set at startup. On a first-ever run, setting the admin password via the Setup page then trying to log in threw `"No sign-in authentication handlers are registered"`. Auth services and middleware are now always registered unconditionally.
-- **Docker image version shows `1.0.0`** — the Dockerfile does not include `.git`, so MinVer could not resolve the version from tags. A `BUILD_VERSION` build ARG is now accepted and forwarded to `dotnet publish` via `/p:Version` and `/p:InformationalVersion`. `docker-compose.yml` passes `BUILD_VERSION` from the environment (default `0.0.0-local`).
+- **Docker image version shows `1.0.0`** — `.git` is now included in the Docker build context so MinVer can resolve the version from tags at compile time. The `BUILD_VERSION` build ARG workaround has been removed.
 
 ### Changed
 - **Default dashboard file renamed** — the built-in default file is now `Default.json` (was `diagram.json`). Existing `diagram.json` files are automatically renamed on first startup.
@@ -28,8 +34,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - **Battery node** — SVG battery icon with colour-coded fill level (red/amber/green); configurable min/max, low/med/high colours, optional percentage display
 - **MQTT publish** — new `PublishMessageAsync` path through SignalR hub → `MqttClientService` → broker (used by Switch node)
 - Node type picker dialog shown when adding a new node in edit mode
-- **Gauge: ArcOrigin / colour thresholds** — arc can be drawn from a configurable value (e.g. 0 in a ±1000 range) rather than always from the minimum; ordered list of colour threshold breakpoints (value → colour); arc goes red below origin, green above by default when midpoint is set
-- **Gauge: MidPoint** — optional midpoint value; when set, arc is split into negative/positive regions with a tick mark; colours configurable via `NegativeColor` / `PositiveColor` properties
+- **Gauge: ArcOrigin / colour thresholds** — arc can be drawn from a configurable value (e.g. 0 in a ±1000 range) rather than always from the minimum; ordered list of colour threshold breakpoints (value → colour, direction-aware)
 - **Gauge/Switch: title position** — `TitlePosition` property (Above / Below / Left / Right) on all nodes; title drawn horizontally in all positions
 - **Switch: style modes** — `SwitchStyle` property: Full (icon + text), Compact (icon + small text), Icon-only; `OnText` / `OffText` properties for configurable labels
 - **Switch: read-only mode** — `IsReadOnly` property; when set, toggle is disabled and no MQTT publish occurs

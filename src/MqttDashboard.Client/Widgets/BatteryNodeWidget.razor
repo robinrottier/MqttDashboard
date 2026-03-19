@@ -84,12 +84,28 @@
         }
     }
 
-    private string GetFillColor() => _percent switch
+    private string GetFillColor()
     {
-        < 0.2 => Node.LowColor ?? "var(--mud-palette-error)",
-        < 0.5 => Node.MedColor ?? "var(--mud-palette-warning)",
-        _     => Node.HighColor ?? "var(--mud-palette-success)"
-    };
+        if (Node.ColorThresholds.Count > 0)
+        {
+            var pct = _percent * 100;
+            string? color = null;
+            foreach (var t in Node.ColorThresholds)
+            {
+                if (t.Direction == ">=" && pct >= t.Value) color = t.Color;
+                else if (t.Direction == "<=" && pct <= t.Value) color = t.Color;
+            }
+            if (color != null) return color;
+        }
+        return _percent switch
+        {
+#pragma warning disable CS0618
+            < 0.2 => Node.LowColor ?? "var(--mud-palette-error)",
+            < 0.5 => Node.MedColor ?? "var(--mud-palette-warning)",
+            _     => Node.HighColor ?? "var(--mud-palette-success)"
+#pragma warning restore CS0618
+        };
+    }
 
     private string FormatPercent()
     {

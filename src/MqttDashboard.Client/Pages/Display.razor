@@ -15,6 +15,30 @@
 }
 else
 {
+    @if (AppState.PageNames.Count > 1 || AppState.IsEditMode)
+    {
+        <div class="page-tabs-bar" style="display:flex;align-items:center;gap:4px;padding:2px 4px;background:var(--mud-palette-background);border-bottom:1px solid var(--mud-palette-divider);flex-wrap:nowrap;overflow-x:auto;">
+            @for (int i = 0; i < AppState.PageNames.Count; i++)
+            {
+                var idx = i;
+                var isActive = idx == _activePageIndex;
+                <div style="@($"padding:2px 12px;border-radius:4px 4px 0 0;cursor:pointer;font-size:0.8rem;border:1px solid {(isActive ? "var(--mud-palette-primary)" : "transparent")};background:{(isActive ? "var(--mud-palette-surface)" : "transparent")};color:{(isActive ? "var(--mud-palette-primary)" : "inherit")};white-space:nowrap;")"
+                     @onclick="@(async () => await SwitchToPageAsync(idx))">
+                    @AppState.PageNames[idx]
+                    @if (AppState.IsEditMode && AppState.PageNames.Count > 1)
+                    {
+                        <span style="margin-left:4px;opacity:0.7;font-size:0.7rem;" @onclick:stopPropagation="true"
+                              @onclick="@(async () => await RemovePageAsync(idx))">✕</span>
+                    }
+                </div>
+            }
+            @if (AppState.IsEditMode)
+            {
+                <div style="padding:2px 8px;cursor:pointer;font-size:0.8rem;opacity:0.7;border-radius:4px;"
+                     @onclick="@(async () => await AddPageAsync())">+ Add Page</div>
+            }
+        </div>
+    }
     <MudPaper @key="_diagram" Elevation="2" Style="@CanvasStyle">
         <CascadingValue Value="_diagram" IsFixed="true">
             <DiagramCanvas>

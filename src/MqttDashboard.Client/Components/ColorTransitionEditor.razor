@@ -1,0 +1,94 @@
+@using MqttDashboard.Models
+@using MudBlazor
+
+<MudStack Spacing="1">
+    @if (Thresholds != null)
+    {
+        @foreach (var threshold in Thresholds.ToList())
+        {
+            <MudGrid Spacing="1" Class="mb-1">
+                <MudItem xs="3">
+                    <MudSelect T="string" Value="threshold.Direction"
+                               ValueChanged="v => threshold.Direction = v"
+                               Label="When" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true">
+                        <MudSelectItem Value="@(">=")">≥ (above)</MudSelectItem>
+                        <MudSelectItem Value="@("<=")">≤ (below)</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="3">
+                    <MudNumericField T="double" Value="threshold.Value"
+                                     ValueChanged="v => threshold.Value = v"
+                                     Label="@ValueLabel" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="4">
+                    <MudStack Row="true" Spacing="0" AlignItems="AlignItems.Center">
+                        <div style="@($"width:24px;height:24px;background:{threshold.Color};border:1px solid var(--mud-palette-divider);border-radius:3px;cursor:pointer;flex-shrink:0;")"
+                             @onclick="@(() => _editingThreshold = (_editingThreshold == threshold ? null : threshold))"></div>
+                        <MudTextField T="string" Value="threshold.Color"
+                                      ValueChanged="v => { threshold.Color = v; }"
+                                      Label="Color" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                      Style="flex-grow:1;" />
+                    </MudStack>
+                </MudItem>
+                <MudItem xs="2" Class="d-flex align-center">
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                   OnClick="@(() => Thresholds.Remove(threshold))"
+                                   Size="MudBlazor.Size.Small" />
+                </MudItem>
+            </MudGrid>
+            @if (_editingThreshold == threshold)
+            {
+                <MudPaper Elevation="2" Class="pa-2 mb-1">
+                    <MudText Typo="Typo.caption" Class="mb-1">Quick color pick</MudText>
+                    <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
+                        @foreach (var (label, css) in _commonColors)
+                        {
+                            var tLocal = threshold;
+                            var cssLocal = css;
+                            <MudTooltip Text="@label">
+                                <div style="@($"width:24px;height:24px;background:{css};border:1px solid var(--mud-palette-divider);border-radius:3px;cursor:pointer;")"
+                                     @onclick="@(() => { tLocal.Color = cssLocal; _editingThreshold = null; })"></div>
+                            </MudTooltip>
+                        }
+                    </MudStack>
+                </MudPaper>
+            }
+        }
+    }
+    <MudButton StartIcon="@Icons.Material.Filled.Add"
+               OnClick="AddThreshold"
+               Color="Color.Primary" Variant="Variant.Text" Size="MudBlazor.Size.Small">
+        Add Transition
+    </MudButton>
+</MudStack>
+
+@code {
+    [Parameter] public List<GaugeColorThreshold>? Thresholds { get; set; }
+    [Parameter] public string ValueLabel { get; set; } = "Value";
+
+    private GaugeColorThreshold? _editingThreshold;
+
+    private void AddThreshold()
+    {
+        Thresholds?.Add(new GaugeColorThreshold { Direction = ">=" });
+    }
+
+    private static readonly (string label, string css)[] _commonColors =
+    [
+        ("Error / Red",      "var(--mud-palette-error)"),
+        ("Warning / Orange", "var(--mud-palette-warning)"),
+        ("Success / Green",  "var(--mud-palette-success)"),
+        ("Primary / Blue",   "var(--mud-palette-primary)"),
+        ("Secondary",        "var(--mud-palette-secondary)"),
+        ("Info",             "var(--mud-palette-info)"),
+        ("Red",              "#f44336"),
+        ("Orange",           "#ff9800"),
+        ("Yellow",           "#ffeb3b"),
+        ("Green",            "#4caf50"),
+        ("Blue",             "#2196f3"),
+        ("Purple",           "#9c27b0"),
+        ("White",            "#ffffff"),
+        ("Grey",             "#9e9e9e"),
+        ("Black",            "#212121"),
+    ];
+}

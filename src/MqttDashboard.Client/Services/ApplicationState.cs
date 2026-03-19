@@ -34,6 +34,28 @@ public class ApplicationState
 
     private BlazorDiagram? _diagram;
 
+    // Multi-page support
+    public List<string> PageNames { get; private set; } = ["Page 1"];
+    public int ActivePageIndex { get; private set; } = 0;
+
+    public void SetPageNames(List<string> names, int activeIndex = 0)
+    {
+        PageNames = new List<string>(names);
+        ActivePageIndex = Math.Clamp(activeIndex, 0, Math.Max(0, PageNames.Count - 1));
+        NotifyStateChangedAsync();
+    }
+
+    public void SetActivePage(int index)
+    {
+        ActivePageIndex = Math.Clamp(index, 0, Math.Max(0, PageNames.Count - 1));
+        NotifyStateChangedAsync();
+    }
+
+    public void SetActiveDiagram(BlazorDiagram? diagram)
+    {
+        _diagram = diagram;
+    }
+
     // MQTT State
     public ISignalRService? SignalRService { get; private set; }
     public List<MqttDataMessage> Messages { get; private set; } = new();
@@ -199,6 +221,17 @@ public class ApplicationState
 
     public event Action? OnStateChanged;
 
+    // Page management events
+    public event Action? MenuAddPage;
+    public event Action<int>? MenuRemovePage;
+    public event Action<int, string>? MenuRenamePage;
+    public event Action<int>? MenuSetActivePage;
+
+    public void TriggerAddPage() => MenuAddPage?.Invoke();
+    public void TriggerRemovePage(int index) => MenuRemovePage?.Invoke(index);
+    public void TriggerRenamePage(int index, string name) => MenuRenamePage?.Invoke(index, name);
+    public void TriggerSetActivePage(int index) { ActivePageIndex = index; MenuSetActivePage?.Invoke(index); NotifyStateChangedAsync(); }
+
     public void SetInteractive() => IsInteractive = true;
 
     public void SetEditMode(bool editMode)
@@ -316,6 +349,8 @@ public class ApplicationState
         diagram.RegisterComponent<GaugeNodeModel, GaugeNodeWidget>();
         diagram.RegisterComponent<SwitchNodeModel, SwitchNodeWidget>();
         diagram.RegisterComponent<BatteryNodeModel, BatteryNodeWidget>();
+        diagram.RegisterComponent<LogNodeModel, LogNodeWidget>();
+        diagram.RegisterComponent<TreeViewNodeModel, TreeViewNodeWidget>();
 
         if (state != null)
         {
@@ -330,11 +365,8 @@ public class ApplicationState
                         MinValue = nodeState.MinValue ?? 0,
                         MaxValue = nodeState.MaxValue ?? 100,
                         Unit = nodeState.Unit,
-                        MidPoint = nodeState.MidPoint,
-                        NegativeColor = nodeState.NegativeColor,
-                        PositiveColor = nodeState.PositiveColor,
                         ArcOrigin = nodeState.ArcOrigin,
-                        ColorThresholds = nodeState.ColorThresholds?.Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color }).ToList() ?? new(),
+                        ColorThresholds = nodeState.ColorThresholds?.Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList() ?? new(),
                     },
                     "Switch" => new SwitchNodeModel(position: new Point(nodeState.X, nodeState.Y))
                     {
@@ -350,10 +382,27 @@ public class ApplicationState
                     {
                         MinValue = nodeState.MinValue ?? 0,
                         MaxValue = nodeState.MaxValue ?? 100,
-                        LowColor = nodeState.LowColor,
-                        MedColor = nodeState.MedColor,
-                        HighColor = nodeState.HighColor,
                         ShowPercent = nodeState.BatteryShowPercent ?? true,
+                        ColorThresholds = nodeState.ColorThresholds?.Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList()
+                            ?? (nodeState.LowColor != null || nodeState.MedColor != null || nodeState.HighColor != null
+                                ? new List<GaugeColorThreshold>
+                                  {
+                                      new() { Value = 0,  Direction = ">=", Color = nodeState.LowColor  ?? "var(--mud-palette-error)" },
+                                      new() { Value = 20, Direction = ">=", Color = nodeState.MedColor  ?? "var(--mud-palette-warning)" },
+                                      new() { Value = 50, Direction = ">=", Color = nodeState.HighColor ?? "var(--mud-palette-success)" },
+                                  }
+                                : new()),
+                    },
+                    "Log" => new LogNodeModel(position: new Point(nodeState.X, nodeState.Y))
+                    {
+                        MaxEntries = nodeState.MaxEntries ?? 20,
+                        ShowTime = nodeState.ShowTime ?? true,
+                        ShowDate = nodeState.ShowDate ?? false,
+                    },
+                    "TreeView" => new TreeViewNodeModel(position: new Point(nodeState.X, nodeState.Y))
+                    {
+                        RootTopic = nodeState.RootTopic ?? string.Empty,
+                        ShowValues = nodeState.ShowValues ?? true,
                     },
                     _ => new MudNodeModel(position: new Point(nodeState.X, nodeState.Y)),
                 };
@@ -506,12 +555,9 @@ public class ApplicationState
                 nodeState.MinValue = g.MinValue;
                 nodeState.MaxValue = g.MaxValue;
                 nodeState.Unit = g.Unit;
-                nodeState.MidPoint = g.MidPoint;
-                nodeState.NegativeColor = g.NegativeColor;
-                nodeState.PositiveColor = g.PositiveColor;
                 nodeState.ArcOrigin = g.ArcOrigin;
                 nodeState.ColorThresholds = g.ColorThresholds.Count > 0
-                    ? g.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color }).ToList()
+                    ? g.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList()
                     : null;
             }
             else if (node is SwitchNodeModel s)
@@ -528,10 +574,21 @@ public class ApplicationState
             {
                 nodeState.MinValue = b.MinValue;
                 nodeState.MaxValue = b.MaxValue;
-                nodeState.LowColor = b.LowColor;
-                nodeState.MedColor = b.MedColor;
-                nodeState.HighColor = b.HighColor;
                 nodeState.BatteryShowPercent = b.ShowPercent;
+                nodeState.ColorThresholds = b.ColorThresholds.Count > 0
+                    ? b.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList()
+                    : null;
+            }
+            else if (node is LogNodeModel log)
+            {
+                nodeState.MaxEntries = log.MaxEntries;
+                nodeState.ShowTime = log.ShowTime;
+                nodeState.ShowDate = log.ShowDate;
+            }
+            else if (node is TreeViewNodeModel tv)
+            {
+                nodeState.RootTopic = tv.RootTopic;
+                nodeState.ShowValues = tv.ShowValues;
             }
 
             // Save ports

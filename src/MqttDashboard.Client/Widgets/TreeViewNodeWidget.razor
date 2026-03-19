@@ -1,0 +1,143 @@
+@using MqttDashboard.Models
+@using MqttDashboard.Services
+@using Blazor.Diagrams.Components.Renderers
+@inherits BaseNodeWidget<TreeViewNodeModel>
+
+<div style="@ContainerStyle()"
+     class=@("pa-1 default-node treeview-node"+(Node.Group!=null?" grouped":"")+(Node.Selected?" selected":""))
+     @ondblclick="OnDoubleClick">
+    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
+        @if (!string.IsNullOrEmpty(Node.Title))
+        {
+            <div style="font-size:0.75rem;font-weight:500;padding:2px 4px 0;">@Node.Title</div>
+        }
+        @if (string.IsNullOrEmpty(Node.RootTopic))
+        {
+            <div style="opacity:0.5;font-size:0.75rem;padding:4px;">Set Root Topic in properties.</div>
+        }
+        else
+        {
+            <div style="flex:1;overflow-y:auto;font-size:0.75rem;min-height:0;padding:2px 0;">
+                @RenderTree(_tree)
+            </div>
+        }
+    </div>
+    @foreach (var port in Node.Ports)
+    {
+        <PortRenderer @key="port" Port="port" Style="@PortStyle(port as MudPortModel)" />
+    }
+</div>
+
+@code {
+    private TreeNode _tree = new("", "");
+    private bool _disposed;
+
+    private sealed class TreeNode(string fullTopic, string label)
+    {
+        public string FullTopic { get; } = fullTopic;
+        public string Label { get; } = label;
+        public string? Value { get; set; }
+        public List<TreeNode> Children { get; set; } = [];
+        public bool Expanded { get; set; } = true;
+    }
+
+    protected override void OnInitialized()
+    {
+        Node.MinimumDimensions = new(120, 80);
+        if (Node.Size == null || Node.Size.Width < 120 || Node.Size.Height < 80)
+            Node.Size = new(200, 200);
+        base.OnInitialized();
+        AppState.OnStateChanged += OnAppStateChanged;
+        RebuildTree();
+    }
+
+    private void OnAppStateChanged()
+    {
+        if (_disposed) return;
+        RebuildTree();
+        try { InvokeAsync(StateHasChanged); } catch { }
+    }
+
+    private void RebuildTree()
+    {
+        if (string.IsNullOrEmpty(Node.RootTopic)) { _tree = new("", ""); return; }
+
+        var root = new TreeNode(Node.RootTopic, Node.RootTopic.Split('/').Last());
+        root.Value = AppState.DataCache.GetValue(Node.RootTopic)?.ToString();
+
+        var pattern = Node.RootTopic.TrimEnd('/') + "/#";
+        var matches = AppState.DataCache.GetValuesByPattern(pattern);
+
+        foreach (var kvp in matches.OrderBy(x => x.Key))
+        {
+            var relativeParts = kvp.Key.Substring(Node.RootTopic.Length).TrimStart('/').Split('/');
+            var node = root;
+            var currentPath = Node.RootTopic;
+            foreach (var part in relativeParts)
+            {
+                currentPath += "/" + part;
+                var child = node.Children.FirstOrDefault(c => c.Label == part);
+                if (child == null)
+                {
+                    child = new TreeNode(currentPath, part);
+                    node.Children.Add(child);
+                }
+                node = child;
+            }
+            node.Value = kvp.Value?.ToString();
+        }
+        _tree = root;
+    }
+
+    private RenderFragment RenderTree(TreeNode node, int depth = 0) => builder =>
+    {
+        if (depth > 10) return;
+        var indent = depth * 12;
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "style", $"padding-left:{indent}px;");
+        builder.OpenElement(2, "div");
+        builder.AddAttribute(3, "style", "display:flex;align-items:center;gap:4px;cursor:pointer;padding:1px 2px;border-radius:2px;");
+        builder.AddAttribute(4, "onclick", EventCallback.Factory.Create(this, () => { node.Expanded = !node.Expanded; StateHasChanged(); }));
+        if (node.Children.Count > 0)
+        {
+            builder.OpenElement(5, "span");
+            builder.AddAttribute(6, "style", "opacity:0.5;font-size:0.65rem;width:10px;");
+            builder.AddContent(7, node.Expanded ? "▼" : "▶");
+            builder.CloseElement();
+        }
+        else
+        {
+            builder.OpenElement(8, "span");
+            builder.AddAttribute(9, "style", "width:10px;display:inline-block;");
+            builder.AddContent(10, "");
+            builder.CloseElement();
+        }
+        builder.OpenElement(11, "span");
+        builder.AddAttribute(12, "style", "flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:" + (node.Children.Count > 0 ? "500" : "400") + ";");
+        builder.AddContent(13, node.Label);
+        builder.CloseElement();
+        if (Node.ShowValues && node.Value != null)
+        {
+            builder.OpenElement(14, "span");
+            builder.AddAttribute(15, "style", "opacity:0.7;font-size:0.65rem;white-space:nowrap;");
+            builder.AddContent(16, node.Value);
+            builder.CloseElement();
+        }
+        builder.CloseElement(); // inner div
+        if (node.Expanded && node.Children.Count > 0)
+        {
+            builder.OpenElement(17, "div");
+            foreach (var child in node.Children)
+                builder.AddContent(18, RenderTree(child, depth + 1));
+            builder.CloseElement();
+        }
+        builder.CloseElement(); // outer div
+    };
+
+    public override void Dispose()
+    {
+        _disposed = true;
+        AppState.OnStateChanged -= OnAppStateChanged;
+        base.Dispose();
+    }
+}

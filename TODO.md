@@ -13,13 +13,8 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Node properties dialog
 	- [ ] Can this dialog be moveable and apply changes dynamically (whilst still being able to cancel everything since opening)
 	- [ ] Data binding should not just be 2 items but a list that can be added to. So "+" in the properties dialog to configure another, "x" to remove a current one and handle list of items with an index in changed event for example
-- [ ] The "transition" feature for guage properties is great and supercedes the "Mid point & colour choice" done ioriginally, so delete that
-- [ ] LIkewise the battery node should have a transition/colour choice logic instead of the fixed 3 range.
-- [ ] Therefore make the transition/color a resusable component
-- [ ] each transition needs a optin for ">=" and "<=" depending whcih way values go
-- [ ] in future may be other optins that a value transition selects so bear that in mind (e.g. intensity, flashing, shading)
-- [ ] the color boxes should have a choose popoup to hep with selecting the various types and well know values
-- [ ] 
+- [ ] The color boxes in the transition/colour editor should have a choose popup to help with selecting the various types and well-known values
+- [ ] In future, colour transitions may drive other properties (e.g. intensity, flashing, shading) — bear that in mind for the model
 
 ## 🟡 Features
 
@@ -33,9 +28,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Option: "virtual topics" defined at dashboard level, computed from raw MQTT values, reusable across nodes
 - [ ] Option to write calculated values back to the MQTT broker
 
-### FEAT-C: Additional node types _(Gauge, Switch, Battery done — see CHANGELOG)_
-- [ ] **Log** — scrolling history list of a topic's messages (configurable max history). Options as to what to display (time/date/value) 
-- [ ] **Tree view** — hierarchical display of MQTT topics and values from a root subscription
+### FEAT-C: Additional node types _(Gauge, Switch, Battery, Log, TreeView done — see CHANGELOG)_
 - [ ] **Text node** - different node shapes (circle, diamond, etc.)
 - [ ] **Grid** — table with rows/columns mapped to MQTT values
 - [ ] **Chart** — in-memory time-series sparkline graph
@@ -43,11 +36,10 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] **Markdown / HTML** — formatted static content, optionally with data substitution
 - [ ] **IFrame** — embed another web page
 
-### FEAT-D: Multiple dashboard pages
-- [ ] `DiagramState` becomes a list of pages, each with its own canvas and rename to "DashboardState"
-- [ ] Page tabs at the top with overflow handling (scrolling/dropdown)
+### FEAT-D: Multiple dashboard pages _(basic multi-page done — see CHANGELOG)_
+- [ ] Page tab overflow handling (scrolling/dropdown when many pages)
 - [ ] Swipe left/right gesture on mobile
-- [ ] Page management: add, rename, delete, reorder
+- [ ] Page reordering (drag tabs)
 - [ ] Current "Data" view moves to an optional tab (tree view and log of all live values)
 
 ### FEAT-E: Editing improvements

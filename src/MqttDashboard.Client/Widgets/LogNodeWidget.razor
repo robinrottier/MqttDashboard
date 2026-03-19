@@ -1,0 +1,74 @@
+@using MqttDashboard.Models
+@using MqttDashboard.Services
+@using Blazor.Diagrams.Components.Renderers
+@inherits BaseNodeWithDataWidget<LogNodeModel>
+
+<div style="@ContainerStyle()"
+     class=@("pa-1 default-node log-node"+(Node.Group!=null?" grouped":"")+(Node.Selected?" selected":""))
+     @ondblclick="OnDoubleClick">
+    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
+        @if (!string.IsNullOrEmpty(Node.Title))
+        {
+            <div style="font-size:0.75rem;font-weight:500;padding:2px 4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                @Node.Title
+            </div>
+        }
+        <div style="flex:1;overflow-y:auto;font-size:0.7rem;font-family:monospace;min-height:0;">
+            @if (_entries.Count == 0)
+            {
+                <div style="opacity:0.5;padding:4px;">No data yet…</div>
+            }
+            else
+            {
+                @foreach (var entry in _entries)
+                {
+                    <div style="padding:1px 4px;border-bottom:1px solid rgba(128,128,128,0.1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        @if (Node.ShowDate || Node.ShowTime)
+                        {
+                            <span style="opacity:0.6;margin-right:4px;">@FormatTimestamp(entry.At)</span>
+                        }
+                        <span>@entry.Value</span>
+                    </div>
+                }
+            }
+        </div>
+        @if (!string.IsNullOrEmpty(Node.DataTopic))
+        {
+            <div style="font-size:0.65rem;opacity:0.4;padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                @Node.DataTopic
+            </div>
+        }
+    </div>
+    @foreach (var port in Node.Ports)
+    {
+        <PortRenderer @key="port" Port="port" Style="@PortStyle(port as MudPortModel)" />
+    }
+</div>
+
+@code {
+    private record LogEntry(DateTime At, string Value);
+    private readonly List<LogEntry> _entries = [];
+
+    protected override void OnInitialized()
+    {
+        Node.MinimumDimensions = new(120, 80);
+        if (Node.Size == null || Node.Size.Width < 120 || Node.Size.Height < 80)
+            Node.Size = new(200, 160);
+        base.OnInitialized();
+    }
+
+    protected override void OnData1Updated()
+    {
+        var value = Node.DataValue?.ToString() ?? "";
+        _entries.Insert(0, new LogEntry(DateTime.Now, value));
+        while (_entries.Count > Math.Max(1, Node.MaxEntries))
+            _entries.RemoveAt(_entries.Count - 1);
+    }
+
+    private string FormatTimestamp(DateTime at)
+    {
+        if (Node.ShowDate && Node.ShowTime) return at.ToString("MM-dd HH:mm:ss");
+        if (Node.ShowDate) return at.ToString("yyyy-MM-dd");
+        return at.ToString("HH:mm:ss");
+    }
+}
