@@ -86,6 +86,39 @@ public class NodeState
     public int? FontSize { get; set; }
     public string? LinkAnimation { get; set; }
 
+    // Node type discriminator (null/"Text" = existing text node, backward-compatible)
+    public string NodeType { get; set; } = "Text";
+
+    // Gauge-specific
+    public double? MinValue { get; set; }
+    public double? MaxValue { get; set; }
+    public string? Unit { get; set; }
+    public double? MidPoint { get; set; }
+    public string? NegativeColor { get; set; }
+    public string? PositiveColor { get; set; }
+
+    // Switch-specific
+    public string? PublishTopic { get; set; }
+    public string? OnValue { get; set; }
+    public string? OffValue { get; set; }
+    public string? SwitchStyle { get; set; }
+    public string? OnText { get; set; }
+    public string? OffText { get; set; }
+    public bool? SwitchIsReadOnly { get; set; }
+
+    // Battery-specific
+    public string? LowColor { get; set; }
+    public string? MedColor { get; set; }
+    public string? HighColor { get; set; }
+    public bool? BatteryShowPercent { get; set; }
+
+    // Gauge ArcOrigin and color thresholds
+    public double? ArcOrigin { get; set; }
+    public List<GaugeColorThresholdState>? ColorThresholds { get; set; }
+
+    // Title position (all node types)
+    public string? TitlePosition { get; set; }
+
     public List<PortState> Ports { get; set; } = new();
 }
 
@@ -93,6 +126,12 @@ public class PortState
 {
     public string Id { get; set; } = string.Empty;
     public string Alignment { get; set; } = string.Empty;
+}
+
+public class GaugeColorThresholdState
+{
+    public double Value { get; set; }
+    public string Color { get; set; } = "var(--mud-palette-primary)";
 }
 
 public class LinkState

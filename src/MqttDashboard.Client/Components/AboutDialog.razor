@@ -8,12 +8,7 @@
 
 <MudDialog>
     <DialogContent>
-        <MudCard Class="mb-2">
-            <MudCardHeader>
-                <CardHeaderContent>
-                    <MudText Typo="Typo.h6">Application</MudText>
-                </CardHeaderContent>
-            </MudCardHeader>
+        <MudCard Class="mb-1">
             <MudCardContent Class="pa-0">
                 <MudSimpleTable Dense="true" Hover="true" Style="overflow: hidden;">
                     <tbody>
@@ -45,12 +40,22 @@
                             }
                             else if (_updateStatus != null)
                             {
-                                <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Latest Version</td>
-                                    <td style="padding:6px 16px;font-family:monospace;">@(_updateStatus.LatestVersion ?? "—")</td></tr>
                                 <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Deployment</td>
                                     <td style="padding:6px 16px;font-family:monospace;">@_updateStatus.DeploymentType</td></tr>
+                                <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Latest Version</td>
+                                    <td style="padding:6px 16px;font-family:monospace;">@(_updateStatus.LatestVersion ?? "—")
+                                        @if (!_updateStatus.UpdateAvailable && _updateStatus.LastChecked != null)
+                                        {
+                                            <MudChip T="string" Size="Size.Small" Color="Color.Success" Class="ml-1" Style="height:18px;">Up to date</MudChip>
+                                        }
+                                    </td></tr>
                                 <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Last Checked</td>
-                                    <td style="padding:6px 16px;font-family:monospace;">@(_updateStatus.LastChecked?.LocalDateTime.ToString("yyyy-MM-dd HH:mm") ?? "Not yet")</td></tr>
+                                    <td style="padding:6px 16px;font-family:monospace;display:flex;align-items:center;gap:8px;">
+                                        @(_updateStatus.LastChecked?.LocalDateTime.ToString("yyyy-MM-dd HH:mm") ?? "Not yet")
+                                        <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="CheckForUpdates" Disabled="_checkingUpdate">
+                                            @(_checkingUpdate ? "Checking..." : "Check")
+                                        </MudButton>
+                                    </td></tr>
                             }
                         }
                     </tbody>
@@ -76,24 +81,11 @@
                             </MudAlert>
                         }
                     }
-                    else if (_updateStatus?.LastChecked != null && !_checkingUpdate)
-                    {
-                        <MudText Typo="Typo.body2" Class="mt-1 mx-4 mb-2" Color="Color.Success">
-                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="mr-1" />
-                            Up to date
-                        </MudText>
-                    }
-                    <div class="mx-2 mb-2 mt-1">
-                        <MudButton Variant="Variant.Outlined" Size="Size.Small"
-                                   OnClick="CheckForUpdates" Disabled="_checkingUpdate">
-                            Check for updates
-                        </MudButton>
-                    </div>
                 }
             </MudCardContent>
         </MudCard>
 
-        <MudCard Class="mb-2">
+        <MudCard Class="mb-1">
             <MudCardHeader>
                 <CardHeaderContent>
                     <MudText Typo="Typo.h6">Server</MudText>

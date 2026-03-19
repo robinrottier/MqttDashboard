@@ -1,10 +1,7 @@
 @using Blazor.Diagrams.Components.Renderers;
-@using Blazor.Diagrams.Core.Anchors
-@using Blazor.Diagrams.Core.Models
 @using MqttDashboard.Models
 @using MqttDashboard.Services
-@inject ApplicationState AppState
-@implements IDisposable
+@inherits BaseNodeWithDataWidget<MudNodeModel>
 
     <MudTooltip Delay="500" Arrow="true" Placement="Placement.Top">
         <TooltipContent>
@@ -72,195 +69,19 @@
     </MudTooltip>
 
 @code {
-    [Parameter] public MudNodeModel Node { get; set; } = null!;
-
-    private IDisposable? _dataWatcher;
-    private IDisposable? _dataWatcher2;
-
     protected override void OnInitialized()
     {
-        base.OnInitialized();
         Node.MinimumDimensions = new(20, 20);
         if (Node.Size == null
          || Node.Size.Width  < Node.MinimumDimensions.Width
          || Node.Size.Height < Node.MinimumDimensions.Height)
             Node.Size = new(100, 60);
-
-        SetupDataWatchers();
+        base.OnInitialized();
     }
 
-    protected override void OnParametersSet()
-    {
-        base.OnParametersSet();
-        SetupDataWatchers();
-    }
-
-    private void SetupDataWatchers()
-    {
-        _dataWatcher?.Dispose();
-        _dataWatcher = null;
-        _dataWatcher2?.Dispose();
-        _dataWatcher2 = null;
-
-        if (!string.IsNullOrEmpty(Node.DataTopic))
-        {
-            var v = AppState.DataCache.GetValue(Node.DataTopic);
-            if (v != null) { Node.DataValue = v; Node.DataLastUpdated = DateTime.Now; }
-            _dataWatcher = AppState.DataCache.Watch(Node.DataTopic, OnData1Received);
-        }
-
-        if (!string.IsNullOrEmpty(Node.DataTopic2))
-        {
-            var v2 = AppState.DataCache.GetValue(Node.DataTopic2);
-            if (v2 != null) { Node.DataValue2 = v2; Node.DataLastUpdated2 = DateTime.Now; }
-            _dataWatcher2 = AppState.DataCache.Watch(Node.DataTopic2, OnData2Received);
-        }
-    }
-
-    private void OnData1Received(string topic, object value)
-    {
-        Node.DataValue = value;
-        Node.DataLastUpdated = DateTime.Now;
-        InvokeAsync(StateHasChanged);
-
-        if (Node.LinkAnimation != null && Node.LinkAnimation != "None")
-        {
-            double d;
-            if (value != null && double.TryParse(value.ToString(), out d))
-        {
-                if (Node.LinkAnimation == "Reverse")
-                    d = -d;
-
-                foreach (var port in Node.Ports)
-                {
-                    if (port.Links.Count > 0)
-                    {
-                        foreach (var link in port.Links)
-                        {
-                            var l = link as LinkModel;
-                            if (l != null
-                             && l.Animations != null
-                             && l.Animations[0] != null)
-                            {
-                                var ani = l.Animations[0];
-                                var anchor = link.Source as SinglePortAnchor;
-                                if (anchor != null)
-                                {
-                                    if (anchor.Port == port)
-                                    {
-                                        string to;
-                                        if (d > 0)
-                                            to = "-10";
-                                        else if (d == 0)
-                                            to = "0";
-                                        else
-                                            to = "10";
-                                        if (to != null && to != ani.To)
-                                        {
-                                            ani.To = to;
-                                            l.Refresh();
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private void OnData2Received(string topic, object value)
-    {
-        Node.DataValue2 = value;
-        Node.DataLastUpdated2 = DateTime.Now;
-        InvokeAsync(StateHasChanged);
-    }
-
-    private void OnDoubleClick()
-    {
-        if (AppState.IsEditMode)
-        {
-            AppState.TriggerEditProperties();
-        }
-    }
 
     private string GetFontSize() =>
         Node.FontSize.HasValue ? $"{Node.FontSize.Value}px" : "inherit";
-
-    /// <summary>
-    /// Wraps an arbitrary value for use with string.Format numeric/integer format specifiers.
-    /// </summary>
-    class FormattableValue : IFormattable
-    {
-        public FormattableValue(object? value) { _value = value; }
-        object? _value;
-
-        public string ToString(string? format, IFormatProvider? provider)
-        {
-            try
-            {
-                if (format != null)
-                {
-                    switch (format[0])
-                    {
-                        case 'E':
-                        case 'F':
-                        case 'G':
-                        case 'N':
-                        case '0':
-                            if (_value?.GetType() == typeof(string))
-                            {
-                                if (double.TryParse(_value.ToString(), out double d))
-                                    return d.ToString(format, provider);
-                            }
-                            else if (_value?.GetType() == typeof(int))
-                            {
-                                double d = (int)_value;
-                                return d.ToString(format, provider);
-                            }
-                            break;
-                        case 'I':
-                        case 'X':
-                            if (_value?.GetType() == typeof(string))
-                            {
-                                if (int.TryParse(_value.ToString(), out int i))
-                                    return i.ToString(format, provider);
-                            }
-                            else if (_value?.GetType() == typeof(double))
-                            {
-                                int i = (int)(double)_value;
-                                return i.ToString(format, provider);
-                            }
-                            break;
-                    }
-                }
-            }
-            catch
-            {
-                System.Diagnostics.Debug.WriteLine("Exception in FormattableValue ignored");
-            }
-
-            if (_value == null) return "";
-            var fv = _value as IFormattable;
-            return fv != null ? fv.ToString(format, provider) : (_value.ToString() ?? "");
-        }
-    }
-
-    private string FormatText()
-    {
-        if (string.IsNullOrEmpty(Node.Text)) return string.Empty;
-        try
-        {
-            return string.Format(Node.Text,
-                new FormattableValue(Node.DataValue),
-                new FormattableValue(Node.DataValue2));
-        }
-        catch
-        {
-            return Node.Text;
-        }
-    }
 
     private string GenerateStyle()
     {
@@ -270,12 +91,10 @@
             return GetCardStyle();
     }
 
-    private string GetCardStyle()
-    {
-        return !string.IsNullOrEmpty(Node.BackgroundColor)
+    private string GetCardStyle() =>
+        !string.IsNullOrEmpty(Node.BackgroundColor)
             ? $"background-color:{Node.BackgroundColor};"
             : string.Empty;
-    }
 
     private MudBlazor.Color GetIconColor() =>
         Node.IconColor?.ToLower() switch
@@ -290,13 +109,5 @@
             _           => MudBlazor.Color.Default
         };
 
-    public void Dispose()
-    {
-        _dataWatcher?.Dispose();
-        _dataWatcher2?.Dispose();
-    }
-
-    private static string GeneratePortStyle(MudPortModel? port) =>
-        port == null ? string.Empty
-                     : $"width:{(int)port.Size.Width}px; height:{(int)port.Size.Height}px;";
+    private static string GeneratePortStyle(MudPortModel? port) => PortStyle(port);
 }

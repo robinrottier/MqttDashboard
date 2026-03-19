@@ -1,0 +1,65 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+---
+
+## [Unreleased]
+
+### Added
+- **Multiple node types** — click "Add Node" to choose from a picker:
+  - **Text node** — existing display node (icon + formatted text with MQTT value substitution)
+  - **Gauge node** — SVG semicircular arc gauge with configurable min/max/unit; arc colour shifts green→yellow→red as value approaches max
+  - **Switch node** — shows current ON/OFF state from a data topic; toggle button publishes a configurable payload back to MQTT
+  - **Battery node** — SVG battery icon with colour-coded fill level (red/amber/green); configurable min/max, low/med/high colours, optional percentage display
+- **MQTT publish** — new `PublishMessageAsync` path through SignalR hub → `MqttClientService` → broker (used by Switch node)
+- Node type picker dialog shown when adding a new node in edit mode
+- **Gauge: ArcOrigin / colour thresholds** — arc can be drawn from a configurable value (e.g. 0 in a ±1000 range) rather than always from the minimum; ordered list of colour threshold breakpoints (value → colour); arc goes red below origin, green above by default when midpoint is set
+- **Gauge: MidPoint** — optional midpoint value; when set, arc is split into negative/positive regions with a tick mark; colours configurable via `NegativeColor` / `PositiveColor` properties
+- **Gauge/Switch: title position** — `TitlePosition` property (Above / Below / Left / Right) on all nodes; title drawn horizontally in all positions
+- **Switch: style modes** — `SwitchStyle` property: Full (icon + text), Compact (icon + small text), Icon-only; `OnText` / `OffText` properties for configurable labels
+- **Switch: read-only mode** — `IsReadOnly` property; when set, toggle is disabled and no MQTT publish occurs
+- **Gauge: Text label** — static or formatted text rendered below the arc (supports `{0:F1}` / `{0:0}` MQTT value substitution)
+- **Widget base classes** — `BaseNodeWidget<T>` and `BaseNodeWithDataWidget<T>` reduce duplication; all widgets inherit from these bases
+- **FormatText in base class** — `FormatText()` and `FormattableValue` helper moved to `BaseNodeWithDataWidget`; format syntax (`{0:0}`, `{0:F2}`, etc.) now works identically in Text, Gauge, and Battery node text fields
+- **Link animation in base class** — `TriggerLinkAnimation()` moved to `BaseNodeWithDataWidget`; all node types now support the Link Animation property without per-widget code
+- **Exit-edit prompt** — switching out of edit mode (or clicking the view button) when the dashboard has unsaved changes now shows a Save / Discard / Cancel dialog
+- File/Save now saves to the currently-open filename (was always saving to `diagram.json`); snackbar confirms the filename saved
+
+### Fixed
+- MQTT reconnect storm — `MQTTnet` v5 fires `DisconnectedAsync` even on failed `ConnectAsync` attempts; added `_isReconnecting` interlocked flag to prevent cascading parallel reconnect loops
+- Blazor Server JSInterop errors after circuit disconnect — `InvokeAsync(StateHasChanged)` now guarded by `_disposed` flag and wrapped in try/catch; prevents `InvalidOperationException` spam in logs
+- Battery / Gauge `Text` property did not accept `{0:0}` numeric format syntax — now handled via shared `FormatText()` base class method
+- Switch compact layout stability — min-width on text span prevents reflow when toggling ON/OFF
+- Switch icon size — Full style uses Large icon, Compact uses Medium
+
+### Changed
+- Node property editor shows type-specific settings for all node types (Gauge: arc origin, colour thresholds; Switch: style, read-only, on/off text; Battery: min/max, colours, show-percent)
+- About dialog: title is "About Mqtt Dashboard"; application section header removed; layout condensed; "Up to date" chip inline with version; "Check" button inline with last-checked date; Deployment row reordered above Latest version
+
+---
+
+## [0.1.2] - 2026-03-18
+
+### Fixed
+- Browser tab title was "MqttBashboard.client" — now reads "Mqtt Dashboard"
+- About box was not showing the application version — now reads from `AssemblyInformationalVersionAttribute` (MinVer), git SHA suffix trimmed
+- All user-facing references to "diagram/diagrams" renamed to "dashboard/dashboards" throughout the UI (Save As dialog, menus, snackbars, property editor, etc.)
+- Dashboard files moved from the root data directory into a `dashboards/` subdirectory; existing files are auto-migrated on first startup
+- MQTT subscriptions were stored separately in `applicationstate.json` — now embedded in the dashboard `.json` file itself; `applicationstate.json` and all related server/client services removed
+- About box in admin mode now shows additional server deployment info: machine name, OS, .NET version, data directory, runtime identifier
+- About box update checker and "Check for updates" button now only visible to admin users
+- MRU (recent files) list was showing files that had since been deleted — list is now filtered against the server file list on startup and invalid entries are removed when opened
+- Opening a dashboard file now correctly restores and activates its MQTT subscriptions via SignalR
+- `Show dashboard name in title bar` setting was not persisted in the dashboard file — now saved and restored
+- Authentication state was initialised after dashboard load; if load failed, auth was left disabled (login button hidden). Auth state is now initialised first.
+
+### Removed
+- `applicationstate.json` file format and all associated code (`ApplicationStateData`, `IApplicationStateService`, `ApplicationStateService`, `ServerApplicationStateService`, `ApplicationStateController`)
+
+---
+
+## [0.1.1] - initial tagged release
+
+_No changelog entry — this predates the changelog._

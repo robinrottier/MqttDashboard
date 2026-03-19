@@ -6,11 +6,26 @@
         <MudStack Spacing="2">
             <MudText Typo="Typo.subtitle2" Class="mb-2">Node Properties</MudText>
 
+            <!-- Node Type (read-only display) -->
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Node Type: @Node.NodeType</MudText>
+
             <!-- Title -->
             <MudTextField @bind-Value="@Node.Title"
                           Label="Title"
                           Variant="Variant.Outlined"
                           Margin="Margin.Dense" />
+
+            <!-- Title Position -->
+            <MudSelect @bind-Value="@Node.TitlePosition"
+                       Label="Title Position"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       Dense="true">
+                <MudSelectItem Value="@("Above")">Above</MudSelectItem>
+                <MudSelectItem Value="@("Below")">Below</MudSelectItem>
+                <MudSelectItem Value="@("Left")">Left</MudSelectItem>
+                <MudSelectItem Value="@("Right")">Right</MudSelectItem>
+            </MudSelect>
 
             <!-- Icon and Icon Color -->
             <MudGrid Spacing="2">
@@ -161,6 +176,153 @@
                           Lines="4"
                           Placeholder="e.g. Temp: {0:F2}°C&#10;Humidity: {1:F1}%"
                           HelperText="Use {0} for topic 1 value, {1} for topic 2. Supports C# format specs, e.g. {0:F2}." />
+
+            <!-- Gauge-specific settings -->
+            @if (Node is GaugeNodeModel gaugeNode)
+            {
+                <MudDivider Class="my-2" />
+                <MudText Typo="Typo.caption" Class="mb-1">Gauge Settings</MudText>
+                <MudGrid Spacing="2">
+                    <MudItem xs="4">
+                        <MudNumericField @bind-Value="gaugeNode.MinValue" Label="Min Value" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="4">
+                        <MudNumericField @bind-Value="gaugeNode.MaxValue" Label="Max Value" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="4">
+                        <MudTextField @bind-Value="gaugeNode.Unit" Label="Unit" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="e.g. °C, W, %" />
+                    </MudItem>
+                </MudGrid>
+                <MudGrid Spacing="2" Class="mt-1">
+                    <MudItem xs="4">
+                        <MudNumericField @bind-Value="gaugeNode.MidPoint"
+                                         Label="Mid Point"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         Placeholder="none (threshold coloring)" />
+                    </MudItem>
+                    <MudItem xs="4">
+                        <MudTextField @bind-Value="gaugeNode.NegativeColor"
+                                      Label="Below Mid Color"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Placeholder="default: red" />
+                    </MudItem>
+                    <MudItem xs="4">
+                        <MudTextField @bind-Value="gaugeNode.PositiveColor"
+                                      Label="Above Mid Color"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Placeholder="default: green" />
+                    </MudItem>
+                </MudGrid>
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1">
+                    Colors accept CSS values (e.g. red, #FF0000) or MudBlazor vars (e.g. var(--mud-palette-success)).
+                    When Mid Point is set, arc is colored based on whether the value is above or below it.
+                    The "Text" field above is displayed as a static label below the gauge arc.
+                </MudText>
+                <MudDivider Class="my-1" />
+                <MudText Typo="Typo.caption" Class="mb-1">Arc Origin &amp; Color Thresholds</MudText>
+                <MudNumericField @bind-Value="gaugeNode.ArcOrigin"
+                                 Label="Arc Origin (optional)"
+                                 Variant="Variant.Outlined"
+                                 Margin="Margin.Dense"
+                                 Placeholder="none (arc from MinValue)" />
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1 mb-1">
+                    Color Thresholds (by distance from Arc Origin):
+                </MudText>
+                @foreach (var threshold in gaugeNode.ColorThresholds.ToList())
+                {
+                    <MudGrid Spacing="1" Class="mb-1">
+                        <MudItem xs="5">
+                            <MudNumericField T="double" Value="threshold.Value"
+                                             ValueChanged="v => threshold.Value = v"
+                                             Label="≥ Value" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                        </MudItem>
+                        <MudItem xs="5">
+                            <MudTextField T="string" Value="threshold.Color"
+                                          ValueChanged="v => threshold.Color = v"
+                                          Label="Color" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="e.g. red" />
+                        </MudItem>
+                        <MudItem xs="2" Class="d-flex align-center">
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                           OnClick="@(() => gaugeNode.ColorThresholds.Remove(threshold))"
+                                           Size="MudBlazor.Size.Small" />
+                        </MudItem>
+                    </MudGrid>
+                }
+                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                           OnClick="@(() => gaugeNode.ColorThresholds.Add(new MqttDashboard.Models.GaugeColorThreshold()))"
+                           Color="Color.Primary" Variant="Variant.Text" Size="MudBlazor.Size.Small">
+                    Add Threshold
+                </MudButton>
+            }
+
+            <!-- Battery-specific settings -->
+            @if (Node is BatteryNodeModel batteryNode)
+            {
+                <MudDivider Class="my-2" />
+                <MudText Typo="Typo.caption" Class="mb-1">Battery Settings</MudText>
+                <MudGrid Spacing="2">
+                    <MudItem xs="6">
+                        <MudNumericField @bind-Value="batteryNode.MinValue" Label="Min Value" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudNumericField @bind-Value="batteryNode.MaxValue" Label="Max Value" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                </MudGrid>
+                <MudGrid Spacing="2" Class="mt-1">
+                    <MudItem xs="4">
+                        <MudTextField @bind-Value="batteryNode.LowColor" Label="Low Color" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="default: red" />
+                    </MudItem>
+                    <MudItem xs="4">
+                        <MudTextField @bind-Value="batteryNode.MedColor" Label="Med Color" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="default: orange" />
+                    </MudItem>
+                    <MudItem xs="4">
+                        <MudTextField @bind-Value="batteryNode.HighColor" Label="High Color" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="default: green" />
+                    </MudItem>
+                </MudGrid>
+                <MudCheckBox T="bool" @bind-Value="batteryNode.ShowPercent" Label="Show Percentage" Dense="true" Class="mt-1" />
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1">
+                    Colors accept CSS values (e.g. red, #FF0000) or MudBlazor vars.
+                    Low = below 20%, Med = 20–50%, High = above 50%.
+                </MudText>
+            }
+
+            <!-- Switch-specific settings -->
+            @if (Node is SwitchNodeModel switchNode)
+            {
+                <MudDivider Class="my-2" />
+                <MudText Typo="Typo.caption" Class="mb-1">Switch Settings</MudText>
+                <MudTextField @bind-Value="switchNode.PublishTopic" Label="Publish Topic" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="Defaults to Data Topic if empty" />
+                <MudGrid Spacing="2" Class="mt-1">
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="switchNode.OnValue" Label="ON Value" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="1" />
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="switchNode.OffValue" Label="OFF Value" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="0" />
+                    </MudItem>
+                </MudGrid>
+                <MudSelect @bind-Value="switchNode.SwitchStyle"
+                           Label="Switch Style"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Dense="true"
+                           Class="mt-1">
+                    <MudSelectItem Value="@("Full")">Full (chip + icon)</MudSelectItem>
+                    <MudSelectItem Value="@("Compact")">Compact (text + icon)</MudSelectItem>
+                    <MudSelectItem Value="@("IconOnly")">Icon Only</MudSelectItem>
+                </MudSelect>
+                <MudGrid Spacing="2" Class="mt-1">
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="switchNode.OnText" Label="ON Text" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="ON" />
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="switchNode.OffText" Label="OFF Text" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="OFF" />
+                    </MudItem>
+                </MudGrid>
+                <MudCheckBox T="bool" @bind-Value="switchNode.IsReadOnly" Label="Read Only (display only, no toggle)" Dense="true" Class="mt-1" />
+            }
 
             <!-- Custom Metadata -->
             @if (Node.Metadata.Any())

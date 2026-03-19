@@ -3,6 +3,7 @@
     <File Path="data/applicationstate.json" />
     <File Path="data/dashboards/Dash1.json" />
     <File Path="data/dashboards/Dashy McDashface.json" />
+    <File Path="data/dashboards/diagram.json" />
   </Folder>
   <Folder Name="/solution items/">
     <File Path="README.md" />

@@ -161,7 +161,7 @@
             : uri.AbsolutePath.StartsWith(path, StringComparison.OrdinalIgnoreCase);
     }
 
-    private Task ShowAbout() => DialogService.ShowAsync<AboutDialog>("About");
+    private Task ShowAbout() => DialogService.ShowAsync<AboutDialog>("About Mqtt Dashboard");
 
     private void NewDiagram()         => AppState.TriggerNewDiagram();
     private void OpenDiagram()        => AppState.TriggerOpen();

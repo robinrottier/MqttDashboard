@@ -290,6 +290,9 @@ public class ApplicationState
 
         var diagram = new BlazorDiagram(options);
         diagram.RegisterComponent<MudNodeModel, MudNodeWidget>();
+        diagram.RegisterComponent<GaugeNodeModel, GaugeNodeWidget>();
+        diagram.RegisterComponent<SwitchNodeModel, SwitchNodeWidget>();
+        diagram.RegisterComponent<BatteryNodeModel, BatteryNodeWidget>();
 
         if (state != null)
         {
@@ -297,22 +300,56 @@ public class ApplicationState
             var nodeMap = new Dictionary<string, NodeModel>();
             foreach (var nodeState in state.Nodes)
             {
-                var node = new MudNodeModel(position: new Point(nodeState.X, nodeState.Y))
+                MudNodeModel node = nodeState.NodeType switch
                 {
-                    Locked = readOnly,
-                    Title = nodeState.Title,
-                    Size = new Blazor.Diagrams.Core.Geometry.Size(nodeState.Width, nodeState.Height),
-                    Icon = nodeState.Icon,
-                    IconName = nodeState.IconName,
-                    Text = nodeState.Text,
-                    BackgroundColor = nodeState.BackgroundColor,
-                    IconColor = nodeState.IconColor,
-                    Metadata = nodeState.Metadata ?? new Dictionary<string, string>(),
-                    DataTopic = nodeState.DataTopic,
-                    DataTopic2 = nodeState.DataTopic2,
-                    FontSize = nodeState.FontSize,
-                    LinkAnimation = nodeState.LinkAnimation,
+                    "Gauge" => new GaugeNodeModel(position: new Point(nodeState.X, nodeState.Y))
+                    {
+                        MinValue = nodeState.MinValue ?? 0,
+                        MaxValue = nodeState.MaxValue ?? 100,
+                        Unit = nodeState.Unit,
+                        MidPoint = nodeState.MidPoint,
+                        NegativeColor = nodeState.NegativeColor,
+                        PositiveColor = nodeState.PositiveColor,
+                        ArcOrigin = nodeState.ArcOrigin,
+                        ColorThresholds = nodeState.ColorThresholds?.Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color }).ToList() ?? new(),
+                    },
+                    "Switch" => new SwitchNodeModel(position: new Point(nodeState.X, nodeState.Y))
+                    {
+                        PublishTopic = nodeState.PublishTopic,
+                        OnValue = nodeState.OnValue ?? "1",
+                        OffValue = nodeState.OffValue ?? "0",
+                        SwitchStyle = nodeState.SwitchStyle ?? "Full",
+                        OnText = nodeState.OnText ?? "ON",
+                        OffText = nodeState.OffText ?? "OFF",
+                        IsReadOnly = nodeState.SwitchIsReadOnly ?? false,
+                    },
+                    "Battery" => new BatteryNodeModel(position: new Point(nodeState.X, nodeState.Y))
+                    {
+                        MinValue = nodeState.MinValue ?? 0,
+                        MaxValue = nodeState.MaxValue ?? 100,
+                        LowColor = nodeState.LowColor,
+                        MedColor = nodeState.MedColor,
+                        HighColor = nodeState.HighColor,
+                        ShowPercent = nodeState.BatteryShowPercent ?? true,
+                    },
+                    _ => new MudNodeModel(position: new Point(nodeState.X, nodeState.Y)),
                 };
+
+                node.Locked = readOnly;
+                node.Title = nodeState.Title;
+                node.Size = new Blazor.Diagrams.Core.Geometry.Size(nodeState.Width, nodeState.Height);
+                node.Icon = nodeState.Icon;
+                node.IconName = nodeState.IconName;
+                node.Text = nodeState.Text;
+                node.BackgroundColor = nodeState.BackgroundColor;
+                node.IconColor = nodeState.IconColor;
+                node.Metadata = nodeState.Metadata ?? new Dictionary<string, string>();
+                node.DataTopic = nodeState.DataTopic;
+                node.DataTopic2 = nodeState.DataTopic2;
+                node.FontSize = nodeState.FontSize;
+                node.LinkAnimation = nodeState.LinkAnimation;
+                node.NodeType = nodeState.NodeType ?? "Text";
+                node.TitlePosition = nodeState.TitlePosition ?? "Above";
 
                 diagram.Nodes.Add(node);
                 nodeMap[nodeState.Id] = node;
@@ -435,7 +472,43 @@ public class ApplicationState
                 DataTopic2 = node.DataTopic2,
                 FontSize = node.FontSize,
                 LinkAnimation = node.LinkAnimation,
+                NodeType = node.NodeType ?? "Text",
+                TitlePosition = node.TitlePosition,
             };
+
+            // Type-specific properties
+            if (node is GaugeNodeModel g)
+            {
+                nodeState.MinValue = g.MinValue;
+                nodeState.MaxValue = g.MaxValue;
+                nodeState.Unit = g.Unit;
+                nodeState.MidPoint = g.MidPoint;
+                nodeState.NegativeColor = g.NegativeColor;
+                nodeState.PositiveColor = g.PositiveColor;
+                nodeState.ArcOrigin = g.ArcOrigin;
+                nodeState.ColorThresholds = g.ColorThresholds.Count > 0
+                    ? g.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color }).ToList()
+                    : null;
+            }
+            else if (node is SwitchNodeModel s)
+            {
+                nodeState.PublishTopic = s.PublishTopic;
+                nodeState.OnValue = s.OnValue;
+                nodeState.OffValue = s.OffValue;
+                nodeState.SwitchStyle = s.SwitchStyle;
+                nodeState.OnText = s.OnText;
+                nodeState.OffText = s.OffText;
+                nodeState.SwitchIsReadOnly = s.IsReadOnly;
+            }
+            else if (node is BatteryNodeModel b)
+            {
+                nodeState.MinValue = b.MinValue;
+                nodeState.MaxValue = b.MaxValue;
+                nodeState.LowColor = b.LowColor;
+                nodeState.MedColor = b.MedColor;
+                nodeState.HighColor = b.HighColor;
+                nodeState.BatteryShowPercent = b.ShowPercent;
+            }
 
             // Save ports
             foreach (var port in node.Ports)

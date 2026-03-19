@@ -12,19 +12,22 @@ public class MqttDataHub : Hub
     private readonly IConfiguration _configuration;
     private readonly MqttConnectionMonitor _connectionMonitor;
     private readonly ClientConnectionTracker _connectionTracker;
+    private readonly MqttClientService _mqttClientService;
 
     public MqttDataHub(
         MqttTopicSubscriptionManager subscriptionManager,
         ILogger<MqttDataHub> logger,
         IConfiguration configuration,
         MqttConnectionMonitor connectionMonitor,
-        ClientConnectionTracker connectionTracker)
+        ClientConnectionTracker connectionTracker,
+        MqttClientService mqttClientService)
     {
         _subscriptionManager = subscriptionManager;
         _logger = logger;
         _configuration = configuration;
         _connectionMonitor = connectionMonitor;
         _connectionTracker = connectionTracker;
+        _mqttClientService = mqttClientService;
     }
 
     public async Task SubscribeToTopic(string topic)
@@ -68,6 +71,12 @@ public class MqttDataHub : Hub
     }
 
     public Task<int> GetConnectedClientCount() => Task.FromResult(_connectionTracker.ConnectedCount);
+
+    public async Task PublishMessage(string topic, string payload)
+    {
+        _logger.LogInformation("Client {ConnectionId} publishing to topic: {Topic}", Context.ConnectionId, topic);
+        await _mqttClientService.PublishMessageAsync(topic, payload);
+    }
 
     public override async Task OnConnectedAsync()
     {
