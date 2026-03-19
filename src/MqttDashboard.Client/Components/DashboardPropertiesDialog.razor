@@ -39,7 +39,7 @@
 
     protected override void OnInitialized()
     {
-        _name = AppState.DiagramName;
+        _name = AppState.DiagramDisplayName;
         _showDiagramName = AppState.ShowDiagramName;
         _backgroundColor = AppState.CanvasBackgroundColor;
         _gridSize = AppState.GridSize;
@@ -47,7 +47,7 @@
 
     private void Apply()
     {
-        if (_name != AppState.DiagramName) AppState.SetDiagramName(_name);
+        AppState.SetDisplayName(_name);
         AppState.SetShowDiagramName(_showDiagramName);
         AppState.SetCanvasBackground(_backgroundColor);
         AppState.SetGridSize(_gridSize);
@@ -57,3 +57,4 @@
 
     private void Cancel() => MudDialog.Cancel();
 }
+

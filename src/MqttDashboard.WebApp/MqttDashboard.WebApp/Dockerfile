@@ -2,6 +2,9 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
+# Version to embed in the assembly (pass via --build-arg VERSION=0.1.2 or from CI)
+ARG BUILD_VERSION=0.0.0-local
+
 # Install Python (required by the wasm-tools workload for AOT compilation)
 RUN apt-get update && apt-get install -y python3 && ln -sf /usr/bin/python3 /usr/bin/python && rm -rf /var/lib/apt/lists/*
 
@@ -22,16 +25,20 @@ COPY src/MqttDashboard.Client/      src/MqttDashboard.Client/
 COPY src/MqttDashboard.Server/      src/MqttDashboard.Server/
 COPY src/MqttDashboard.WebApp/      src/MqttDashboard.WebApp/
 
-# Publish the server project (this also builds & includes the WASM client)
+# Publish the server project (this also builds & includes the WASM client).
+# Pass the version so AssemblyInformationalVersion is set correctly (MinVer requires git history
+# which is not available in the Docker build context, so we pass it explicitly).
 RUN dotnet publish src/MqttDashboard.WebApp/MqttDashboard.WebApp/MqttDashboard.WebApp.csproj \
     -c Release \
+    -p:InformationalVersion=$BUILD_VERSION \
+    -p:Version=$BUILD_VERSION \
     -o /app/publish
 
 # Runtime stage — lightweight ASP.NET runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-# Create data directory for diagram persistence
+# Create data directory for dashboard persistence
 RUN mkdir -p /app/data
 
 COPY --from=build /app/publish .

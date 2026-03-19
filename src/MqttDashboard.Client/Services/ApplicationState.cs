@@ -47,7 +47,24 @@ public class ApplicationState
     // Theme & UI preferences
     public ThemeMode ThemeMode { get; private set; } = ThemeMode.Auto;
     public bool ShowDiagramName { get; private set; } = false;
+
+    /// <summary>File name (stem) used for saving/loading. Set by the caller, not from file contents.</summary>
     public string DiagramName { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// Human-readable display name stored inside the dashboard JSON (DiagramState.Name).
+    /// Shown in the title bar and editable in Dashboard Properties.
+    /// May differ from the file name — e.g. after "Save As" the file name changes but the
+    /// display name set in Properties stays the same.
+    /// </summary>
+    public string DiagramDisplayName { get; private set; } = string.Empty;
+
+    /// <summary>The name to show in the UI: DiagramDisplayName when set, otherwise DiagramName.</summary>
+    public string ActiveDashboardLabel =>
+        !string.IsNullOrEmpty(DiagramDisplayName) ? DiagramDisplayName :
+        !string.IsNullOrEmpty(DiagramName) ? DiagramName :
+        "Untitled";
+
     public int GridSize { get; private set; } = 20;
     public string CanvasBackgroundColor { get; private set; } = string.Empty;
 
@@ -218,6 +235,12 @@ public class ApplicationState
     public void SetDiagramName(string name)
     {
         DiagramName = name;
+        NotifyStateChangedAsync();
+    }
+
+    public void SetDisplayName(string name)
+    {
+        DiagramDisplayName = name;
         NotifyStateChangedAsync();
     }
 
@@ -404,10 +427,11 @@ public class ApplicationState
             }
         }
 
-        // Update diagram name and properties from state
+        // Update display name and canvas properties from state; file name (DiagramName) is set
+        // by the calling code after loading a named file — it is never derived from state.
         if (state != null)
         {
-            DiagramName = state.Name;
+            DiagramDisplayName = state.Name;
             CanvasBackgroundColor = state.BackgroundColor ?? string.Empty;
             ShowDiagramName = state.ShowDiagramName;
             // Only replace subscriptions if the field was present in the file.
@@ -428,7 +452,7 @@ public class ApplicationState
         }
 
         var state = new DiagramState();
-        state.Name = DiagramName;
+        state.Name = DiagramDisplayName;
 
         // map diagram grid and gridsnaptocenter to diagramstate saved value for grid size
         // if grid size is 0 then no grid

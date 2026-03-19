@@ -10,7 +10,7 @@ namespace MqttDashboard.Server.Tests;
 public class DiagramStorageServiceTests : IDisposable
 {
     private readonly string _tempDir;
-    private readonly DiagramStorageService _service;
+    private readonly DashboardStorageService _service;
 
     public DiagramStorageServiceTests()
     {
@@ -24,7 +24,7 @@ public class DiagramStorageServiceTests : IDisposable
             .AddInMemoryCollection(new Dictionary<string, string?> { ["DiagramStorage:DataDirectory"] = _tempDir })
             .Build();
 
-        _service = new DiagramStorageService(env.Object, config, NullLogger<DiagramStorageService>.Instance);
+        _service = new DashboardStorageService(env.Object, config, NullLogger<DashboardStorageService>.Instance);
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public class DiagramStorageServiceTests : IDisposable
                 .AddInMemoryCollection(new Dictionary<string, string?> { ["DiagramStorage:DataDirectory"] = migrationDir })
                 .Build();
 
-            _ = new DiagramStorageService(env.Object, config, NullLogger<DiagramStorageService>.Instance);
+            _ = new DashboardStorageService(env.Object, config, NullLogger<DashboardStorageService>.Instance);
 
             // Dashboard file should have been moved to dashboards/
             Assert.True(File.Exists(Path.Combine(migrationDir, "dashboards", "myboard.json")));

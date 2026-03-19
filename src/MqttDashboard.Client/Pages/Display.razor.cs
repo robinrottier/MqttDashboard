@@ -18,10 +18,11 @@ namespace MqttDashboard.Pages;
 public partial class Display : IDisposable
 {
     [Inject] private ApplicationState AppState { get; set; } = default!;
-    [Inject] private IDiagramService DiagramService { get; set; } = default!;
+    [Inject] private IDashboardService DashboardService { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
     [Inject] private IDialogService DialogService { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    [Inject] private HttpClient Http { get; set; } = default!;
 
     private BlazorDiagram? _diagram;
     private int _nodeCounter = 1;
@@ -37,6 +38,7 @@ public partial class Display : IDisposable
     private Action? _onMenuUndo;
     private Action? _onMenuRedo;
     private Action? _onMenuDiagramProperties;
+    private Action? _onMenuPaste;
     private DateTimeOffset _lastUndoPushByMove = DateTimeOffset.MinValue;
     private readonly List<(NodeModel Node, Action<Blazor.Diagrams.Core.Models.Base.Model> Handler)> _nodeChangedSubscriptions = new();
 
@@ -61,14 +63,14 @@ public partial class Display : IDisposable
             var recentFiles = await LoadRecentFiles();
             if (recentFiles.Count > 0)
             {
-                var existingNames = await DiagramService.ListDiagramsAsync();
+                var existingNames = await DashboardService.ListDashboardsAsync();
                 var existingSet = new HashSet<string>(existingNames, StringComparer.OrdinalIgnoreCase);
                 recentFiles = recentFiles.Where(f => existingSet.Contains(f)).ToList();
                 await SaveRecentFiles(recentFiles);
             }
             AppState.SetRecentFiles(recentFiles);
 
-            var savedState = await DiagramService.LoadDiagramAsync();
+            var savedState = await DashboardService.LoadDashboardAsync();
             if (savedState != null && savedState.Nodes.Count > 0)
             {
                 _diagram = AppState.CreateDiagramFromState(savedState, readOnly: true);
@@ -89,7 +91,7 @@ public partial class Display : IDisposable
                 var lastName = await GetLastDiagramName();
                 if (!string.IsNullOrEmpty(lastName))
                 {
-                    var lastState = await DiagramService.LoadDiagramByNameAsync(lastName);
+                    var lastState = await DashboardService.LoadDashboardByNameAsync(lastName);
                     if (lastState != null)
                     {
                         _diagram = AppState.CreateDiagramFromState(lastState, readOnly: true);
@@ -132,7 +134,7 @@ public partial class Display : IDisposable
                 noText: "Discard",
                 cancelText: "Cancel");
             if (confirm == null) return; // Cancel — stay in edit mode
-            if (confirm == true) await SaveDiagram();
+            if (confirm == true) await SaveDashboard();
             // false = Discard, continue exiting edit mode
         }
 
@@ -188,12 +190,13 @@ public partial class Display : IDisposable
         AppState.MenuDeleteNode    += DeleteSelectedNode;
         AppState.MenuCutSelected   += CutSelectedNodes;
         AppState.MenuCopySelected  += CopySelectedNodes;
-        AppState.MenuPasteSelected += PasteNodes;
+        _onMenuPaste = () => InvokeAsync(PasteNodesAsync);
+        AppState.MenuPasteSelected += _onMenuPaste;
         AppState.MenuAddPort       += AddPortToSelectedNode;
         AppState.MenuDeletePort    += DeletePortFromSelectedNode;
         AppState.MenuNewDiagram    += NewDiagram;
 
-        _onMenuSaveDiagram    = () => InvokeAsync(SaveDiagram);
+        _onMenuSaveDiagram    = () => InvokeAsync(SaveDashboard);
         _onMenuReloadDiagram  = () => InvokeAsync(ReloadDiagram);
         _onMenuEditProperties = () => InvokeAsync(EditNodeProperties);
         _onMenuSaveAs         = () => InvokeAsync(SaveAsDiagram);
@@ -225,7 +228,7 @@ public partial class Display : IDisposable
         AppState.MenuDeleteNode    -= DeleteSelectedNode;
         AppState.MenuCutSelected   -= CutSelectedNodes;
         AppState.MenuCopySelected  -= CopySelectedNodes;
-        AppState.MenuPasteSelected -= PasteNodes;
+        if (_onMenuPaste != null) AppState.MenuPasteSelected -= _onMenuPaste;
         AppState.MenuAddPort       -= AddPortToSelectedNode;
         AppState.MenuDeletePort    -= DeletePortFromSelectedNode;
         AppState.MenuNewDiagram    -= NewDiagram;
@@ -332,6 +335,7 @@ public partial class Display : IDisposable
             }
             AppState.ResetDiagram();
             AppState.SetDiagramName(string.Empty);
+            AppState.SetDisplayName(string.Empty);
             AppState.MarkSaved();
             AppState.ClearUndoRedo();
             _diagram = AppState.GetOrCreateDiagram();
@@ -359,7 +363,7 @@ public partial class Display : IDisposable
         AppState.ResetDiagram();
         AppState.MarkSaved();
         AppState.ClearUndoRedo();
-        var savedState = await DiagramService.LoadDiagramAsync();
+        var savedState = await DashboardService.LoadDashboardAsync();
         if (savedState != null && savedState.Nodes.Count > 0)
         {
             _diagram = AppState.CreateDiagramFromState(savedState, readOnly: !AppState.IsEditMode);
@@ -383,14 +387,13 @@ public partial class Display : IDisposable
     }
 
     // ── Clipboard ─────────────────────────────────────────────────────────────
+    // Clipboard tag written to the OS clipboard so we can recognise our own data on paste.
+    private const string ClipboardTag = """{"mqttdashboard":"nodes",""";
 
-    private void CopySelectedNodes()
+    private static List<NodeState> BuildSnapshots(IEnumerable<MudNodeModel> selected)
     {
-        if (_diagram == null) return;
-        var selected = _diagram.GetSelectedModels().OfType<MudNodeModel>().ToList();
-        if (selected.Count == 0) return;
-        _pasteGeneration = 0;
-        var snapshots = selected.Select(n => {
+        return selected.Select(n =>
+        {
             var ns = new NodeState
             {
                 Id = n.Id,
@@ -416,7 +419,23 @@ public partial class Display : IDisposable
             else if (n is SwitchNodeModel s) { ns.PublishTopic = s.PublishTopic; ns.OnValue = s.OnValue; ns.OffValue = s.OffValue; }
             return ns;
         }).ToList();
+    }
+
+    private void CopySelectedNodes()
+    {
+        if (_diagram == null) return;
+        var selected = _diagram.GetSelectedModels().OfType<MudNodeModel>().ToList();
+        if (selected.Count == 0) return;
+        _pasteGeneration = 0;
+        var snapshots = BuildSnapshots(selected);
         AppState.SetClipboard(snapshots);
+
+        // Also write to the OS clipboard so paste works across browser windows.
+        // Fire-and-forget — failure is benign, in-memory clipboard is the fallback.
+        var json = System.Text.Json.JsonSerializer.Serialize(new { mqttdashboard = "nodes", data = snapshots });
+        _ = JSRuntime.InvokeAsync<bool>("mqttClipboard.writeText", json).AsTask()
+              .ContinueWith(_ => { });   // swallow errors
+
         Snackbar.Add($"Copied {snapshots.Count} node(s)", Severity.Info);
     }
 
@@ -431,14 +450,45 @@ public partial class Display : IDisposable
         StateHasChanged();
     }
 
-    private void PasteNodes()
+    private async Task PasteNodesAsync()
     {
-        if (_diagram == null || !AppState.HasClipboard) return;
+        if (_diagram == null) return;
+
+        // Try to read nodes from the OS clipboard first (supports cross-window paste).
+        List<NodeState>? toPaste = null;
+        try
+        {
+            var text = await JSRuntime.InvokeAsync<string?>("mqttClipboard.readText");
+            if (!string.IsNullOrWhiteSpace(text) && text.StartsWith("{\"mqttdashboard\":\"nodes\"", StringComparison.Ordinal))
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(text);
+                if (doc.RootElement.TryGetProperty("data", out var dataEl))
+                {
+                    toPaste = System.Text.Json.JsonSerializer.Deserialize<List<NodeState>>(
+                        dataEl.GetRawText());
+                    // Sync the in-memory clipboard too so repeated pastes work correctly.
+                    if (toPaste != null)
+                        AppState.SetClipboard(toPaste);
+                }
+            }
+        }
+        catch { /* ignore — fall back to in-memory clipboard */ }
+
+        // Fall back to in-memory clipboard
+        if (toPaste == null)
+        {
+            if (!AppState.HasClipboard) return;
+            toPaste = AppState.Clipboard.ToList();
+        }
+
+        if (toPaste.Count == 0) return;
+
         PushUndoSnapshot();
         _pasteGeneration++;
         _diagram.UnselectAll();
         double offset = 30 * _pasteGeneration;
-        foreach (var ns in AppState.Clipboard)
+
+        foreach (var ns in toPaste)
         {
             MudNodeModel node = ns.NodeType switch
             {
@@ -488,11 +538,10 @@ public partial class Display : IDisposable
             _diagram.SelectModel(node, true);
         }
         UpdateSelectionState();
-        Snackbar.Add($"Pasted {AppState.Clipboard.Count} node(s)", Severity.Info);
+        Snackbar.Add($"Pasted {toPaste.Count} node(s)", Severity.Info);
         StateHasChanged();
     }
 
-    // ── Undo / Redo ───────────────────────────────────────────────────────────
 
     private void PushUndoSnapshot()
     {
@@ -569,8 +618,7 @@ public partial class Display : IDisposable
         if (result is { Canceled: false, Data: string name } && !string.IsNullOrWhiteSpace(name))
         {
             var state = AppState.GetDiagramState();
-            state.Name = name;
-            var success = await DiagramService.SaveDiagramByNameAsync(name, state);
+            var success = await DashboardService.SaveDashboardByNameAsync(name, state);
             if (success)
             {
                 AppState.SetDiagramName(name);
@@ -592,22 +640,22 @@ public partial class Display : IDisposable
             bool confirmed = await ConfirmDiscardChanges("Open dashboard");
             if (!confirmed) return;
         }
-        var names = await DiagramService.ListDiagramsAsync();
+        var names = await DashboardService.ListDashboardsAsync();
         if (names.Count == 0)
         {
             Snackbar.Add("No saved dashboards found", Severity.Warning);
             return;
         }
-        var parameters = new DialogParameters<DiagramPickerDialog>
+        var parameters = new DialogParameters<DashboardPickerDialog>
         {
             { d => d.DiagramNames, names }
         };
         var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseButton = true };
-        var dialog = await DialogService.ShowAsync<DiagramPickerDialog>("Open Dashboard", parameters, options);
+        var dialog = await DialogService.ShowAsync<DashboardPickerDialog>("Open Dashboard", parameters, options);
         var result = await dialog.Result;
         if (result is { Canceled: false, Data: string name } && !string.IsNullOrWhiteSpace(name))
         {
-            var state = await DiagramService.LoadDiagramByNameAsync(name);
+            var state = await DashboardService.LoadDashboardByNameAsync(name);
             if (state != null)
             {
                 AppState.ClearUndoRedo();
@@ -633,7 +681,7 @@ public partial class Display : IDisposable
             bool confirmed = await ConfirmDiscardChanges("Open dashboard");
             if (!confirmed) return;
         }
-        var state = await DiagramService.LoadDiagramByNameAsync(name);
+        var state = await DashboardService.LoadDashboardByNameAsync(name);
         if (state != null)
         {
             AppState.ClearUndoRedo();
@@ -654,12 +702,12 @@ public partial class Display : IDisposable
         }
     }
 
-    private async Task SaveDiagram()
+    private async Task SaveDashboard()
     {
         try
         {
             var state = AppState.GetDiagramState();
-            var success = await DiagramService.SaveDiagramByNameAsync(AppState.DiagramName, state);
+            var success = await DashboardService.SaveDashboardByNameAsync(AppState.DiagramName, state);
             if (success)
             {
                 AppState.MarkSaved();
@@ -758,7 +806,7 @@ public partial class Display : IDisposable
     private async Task ShowDiagramPropertiesAsync()
     {
         var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
-        await DialogService.ShowAsync<DiagramPropertiesDialog>("Dashboard Properties", options);
+        await DialogService.ShowAsync<DashboardPropertiesDialog>("Dashboard Properties", options);
     }
 
     private async Task SaveLastDiagramName(string name)
@@ -831,5 +879,15 @@ public partial class Display : IDisposable
 
         GC.SuppressFinalize(this);
     }
+
+    private record StartupSettingsDto(string Mode, string? Dashboard);
 }
+
+
+
+
+
+
+
+
 

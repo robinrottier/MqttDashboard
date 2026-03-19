@@ -7,22 +7,22 @@ using Microsoft.Extensions.Logging;
 namespace MqttDashboard.Server.Services;
 
 /// <summary>
-/// In-process implementation of IDiagramService for server-only deployments.
+/// In-process implementation of IDashboardService for server-only deployments.
 /// Calls DiagramStorageService directly instead of going through HTTP.
 /// Admin checks replicate RequireAdminFilter logic using IHttpContextAccessor.
 /// </summary>
-public class ServerDiagramService : IDiagramService
+public class ServerDashboardService : IDashboardService
 {
-    private readonly DiagramStorageService _storage;
+    private readonly DashboardStorageService _storage;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IConfiguration _configuration;
-    private readonly ILogger<ServerDiagramService>? _logger;
+    private readonly ILogger<ServerDashboardService>? _logger;
 
-    public ServerDiagramService(
-        DiagramStorageService storage,
+    public ServerDashboardService(
+        DashboardStorageService storage,
         IHttpContextAccessor httpContextAccessor,
         IConfiguration configuration,
-        ILogger<ServerDiagramService>? logger = null)
+        ILogger<ServerDashboardService>? logger = null)
     {
         _storage = storage;
         _httpContextAccessor = httpContextAccessor;
@@ -30,25 +30,25 @@ public class ServerDiagramService : IDiagramService
         _logger = logger;
     }
 
-    public Task<DiagramState?> LoadDiagramAsync() =>
-        _storage.LoadDiagramAsync();
+    public Task<DiagramState?> LoadDashboardAsync() =>
+        _storage.LoadDashboardAsync();
 
-    public Task<List<string>> ListDiagramsAsync() =>
+    public Task<List<string>> ListDashboardsAsync() =>
         _storage.ListDiagramNamesAsync();
 
-    public Task<DiagramState?> LoadDiagramByNameAsync(string name) =>
-        _storage.LoadDiagramByNameAsync(name);
+    public Task<DiagramState?> LoadDashboardByNameAsync(string name) =>
+        _storage.LoadDashboardByNameAsync(name);
 
-    public async Task<bool> SaveDiagramAsync(DiagramState diagramState)
+    public async Task<bool> SaveDashboardAsync(DiagramState diagramState)
     {
         if (!IsAdminAuthorized()) return false;
-        return await _storage.SaveDiagramAsync(diagramState);
+        return await _storage.SaveDashboardAsync(diagramState);
     }
 
-    public async Task<bool> SaveDiagramByNameAsync(string name, DiagramState diagramState)
+    public async Task<bool> SaveDashboardByNameAsync(string name, DiagramState diagramState)
     {
         if (!IsAdminAuthorized()) return false;
-        return await _storage.SaveDiagramByNameAsync(name, diagramState);
+        return await _storage.SaveDashboardByNameAsync(name, diagramState);
     }
 
     private bool IsAdminAuthorized()
@@ -62,3 +62,4 @@ public class ServerDiagramService : IDiagramService
         return isAuthenticated;
     }
 }
+

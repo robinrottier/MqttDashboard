@@ -4,7 +4,7 @@
 @inject ISignalRService SignalRService
 @inject ApplicationState AppState
 @inject MqttInitializationService MqttInit
-@inject IDiagramService DiagramService
+@inject IDashboardService DashboardService
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
 @inject ISnackbar Snackbar
@@ -394,3 +394,4 @@
         await ValueTask.CompletedTask;
     }
 }
+

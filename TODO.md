@@ -6,7 +6,10 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ## 🟡 Bugs/improvements
 
-- [ ] There should be a system wide property that selects whether to open a specific file when a new client connects or if it remembers the last file and re-uses that
+- [ ] Latest version checks checks for tags ... but the actual docker image may not be available for some time later. Can it check actual images in ghcr?
+- [ ] Also, we want to be able to select beta/non-latest pre-releases as an option i.e follow release only stream or latest beta stream
+- [ ] Can the image update itself somehow from within the docker container? even if it has to do a restart or exit and allow docker to restart it with a new version pulled.
+- [ ] How would we revert to a previous version if an update proved bad?
 - [ ] Node properties dialog
 	- [ ] Can this dialog be moveable and apply changes dynamically (whilst still being able to cancel everything since opening)
 	- [ ] Data binding should not just be 2 items but a list that can be added to. So "+" in the properties dialog to configure another, "x" to remove a current one and handle list of items with an index in changed event for example
@@ -25,21 +28,21 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Option to write calculated values back to the MQTT broker
 
 ### FEAT-C: Additional node types _(Gauge, Switch, Battery done — see CHANGELOG)_
+- [ ] **Log** — scrolling history list of a topic's messages (configurable max history). Options as to what to display (time/date/value) 
+- [ ] **Tree view** — hierarchical display of MQTT topics and values from a root subscription
+- [ ] **Text node** - different node shapes (circle, diamond, etc.)
 - [ ] **Grid** — table with rows/columns mapped to MQTT values
-- [ ] **Log** — scrolling history list of a topic's messages (configurable max history)
 - [ ] **Chart** — in-memory time-series sparkline graph
 - [ ] **Image** — display an image from a URL
 - [ ] **Markdown / HTML** — formatted static content, optionally with data substitution
 - [ ] **IFrame** — embed another web page
-- [ ] **Tree view** — hierarchical display of MQTT topics and values from a root subscription
-- [ ] **Text node** - different node shapes (circle, diamond, etc.)
 
 ### FEAT-D: Multiple dashboard pages
-- [ ] `DiagramState` becomes a list of pages, each with its own canvas
+- [ ] `DiagramState` becomes a list of pages, each with its own canvas and rename to "DashboardState"
 - [ ] Page tabs at the top with overflow handling (scrolling/dropdown)
 - [ ] Swipe left/right gesture on mobile
 - [ ] Page management: add, rename, delete, reorder
-- [ ] Current "Data" view moves to an optional tab (tree view of all live values)
+- [ ] Current "Data" view moves to an optional tab (tree view and log of all live values)
 
 ### FEAT-E: Editing improvements
 - [ ] Node-red style palette panel — drag node types from a sidebar onto the canvas

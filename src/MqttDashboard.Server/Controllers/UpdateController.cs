@@ -11,10 +11,10 @@ namespace MqttDashboard.Server.Controllers;
 public class UpdateController : ControllerBase
 {
     private readonly UpdateCheckService _updateService;
-    private readonly DiagramStorageService _diagramStorage;
+    private readonly DashboardStorageService _diagramStorage;
     private readonly ILogger<UpdateController> _logger;
 
-    public UpdateController(UpdateCheckService updateService, DiagramStorageService diagramStorage, ILogger<UpdateController> logger)
+    public UpdateController(UpdateCheckService updateService, DashboardStorageService diagramStorage, ILogger<UpdateController> logger)
     {
         _updateService = updateService;
         _diagramStorage = diagramStorage;

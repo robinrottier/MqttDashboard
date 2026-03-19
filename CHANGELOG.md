@@ -8,7 +8,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- **Multiple node types** — click "Add Node" to choose from a picker:
+- **OS clipboard integration** — copy/paste of nodes now writes to and reads from the browser's native clipboard (via `navigator.clipboard`), enabling cross-window and cross-tab paste. Falls back gracefully to in-memory clipboard if the Clipboard API is unavailable or permission is denied.
+- **Startup dashboard setting** — admin-configurable system-wide startup behaviour: *Last Used* (per-browser localStorage restore, previous behaviour), *Specific File* (always open a named dashboard for every new session), or *None* (blank canvas). Configure via **Startup Settings…** in the admin menu. Setting is stored in `appsettings.user.json`.
+- `GET /api/settings/startup` and `POST /api/settings/startup` API endpoints.
+
+### Fixed
+- **Auth on clean start** — cookie authentication services were only registered when `Auth:AdminPasswordHash` was already set at startup. On a first-ever run, setting the admin password via the Setup page then trying to log in threw `"No sign-in authentication handlers are registered"`. Auth services and middleware are now always registered unconditionally.
+- **Docker image version shows `1.0.0`** — the Dockerfile does not include `.git`, so MinVer could not resolve the version from tags. A `BUILD_VERSION` build ARG is now accepted and forwarded to `dotnet publish` via `/p:Version` and `/p:InformationalVersion`. `docker-compose.yml` passes `BUILD_VERSION` from the environment (default `0.0.0-local`).
+
+### Changed
+- **Default dashboard file renamed** — the built-in default file is now `Default.json` (was `diagram.json`). Existing `diagram.json` files are automatically renamed on first startup.
+- **Display name separated from file name** — `DiagramState.Name` (the human-readable dashboard title) is now stored separately from the file stem used to save/load. "Save As" changes the file name but leaves the display name unchanged. The title bar shows the display name if set, otherwise falls back to the file name.
+- **Service renames** — `IDiagramService` → `IDashboardService`, `DiagramService` → `DashboardService`, `ServerDiagramService` → `ServerDashboardService`. Dialog components `DiagramPickerDialog` → `DashboardPickerDialog`, `DiagramPropertiesDialog` → `DashboardPropertiesDialog`. The `Diagram` name is now reserved exclusively for Blazor.Diagrams canvas components.
+
+
   - **Text node** — existing display node (icon + formatted text with MQTT value substitution)
   - **Gauge node** — SVG semicircular arc gauge with configurable min/max/unit; arc colour shifts green→yellow→red as value approaches max
   - **Switch node** — shows current ON/OFF state from a data topic; toggle button publishes a configurable payload back to MQTT

@@ -34,35 +34,33 @@ public static class WebApplicationBuilderExtensions
                 .SetApplicationName("MqttDashboard");
         }
 
-        // Cookie authentication — only configured if AdminPasswordHash is set in config.
-        // When not configured, all users have admin access (no login required).
-        var adminHash = builder.Configuration["Auth:AdminPasswordHash"];
-        if (!string.IsNullOrEmpty(adminHash))
-        {
-            builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme)
-                .AddCookie(options =>
+        // Cookie authentication — always registered so that setting the admin password for the
+        // first time (via the Setup page) takes effect without requiring a restart.
+        // When no AdminPasswordHash is configured, all users are treated as admin (no login needed),
+        // but the auth middleware is present and ready the moment a hash is saved.
+        builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme)
+            .AddCookie(options =>
+            {
+                options.Cookie.Name = "MqttDashboard.Auth";
+                options.Cookie.HttpOnly = true;
+                options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Strict;
+                options.ExpireTimeSpan = TimeSpan.FromDays(30);
+                options.SlidingExpiration = true;
+                options.LoginPath = "/login";
+                options.AccessDeniedPath = "/login";
+                options.Events.OnRedirectToLogin = ctx =>
                 {
-                    options.Cookie.Name = "MqttDashboard.Auth";
-                    options.Cookie.HttpOnly = true;
-                    options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Strict;
-                    options.ExpireTimeSpan = TimeSpan.FromDays(30);
-                    options.SlidingExpiration = true;
-                    options.LoginPath = "/login";
-                    options.AccessDeniedPath = "/login";
-                    options.Events.OnRedirectToLogin = ctx =>
+                    // For API requests, return 401 instead of redirecting to login page
+                    if (ctx.Request.Path.StartsWithSegments("/api"))
                     {
-                        // For API requests, return 401 instead of redirecting to login page
-                        if (ctx.Request.Path.StartsWithSegments("/api"))
-                        {
-                            ctx.Response.StatusCode = 401;
-                            return Task.CompletedTask;
-                        }
-                        ctx.Response.Redirect(ctx.RedirectUri);
+                        ctx.Response.StatusCode = 401;
                         return Task.CompletedTask;
-                    };
-                });
-            builder.Services.AddAuthorization();
-        }
+                    }
+                    ctx.Response.Redirect(ctx.RedirectUri);
+                    return Task.CompletedTask;
+                };
+            });
+        builder.Services.AddAuthorization();
 
         // Add Razor Components with appropriate render mode
         var razorComponentsBuilder = builder.Services.AddRazorComponents();
@@ -106,7 +104,7 @@ public static class WebApplicationBuilderExtensions
             // Disable antiforgery validation for API controllers
             options.Filters.Add(new Microsoft.AspNetCore.Mvc.IgnoreAntiforgeryTokenAttribute());
         })
-        .AddApplicationPart(typeof(MqttDashboard.Server.Controllers.DiagramController).Assembly)
+        .AddApplicationPart(typeof(MqttDashboard.Server.Controllers.DashboardController).Assembly)
         .AddControllersAsServices();
 
         return builder;

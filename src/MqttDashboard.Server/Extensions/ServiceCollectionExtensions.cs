@@ -26,9 +26,9 @@ public static class ServiceCollectionExtensions
         services.AddHostedService(sp => sp.GetRequiredService<MqttClientService>());
 
         // Add Diagram Storage Service
-        services.AddSingleton<DiagramStorageService>();
+        services.AddSingleton<DashboardStorageService>();
 
-        // Add HttpContextAccessor for DiagramService
+        // Add HttpContextAccessor for DashboardService
         services.AddHttpContextAccessor();
 
         // Register a scoped HttpClient for use in Blazor components (server-side rendering)
@@ -37,8 +37,8 @@ public static class ServiceCollectionExtensions
         // Add SignalR data service for server-side (in-process, no HTTP loopback)
         services.AddScoped<ISignalRService, ServerSignalRService>();
 
-        // Add DiagramService for server-side (in-process, no loopback HTTP)
-        services.AddScoped<IDiagramService, ServerDiagramService>();
+        // Add DashboardService for server-side (in-process, no loopback HTTP)
+        services.AddScoped<IDashboardService, ServerDashboardService>();
 
         // Add AuthService for server-side (in-process, no loopback HTTP)
         services.AddScoped<IAuthService, ServerAuthService>();
@@ -73,3 +73,5 @@ public static class ServiceCollectionExtensions
         };
     }
 }
+
+

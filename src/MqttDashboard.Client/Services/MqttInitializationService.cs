@@ -10,7 +10,7 @@ namespace MqttDashboard.Services;
 public class MqttInitializationService
 {
     private readonly ApplicationState _appState;
-    private readonly IDiagramService _diagramService;
+    private readonly IDashboardService _dashboardService;
     private readonly ISignalRService _signalRService;
     private readonly NavigationManager _navigationManager;
     private readonly IAuthService _authService;
@@ -20,7 +20,7 @@ public class MqttInitializationService
 
     public MqttInitializationService(
         ApplicationState appState,
-        IDiagramService diagramService,
+        IDashboardService dashboardService,
         ISignalRService signalRService,
         NavigationManager navigationManager,
         IAuthService authService,
@@ -28,7 +28,7 @@ public class MqttInitializationService
         ILogger<MqttInitializationService>? logger = null)
     {
         _appState = appState;
-        _diagramService = diagramService;
+        _dashboardService = dashboardService;
         _signalRService = signalRService;
         _navigationManager = navigationManager;
         _authService = authService;
@@ -57,7 +57,7 @@ public class MqttInitializationService
             _logger?.LogInformation("Auth state: IsAdmin={IsAdmin}, AuthEnabled={AuthEnabled}", isAdmin, authEnabled);
 
             // Load subscriptions from the default dashboard file
-            var defaultDashboard = await _diagramService.LoadDiagramAsync();
+            var defaultDashboard = await _dashboardService.LoadDashboardAsync();
             if (defaultDashboard?.MqttSubscriptions?.Count > 0)
             {
                 _appState.SetSubscribedTopics(defaultDashboard.MqttSubscriptions);
@@ -194,4 +194,6 @@ public class MqttInitializationService
 
     public bool IsInitialized => _initialized;
 }
+
+
 

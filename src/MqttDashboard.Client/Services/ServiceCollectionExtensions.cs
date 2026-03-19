@@ -29,10 +29,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<LocalStorageService>();
         services.AddScoped<MqttInitializationService>();
 
-        // DiagramService is only needed on client-side where HttpClient is available
+        // DashboardService is only needed on client-side where HttpClient is available
         // Do not register here - it will be registered in client Program.cs
 
         return services;
     }
 }
+
 

@@ -6,18 +6,19 @@ using Microsoft.AspNetCore.Hosting;
 
 namespace MqttDashboard.Server.Services;
 
-public class DiagramStorageService
+public class DashboardStorageService
 {
     private readonly string _storagePath;
     private readonly string _dashboardsPath;
-    private readonly ILogger<DiagramStorageService> _logger;
+    private readonly ILogger<DashboardStorageService> _logger;
     private readonly SemaphoreSlim _lock = new(1, 1);
-    private const string DiagramFileName = "diagram.json";
+    private const string DiagramFileName = "Default.json";
+    private const string LegacyDiagramFileName = "diagram.json";
 
     public string StoragePath => _storagePath;
     public string DashboardsPath => _dashboardsPath;
 
-    public DiagramStorageService(IWebHostEnvironment environment, IConfiguration configuration, ILogger<DiagramStorageService> logger)
+    public DashboardStorageService(IWebHostEnvironment environment, IConfiguration configuration, ILogger<DashboardStorageService> logger)
     {
         // Priority: environment variable > appsettings.json > default (ContentRoot/Data)
         var envDir = Environment.GetEnvironmentVariable("DIAGRAM_DATA_DIR");
@@ -47,6 +48,7 @@ public class DiagramStorageService
         }
 
         MigrateLegacyDashboardFiles();
+        MigrateDefaultDashboardFile();
     }
 
     /// <summary>
@@ -77,6 +79,34 @@ public class DiagramStorageService
             }
         }
     }
+
+    /// <summary>
+    /// Renames the legacy default file "diagram.json" to "Default.json" if it exists
+    /// and the new default file does not yet exist.
+    /// </summary>
+    private void MigrateDefaultDashboardFile()
+    {
+        var legacyPath = Path.Combine(_dashboardsPath, LegacyDiagramFileName);
+        var newPath = Path.Combine(_dashboardsPath, DiagramFileName);
+        if (File.Exists(legacyPath) && !File.Exists(newPath))
+        {
+            try
+            {
+                File.Move(legacyPath, newPath);
+                _logger.LogInformation("Migrated default dashboard file from '{Legacy}' to '{New}'",
+                    LegacyDiagramFileName, DiagramFileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to migrate default dashboard file '{Legacy}'", LegacyDiagramFileName);
+            }
+        }
+    }
+
+    public Task<DiagramState?> LoadDashboardAsync() => LoadDiagramAsync();
+    public Task<bool> SaveDashboardAsync(DiagramState state) => SaveDiagramAsync(state);
+    public Task<DiagramState?> LoadDashboardByNameAsync(string name) => LoadDiagramByNameAsync(name);
+    public Task<bool> SaveDashboardByNameAsync(string name, DiagramState state) => SaveDiagramByNameAsync(name, state);
 
     public async Task<DiagramState?> LoadDiagramAsync()
     {
