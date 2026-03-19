@@ -3,10 +3,6 @@ services:
     build:
       context: .
       dockerfile: src/MqttDashboard.WebApp/MqttDashboard.WebApp/Dockerfile
-      args:
-        # Pass the version tag at build time so the About box shows the correct version.
-        # Override with: docker compose build --build-arg BUILD_VERSION=0.1.2
-        BUILD_VERSION: ${BUILD_VERSION:-0.0.0-local}
     ports:
       - "8080:8080"
     volumes:
