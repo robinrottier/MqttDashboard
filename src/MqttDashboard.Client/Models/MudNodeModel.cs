@@ -65,5 +65,8 @@ namespace MqttDashboard.Models
         /// Link animation style for links sourced from this node: "None", "Forward", "Reverse"
         /// </summary>
         public string? LinkAnimation { get; set; }
+
+        /// <summary>Node type discriminator. Defaults to "Text" (existing text/display node).</summary>
+        public string NodeType { get; set; } = "Text";
     }
 }

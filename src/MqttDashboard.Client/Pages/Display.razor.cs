@@ -263,16 +263,28 @@ public partial class Display : IDisposable
 
     // ── Node operations ───────────────────────────────────────────────────────
 
-    private void AddNode()
+    private async void AddNode()
     {
         if (_diagram == null) return;
+
+        var dialog = await DialogService.ShowAsync<NodeTypePickerDialog>("Add Node",
+            new DialogParameters(),
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true });
+        var result = await dialog.Result;
+        if (result == null || result.Canceled || result.Data is not string nodeType) return;
+
         PushUndoSnapshot();
         var rng = new Random();
         _diagram.UnselectAll();
-        var node = _diagram.Nodes.Add(new MudNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))
+
+        MudNodeModel node = nodeType switch
         {
-            Title = $"Node {_nodeCounter++}"
-        });
+            "Gauge"  => new GaugeNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400))) { Title = $"Gauge {_nodeCounter++}" },
+            "Switch" => new SwitchNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400))) { Title = $"Switch {_nodeCounter++}" },
+            _        => new MudNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))   { Title = $"Node {_nodeCounter++}" },
+        };
+
+        _diagram.Nodes.Add(node);
         _diagram.Controls.AddFor(node).Add(new Blazor.Diagrams.Core.Controls.Default.ResizeControl(new Blazor.Diagrams.Core.Positions.Resizing.BottomRightResizerProvider()));
         _diagram.SelectModel(node, false);
         UpdateSelectionState();
@@ -364,25 +376,31 @@ public partial class Display : IDisposable
         var selected = _diagram.GetSelectedModels().OfType<MudNodeModel>().ToList();
         if (selected.Count == 0) return;
         _pasteGeneration = 0;
-        var snapshots = selected.Select(n => new NodeState
-        {
-            Id = n.Id,
-            Title = n.Title ?? string.Empty,
-            X = n.Position?.X ?? 0,
-            Y = n.Position?.Y ?? 0,
-            Width = n.Size?.Width ?? 120,
-            Height = n.Size?.Height ?? 90,
-            Icon = n.Icon,
-            IconName = n.IconName,
-            Text = n.Text,
-            BackgroundColor = n.BackgroundColor,
-            IconColor = n.IconColor,
-            Metadata = n.Metadata ?? new Dictionary<string, string>(),
-            DataTopic = n.DataTopic,
-            DataTopic2 = n.DataTopic2,
-            FontSize = n.FontSize,
-            LinkAnimation = n.LinkAnimation,
-            Ports = n.Ports.Select(p => new PortState { Id = p.Id, Alignment = p.Alignment.ToString() }).ToList()
+        var snapshots = selected.Select(n => {
+            var ns = new NodeState
+            {
+                Id = n.Id,
+                Title = n.Title ?? string.Empty,
+                X = n.Position?.X ?? 0,
+                Y = n.Position?.Y ?? 0,
+                Width = n.Size?.Width ?? 120,
+                Height = n.Size?.Height ?? 90,
+                Icon = n.Icon,
+                IconName = n.IconName,
+                Text = n.Text,
+                BackgroundColor = n.BackgroundColor,
+                IconColor = n.IconColor,
+                Metadata = n.Metadata ?? new Dictionary<string, string>(),
+                DataTopic = n.DataTopic,
+                DataTopic2 = n.DataTopic2,
+                FontSize = n.FontSize,
+                LinkAnimation = n.LinkAnimation,
+                NodeType = n.NodeType ?? "Text",
+                Ports = n.Ports.Select(p => new PortState { Id = p.Id, Alignment = p.Alignment.ToString() }).ToList()
+            };
+            if (n is GaugeNodeModel g) { ns.MinValue = g.MinValue; ns.MaxValue = g.MaxValue; ns.Unit = g.Unit; }
+            else if (n is SwitchNodeModel s) { ns.PublishTopic = s.PublishTopic; ns.OnValue = s.OnValue; ns.OffValue = s.OffValue; }
+            return ns;
         }).ToList();
         AppState.SetClipboard(snapshots);
         Snackbar.Add($"Copied {snapshots.Count} node(s)", Severity.Info);
@@ -408,21 +426,35 @@ public partial class Display : IDisposable
         double offset = 30 * _pasteGeneration;
         foreach (var ns in AppState.Clipboard)
         {
-            var node = new MudNodeModel(new Point(ns.X + offset, ns.Y + offset))
+            MudNodeModel node = ns.NodeType switch
             {
-                Title = ns.Title,
-                Icon = ns.Icon,
-                IconName = ns.IconName,
-                Text = ns.Text,
-                BackgroundColor = ns.BackgroundColor,
-                IconColor = ns.IconColor,
-                Metadata = ns.Metadata ?? new Dictionary<string, string>(),
-                DataTopic = ns.DataTopic,
-                DataTopic2 = ns.DataTopic2,
-                FontSize = ns.FontSize,
-                LinkAnimation = ns.LinkAnimation,
-                Size = new Blazor.Diagrams.Core.Geometry.Size(ns.Width, ns.Height),
+                "Gauge" => new GaugeNodeModel(new Point(ns.X + offset, ns.Y + offset))
+                {
+                    MinValue = ns.MinValue ?? 0,
+                    MaxValue = ns.MaxValue ?? 100,
+                    Unit = ns.Unit,
+                },
+                "Switch" => new SwitchNodeModel(new Point(ns.X + offset, ns.Y + offset))
+                {
+                    PublishTopic = ns.PublishTopic,
+                    OnValue = ns.OnValue ?? "1",
+                    OffValue = ns.OffValue ?? "0",
+                },
+                _ => new MudNodeModel(new Point(ns.X + offset, ns.Y + offset)),
             };
+            node.Title = ns.Title;
+            node.NodeType = ns.NodeType ?? "Text";
+            node.Icon = ns.Icon;
+            node.IconName = ns.IconName;
+            node.Text = ns.Text;
+            node.BackgroundColor = ns.BackgroundColor;
+            node.IconColor = ns.IconColor;
+            node.Metadata = ns.Metadata ?? new Dictionary<string, string>();
+            node.DataTopic = ns.DataTopic;
+            node.DataTopic2 = ns.DataTopic2;
+            node.FontSize = ns.FontSize;
+            node.LinkAnimation = ns.LinkAnimation;
+            node.Size = new Blazor.Diagrams.Core.Geometry.Size(ns.Width, ns.Height);
             foreach (var ps in ns.Ports)
             {
                 if (Enum.TryParse<Blazor.Diagrams.Core.Models.PortAlignment>(ps.Alignment, out var alignment))

@@ -160,6 +160,27 @@ public class SignalRService : ISignalRService
         return -1;
     }
 
+    public async Task PublishMessageAsync(string topic, string payload)
+    {
+        if (_hubConnection is not null)
+        {
+            _logger.LogDebug("[SignalR] Publishing to topic: {Topic}", topic);
+            try
+            {
+                await _hubConnection.InvokeAsync("PublishMessage", topic, payload);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[SignalR] Failed to publish to topic: {Topic}", topic);
+                throw;
+            }
+        }
+        else
+        {
+            _logger.LogWarning("[SignalR] Cannot publish to {Topic}: Hub connection is null", topic);
+        }
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_hubConnection is not null)

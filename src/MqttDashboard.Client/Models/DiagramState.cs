@@ -86,6 +86,19 @@ public class NodeState
     public int? FontSize { get; set; }
     public string? LinkAnimation { get; set; }
 
+    // Node type discriminator (null/"Text" = existing text node, backward-compatible)
+    public string NodeType { get; set; } = "Text";
+
+    // Gauge-specific
+    public double? MinValue { get; set; }
+    public double? MaxValue { get; set; }
+    public string? Unit { get; set; }
+
+    // Switch-specific
+    public string? PublishTopic { get; set; }
+    public string? OnValue { get; set; }
+    public string? OffValue { get; set; }
+
     public List<PortState> Ports { get; set; } = new();
 }
 

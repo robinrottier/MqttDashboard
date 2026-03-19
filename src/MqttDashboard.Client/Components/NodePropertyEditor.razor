@@ -6,6 +6,9 @@
         <MudStack Spacing="2">
             <MudText Typo="Typo.subtitle2" Class="mb-2">Node Properties</MudText>
 
+            <!-- Node Type (read-only display) -->
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Node Type: @Node.NodeType</MudText>
+
             <!-- Title -->
             <MudTextField @bind-Value="@Node.Title"
                           Label="Title"
@@ -161,6 +164,41 @@
                           Lines="4"
                           Placeholder="e.g. Temp: {0:F2}°C&#10;Humidity: {1:F1}%"
                           HelperText="Use {0} for topic 1 value, {1} for topic 2. Supports C# format specs, e.g. {0:F2}." />
+
+            <!-- Gauge-specific settings -->
+            @if (Node is GaugeNodeModel gaugeNode)
+            {
+                <MudDivider Class="my-2" />
+                <MudText Typo="Typo.caption" Class="mb-1">Gauge Settings</MudText>
+                <MudGrid Spacing="2">
+                    <MudItem xs="4">
+                        <MudNumericField @bind-Value="gaugeNode.MinValue" Label="Min Value" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="4">
+                        <MudNumericField @bind-Value="gaugeNode.MaxValue" Label="Max Value" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="4">
+                        <MudTextField @bind-Value="gaugeNode.Unit" Label="Unit" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="e.g. °C, W, %" />
+                    </MudItem>
+                </MudGrid>
+            }
+
+            <!-- Switch-specific settings -->
+            @if (Node is SwitchNodeModel switchNode)
+            {
+                <MudDivider Class="my-2" />
+                <MudText Typo="Typo.caption" Class="mb-1">Switch Settings</MudText>
+                <MudTextField @bind-Value="switchNode.PublishTopic" Label="Publish Topic" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="Defaults to Data Topic if empty" />
+                <MudGrid Spacing="2" Class="mt-1">
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="switchNode.OnValue" Label="ON Value" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="1" />
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="switchNode.OffValue" Label="OFF Value" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="0" />
+                    </MudItem>
+                </MudGrid>
+                <MudText Typo="Typo.caption" Class="mt-1">Display text for ON state is taken from the "Text" field above. Leave empty for "ON".</MudText>
+            }
 
             <!-- Custom Metadata -->
             @if (Node.Metadata.Any())

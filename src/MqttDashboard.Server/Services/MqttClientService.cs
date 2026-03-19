@@ -269,4 +269,16 @@ public class MqttClientService : BackgroundService
         }
         await base.StopAsync(cancellationToken);
     }
+
+    public async Task PublishMessageAsync(string topic, string payload)
+    {
+        if (_mqttClient == null || !_mqttClient.IsConnected) return;
+        var message = new MqttApplicationMessageBuilder()
+            .WithTopic(topic)
+            .WithPayload(payload)
+            .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+            .Build();
+        await _mqttClient.PublishAsync(message);
+        _logger.LogDebug("Published MQTT message to topic {Topic}: {Payload}", topic, payload);
+    }
 }

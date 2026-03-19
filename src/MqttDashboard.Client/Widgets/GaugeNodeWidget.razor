@@ -1,0 +1,158 @@
+@using MqttDashboard.Models
+@using MqttDashboard.Services
+@using Blazor.Diagrams.Components.Renderers
+@inject ApplicationState AppState
+@implements IDisposable
+
+<MudTooltip Delay="500" Arrow="true" Placement="Placement.Top">
+    <TooltipContent>
+        @if (!string.IsNullOrEmpty(Node.DataTopic))
+        {
+            <div>
+                <strong>Topic:</strong> @Node.DataTopic<br/>
+                <strong>Value:</strong> @(Node.DataValue?.ToString() ?? "—")<br/>
+                <strong>Updated:</strong> @(Node.DataLastUpdated.HasValue ? Node.DataLastUpdated.Value.ToString("HH:mm:ss") : "—")
+            </div>
+        }
+        else { <span>No data topic configured</span> }
+    </TooltipContent>
+    <ChildContent>
+        <div style="@ContainerStyle()"
+             class=@("pa-1 default-node gauge-node"+(Node.Group != null ? " grouped" : "")+(Node.Selected ? " selected" : ""))
+             @ondblclick="OnDoubleClick">
+            @if (!string.IsNullOrEmpty(Node.Title))
+            {
+                <div style="text-align:center;font-size:0.75rem;font-weight:500;padding:2px 4px 0;">@Node.Title</div>
+            }
+            <svg viewBox="0 0 120 75" style="width:100%;height:auto;display:block;">
+                <!-- Background arc (full 180° semicircle) -->
+                <path d="M 10 65 A 55 55 0 0 1 110 65"
+                      stroke="rgba(128,128,128,0.25)" stroke-width="10" fill="none" stroke-linecap="round"/>
+                <!-- Value arc -->
+                @if (_percent > 0.001)
+                {
+                    <path d="@BuildValueArcPath()"
+                          stroke="@GetArcColor()" stroke-width="10" fill="none" stroke-linecap="round"/>
+                }
+                <!-- Value text and labels rendered via MarkupString to avoid Razor <text> parsing conflict -->
+                @RenderSvgLabels()
+            </svg>
+            @foreach (var port in Node.Ports)
+            {
+                <PortRenderer @key="port" Port="port" Style="@PortStyle(port as MudPortModel)" />
+            }
+        </div>
+    </ChildContent>
+</MudTooltip>
+
+@code {
+    [Parameter] public GaugeNodeModel Node { get; set; } = null!;
+
+    private IDisposable? _dataWatcher;
+    private double _percent = 0;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        Node.MinimumDimensions = new(80, 80);
+        if (Node.Size == null || Node.Size.Width < 80 || Node.Size.Height < 80)
+            Node.Size = new(120, 100);
+        SetupWatcher();
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        SetupWatcher();
+    }
+
+    private void SetupWatcher()
+    {
+        _dataWatcher?.Dispose();
+        _dataWatcher = null;
+        if (!string.IsNullOrEmpty(Node.DataTopic))
+        {
+            var v = AppState.DataCache.GetValue(Node.DataTopic);
+            if (v != null) { Node.DataValue = v; Node.DataLastUpdated = DateTime.Now; UpdatePercent(); }
+            _dataWatcher = AppState.DataCache.Watch(Node.DataTopic, OnDataReceived);
+        }
+    }
+
+    private void OnDataReceived(string topic, object value)
+    {
+        Node.DataValue = value;
+        Node.DataLastUpdated = DateTime.Now;
+        UpdatePercent();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdatePercent()
+    {
+        if (Node.DataValue == null) { _percent = 0; return; }
+        if (double.TryParse(Node.DataValue.ToString(), out var d))
+        {
+            var range = Node.MaxValue - Node.MinValue;
+            _percent = range == 0 ? 0 : Math.Clamp((d - Node.MinValue) / range, 0.0, 1.0);
+        }
+    }
+
+    private string BuildValueArcPath()
+    {
+        var p = Math.Clamp(_percent, 0.0, 1.0);
+        if (p >= 0.9999) return "M 5 65 A 55 55 0 0 1 115 65";
+        var angleDeg = 180.0 - 180.0 * p;
+        var angleRad = angleDeg * Math.PI / 180.0;
+        var x = 60 + 55 * Math.Cos(angleRad);
+        var y = 65 - 55 * Math.Sin(angleRad);
+        var largeArc = p > 1.0 ? 1 : 0;
+        return $"M 5 65 A 55 55 0 {largeArc} 1 {x:F2} {y:F2}";
+    }
+
+    private string GetArcColor()
+    {
+        return _percent switch
+        {
+            >= 0.8 => "var(--mud-palette-error)",
+            >= 0.6 => "var(--mud-palette-warning)",
+            _      => "var(--mud-palette-primary)"
+        };
+    }
+
+    private MarkupString RenderSvgLabels()
+    {
+        var fontSize = Node.FontSize.HasValue ? Node.FontSize.Value : 16;
+        var value = System.Net.WebUtility.HtmlEncode(FormatValue());
+        var sb = new System.Text.StringBuilder();
+        sb.Append($"<text x=\"60\" y=\"60\" text-anchor=\"middle\" dominant-baseline=\"auto\" font-size=\"{fontSize}\" font-weight=\"bold\" fill=\"currentColor\">{value}</text>");
+        if (!string.IsNullOrEmpty(Node.Unit))
+            sb.Append($"<text x=\"60\" y=\"72\" text-anchor=\"middle\" font-size=\"9\" fill=\"currentColor\" opacity=\"0.7\">{System.Net.WebUtility.HtmlEncode(Node.Unit)}</text>");
+        sb.Append($"<text x=\"8\" y=\"75\" text-anchor=\"start\" font-size=\"8\" fill=\"currentColor\" opacity=\"0.5\">{Node.MinValue}</text>");
+        sb.Append($"<text x=\"112\" y=\"75\" text-anchor=\"end\" font-size=\"8\" fill=\"currentColor\" opacity=\"0.5\">{Node.MaxValue}</text>");
+        return new MarkupString(sb.ToString());
+    }
+
+    private string FormatValue()
+    {
+        if (Node.DataValue == null) return "—";
+        if (double.TryParse(Node.DataValue.ToString(), out var d))
+            return d.ToString("G4");
+        return Node.DataValue.ToString() ?? "—";
+    }
+
+    private string ContainerStyle()
+    {
+        var size = Node.Size != null ? $"width:{Node.Size.Width}px;height:{Node.Size.Height}px;" : "";
+        var bg = !string.IsNullOrEmpty(Node.BackgroundColor) ? $"background-color:{Node.BackgroundColor};" : "";
+        return size + bg;
+    }
+
+    private void OnDoubleClick()
+    {
+        if (AppState.IsEditMode) AppState.TriggerEditProperties();
+    }
+
+    private static string PortStyle(MudPortModel? port) =>
+        port == null ? string.Empty : $"width:{(int)port.Size.Width}px; height:{(int)port.Size.Height}px;";
+
+    public void Dispose() => _dataWatcher?.Dispose();
+}

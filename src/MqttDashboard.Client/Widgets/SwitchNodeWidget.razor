@@ -1,0 +1,124 @@
+@using MqttDashboard.Models
+@using MqttDashboard.Services
+@using Blazor.Diagrams.Components.Renderers
+@inject ApplicationState AppState
+@inject ISignalRService SignalRService
+@implements IDisposable
+
+<MudTooltip Delay="500" Arrow="true" Placement="Placement.Top">
+    <TooltipContent>
+        @if (!string.IsNullOrEmpty(Node.DataTopic))
+        {
+            <div>
+                <strong>Topic:</strong> @Node.DataTopic<br/>
+                <strong>Value:</strong> @(Node.DataValue?.ToString() ?? "—")<br/>
+                <strong>Updated:</strong> @(Node.DataLastUpdated.HasValue ? Node.DataLastUpdated.Value.ToString("HH:mm:ss") : "—")
+            </div>
+        }
+        else { <span>No data topic configured</span> }
+    </TooltipContent>
+    <ChildContent>
+        <div style="@ContainerStyle()"
+             class=@("pa-1 default-node switch-node"+(Node.Group != null ? " grouped" : "")+(Node.Selected ? " selected" : ""))
+             @ondblclick="OnDoubleClick">
+            @if (!string.IsNullOrEmpty(Node.Title))
+            {
+                <div style="text-align:center;font-size:0.75rem;font-weight:500;padding:2px 4px 0;">@Node.Title</div>
+            }
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:calc(100% - 22px);gap:4px;">
+                <MudChip T="string" Color="@(_isOn ? Color.Success : Color.Default)" Size="Size.Small" Style="pointer-events:none;">
+                    @(_isOn ? (Node.Text ?? "ON") : "OFF")
+                </MudChip>
+                @if (!string.IsNullOrEmpty(Node.PublishTopic) || !string.IsNullOrEmpty(Node.DataTopic))
+                {
+                    <MudIconButton Icon="@(_isOn ? Icons.Material.Filled.ToggleOn : Icons.Material.Filled.ToggleOff)"
+                                   Color="@(_isOn ? Color.Success : Color.Default)"
+                                   Size="Size.Medium"
+                                   Style="padding:0;"
+                                   OnClick="Toggle" />
+                }
+            </div>
+            @foreach (var port in Node.Ports)
+            {
+                <PortRenderer @key="port" Port="port" Style="@PortStyle(port as MudPortModel)" />
+            }
+        </div>
+    </ChildContent>
+</MudTooltip>
+
+@code {
+    [Parameter] public SwitchNodeModel Node { get; set; } = null!;
+
+    private IDisposable? _dataWatcher;
+    private bool _isOn = false;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        Node.MinimumDimensions = new(60, 60);
+        if (Node.Size == null || Node.Size.Width < 60 || Node.Size.Height < 60)
+            Node.Size = new(100, 80);
+        SetupWatcher();
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        SetupWatcher();
+    }
+
+    private void SetupWatcher()
+    {
+        _dataWatcher?.Dispose();
+        _dataWatcher = null;
+        if (!string.IsNullOrEmpty(Node.DataTopic))
+        {
+            var v = AppState.DataCache.GetValue(Node.DataTopic);
+            if (v != null) { Node.DataValue = v; Node.DataLastUpdated = DateTime.Now; UpdateState(); }
+            _dataWatcher = AppState.DataCache.Watch(Node.DataTopic, OnDataReceived);
+        }
+    }
+
+    private void OnDataReceived(string topic, object value)
+    {
+        Node.DataValue = value;
+        Node.DataLastUpdated = DateTime.Now;
+        UpdateState();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateState()
+    {
+        var val = Node.DataValue?.ToString() ?? "";
+        var onVal = string.IsNullOrEmpty(Node.OnValue) ? "1" : Node.OnValue;
+        _isOn = val.Equals(onVal, StringComparison.OrdinalIgnoreCase)
+             || val == "true" || val == "on";
+    }
+
+    private async Task Toggle()
+    {
+        var publishTopic = !string.IsNullOrEmpty(Node.PublishTopic) ? Node.PublishTopic : Node.DataTopic;
+        if (string.IsNullOrEmpty(publishTopic)) return;
+        var payload = _isOn
+            ? (string.IsNullOrEmpty(Node.OffValue) ? "0" : Node.OffValue)
+            : (string.IsNullOrEmpty(Node.OnValue) ? "1" : Node.OnValue);
+        await SignalRService.PublishMessageAsync(publishTopic, payload);
+    }
+
+    private void OnDoubleClick()
+    {
+        if (AppState.IsEditMode) AppState.TriggerEditProperties();
+    }
+
+    private string ContainerStyle()
+    {
+        var size = Node.Size != null ? $"width:{Node.Size.Width}px;height:{Node.Size.Height}px;" : "";
+        var bg = !string.IsNullOrEmpty(Node.BackgroundColor) ? $"background-color:{Node.BackgroundColor};" : "";
+        return size + bg;
+    }
+
+    private static string PortStyle(MudPortModel? port) =>
+        port == null ? string.Empty : $"width:{(int)port.Size.Width}px; height:{(int)port.Size.Height}px;";
+
+    public void Dispose() => _dataWatcher?.Dispose();
+}

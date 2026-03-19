@@ -84,6 +84,12 @@ public sealed class ServerSignalRService : ISignalRService
         return Task.FromResult(_connectionTracker.ConnectedCount);
     }
 
+    public async Task PublishMessageAsync(string topic, string payload)
+    {
+        await _mqttClientService.PublishMessageAsync(topic, payload);
+        _logger?.LogDebug("[ServerSignalRService] Published to {Topic}", topic);
+    }
+
     private Task HandleMessagePublished(string topic, string payload, DateTime timestamp)
     {
         // Use the subscription manager's wildcard-aware matching to check interest.
