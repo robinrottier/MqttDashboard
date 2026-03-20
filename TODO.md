@@ -24,8 +24,9 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 		- [ ] drag to reorder
 	- [ ] Treeview for the tree view
 		- [ ] unitary item value updates without having to update or re-render the whoel tree view in order to presever node expansion
-		- [ ]  
+		- [ ] option to highlight values when they change 
 	- [ ] Switch for the switch widget
+	- [ ] Log view should look more mudblazor like, perhaps a simple table control
 - [ ] Im getting "failed to save dashboard" with no explanaiotn to user or log in console window
 - [ ] I then did a "save as" and it was fine
 - [ ] If dashboard saving fails then shoul dnot exit edit mode (if thats why we were saving it)
@@ -57,7 +58,9 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Page tab overflow handling (scrolling/dropdown when many pages)
 - [ ] Swipe left/right gesture on mobile
 - [ ] Page reordering (drag tabs)
-- [ ] Current "Data" view moves to an optional tab (tree view and log of all live values)
+- [ ] Current "Data" cold be replaced by an optional page (tree view and log of all live values)
+	- [ ] user would create this is they wanted it manually or its some how a quick add page option when you create a new, empty dashboard
+	- [ ] ...just need a way to specify dashboard set of requests ..so maybe thats in Dashboard properties dialog
 
 ### FEAT-E: Editing improvements
 - [ ] Node-red style palette panel — drag node types from a sidebar onto the canvas
