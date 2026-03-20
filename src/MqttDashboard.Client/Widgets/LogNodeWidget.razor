@@ -13,35 +13,38 @@
                 @Node.Title
             </div>
         }
-        <div style="flex:1;overflow-y:auto;min-height:0;">
-            @if (_entries.Count == 0)
-            {
-                <div style="opacity:0.5;padding:4px;font-size:0.7rem;font-family:monospace;">No data yet…</div>
-            }
-            else
-            {
-                <MudSimpleTable Dense="true" Hover="false" Striped="true" Bordered="false"
-                                Style="font-size:0.7rem;font-family:monospace;width:100%;"
-                                Class="pa-0">
-                    <thead>
+        <div style="flex:1;overflow-y:auto;min-height:0;width:100%;">
+            <MudSimpleTable Dense="true" Hover="false" Striped="true" Bordered="false"
+                            Style="font-size:0.7rem;font-family:monospace;width:100%;table-layout:fixed;"
+                            Class="pa-0">
+                <thead>
+                    <tr>
+                        @if (Node.ShowDate || Node.ShowTime) { <th style="white-space:nowrap;width:6rem;">Time</th> }
+                        @if (IsWildcard) { <th style="width:35%;">Topic</th> }
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (_entries.Count == 0)
+                    {
                         <tr>
-                            @if (Node.ShowDate || Node.ShowTime) { <th style="white-space:nowrap;">Time</th> }
-                            @if (IsWildcard) { <th>Topic</th> }
-                            <th>Value</th>
+                            <td colspan="@(1 + (Node.ShowDate || Node.ShowTime ? 1 : 0) + (IsWildcard ? 1 : 0))"
+                                style="opacity:0.5;font-style:italic;">No data yet…</td>
                         </tr>
-                    </thead>
-                    <tbody>
+                    }
+                    else
+                    {
                         @foreach (var entry in _entries)
                         {
                             <tr>
                                 @if (Node.ShowDate || Node.ShowTime) { <td style="opacity:0.6;white-space:nowrap;">@FormatTimestamp(entry.At)</td> }
-                                @if (IsWildcard) { <td style="opacity:0.8;font-size:0.65rem;">@entry.Topic</td> }
-                                <td>@entry.Value</td>
+                                @if (IsWildcard) { <td style="opacity:0.8;font-size:0.65rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@entry.Topic</td> }
+                                <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@entry.Value</td>
                             </tr>
                         }
-                    </tbody>
-                </MudSimpleTable>
-            }
+                    }
+                </tbody>
+            </MudSimpleTable>
         </div>
         @if (!string.IsNullOrEmpty(Node.DataTopic))
         {

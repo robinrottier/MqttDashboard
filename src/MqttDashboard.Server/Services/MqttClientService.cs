@@ -124,7 +124,7 @@ public class MqttClientService : BackgroundService
             _mqttClient.ApplicationMessageReceivedAsync += async e =>
             {
                 var topic = e.ApplicationMessage.Topic;
-                var payload = e.ApplicationMessage.ConvertPayloadToString();
+                var payload = e.ApplicationMessage.ConvertPayloadToString() ?? string.Empty;
                 var timestamp = DateTime.UtcNow;
 
                 _logger.LogTrace("Received MQTT message on topic {Topic}: {Payload}", topic, payload);

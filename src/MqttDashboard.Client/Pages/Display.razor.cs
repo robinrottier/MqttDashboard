@@ -30,6 +30,12 @@ public partial class Display : IDisposable
     private int _activePageIndex = 0;
     private BlazorDiagram? _diagram => _diagrams.Count > _activePageIndex ? _diagrams[_activePageIndex] : null;
 
+    // Pre-edit snapshot for discard revert
+    private DiagramState? _editSnapshot;
+
+    // Suppress dirty tracking during mode switches and diagram loading
+    private bool _suppressDirty = false;
+
     // Inline tab rename state
     private int _renamingPageIndex = -1;
     private string _renameValue = string.Empty;
@@ -131,30 +137,38 @@ public partial class Display : IDisposable
         }
         AppState.ResetDiagram();
 
-        if (state?.Pages != null && state.Pages.Count > 0)
+        _suppressDirty = true;
+        try
         {
-            var pageNames = state.Pages.Select(p => p.Name).ToList();
-            _pageStates = state.Pages.Select(p => FromPageState(p, state)).ToList();
-            _diagrams = new List<BlazorDiagram?>(Enumerable.Repeat<BlazorDiagram?>(null, _pageStates.Count));
-            _activePageIndex = 0;
-            _diagrams[0] = AppState.CreateDiagramFromState(_pageStates[0], readOnly);
-            AppState.SetPageNames(pageNames, 0);
+            if (state?.Pages != null && state.Pages.Count > 0)
+            {
+                var pageNames = state.Pages.Select(p => p.Name).ToList();
+                _pageStates = state.Pages.Select(p => FromPageState(p, state)).ToList();
+                _diagrams = new List<BlazorDiagram?>(Enumerable.Repeat<BlazorDiagram?>(null, _pageStates.Count));
+                _activePageIndex = 0;
+                _diagrams[0] = AppState.CreateDiagramFromState(_pageStates[0], readOnly);
+                AppState.SetPageNames(pageNames, 0);
+            }
+            else if (state != null)
+            {
+                _pageStates = [state];
+                _diagrams = [null];
+                _activePageIndex = 0;
+                _diagrams[0] = AppState.CreateDiagramFromState(state, readOnly);
+                AppState.SetPageNames(["Page 1"], 0);
+            }
+            else
+            {
+                _pageStates = [new DiagramState { GridSize = AppState.GridSize > 0 ? AppState.GridSize : 20 }];
+                _diagrams = [null];
+                _activePageIndex = 0;
+                _diagrams[0] = AppState.GetOrCreateDiagram();
+                AppState.SetPageNames(["Page 1"], 0);
+            }
         }
-        else if (state != null)
+        finally
         {
-            _pageStates = [state];
-            _diagrams = [null];
-            _activePageIndex = 0;
-            _diagrams[0] = AppState.CreateDiagramFromState(state, readOnly);
-            AppState.SetPageNames(["Page 1"], 0);
-        }
-        else
-        {
-            _pageStates = [new DiagramState { GridSize = AppState.GridSize > 0 ? AppState.GridSize : 20 }];
-            _diagrams = [null];
-            _activePageIndex = 0;
-            _diagrams[0] = AppState.GetOrCreateDiagram();
-            AppState.SetPageNames(["Page 1"], 0);
+            _suppressDirty = false;
         }
     }
 
@@ -235,7 +249,26 @@ public partial class Display : IDisposable
                 var saved = await SaveDashboard();
                 if (!saved) return; // Stay in edit mode if save failed
             }
-            // false = Discard, continue exiting edit mode
+            else
+            {
+                // Discard — revert to pre-edit snapshot
+                AppState.MarkSaved();
+                if (_editSnapshot != null)
+                {
+                    _suppressDirty = true;
+                    try { LoadFullState(_editSnapshot, readOnly: true); }
+                    finally { _suppressDirty = false; }
+                    AppState.MarkSaved();
+                    StateHasChanged();
+                    return;
+                }
+            }
+        }
+
+        if (enterEditMode)
+        {
+            // Snapshot current state before any edit-mode changes
+            _editSnapshot = BuildFullState();
         }
 
         if (AppState.IsEditMode)
@@ -247,36 +280,46 @@ public partial class Display : IDisposable
             _diagram.Changed -= OnDiagramChanged;
         }
 
-        foreach (var node in _diagram.Nodes)
+        _suppressDirty = true;
+        try
         {
-            node.Locked = !enterEditMode;
+            foreach (var node in _diagram.Nodes)
+            {
+                node.Locked = !enterEditMode;
+                if (enterEditMode)
+                    _diagram.Controls.AddFor(node).Add(new Blazor.Diagrams.Core.Controls.Default.ResizeControl(new Blazor.Diagrams.Core.Positions.Resizing.BottomRightResizerProvider()));
+                else
+                    _diagram.Controls.RemoveFor(node);
+            }
+
+            foreach (var link in _diagram.Links)
+                link.Locked = !enterEditMode;
+
             if (enterEditMode)
-                _diagram.Controls.AddFor(node).Add(new Blazor.Diagrams.Core.Controls.Default.ResizeControl(new Blazor.Diagrams.Core.Positions.Resizing.BottomRightResizerProvider()));
+            {
+                if (_diagram.Options.GridSize == null)
+                    _diagram.Options.GridSize = AppState.GridSize > 0 ? AppState.GridSize : 10;
+                AppState.SetGridSize(_diagram.Options.GridSize.HasValue ? (int)_diagram.Options.GridSize.Value : 10);
+                _diagram.Options.AllowMultiSelection = true;
+                _diagram.SelectionChanged += OnSelectionChanged;
+                _diagram.Changed += OnDiagramChanged;
+                SubscribeEditEvents();
+                UpdateSelectionState();
+            }
             else
-                _diagram.Controls.RemoveFor(node);
+            {
+                _diagram.Options.AllowMultiSelection = false;
+                _diagram.UnselectAll();
+            }
         }
-
-        foreach (var link in _diagram.Links)
-            link.Locked = !enterEditMode;
-
-        if (enterEditMode)
+        finally
         {
-            if (_diagram.Options.GridSize == null)
-                _diagram.Options.GridSize = AppState.GridSize > 0 ? AppState.GridSize : 10;
-            AppState.SetGridSize(_diagram.Options.GridSize.HasValue ? (int)_diagram.Options.GridSize.Value : 10);
-            _diagram.Options.AllowMultiSelection = true;
-            _diagram.SelectionChanged += OnSelectionChanged;
-            _diagram.Changed += OnDiagramChanged;
-            SubscribeEditEvents();
-            UpdateSelectionState();
-        }
-        else
-        {
-            _diagram.Options.AllowMultiSelection = false;
-            _diagram.UnselectAll();
+            _suppressDirty = false;
         }
 
         AppState.SetEditMode(enterEditMode);
+        // Clear any dirty flag spuriously raised during mode-switch setup
+        if (enterEditMode) AppState.MarkSaved();
         StateHasChanged();
         await Task.Delay(50);
         RefreshAll();
@@ -364,6 +407,7 @@ public partial class Display : IDisposable
 
     private void OnDiagramChanged()
     {
+        if (_suppressDirty) return;
         AppState.MarkEdited();
         InvokeAsync(StateHasChanged);
     }
@@ -537,7 +581,9 @@ public partial class Display : IDisposable
         AppState.SetActivePage(index);
 
         // Create diagram for the new page (always fresh to handle mode changes)
-        _diagrams[_activePageIndex] = AppState.CreateDiagramFromState(_pageStates[_activePageIndex], !AppState.IsEditMode);
+        _suppressDirty = true;
+        try { _diagrams[_activePageIndex] = AppState.CreateDiagramFromState(_pageStates[_activePageIndex], !AppState.IsEditMode); }
+        finally { _suppressDirty = false; }
 
         // Re-subscribe diagram events for the new page
         if (AppState.IsEditMode && _diagram != null)
@@ -572,6 +618,14 @@ public partial class Display : IDisposable
     private async Task RemovePageAsync(int index)
     {
         if (_pageStates.Count <= 1) return;
+
+        var pageName = index < AppState.PageNames.Count ? AppState.PageNames[index] : $"Page {index + 1}";
+        var confirm = await DialogService.ShowMessageBoxAsync(
+            "Delete Page",
+            $"Delete '{pageName}'? All widgets on this page will be lost.",
+            yesText: "Delete",
+            cancelText: "Cancel");
+        if (confirm != true) return;
 
         // Save current page before removing
         if (_diagram != null && index == _activePageIndex)
@@ -1062,13 +1116,13 @@ public partial class Display : IDisposable
             }
             else
             {
-                Snackbar.Add("Failed to save dashboard", Severity.Error);
+                Snackbar.Add($"Failed to save '{AppState.DiagramName}' — check server logs for details", Severity.Error);
                 return false;
             }
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error saving dashboard: {ex.Message}", Severity.Error);
+            Snackbar.Add($"Error saving '{AppState.DiagramName}': {ex.Message}", Severity.Error);
             return false;
         }
     }
