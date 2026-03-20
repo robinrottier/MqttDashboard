@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y python3 && ln -sf /usr/bin/python3 /usr
 RUN dotnet workload install wasm-tools
 
 # Copy all project files (for layer caching on package restore)
+COPY src/Directory.Build.props      src/
 COPY src/MqttDashboard.Client/MqttDashboard.Client.csproj                                                           src/MqttDashboard.Client/
 COPY src/MqttDashboard.Server/MqttDashboard.Server.csproj                                                           src/MqttDashboard.Server/
 COPY src/MqttDashboard.WebApp/MqttDashboard.WebApp.Client/MqttDashboard.WebApp.Client.csproj                        src/MqttDashboard.WebApp/MqttDashboard.WebApp.Client/
@@ -17,12 +18,14 @@ COPY src/MqttDashboard.WebApp/MqttDashboard.WebApp/MqttDashboard.WebApp.csproj  
 # Restore dependencies (after workload install so WASM targets are available)
 RUN dotnet restore src/MqttDashboard.WebApp/MqttDashboard.WebApp/MqttDashboard.WebApp.csproj
 
-# Copy the rest of the source
+# Copy the rest of the source and .git so MinVer can resolve the version from tags
+COPY .git/ .git/
 COPY src/MqttDashboard.Client/      src/MqttDashboard.Client/
 COPY src/MqttDashboard.Server/      src/MqttDashboard.Server/
 COPY src/MqttDashboard.WebApp/      src/MqttDashboard.WebApp/
 
-# Publish the server project (this also builds & includes the WASM client)
+# Publish the server project (this also builds & includes the WASM client).
+# MinVer reads .git to resolve the version from the nearest tag automatically.
 RUN dotnet publish src/MqttDashboard.WebApp/MqttDashboard.WebApp/MqttDashboard.WebApp.csproj \
     -c Release \
     -o /app/publish
@@ -31,7 +34,7 @@ RUN dotnet publish src/MqttDashboard.WebApp/MqttDashboard.WebApp/MqttDashboard.W
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-# Create data directory for diagram persistence
+# Create data directory for dashboard persistence
 RUN mkdir -p /app/data
 
 COPY --from=build /app/publish .

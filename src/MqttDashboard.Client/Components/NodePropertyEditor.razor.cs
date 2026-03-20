@@ -20,6 +20,13 @@ public partial class NodePropertyEditor
         Width    = Node.Size?.Width  ?? 120;
         Height   = Node.Size?.Height ?? 90;
         FontSize = Node.FontSize;
+
+        // Migrate legacy DataTopic/DataTopic2 into DataTopics for the editor
+        if (Node.DataTopics.Count == 0)
+        {
+            if (!string.IsNullOrEmpty(Node.DataTopic)) Node.DataTopics.Add(Node.DataTopic);
+            if (!string.IsNullOrEmpty(Node.DataTopic2)) Node.DataTopics.Add(Node.DataTopic2);
+        }
     }
 
     private async Task OpenIconPicker()

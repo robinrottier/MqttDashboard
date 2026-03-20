@@ -29,4 +29,10 @@ public class SwitchNodeModel : MudNodeModel
 
     /// <summary>If true, the switch cannot be toggled by the user and does not publish to MQTT.</summary>
     public bool IsReadOnly { get; set; } = false;
+
+    /// <summary>If true, the MQTT message will be published with the retain flag set.</summary>
+    public bool Retain { get; set; } = false;
+
+    /// <summary>MQTT Quality of Service level: 0 = At Most Once, 1 = At Least Once, 2 = Exactly Once.</summary>
+    public int QosLevel { get; set; } = 0;
 }

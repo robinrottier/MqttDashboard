@@ -6,7 +6,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      # Persist diagram files between container restarts
+      # Persist dashboard files between container restarts
       - ./data:/app/data
     environment:
       # Override MQTT broker settings here or in a .env file

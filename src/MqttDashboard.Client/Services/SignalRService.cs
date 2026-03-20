@@ -160,14 +160,14 @@ public class SignalRService : ISignalRService
         return -1;
     }
 
-    public async Task PublishMessageAsync(string topic, string payload)
+    public async Task PublishMessageAsync(string topic, string payload, bool retain = false, int qos = 0)
     {
         if (_hubConnection is not null)
         {
             _logger.LogDebug("[SignalR] Publishing to topic: {Topic}", topic);
             try
             {
-                await _hubConnection.InvokeAsync("PublishMessage", topic, payload);
+                await _hubConnection.InvokeAsync("PublishMessage", topic, payload, retain, qos);
             }
             catch (Exception ex)
             {

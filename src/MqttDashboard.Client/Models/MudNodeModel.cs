@@ -50,6 +50,12 @@ namespace MqttDashboard.Models
         /// </summary>
         public string? DataTopic2 { get; set; }
 
+        /// <summary>
+        /// Variable-length list of MQTT topics for data binding.
+        /// When non-empty, supersedes DataTopic/DataTopic2 for watcher setup.
+        /// </summary>
+        public List<string> DataTopics { get; set; } = new();
+
         // Runtime-only: populated by MQTT watchers, not serialized
         public object? DataValue { get; set; }
         public object? DataValue2 { get; set; }

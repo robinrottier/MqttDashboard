@@ -4,13 +4,33 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ---
 
-## 🟡 Bugs/improvements
-
-- [ ] There should be a system wide property that selects whether to open a specific file when a new client connects or if it remembers the last file and re-uses that
+## BUGS
 - [ ] Node properties dialog
-	- [ ] Can this dialog be moveable and apply changes dynamically (whilst still being able to cancel everything since opening)
-	- [ ] Data binding should not just be 2 items but a list that can be added to. So "+" in the properties dialog to configure another, "x" to remove a current one and handle list of items with an index in changed event for example
-
+	- [ ] Can this dialog be moveable and have apply button to changes dynamically without closing
+- [ ] Property transition
+	- [ ] Gauge and battery, Color transition has property to select index of which topic to transition upon and which value to display
+	- [ ] The color boxes in the transition/colour editor should have a chooser popup (via a button) to help with selecting the various types and well-known values
+	- [ ] this would be same as "Background color" for main node property, so either 3 small buttons
+	      or a single button goes to a dialog with 3 tabs, one for each of the colour modes
+- [ ] In future, colour transitions may drive other properties (e.g. intensity, flashing, shading) — bear that in mind for the model
+- [ ] Data item topics per node
+	- [ ] "Link animation" has property for index of which data item to animate upon
+- [ ] Page tabs
+	- [ ] Use MudTabs and related controls for displaying
+	- [ ] Position option: support top/left/right/bottom
+	- [ ] Drag to reorder pages
+- [ ] mqtt publishing should have other parameters (e.g. message expiry)
+- [ ] Widgets:
+	- [ ] Log viewer columns: choices for date (and format), time (and format), topic path, topic name, value
+- [ ] Deployment version / update checking
+	- [ ] Latest version checks checks for tags ... but the actual docker image may not be available for some time later. Can it check actual images in ghcr?
+	- [ ] We want to be able to select beta/non-latest pre-releases as an option i.e follow release only stream or latest beta stream
+	- [ ] Can the image update itself somehow from within the docker container? even if it has to do a restart or exit and allow docker to restart it with a new version pulled.
+	- [ ] How would we revert to a previous version if an update proved bad?
+- [ ] User application settings should be in data directory so persist over deployments.:
+	- [ ] Startup behaviour
+	- [ ] Admin password hash
+	- [ ] ...this is probably in the applicationstate file?
 
 ## 🟡 Features
 
@@ -24,22 +44,21 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Option: "virtual topics" defined at dashboard level, computed from raw MQTT values, reusable across nodes
 - [ ] Option to write calculated values back to the MQTT broker
 
-### FEAT-C: Additional node types _(Gauge, Switch, Battery done — see CHANGELOG)_
+### FEAT-C: Additional node types _(Gauge, Switch, Battery, Log, TreeView done — see CHANGELOG)_
+- [ ] **Text node** - different node shapes (circle, diamond, etc.)
 - [ ] **Grid** — table with rows/columns mapped to MQTT values
-- [ ] **Log** — scrolling history list of a topic's messages (configurable max history)
 - [ ] **Chart** — in-memory time-series sparkline graph
 - [ ] **Image** — display an image from a URL
 - [ ] **Markdown / HTML** — formatted static content, optionally with data substitution
 - [ ] **IFrame** — embed another web page
-- [ ] **Tree view** — hierarchical display of MQTT topics and values from a root subscription
-- [ ] **Text node** - different node shapes (circle, diamond, etc.)
 
-### FEAT-D: Multiple dashboard pages
-- [ ] `DiagramState` becomes a list of pages, each with its own canvas
-- [ ] Page tabs at the top with overflow handling (scrolling/dropdown)
+### FEAT-D: Multiple dashboard pages _(basic multi-page done — see CHANGELOG)_
+- [ ] Page tab overflow handling (scrolling/dropdown when many pages)
 - [ ] Swipe left/right gesture on mobile
-- [ ] Page management: add, rename, delete, reorder
-- [ ] Current "Data" view moves to an optional tab (tree view of all live values)
+- [ ] Page reordering (drag tabs)
+- [ ] Current "Data" cold be replaced by an optional page (tree view and log of all live values)
+	- [ ] user would create this is they wanted it manually or its some how a quick add page option when you create a new, empty dashboard
+	- [ ] ...just need a way to specify dashboard set of requests ..so maybe thats in Dashboard properties dialog
 
 ### FEAT-E: Editing improvements
 - [ ] Node-red style palette panel — drag node types from a sidebar onto the canvas

@@ -9,6 +9,17 @@ public class NodeColorRule
     public string Color { get; set; } = "red"; // CSS color, e.g. "red", "#FF0000"
 }
 
+/// <summary>A single page within a multi-page dashboard.</summary>
+public class PageState
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N")[..8];
+    public string Name { get; set; } = "Page 1";
+    public List<NodeState> Nodes { get; set; } = new();
+    public List<LinkState> Links { get; set; } = new();
+    public int GridSize { get; set; } = 20;
+    public string BackgroundColor { get; set; } = string.Empty;
+}
+
 public class DiagramState
 {
     public string Name { get; set; } = string.Empty;
@@ -25,6 +36,13 @@ public class DiagramState
     public List<LinkState> Links { get; set; } = new();
     public int GridSize { get; set; } = 20; // Default 20px grid; 0 for no grid
     public string BackgroundColor { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Multi-page support. When populated, each page has its own node/link canvas.
+    /// When null, this is a legacy single-page file — Nodes/Links/GridSize/BackgroundColor
+    /// at the top level represent the single page.
+    /// </summary>
+    public List<PageState>? Pages { get; set; }
 }
 
 public class NodeState
@@ -83,6 +101,7 @@ public class NodeState
     // MQTT Data Binding
     public string? DataTopic { get; set; }
     public string? DataTopic2 { get; set; }
+    public List<string>? DataTopics { get; set; }
     public int? FontSize { get; set; }
     public string? LinkAnimation { get; set; }
 
@@ -93,6 +112,7 @@ public class NodeState
     public double? MinValue { get; set; }
     public double? MaxValue { get; set; }
     public string? Unit { get; set; }
+    // Kept for backward compat reading of old files (not written by new code)
     public double? MidPoint { get; set; }
     public string? NegativeColor { get; set; }
     public string? PositiveColor { get; set; }
@@ -105,19 +125,30 @@ public class NodeState
     public string? OnText { get; set; }
     public string? OffText { get; set; }
     public bool? SwitchIsReadOnly { get; set; }
+    public bool? SwitchRetain { get; set; }
+    public int? SwitchQosLevel { get; set; }
 
-    // Battery-specific
+    // Battery-specific (kept for backward compat reading of old files)
     public string? LowColor { get; set; }
     public string? MedColor { get; set; }
     public string? HighColor { get; set; }
     public bool? BatteryShowPercent { get; set; }
 
-    // Gauge ArcOrigin and color thresholds
+    // Gauge ArcOrigin and shared color thresholds (used by Gauge and Battery)
     public double? ArcOrigin { get; set; }
     public List<GaugeColorThresholdState>? ColorThresholds { get; set; }
 
     // Title position (all node types)
     public string? TitlePosition { get; set; }
+
+    // Log-specific
+    public int? MaxEntries { get; set; }
+    public bool? ShowTime { get; set; }
+    public bool? ShowDate { get; set; }
+
+    // TreeView-specific
+    public string? RootTopic { get; set; }
+    public bool? ShowValues { get; set; }
 
     public List<PortState> Ports { get; set; } = new();
 }
@@ -132,6 +163,7 @@ public class GaugeColorThresholdState
 {
     public double Value { get; set; }
     public string Color { get; set; } = "var(--mud-palette-primary)";
+    public string Direction { get; set; } = ">=";
 }
 
 public class LinkState

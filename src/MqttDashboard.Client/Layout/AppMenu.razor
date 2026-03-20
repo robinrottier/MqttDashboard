@@ -15,28 +15,28 @@
         {
             <MudMenuItem Label="New" OnClick="NewDiagram" />
         }
-        @if (AppState.RecentFiles.Any())
-        {
-            @if (IsEditMode)
-            {
-                <MudDivider />
-            }
-            @foreach (var recentName in AppState.RecentFiles)
-            {
-                var name = recentName;
-                <MudMenuItem OnClick="() => OpenRecentFile(name)">@name</MudMenuItem>
-            }
-            <MudDivider />
-        }
         <MudMenuItem Label="Open…" OnClick="OpenDiagram" />
         @if (IsEditMode)
         {
             <MudMenuItem Label="Reload from Disk" OnClick="ReloadDiagram" />
             <MudDivider />
-            <MudMenuItem Label="Save"                 OnClick="SaveDiagram"            />
+            <MudMenuItem Label="Save"                 OnClick="SaveDashboard"            />
             <MudMenuItem Label="Save As…"             OnClick="SaveAsDiagram"          />
             <MudDivider />
             <MudMenuItem Label="Dashboard Properties…"  OnClick="MenuDiagramProperties"  />
+            @if (AppState.IsEditMode)
+            {
+                <MudDivider />
+                <MudMenuItem OnClick="@(() => AppState.TriggerAddPage())">Add Page</MudMenuItem>
+                @for (int i = 0; i < AppState.PageNames.Count; i++)
+                {
+                    var idx = i;
+                    <MudMenuItem OnClick="@(() => AppState.TriggerSetActivePage(idx))"
+                                 Disabled="@(AppState.ActivePageIndex == idx)">
+                        @(AppState.ActivePageIndex == idx ? "▶ " : "")Go to: @AppState.PageNames[idx]
+                    </MudMenuItem>
+                }
+            }
         }
     </MudMenu>
 
@@ -130,6 +130,7 @@
         {
             <MudDivider />
             <MudMenuItem OnClick='() => Nav.NavigateTo("/change-password")'>Change Password…</MudMenuItem>
+            <MudMenuItem OnClick="ShowStartupSettings">Startup Settings…</MudMenuItem>
         }
     </MudMenu>
 
@@ -162,11 +163,11 @@
     }
 
     private Task ShowAbout() => DialogService.ShowAsync<AboutDialog>("About Mqtt Dashboard");
+    private Task ShowStartupSettings() => DialogService.ShowAsync<StartupSettingsDialog>("Startup Settings");
 
     private void NewDiagram()         => AppState.TriggerNewDiagram();
     private void OpenDiagram()        => AppState.TriggerOpen();
-    private void OpenRecentFile(string name) => AppState.TriggerOpenRecent(name);
-    private void SaveDiagram()        => AppState.TriggerSaveDiagram();
+    private void SaveDashboard()        => AppState.TriggerSaveDiagram();
     private void SaveAsDiagram()      => AppState.TriggerSaveAs();
     private void ReloadDiagram()          => AppState.TriggerReloadDiagram();
     private void MenuDiagramProperties()  => AppState.TriggerDiagramProperties();

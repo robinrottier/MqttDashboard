@@ -99,12 +99,10 @@ public static class WebApplicationExtensions
         // API controllers are exempt via the IgnoreAntiforgeryTokenAttribute global filter
         app.UseAntiforgery();
 
-        // Add authentication/authorization if configured
-        if (!string.IsNullOrEmpty(app.Configuration["Auth:AdminPasswordHash"]))
-        {
-            app.UseAuthentication();
-            app.UseAuthorization();
-        }
+        // Authentication/authorization middleware is always active (services are always registered).
+        // When no AdminPasswordHash is configured, auth is effectively open — everyone is admin.
+        app.UseAuthentication();
+        app.UseAuthorization();
 
         app.MapStaticAssets();
 

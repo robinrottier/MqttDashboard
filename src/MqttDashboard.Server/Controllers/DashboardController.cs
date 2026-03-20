@@ -9,12 +9,12 @@ namespace MqttDashboard.Server.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [IgnoreAntiforgeryToken]
-public class DiagramController : ControllerBase
+public class DashboardController : ControllerBase
 {
-    private readonly DiagramStorageService _storageService;
-    private readonly ILogger<DiagramController> _logger;
+    private readonly DashboardStorageService _storageService;
+    private readonly ILogger<DashboardController> _logger;
 
-    public DiagramController(DiagramStorageService storageService, ILogger<DiagramController> logger)
+    public DashboardController(DashboardStorageService storageService, ILogger<DashboardController> logger)
     {
         _storageService = storageService;
         _logger = logger;
@@ -23,57 +23,57 @@ public class DiagramController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<DiagramState>> GetDiagram()
     {
-        _logger.LogInformation("[DiagramController] GET diagram requested");
+        _logger.LogInformation("[DashboardController] GET diagram requested");
         try
         {
             var diagram = await _storageService.LoadDiagramAsync();
 
             if (diagram == null)
             {
-                _logger.LogWarning("[DiagramController] No diagram found, returning 404");
+                _logger.LogWarning("[DashboardController] No diagram found, returning 404");
                 return NotFound();
             }
 
-            _logger.LogInformation("[DiagramController] Returning diagram with {NodeCount} nodes", diagram.Nodes.Count);
+            _logger.LogInformation("[DashboardController] Returning diagram with {NodeCount} nodes", diagram.Nodes.Count);
             return Ok(diagram);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[DiagramController] Error in GET diagram");
+            _logger.LogError(ex, "[DashboardController] Error in GET diagram");
             return StatusCode(500, ex.Message);
         }
     }
 
     [HttpPost]
     [ServiceFilter(typeof(RequireAdminFilter))]
-    public async Task<ActionResult> SaveDiagram([FromBody] DiagramState diagramState)
+    public async Task<ActionResult> SaveDashboard([FromBody] DiagramState diagramState)
     {
-        _logger.LogInformation("[DiagramController] POST diagram requested with {NodeCount} nodes", 
+        _logger.LogInformation("[DashboardController] POST diagram requested with {NodeCount} nodes", 
             diagramState?.Nodes?.Count ?? 0);
 
         try
         {
             if (diagramState == null)
             {
-                _logger.LogWarning("[DiagramController] DiagramState is null");
+                _logger.LogWarning("[DashboardController] DiagramState is null");
                 return BadRequest("DiagramState cannot be null");
             }
 
-            _logger.LogInformation("[DiagramController] Saving diagram...");
+            _logger.LogInformation("[DashboardController] Saving dashboard...");
             var success = await _storageService.SaveDiagramAsync(diagramState);
 
             if (!success)
             {
-                _logger.LogError("[DiagramController] Storage service returned false");
-                return StatusCode(500, "Failed to save diagram");
+                _logger.LogError("[DashboardController] Storage service returned false");
+                return StatusCode(500, "Failed to save dashboard");
             }
 
-            _logger.LogInformation("[DiagramController] Diagram saved successfully");
+            _logger.LogInformation("[DashboardController] Dashboard saved successfully");
             return Ok();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[DiagramController] Error in POST diagram: {Message}", ex.Message);
+            _logger.LogError(ex, "[DashboardController] Error in POST dashboard: {Message}", ex.Message);
             return StatusCode(500, $"Error: {ex.Message}");
         }
     }
@@ -100,5 +100,14 @@ public class DiagramController : ControllerBase
         if (string.IsNullOrWhiteSpace(name)) return BadRequest("Name required");
         var success = await _storageService.SaveDiagramByNameAsync(name, diagramState);
         return success ? Ok() : StatusCode(500, "Failed to save");
+    }
+
+    [HttpDelete("{name}")]
+    [ServiceFilter(typeof(RequireAdminFilter))]
+    public async Task<ActionResult> DeleteDiagramByName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return BadRequest("Name required");
+        var success = await _storageService.DeleteDashboardByNameAsync(name);
+        return success ? Ok() : NotFound();
     }
 }

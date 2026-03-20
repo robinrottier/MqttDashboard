@@ -13,8 +13,7 @@ namespace MqttDashboard.Widgets;
 public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
     where TNode : MudNodeModel
 {
-    private IDisposable? _dataWatcher1;
-    private IDisposable? _dataWatcher2;
+    private readonly List<IDisposable> _dataWatchers = new();
     private bool _disposed = false;
 
     protected override void OnInitialized()
@@ -31,33 +30,64 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
 
     protected void SetupDataWatchers()
     {
-        _dataWatcher1?.Dispose(); _dataWatcher1 = null;
-        _dataWatcher2?.Dispose(); _dataWatcher2 = null;
+        foreach (var w in _dataWatchers) w.Dispose();
+        _dataWatchers.Clear();
 
-        if (!string.IsNullOrEmpty(Node.DataTopic))
-        {
-            var v = AppState.DataCache.GetValue(Node.DataTopic);
-            if (v != null) { Node.DataValue = v; Node.DataLastUpdated = DateTime.Now; OnData1Updated(); }
-            _dataWatcher1 = AppState.DataCache.Watch(Node.DataTopic, OnData1Received);
-        }
+        var topics = Node.DataTopics.Count > 0
+            ? Node.DataTopics.Cast<string?>().ToList()
+            : new List<string?> { Node.DataTopic, Node.DataTopic2 };
 
-        if (!string.IsNullOrEmpty(Node.DataTopic2))
+        for (int i = 0; i < topics.Count; i++)
         {
-            var v2 = AppState.DataCache.GetValue(Node.DataTopic2);
-            if (v2 != null) { Node.DataValue2 = v2; Node.DataLastUpdated2 = DateTime.Now; OnData2Updated(); }
-            _dataWatcher2 = AppState.DataCache.Watch(Node.DataTopic2, OnData2Received);
+            var topic = topics[i];
+            if (string.IsNullOrEmpty(topic)) continue;
+            var idx = i;
+            var capturedTopic = topic;
+
+            var v = AppState.DataCache.GetValue(capturedTopic);
+            if (v != null)
+            {
+                if (idx == 0) { Node.DataValue = v; Node.DataLastUpdated = DateTime.Now; OnData1Updated(); }
+                else if (idx == 1) { Node.DataValue2 = v; Node.DataLastUpdated2 = DateTime.Now; OnData2Updated(); }
+            }
+
+            var watcher = AppState.DataCache.Watch(capturedTopic, (t, value) =>
+            {
+                if (_disposed) return;
+                if (idx == 0)
+                {
+                    Node.DataValue = value;
+                    Node.DataLastUpdated = DateTime.Now;
+                    OnData1ReceivedCore(t, value);
+                    TriggerLinkAnimation();
+                }
+                else if (idx == 1)
+                {
+                    Node.DataValue2 = value;
+                    Node.DataLastUpdated2 = DateTime.Now;
+                    OnData2Updated();
+                }
+                OnDataReceivedCore(idx, t, value);
+                try { InvokeAsync(StateHasChanged); } catch { /* circuit may be disconnected */ }
+            });
+            _dataWatchers.Add(watcher);
         }
     }
 
-    private void OnData1Received(string topic, object value)
+    /// <summary>
+    /// Called when DataValue (topic 1) is received. Override to also use the actual
+    /// <paramref name="topic"/> that fired (useful for wildcard subscriptions).
+    /// </summary>
+    protected virtual void OnData1ReceivedCore(string topic, object? rawValue)
     {
-        if (_disposed) return;
-        Node.DataValue = value;
-        Node.DataLastUpdated = DateTime.Now;
         OnData1Updated();
-        TriggerLinkAnimation();
-        try { InvokeAsync(StateHasChanged); } catch { /* circuit may be disconnected */ }
     }
+
+    /// <summary>
+    /// Called for every topic index when a value is received. Override to react to
+    /// any topic by index without replacing <see cref="OnData1ReceivedCore"/>.
+    /// </summary>
+    protected virtual void OnDataReceivedCore(int index, string topic, object? rawValue) { }
 
     /// <summary>
     /// Updates link animation direction on all outgoing links based on the current DataValue
@@ -87,15 +117,6 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
                 }
             }
         }
-    }
-
-    private void OnData2Received(string topic, object value)
-    {
-        if (_disposed) return;
-        Node.DataValue2 = value;
-        Node.DataLastUpdated2 = DateTime.Now;
-        OnData2Updated();
-        try { InvokeAsync(StateHasChanged); } catch { /* circuit may be disconnected */ }
     }
 
     /// <summary>Called after DataValue (topic 1) is updated. Override to react.</summary>
@@ -157,8 +178,8 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
     public override void Dispose()
     {
         _disposed = true;
-        _dataWatcher1?.Dispose();
-        _dataWatcher2?.Dispose();
+        foreach (var w in _dataWatchers) w.Dispose();
+        _dataWatchers.Clear();
         base.Dispose();
     }
 }

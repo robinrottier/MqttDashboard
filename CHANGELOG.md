@@ -8,21 +8,46 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- **Multiple node types** — click "Add Node" to choose from a picker:
-  - **Text node** — existing display node (icon + formatted text with MQTT value substitution)
-  - **Gauge node** — SVG semicircular arc gauge with configurable min/max/unit; arc colour shifts green→yellow→red as value approaches max
-  - **Switch node** — shows current ON/OFF state from a data topic; toggle button publishes a configurable payload back to MQTT
-  - **Battery node** — SVG battery icon with colour-coded fill level (red/amber/green); configurable min/max, low/med/high colours, optional percentage display
-- **MQTT publish** — new `PublishMessageAsync` path through SignalR hub → `MqttClientService` → broker (used by Switch node)
-- Node type picker dialog shown when adding a new node in edit mode
-- **Gauge: ArcOrigin / colour thresholds** — arc can be drawn from a configurable value (e.g. 0 in a ±1000 range) rather than always from the minimum; ordered list of colour threshold breakpoints (value → colour); arc goes red below origin, green above by default when midpoint is set
-- **Gauge: MidPoint** — optional midpoint value; when set, arc is split into negative/positive regions with a tick mark; colours configurable via `NegativeColor` / `PositiveColor` properties
-- **Gauge/Switch: title position** — `TitlePosition` property (Above / Below / Left / Right) on all nodes; title drawn horizontally in all positions
-- **Switch: style modes** — `SwitchStyle` property: Full (icon + text), Compact (icon + small text), Icon-only; `OnText` / `OffText` properties for configurable labels
-- **Switch: read-only mode** — `IsReadOnly` property; when set, toggle is disabled and no MQTT publish occurs
-- **Gauge: Text label** — static or formatted text rendered below the arc (supports `{0:F1}` / `{0:0}` MQTT value substitution)
-- **Widget base classes** — `BaseNodeWidget<T>` and `BaseNodeWithDataWidget<T>` reduce duplication; all widgets inherit from these bases
-- **FormatText in base class** — `FormatText()` and `FormattableValue` helper moved to `BaseNodeWithDataWidget`; format syntax (`{0:0}`, `{0:F2}`, etc.) now works identically in Text, Gauge, and Battery node text fields
+- **OS clipboard integration** — copy/paste of nodes now writes to and reads from the browser's native clipboard (via `navigator.clipboard`), enabling cross-window and cross-tab paste. Falls back gracefully to in-memory clipboard if the Clipboard API is unavailable or permission is denied.
+- **Startup dashboard setting** — admin-configurable system-wide startup behaviour: *Last Used* (per-browser localStorage restore, previous behaviour), *Specific File* (always open a named dashboard for every new session), or *None* (blank canvas). Configure via **Startup Settings…** in the admin menu. Setting is stored in `appsettings.user.json`.
+- `GET /api/settings/startup` and `POST /api/settings/startup` API endpoints.
+- **Log node** — new widget showing a scrolling timestamped history of messages received on a topic. Configurable max entries, optional date and time columns.
+- **TreeView node** — new widget displaying all live MQTT topics and values under a configurable root prefix in a collapsible tree using `MudTreeView`. Optional value column.
+- **Multi-page dashboards** — a dashboard file now holds multiple named pages, each with its own independent canvas. Page tabs appear above the canvas (always visible in edit mode; hidden when only one page in view mode). Add/remove pages from the edit menu or page tab bar. All pages are saved and loaded together in a single `.json` file. Legacy single-page files load transparently as a one-page dashboard.
+- **Colour transition direction** — each `GaugeColorThreshold` entry now has a `Direction` property (`>=` or `<=`) so thresholds can match values going upward *or* downward. "Last match wins" evaluation order.
+- **Battery colour thresholds** — the Battery node now uses the same ordered `ColorThresholds` list as the Gauge instead of the fixed low/medium/high three-band system. Old `LowColor`/`MedColor`/`HighColor` properties are deprecated (still loaded for backward compatibility and auto-converted to thresholds).
+- **`ColorTransitionEditor` component** — reusable MudBlazor component for editing an ordered list of value→colour thresholds with direction selectors; used by both Gauge and Battery property editors.
+- **MQTT publish: Retain + QoS** — Switch node (and any future publish node) now has configurable *Retain* flag and *QoS level* (0 = At Most Once, 1 = At Least Once, 2 = Exactly Once). Options appear in the node properties editor under "Publish Options". Plumbed through `ISignalRService` → SignalR hub → `MqttClientService`.
+- **Page tab rename** — double-click a page tab in edit mode to rename it inline.
+- **Variable data topics per node** — each node now supports a configurable list of MQTT topics (instead of a fixed two-topic limit). The node properties editor shows a dynamic list with per-topic text fields, a clear (✕) adornment on each, and an **Add Topic** button. Old `DataTopic`/`DataTopic2` files are automatically migrated on load; saves write both the new list and the legacy fields for backward compatibility.
+- **Dashboard delete from Open dialog** — the Open Dashboard dialog now has a trash icon on each row. Clicking it shows a confirmation prompt and, on confirm, permanently deletes the dashboard file via `DELETE /api/dashboard/{name}`.
+
+### Fixed
+- **Auth on clean start** — cookie authentication services were only registered when `Auth:AdminPasswordHash` was already set at startup. On a first-ever run, setting the admin password via the Setup page then trying to log in threw `"No sign-in authentication handlers are registered"`. Auth services and middleware are now always registered unconditionally.
+- **Docker image version shows `1.0.0`** — `.git` is now included in the Docker build context so MinVer can resolve the version from tags at compile time. The `BUILD_VERSION` build ARG workaround has been removed.
+- **Dashboard save failure no longer silently exits edit mode** — if saving fails (network error, permission denied, etc.), the editor stays open rather than discarding all unsaved work. The error snackbar now includes the file name and a hint to check server logs.
+- **Log node wildcard topics (`#`, `+`) now work** — `MqttDataCache.Watch()` previously only matched exact topics; it now supports MQTT wildcard patterns. Log nodes subscribed to `#` or `sensors/+/temp` receive all matching messages. Each log entry also shows the actual topic that fired when the subscription is a wildcard.
+- **TreeView node no longer collapses on every update** — the widget previously rebuilt the entire tree on every state change, losing all user-expanded/collapsed state. It now uses per-topic data watchers so only the changed value is updated in-place. New topics cause a structure rebuild that preserves existing expansion state. Changed values are briefly highlighted.
+- **SignalR NullReferenceException with `#` wildcard log** — `ConvertPayloadToString()` can return `null` for MQTT messages with empty payloads; the null value was forwarded to SignalR's typed `SendAsync` and caused a crash. The payload is now coerced to `""` before sending.
+- **Spurious "unsaved changes" prompt on entering/exiting edit mode** — Blazor.Diagrams fires `Changed` events while locking/unlocking nodes and adding resize controls during mode transitions, which was incorrectly marking the dashboard as edited. Diagram-change tracking is now suppressed during mode switches and diagram loading.
+- **Spurious "unsaved changes" prompt after opening a file** — `AddSubscriptionAsync`/`RemoveSubscriptionAsync` were calling `MarkEdited()` unconditionally; they now only do so in edit mode. The startup load path also now calls `MarkSaved()` after loading, preventing a false dirty flag on a clean session start.
+- **False dirty flag after discarding changes** — choosing "Discard" when exiting edit mode now correctly clears the edited flag, so opening a new file afterwards no longer prompts for unsaved changes.
+- **Discard reverts page additions/deletions** — choosing "Discard" when exiting edit mode now restores the full dashboard state (including page structure) to the snapshot taken when edit mode was entered. Previously, added or deleted pages persisted after discard.
+- **Log table fills full node width** — added `min-width:0;` and `overflow-x:hidden` to the flex container so the `MudSimpleTable` correctly occupies 100 % of the widget's width.
+
+### Changed
+- **TreeView widget uses `MudTreeView`** — replaced the hand-rolled recursive `RenderFragment` builder with MudBlazor `MudTreeView<TreeNode>` / `MudTreeViewItem<TreeNode>` components. Expansion state and highlight behaviour are preserved.
+- **Edit mode indicator colour** — the edit-mode toggle switch now uses three colours: grey (view mode), orange/warning (editing, no unsaved changes), red/error (editing with unsaved changes). Previously it was blue/orange.
+- **Title bar tooltip** — hovering over the dashboard name in the app bar now shows a tooltip with the file name, display name (if different), and current status (View mode / Editing / Editing — unsaved changes).
+- **Page delete confirmation** — deleting a page now shows a confirmation dialog naming the page before removing it. Previously pages were deleted immediately on clicking the ✕ tab button.
+- **Default dashboard file renamed** — the built-in default file is now `Default.json` (was `diagram.json`). Existing `diagram.json` files are automatically renamed on first startup.
+- **Display name separated from file name** — `DiagramState.Name` (the human-readable dashboard title) is now stored separately from the file stem used to save/load. "Save As" changes the file name but leaves the display name unchanged. The title bar shows the display name if set, otherwise falls back to the file name.
+- **Service renames** — `IDiagramService` → `IDashboardService`, `DiagramService` → `DashboardService`, `ServerDiagramService` → `ServerDashboardService`. Dialog components `DiagramPickerDialog` → `DashboardPickerDialog`, `DiagramPropertiesDialog` → `DashboardPropertiesDialog`. The `Diagram` name is now reserved exclusively for Blazor.Diagrams canvas components.
+- **Switch widget uses `MudSwitch`** — replaced the custom chip+icon-button toggle with a proper `MudBlazor.MudSwitch<bool>` component in Full and Compact styles. IconOnly style retains the icon button.
+- **Log widget uses `MudSimpleTable`** — replaced raw HTML divs with a `MudSimpleTable` for consistent MudBlazor styling.
+- **Page tabs use MudBlazor buttons** — replaced the custom hand-rolled tab bar with `MudButton`/`MudButtonGroup` components for consistent styling and behaviour.
+- **MRU (recent files) removed** — the recent files list in the app menu has been removed. The Open dialog is the sole entry point for switching dashboards. The `localStorage` key for recent files is no longer written.
+- **`FormatText` in base class** — `FormatText()` and `FormattableValue` helper moved to `BaseNodeWithDataWidget`; format syntax (`{0:0}`, `{0:F2}`, etc.) now works identically in Text, Gauge, and Battery node text fields.
 - **Link animation in base class** — `TriggerLinkAnimation()` moved to `BaseNodeWithDataWidget`; all node types now support the Link Animation property without per-widget code
 - **Exit-edit prompt** — switching out of edit mode (or clicking the view button) when the dashboard has unsaved changes now shows a Save / Discard / Cancel dialog
 - File/Save now saves to the currently-open filename (was always saving to `diagram.json`); snackbar confirms the filename saved

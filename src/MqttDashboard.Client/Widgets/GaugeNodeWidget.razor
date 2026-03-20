@@ -126,21 +126,13 @@
         {
             var origin = Node.ArcOrigin ?? Node.MinValue;
             var distance = Math.Abs(dThresh - origin);
-            var ordered = Node.ColorThresholds.OrderBy(t => t.Value).ToList();
-            string color = ordered[0].Color;
-            foreach (var t in ordered)
+            string? color = null;
+            foreach (var t in Node.ColorThresholds)
             {
-                if (distance >= t.Value) color = t.Color;
-                else break;
+                if (t.Direction == ">=" && distance >= t.Value) color = t.Color;
+                else if (t.Direction == "<=" && distance <= t.Value) color = t.Color;
             }
-            return color;
-        }
-        if (Node.MidPoint.HasValue && Node.DataValue != null &&
-            double.TryParse(Node.DataValue.ToString(), out var d))
-        {
-            return d >= Node.MidPoint.Value
-                ? (Node.PositiveColor ?? "var(--mud-palette-success)")
-                : (Node.NegativeColor ?? "var(--mud-palette-error)");
+            if (color != null) return color;
         }
         return _percent switch
         {
@@ -156,8 +148,8 @@
         var value = System.Net.WebUtility.HtmlEncode(FormatValue());
         var sb = new System.Text.StringBuilder();
 
-        // Draw tick mark: prefer ArcOrigin tick; fall back to MidPoint tick
-        var tickValue = Node.ArcOrigin ?? Node.MidPoint;
+        // Draw tick mark at ArcOrigin (if set)
+        var tickValue = Node.ArcOrigin;
         if (tickValue.HasValue)
         {
             var range = Node.MaxValue - Node.MinValue;

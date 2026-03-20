@@ -1,6 +1,6 @@
 # MqttDashboard
 
-A live, node-based diagram editor driven by real-time MQTT data.
+A live, node-based dashboard editor driven by real-time MQTT data.
 
 Draw diagrams that show how things are connected in your system — and watch the values update in real time as MQTT messages arrive. Typical use cases include:
 
@@ -8,7 +8,7 @@ Draw diagrams that show how things are connected in your system — and watch th
 - **Device state** — home automation sensors, switches, and actuators displayed as a connected graph
 - **Process monitoring** — industrial or IoT pipelines with live readings at each stage
 
-Diagrams are fully editable in the browser. Multiple dashboard files can be saved and opened without restarting.
+Dashboards are fully editable in the browser. Multiple dashboard files can be saved and opened without restarting.
 
 ---
 
@@ -36,7 +36,7 @@ Diagrams are fully editable in the browser. Multiple dashboard files can be save
 | MQTT client | [MQTTnet](https://github.com/dotnet/MQTTnet) |
 | Versioning | [MinVer](https://github.com/adamralph/minver) (from git tags) |
 
-The server subscribes to MQTT topics and forwards incoming messages to connected browser clients over SignalR. Diagram and application state are persisted as JSON files.
+The server subscribes to MQTT topics and forwards incoming messages to connected browser clients over SignalR. Dashboards are persisted as JSON files.
 
 ---
 
@@ -209,7 +209,7 @@ All settings can be supplied as environment variables (using `__` as the section
 | MQTT port | `MqttSettings__Port` | Broker port | `1883` |
 | MQTT username | `MqttSettings__Username` | Leave empty if not required | — |
 | MQTT password | `MqttSettings__Password` | Leave empty if not required | — |
-| Data directory | `DiagramStorage__DataDirectory` | Path where diagram JSON files are stored | `./data` |
+| Data directory | `DiagramStorage__DataDirectory` | Path where dashboard JSON files are stored | `./data` |
 | Reverse proxy subpath | `AllowedPathBase` | Accepted subpath from `X-Forwarded-Prefix` | *(empty — root)* |
 | Admin password hash | `Auth__AdminPasswordHash` | bcrypt hash of the admin password. Leave empty to disable authentication | — |
 

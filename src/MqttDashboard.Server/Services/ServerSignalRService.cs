@@ -84,9 +84,9 @@ public sealed class ServerSignalRService : ISignalRService
         return Task.FromResult(_connectionTracker.ConnectedCount);
     }
 
-    public async Task PublishMessageAsync(string topic, string payload)
+    public async Task PublishMessageAsync(string topic, string payload, bool retain = false, int qos = 0)
     {
-        await _mqttClientService.PublishMessageAsync(topic, payload);
+        await _mqttClientService.PublishMessageAsync(topic, payload, retain, qos);
         _logger?.LogDebug("[ServerSignalRService] Published to {Topic}", topic);
     }
 
