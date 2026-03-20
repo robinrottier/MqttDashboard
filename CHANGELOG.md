@@ -17,10 +17,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Colour transition direction** — each `GaugeColorThreshold` entry now has a `Direction` property (`>=` or `<=`) so thresholds can match values going upward *or* downward. "Last match wins" evaluation order.
 - **Battery colour thresholds** — the Battery node now uses the same ordered `ColorThresholds` list as the Gauge instead of the fixed low/medium/high three-band system. Old `LowColor`/`MedColor`/`HighColor` properties are deprecated (still loaded for backward compatibility and auto-converted to thresholds).
 - **`ColorTransitionEditor` component** — reusable MudBlazor component for editing an ordered list of value→colour thresholds with direction selectors; used by both Gauge and Battery property editors.
+- **MQTT publish: Retain + QoS** — Switch node (and any future publish node) now has configurable *Retain* flag and *QoS level* (0 = At Most Once, 1 = At Least Once, 2 = Exactly Once). Options appear in the node properties editor under "Publish Options". Plumbed through `ISignalRService` → SignalR hub → `MqttClientService`.
+- **Page tab rename** — double-click a page tab in edit mode to rename it inline.
 
 ### Fixed
 - **Auth on clean start** — cookie authentication services were only registered when `Auth:AdminPasswordHash` was already set at startup. On a first-ever run, setting the admin password via the Setup page then trying to log in threw `"No sign-in authentication handlers are registered"`. Auth services and middleware are now always registered unconditionally.
 - **Docker image version shows `1.0.0`** — `.git` is now included in the Docker build context so MinVer can resolve the version from tags at compile time. The `BUILD_VERSION` build ARG workaround has been removed.
+- **Dashboard save failure no longer silently exits edit mode** — if saving fails (network error, permission denied, etc.), the editor stays open rather than discarding all unsaved work. The error snackbar now also surfaces the reason.
+- **Log node wildcard topics (`#`, `+`) now work** — `MqttDataCache.Watch()` previously only matched exact topics; it now supports MQTT wildcard patterns. Log nodes subscribed to `#` or `sensors/+/temp` receive all matching messages. Each log entry also shows the actual topic that fired when the subscription is a wildcard.
+- **TreeView node no longer collapses on every update** — the widget previously rebuilt the entire tree on every state change, losing all user-expanded/collapsed state. It now uses per-topic data watchers so only the changed value is updated in-place. New topics cause a structure rebuild that preserves existing expansion state. Changed values are briefly highlighted.
+
+### Changed
+- **Default dashboard file renamed** — the built-in default file is now `Default.json` (was `diagram.json`). Existing `diagram.json` files are automatically renamed on first startup.
+- **Display name separated from file name** — `DiagramState.Name` (the human-readable dashboard title) is now stored separately from the file stem used to save/load. "Save As" changes the file name but leaves the display name unchanged. The title bar shows the display name if set, otherwise falls back to the file name.
+- **Service renames** — `IDiagramService` → `IDashboardService`, `DiagramService` → `DashboardService`, `ServerDiagramService` → `ServerDashboardService`. Dialog components `DiagramPickerDialog` → `DashboardPickerDialog`, `DiagramPropertiesDialog` → `DashboardPropertiesDialog`. The `Diagram` name is now reserved exclusively for Blazor.Diagrams canvas components.
+- **Switch widget uses `MudSwitch`** — replaced the custom chip+icon-button toggle with a proper `MudBlazor.MudSwitch<bool>` component in Full and Compact styles. IconOnly style retains the icon button.
+- **Log widget uses `MudSimpleTable`** — replaced raw HTML divs with a `MudSimpleTable` for consistent MudBlazor styling.
+- **Page tabs use MudBlazor buttons** — replaced the custom hand-rolled tab bar with `MudButton`/`MudButtonGroup` components for consistent styling and behaviour.
 
 ### Changed
 - **Default dashboard file renamed** — the built-in default file is now `Default.json` (was `diagram.json`). Existing `diagram.json` files are automatically renamed on first startup.

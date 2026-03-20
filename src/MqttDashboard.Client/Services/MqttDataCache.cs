@@ -10,6 +10,7 @@ public class MqttDataCache
 {
     private readonly ConcurrentDictionary<string, object> _cache = new();
     private readonly Dictionary<string, List<Action<string, object>>> _watchers = new();
+    private readonly List<(System.Text.RegularExpressions.Regex pattern, Action<string, object> callback)> _wildcardWatchers = new();
     private readonly object _watcherLock = new();
 
     /// <summary>
@@ -44,10 +45,25 @@ public class MqttDataCache
     }
 
     /// <summary>
-    /// Watch a topic for value changes
+    /// Watch a topic for value changes. Supports MQTT wildcards: # and +.
     /// </summary>
     public IDisposable Watch(string topic, Action<string, object> callback)
     {
+        if (topic.Contains('#') || topic.Contains('+'))
+        {
+            // Wildcard topic — convert to regex and store in wildcard list
+            var regexPattern = "^" + topic
+                .Replace("+", "[^/]+")
+                .Replace("#", ".*")
+                .Replace("/", "\\/") + "$";
+            var regex = new System.Text.RegularExpressions.Regex(regexPattern);
+            lock (_watcherLock)
+            {
+                _wildcardWatchers.Add((regex, callback));
+            }
+            return new WildcardWatcherHandle(this, regex, callback);
+        }
+
         lock (_watcherLock)
         {
             if (!_watchers.ContainsKey(topic))
@@ -129,6 +145,20 @@ public class MqttDataCache
                 }
             }
         }
+
+        // Notify wildcard watchers
+        List<Action<string, object>>? wildcardCallbacks = null;
+        lock (_watcherLock)
+        {
+            wildcardCallbacks = _wildcardWatchers
+                .Where(w => w.pattern.IsMatch(topic))
+                .Select(w => w.callback)
+                .ToList();
+        }
+        foreach (var cb in wildcardCallbacks)
+        {
+            try { cb(topic, value); } catch { }
+        }
     }
 
     private void RemoveWatcher(string topic, Action<string, object> callback)
@@ -143,6 +173,15 @@ public class MqttDataCache
                     _watchers.Remove(topic);
                 }
             }
+        }
+    }
+
+    private void RemoveWildcardWatcher(System.Text.RegularExpressions.Regex pattern, Action<string, object> callback)
+    {
+        lock (_watcherLock)
+        {
+            var idx = _wildcardWatchers.FindIndex(w => ReferenceEquals(w.pattern, pattern) && ReferenceEquals(w.callback, callback));
+            if (idx >= 0) _wildcardWatchers.RemoveAt(idx);
         }
     }
 
@@ -165,6 +204,30 @@ public class MqttDataCache
             if (!_disposed)
             {
                 _cache.RemoveWatcher(_topic, _callback);
+                _disposed = true;
+            }
+        }
+    }
+
+    private class WildcardWatcherHandle : IDisposable
+    {
+        private readonly MqttDataCache _cache;
+        private readonly System.Text.RegularExpressions.Regex _pattern;
+        private readonly Action<string, object> _callback;
+        private bool _disposed;
+
+        public WildcardWatcherHandle(MqttDataCache cache, System.Text.RegularExpressions.Regex pattern, Action<string, object> callback)
+        {
+            _cache = cache;
+            _pattern = pattern;
+            _callback = callback;
+        }
+
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                _cache.RemoveWildcardWatcher(_pattern, _callback);
                 _disposed = true;
             }
         }

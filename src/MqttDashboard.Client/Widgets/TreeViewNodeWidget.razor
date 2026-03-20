@@ -31,6 +31,10 @@
 @code {
     private TreeNode _tree = new("", "");
     private bool _disposed;
+    private IDisposable? _watchSubscription;
+    private IDisposable? _rootWatchSubscription;
+    private readonly Dictionary<string, bool> _expandedState = new();
+    private readonly Dictionary<string, DateTime> _changedAt = new();
 
     private sealed class TreeNode(string fullTopic, string label)
     {
@@ -47,14 +51,44 @@
         if (Node.Size == null || Node.Size.Width < 120 || Node.Size.Height < 80)
             Node.Size = new(200, 200);
         base.OnInitialized();
-        AppState.OnStateChanged += OnAppStateChanged;
-        RebuildTree();
+        SetupWatchers();
     }
 
-    private void OnAppStateChanged()
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        SetupWatchers();
+    }
+
+    private void SetupWatchers()
+    {
+        _watchSubscription?.Dispose(); _watchSubscription = null;
+        _rootWatchSubscription?.Dispose(); _rootWatchSubscription = null;
+
+        if (string.IsNullOrEmpty(Node.RootTopic)) { _tree = new("", ""); return; }
+
+        RebuildTree();
+
+        var wildcardTopic = Node.RootTopic.TrimEnd('/') + "/#";
+        _watchSubscription = AppState.DataCache.Watch(wildcardTopic, OnTopicChanged);
+        _rootWatchSubscription = AppState.DataCache.Watch(Node.RootTopic, OnTopicChanged);
+    }
+
+    private void OnTopicChanged(string topic, object value)
     {
         if (_disposed) return;
-        RebuildTree();
+        _changedAt[topic] = DateTime.Now;
+        var node = FindNode(_tree, topic);
+        if (node != null)
+        {
+            node.Value = value?.ToString();
+        }
+        else
+        {
+            SaveExpansionState(_tree);
+            RebuildTree();
+            RestoreExpansionState(_tree);
+        }
         try { InvokeAsync(StateHasChanged); } catch { }
     }
 
@@ -64,6 +98,7 @@
 
         var root = new TreeNode(Node.RootTopic, Node.RootTopic.Split('/').Last());
         root.Value = AppState.DataCache.GetValue(Node.RootTopic)?.ToString();
+        root.Expanded = true;
 
         var pattern = Node.RootTopic.TrimEnd('/') + "/#";
         var matches = AppState.DataCache.GetValuesByPattern(pattern);
@@ -73,13 +108,15 @@
             var relativeParts = kvp.Key.Substring(Node.RootTopic.Length).TrimStart('/').Split('/');
             var node = root;
             var currentPath = Node.RootTopic;
+            var depth = 0;
             foreach (var part in relativeParts)
             {
                 currentPath += "/" + part;
+                depth++;
                 var child = node.Children.FirstOrDefault(c => c.Label == part);
                 if (child == null)
                 {
-                    child = new TreeNode(currentPath, part);
+                    child = new TreeNode(currentPath, part) { Expanded = depth <= 1 };
                     node.Children.Add(child);
                 }
                 node = child;
@@ -89,14 +126,44 @@
         _tree = root;
     }
 
+    private void SaveExpansionState(TreeNode node)
+    {
+        _expandedState[node.FullTopic] = node.Expanded;
+        foreach (var child in node.Children)
+            SaveExpansionState(child);
+    }
+
+    private void RestoreExpansionState(TreeNode node)
+    {
+        if (_expandedState.TryGetValue(node.FullTopic, out var expanded))
+            node.Expanded = expanded;
+        foreach (var child in node.Children)
+            RestoreExpansionState(child);
+    }
+
+    private TreeNode? FindNode(TreeNode node, string fullTopic)
+    {
+        if (node.FullTopic == fullTopic) return node;
+        foreach (var child in node.Children)
+        {
+            var found = FindNode(child, fullTopic);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
     private RenderFragment RenderTree(TreeNode node, int depth = 0) => builder =>
     {
         if (depth > 10) return;
         var indent = depth * 12;
+        var isHighlighted = _changedAt.TryGetValue(node.FullTopic, out var changedTime) &&
+                            (DateTime.Now - changedTime).TotalSeconds < 2;
         builder.OpenElement(0, "div");
         builder.AddAttribute(1, "style", $"padding-left:{indent}px;");
         builder.OpenElement(2, "div");
-        builder.AddAttribute(3, "style", "display:flex;align-items:center;gap:4px;cursor:pointer;padding:1px 2px;border-radius:2px;");
+        var rowStyle = "display:flex;align-items:center;gap:4px;cursor:pointer;padding:1px 2px;border-radius:2px;" +
+                       (isHighlighted ? "background:var(--mud-palette-warning-hover);" : "");
+        builder.AddAttribute(3, "style", rowStyle);
         builder.AddAttribute(4, "onclick", EventCallback.Factory.Create(this, () => { node.Expanded = !node.Expanded; StateHasChanged(); }));
         if (node.Children.Count > 0)
         {
@@ -137,7 +204,8 @@
     public override void Dispose()
     {
         _disposed = true;
-        AppState.OnStateChanged -= OnAppStateChanged;
+        _watchSubscription?.Dispose();
+        _rootWatchSubscription?.Dispose();
         base.Dispose();
     }
 }

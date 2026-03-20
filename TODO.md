@@ -13,25 +13,14 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Node properties dialog
 	- [ ] Can this dialog be moveable and apply changes dynamically (whilst still being able to cancel everything since opening)
 	- [ ] Data binding should not just be 2 items but a list that can be added to. So "+" in the properties dialog to configure another, "x" to remove a current one and handle list of items with an index in changed event for example
-- [ ] The color box in the transition/colour editor should have a chooser popup (via a button) to help with selecting the various types and well-known values
+- [ ] The color boxes in the transition/colour editor should have a chooser popup (via a button) to help with selecting the various types and well-known values
 	- [ ] this would be same as "Background color" for main node property, so either 3 small buttons
-	      or a singlebutton goes to a diaglog with 3 tabs, one for each of the colour modes
+	      or a single button goes to a dialog with 3 tabs, one for each of the colour modes
 - [ ] In future, colour transitions may drive other properties (e.g. intensity, flashing, shading) — bear that in mind for the model
-- [ ] Shoud use MudBlazor components where possible...
-	- [ ] Tabs for pages
-		- [ ] position option for support top/left/right/bottom
-		- [ ] in edit mode "+" to add a page, "x" on each tab to delete it (with confirmation)
-		- [ ] drag to reorder
-	- [ ] Treeview for the tree view
-		- [ ] unitary item value updates without having to update or re-render the whoel tree view in order to presever node expansion
-		- [ ] option to highlight values when they change 
-	- [ ] Switch for the switch widget
-	- [ ] Log view should look more mudblazor like, perhaps a simple table control
-- [ ] Im getting "failed to save dashboard" with no explanaiotn to user or log in console window
-- [ ] I then did a "save as" and it was fine
-- [ ] If dashboard saving fails then shoul dnot exit edit mode (if thats why we were saving it)
-- [ ] Log window...I select "#" to log all data and got nothing ...but a specific single element worked
-- [ ] mqtt publishing shoul dhave option for permananet (andother parameters?)
+- [ ] Page tabs
+	- [ ] Position option: support top/left/right/bottom
+	- [ ] Drag to reorder pages
+- [ ] mqtt publishing should have other parameters (e.g. message expiry)
 
 
 ## 🟡 Features

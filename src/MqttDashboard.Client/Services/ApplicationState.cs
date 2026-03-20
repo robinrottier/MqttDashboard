@@ -377,6 +377,8 @@ public class ApplicationState
                         OnText = nodeState.OnText ?? "ON",
                         OffText = nodeState.OffText ?? "OFF",
                         IsReadOnly = nodeState.SwitchIsReadOnly ?? false,
+                        Retain = nodeState.SwitchRetain ?? false,
+                        QosLevel = nodeState.SwitchQosLevel ?? 0,
                     },
                     "Battery" => new BatteryNodeModel(position: new Point(nodeState.X, nodeState.Y))
                     {
@@ -569,6 +571,8 @@ public class ApplicationState
                 nodeState.OnText = s.OnText;
                 nodeState.OffText = s.OffText;
                 nodeState.SwitchIsReadOnly = s.IsReadOnly;
+                nodeState.SwitchRetain = s.Retain;
+                nodeState.SwitchQosLevel = s.QosLevel;
             }
             else if (node is BatteryNodeModel b)
             {

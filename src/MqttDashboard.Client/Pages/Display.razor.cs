@@ -30,6 +30,10 @@ public partial class Display : IDisposable
     private int _activePageIndex = 0;
     private BlazorDiagram? _diagram => _diagrams.Count > _activePageIndex ? _diagrams[_activePageIndex] : null;
 
+    // Inline tab rename state
+    private int _renamingPageIndex = -1;
+    private string _renameValue = string.Empty;
+
     private int _nodeCounter = 1;
     private int _pasteGeneration = 0;
 
@@ -226,7 +230,11 @@ public partial class Display : IDisposable
                 noText: "Discard",
                 cancelText: "Cancel");
             if (confirm == null) return; // Cancel — stay in edit mode
-            if (confirm == true) await SaveDashboard();
+            if (confirm == true)
+            {
+                var saved = await SaveDashboard();
+                if (!saved) return; // Stay in edit mode if save failed
+            }
             // false = Discard, continue exiting edit mode
         }
 
@@ -288,7 +296,7 @@ public partial class Display : IDisposable
         AppState.MenuDeletePort    += DeletePortFromSelectedNode;
         AppState.MenuNewDiagram    += NewDiagram;
 
-        _onMenuSaveDiagram    = () => InvokeAsync(SaveDashboard);
+        _onMenuSaveDiagram    = () => InvokeAsync(async () => { await SaveDashboard(); });
         _onMenuReloadDiagram  = () => InvokeAsync(ReloadDiagram);
         _onMenuEditProperties = () => InvokeAsync(EditNodeProperties);
         _onMenuSaveAs         = () => InvokeAsync(SaveAsDiagram);
@@ -620,7 +628,30 @@ public partial class Display : IDisposable
         StateHasChanged();
     }
 
-    // ── Clipboard ─────────────────────────────────────────────────────────────
+    private void StartRename(int index, string currentName)
+    {
+        _renamingPageIndex = index;
+        _renameValue = currentName;
+        StateHasChanged();
+    }
+
+    private async Task CommitRename(int index)
+    {
+        _renamingPageIndex = -1;
+        await RenamePageAsync(index, _renameValue);
+    }
+
+    private Task RenamePageAsync(int index, string newName)
+    {
+        if (string.IsNullOrWhiteSpace(newName)) return Task.CompletedTask;
+        if (index < 0 || index >= _pageStates.Count) return Task.CompletedTask;
+        var newNames = new List<string>(AppState.PageNames);
+        newNames[index] = newName.Trim();
+        AppState.SetPageNames(newNames, _activePageIndex);
+        AppState.MarkEdited();
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
     // Clipboard tag written to the OS clipboard so we can recognise our own data on paste.
     private const string ClipboardTag = """{"mqttdashboard":"nodes",""";
 
@@ -1014,7 +1045,7 @@ public partial class Display : IDisposable
         }
     }
 
-    private async Task SaveDashboard()
+    private async Task<bool> SaveDashboard()
     {
         try
         {
@@ -1027,15 +1058,18 @@ public partial class Display : IDisposable
                 var nodeCount = state.Pages?.Sum(p => p.Nodes.Count) ?? state.Nodes.Count;
                 var linkCount = state.Pages?.Sum(p => p.Links.Count) ?? state.Links.Count;
                 Snackbar.Add($"Saved '{AppState.DiagramName}' ({nodeCount} nodes, {linkCount} links)", Severity.Success);
+                return true;
             }
             else
             {
                 Snackbar.Add("Failed to save dashboard", Severity.Error);
+                return false;
             }
         }
         catch (Exception ex)
         {
             Snackbar.Add($"Error saving dashboard: {ex.Message}", Severity.Error);
+            return false;
         }
     }
 

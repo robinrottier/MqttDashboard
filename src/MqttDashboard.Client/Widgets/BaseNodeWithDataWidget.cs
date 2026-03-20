@@ -54,9 +54,19 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
         if (_disposed) return;
         Node.DataValue = value;
         Node.DataLastUpdated = DateTime.Now;
-        OnData1Updated();
+        OnData1ReceivedCore(topic, value);
         TriggerLinkAnimation();
         try { InvokeAsync(StateHasChanged); } catch { /* circuit may be disconnected */ }
+    }
+
+    /// <summary>
+    /// Called when DataValue (topic 1) is received. The default stores the value and calls
+    /// <see cref="OnData1Updated"/>. Override to also use the actual <paramref name="topic"/> that fired
+    /// (useful for wildcard subscriptions).
+    /// </summary>
+    protected virtual void OnData1ReceivedCore(string topic, object? rawValue)
+    {
+        OnData1Updated();
     }
 
     /// <summary>

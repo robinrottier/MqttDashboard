@@ -124,6 +124,8 @@ public class NodeState
     public string? OnText { get; set; }
     public string? OffText { get; set; }
     public bool? SwitchIsReadOnly { get; set; }
+    public bool? SwitchRetain { get; set; }
+    public int? SwitchQosLevel { get; set; }
 
     // Battery-specific (kept for backward compat reading of old files)
     public string? LowColor { get; set; }

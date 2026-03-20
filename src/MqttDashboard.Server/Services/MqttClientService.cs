@@ -281,7 +281,7 @@ public class MqttClientService : BackgroundService
         await base.StopAsync(cancellationToken);
     }
 
-    public async Task PublishMessageAsync(string topic, string payload)
+    public async Task PublishMessageAsync(string topic, string payload, bool retain = false, int qos = 0)
     {
         if (_mqttClient == null || !_mqttClient.IsConnected)
         {
@@ -293,7 +293,8 @@ public class MqttClientService : BackgroundService
             var message = new MqttApplicationMessageBuilder()
                 .WithTopic(topic)
                 .WithPayload(payload)
-                .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                .WithRetainFlag(retain)
+                .WithQualityOfServiceLevel((MQTTnet.Protocol.MqttQualityOfServiceLevel)qos)
                 .Build();
             var result = await _mqttClient.PublishAsync(message);
             _logger.LogInformation("Published to {Topic}: {Payload} (ReasonCode: {ReasonCode})", topic, payload, result.ReasonCode);

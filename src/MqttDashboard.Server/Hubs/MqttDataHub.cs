@@ -72,10 +72,10 @@ public class MqttDataHub : Hub
 
     public Task<int> GetConnectedClientCount() => Task.FromResult(_connectionTracker.ConnectedCount);
 
-    public async Task PublishMessage(string topic, string payload)
+    public async Task PublishMessage(string topic, string payload, bool retain = false, int qos = 0)
     {
         _logger.LogInformation("Client {ConnectionId} publishing to topic: {Topic}", Context.ConnectionId, topic);
-        await _mqttClientService.PublishMessageAsync(topic, payload);
+        await _mqttClientService.PublishMessageAsync(topic, payload, retain, qos);
     }
 
     public override async Task OnConnectedAsync()

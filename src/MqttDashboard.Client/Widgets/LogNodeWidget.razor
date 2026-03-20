@@ -13,23 +13,34 @@
                 @Node.Title
             </div>
         }
-        <div style="flex:1;overflow-y:auto;font-size:0.7rem;font-family:monospace;min-height:0;">
+        <div style="flex:1;overflow-y:auto;min-height:0;">
             @if (_entries.Count == 0)
             {
-                <div style="opacity:0.5;padding:4px;">No data yet…</div>
+                <div style="opacity:0.5;padding:4px;font-size:0.7rem;font-family:monospace;">No data yet…</div>
             }
             else
             {
-                @foreach (var entry in _entries)
-                {
-                    <div style="padding:1px 4px;border-bottom:1px solid rgba(128,128,128,0.1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                        @if (Node.ShowDate || Node.ShowTime)
+                <MudSimpleTable Dense="true" Hover="false" Striped="true" Bordered="false"
+                                Style="font-size:0.7rem;font-family:monospace;width:100%;"
+                                Class="pa-0">
+                    <thead>
+                        <tr>
+                            @if (Node.ShowDate || Node.ShowTime) { <th style="white-space:nowrap;">Time</th> }
+                            @if (IsWildcard) { <th>Topic</th> }
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in _entries)
                         {
-                            <span style="opacity:0.6;margin-right:4px;">@FormatTimestamp(entry.At)</span>
+                            <tr>
+                                @if (Node.ShowDate || Node.ShowTime) { <td style="opacity:0.6;white-space:nowrap;">@FormatTimestamp(entry.At)</td> }
+                                @if (IsWildcard) { <td style="opacity:0.8;font-size:0.65rem;">@entry.Topic</td> }
+                                <td>@entry.Value</td>
+                            </tr>
                         }
-                        <span>@entry.Value</span>
-                    </div>
-                }
+                    </tbody>
+                </MudSimpleTable>
             }
         </div>
         @if (!string.IsNullOrEmpty(Node.DataTopic))
@@ -46,8 +57,11 @@
 </div>
 
 @code {
-    private record LogEntry(DateTime At, string Value);
+    private record LogEntry(DateTime At, string Topic, string Value);
     private readonly List<LogEntry> _entries = [];
+
+    private bool IsWildcard => !string.IsNullOrEmpty(Node.DataTopic) &&
+        (Node.DataTopic.Contains('#') || Node.DataTopic.Contains('+'));
 
     protected override void OnInitialized()
     {
@@ -57,10 +71,10 @@
         base.OnInitialized();
     }
 
-    protected override void OnData1Updated()
+    protected override void OnData1ReceivedCore(string topic, object? rawValue)
     {
-        var value = Node.DataValue?.ToString() ?? "";
-        _entries.Insert(0, new LogEntry(DateTime.Now, value));
+        var value = rawValue?.ToString() ?? "";
+        _entries.Insert(0, new LogEntry(DateTime.Now, topic, value));
         while (_entries.Count > Math.Max(1, Node.MaxEntries))
             _entries.RemoveAt(_entries.Count - 1);
     }
