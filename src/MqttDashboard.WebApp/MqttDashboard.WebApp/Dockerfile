@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y python3 && ln -sf /usr/bin/python3 /usr
 RUN dotnet workload install wasm-tools
 
 # Copy all project files (for layer caching on package restore)
+COPY src/Directory.Build.props      src/
 COPY src/MqttDashboard.Client/MqttDashboard.Client.csproj                                                           src/MqttDashboard.Client/
 COPY src/MqttDashboard.Server/MqttDashboard.Server.csproj                                                           src/MqttDashboard.Server/
 COPY src/MqttDashboard.WebApp/MqttDashboard.WebApp.Client/MqttDashboard.WebApp.Client.csproj                        src/MqttDashboard.WebApp/MqttDashboard.WebApp.Client/
