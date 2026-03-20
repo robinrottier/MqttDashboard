@@ -25,14 +25,20 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] mqtt publishing should have other parameters (e.g. message expiry)
 - [ ] Widgets:
 	- [ ] TReeview should be mudtreeview based
-	- [ ] Log viewer should be Mud SImple Table, columns choices for date (and format), time (and format), topic path, topic name, value
+	- [ ] Log viewer should be Mud SImple Table (It is), columns choices for date (and format), time (and format), topic path, topic name, value
+	- [ ] Is it 100% of whole node? doesnt look like it, maybe another continer in the heirarchy stops it going full width of whats visible
 - [ ] Deployment version / update checking
 	- [ ] Latest version checks checks for tags ... but the actual docker image may not be available for some time later. Can it check actual images in ghcr?
 	- [ ] We want to be able to select beta/non-latest pre-releases as an option i.e follow release only stream or latest beta stream
 	- [ ] Can the image update itself somehow from within the docker container? even if it has to do a restart or exit and allow docker to restart it with a new version pulled.
 	- [ ] How would we revert to a previous version if an update proved bad?
-
-
+- [ ] User application settings should be in data directory so persist over deployments.:
+	- [ ] Startup behavoir
+	- [ ] Admin password hash
+	- [ ] ...this is probably in the applicatestate file?
+- [ ] Remove the MRU files feature ...doesnt seem to be working well
+- [ ] NOt in edit mode, clean start loaded a file... I simply went to OPen and it said "unsaved changes..." when clearly nothign was edited
+- [ ] "OPen dashboard" dialog shoul dhave a small bin icon on each line to allow you to delete it, with a confirmation prompt
 
 ## 🟡 Features
 

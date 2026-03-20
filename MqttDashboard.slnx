@@ -1,7 +1,6 @@
 <Solution>
   <Folder Name="/data/">
     <File Path="data/applicationstate.json" />
-    <File Path="data/dashboards/Dash1.json" />
     <File Path="data/dashboards/Dashy McDashface.json" />
     <File Path="data/dashboards/Default.json" />
   </Folder>
