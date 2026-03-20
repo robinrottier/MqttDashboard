@@ -15,19 +15,6 @@
         {
             <MudMenuItem Label="New" OnClick="NewDiagram" />
         }
-        @if (AppState.RecentFiles.Any())
-        {
-            @if (IsEditMode)
-            {
-                <MudDivider />
-            }
-            @foreach (var recentName in AppState.RecentFiles)
-            {
-                var name = recentName;
-                <MudMenuItem OnClick="() => OpenRecentFile(name)">@name</MudMenuItem>
-            }
-            <MudDivider />
-        }
         <MudMenuItem Label="Open…" OnClick="OpenDiagram" />
         @if (IsEditMode)
         {
@@ -180,7 +167,6 @@
 
     private void NewDiagram()         => AppState.TriggerNewDiagram();
     private void OpenDiagram()        => AppState.TriggerOpen();
-    private void OpenRecentFile(string name) => AppState.TriggerOpenRecent(name);
     private void SaveDashboard()        => AppState.TriggerSaveDiagram();
     private void SaveAsDiagram()      => AppState.TriggerSaveAs();
     private void ReloadDiagram()          => AppState.TriggerReloadDiagram();

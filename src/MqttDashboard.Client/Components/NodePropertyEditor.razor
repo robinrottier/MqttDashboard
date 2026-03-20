@@ -150,22 +150,20 @@
             <MudDivider Class="my-2" />
             <MudText Typo="Typo.caption" Class="mb-1">MQTT Data Binding</MudText>
 
-            <MudGrid Spacing="2">
-                <MudItem xs="6">
-                    <MudTextField @bind-Value="@Node.DataTopic"
-                                  Label="MQTT Topic 1"
-                                  Variant="Variant.Outlined"
-                                  Margin="Margin.Dense"
-                                  Placeholder="e.g. sensor/temperature" />
-                </MudItem>
-                <MudItem xs="6">
-                    <MudTextField @bind-Value="@Node.DataTopic2"
-                                  Label="MQTT Topic 2"
-                                  Variant="Variant.Outlined"
-                                  Margin="Margin.Dense"
-                                  Placeholder="e.g. sensor/humidity" />
-                </MudItem>
-            </MudGrid>
+            <MudText Typo="Typo.subtitle2">MQTT Topics</MudText>
+            @for (int i = 0; i < Node.DataTopics.Count; i++)
+            {
+                var idx = i;
+                <div style="display:flex;align-items:center;gap:4px;">
+                    <MudTextField Label="@($"Topic {idx + 1}")" Value="@Node.DataTopics[idx]"
+                                  ValueChanged="@((string v) => { Node.DataTopics[idx] = v; })"
+                                  Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Clear"
+                                  OnAdornmentClick="@(() => { Node.DataTopics.RemoveAt(idx); })"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </div>
+            }
+            <MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small"
+                       OnClick="@(() => Node.DataTopics.Add(string.Empty))">Add Topic</MudButton>
 
             <!-- Text body -->
             <MudDivider Class="my-2" />

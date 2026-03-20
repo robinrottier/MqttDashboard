@@ -49,7 +49,6 @@ public partial class Display : IDisposable
     private Action? _onMenuEditProperties;
     private Action? _onMenuSaveAs;
     private Action? _onMenuOpen;
-    private Action<string>? _onMenuOpenRecent;
     private Action? _onMenuUndo;
     private Action? _onMenuRedo;
     private Action? _onMenuDiagramProperties;
@@ -60,7 +59,6 @@ public partial class Display : IDisposable
     private readonly List<(NodeModel Node, Action<Blazor.Diagrams.Core.Models.Base.Model> Handler)> _nodeChangedSubscriptions = new();
 
     private const string LastDiagramKey = "mqttdashboard_lastDiagram";
-    private const string RecentFilesKey = "mqttdashboard_recentFiles";
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -72,29 +70,17 @@ public partial class Display : IDisposable
 
             // Subscribe Open / OpenRecent for all modes (not just edit mode)
             _onMenuOpen = () => InvokeAsync(OpenDiagram);
-            _onMenuOpenRecent = name => InvokeAsync(() => OpenRecentFile(name));
             AppState.MenuOpen += _onMenuOpen;
-            AppState.MenuOpenRecent += _onMenuOpenRecent;
 
             // Subscribe page navigation for all modes
             _onMenuSetActivePage = idx => { _ = InvokeAsync(() => SwitchToPageAsync(idx)); };
             AppState.MenuSetActivePage += _onMenuSetActivePage;
 
-            // Load recent files from localStorage and filter to only existing dashboards
-            var recentFiles = await LoadRecentFiles();
-            if (recentFiles.Count > 0)
-            {
-                var existingNames = await DashboardService.ListDashboardsAsync();
-                var existingSet = new HashSet<string>(existingNames, StringComparer.OrdinalIgnoreCase);
-                recentFiles = recentFiles.Where(f => existingSet.Contains(f)).ToList();
-                await SaveRecentFiles(recentFiles);
-            }
-            AppState.SetRecentFiles(recentFiles);
-
             var savedState = await DashboardService.LoadDashboardAsync();
             if (savedState != null && (savedState.Nodes.Count > 0 || savedState.Pages?.Count > 0))
             {
                 LoadFullState(savedState, readOnly: true);
+                AppState.MarkSaved();
                 StateHasChanged();
                 await Task.Delay(100);
                 RefreshAll();
@@ -103,6 +89,7 @@ public partial class Display : IDisposable
             else
             {
                 LoadFullState(null, readOnly: true);
+                AppState.MarkSaved();
                 StateHasChanged();
             }
 
@@ -1035,8 +1022,6 @@ public partial class Display : IDisposable
                 AppState.SetDiagramName(name);
                 AppState.MarkSaved();
                 await SaveLastDiagramName(name);
-                AppState.AddRecentFile(name);
-                await SaveRecentFiles();
                 var nodeCount = state.Pages?.Sum(p => p.Nodes.Count) ?? state.Nodes.Count;
                 Snackbar.Add($"Opened '{name}' ({nodeCount} nodes)", Severity.Info);
                 StateHasChanged();
@@ -1048,54 +1033,6 @@ public partial class Display : IDisposable
             {
                 Snackbar.Add($"Failed to load '{name}'", Severity.Error);
             }
-        }
-    }
-
-    private async Task OpenRecentFile(string name)
-    {
-        if (AppState.IsEdited)
-        {
-            bool confirmed = await ConfirmDiscardChanges("Open dashboard");
-            if (!confirmed) return;
-        }
-        var state = await DashboardService.LoadDashboardByNameAsync(name);
-        if (state != null)
-        {
-            AppState.ClearUndoRedo();
-            var prevTopics = AppState.SubscribedTopics.ToHashSet();
-            if (AppState.IsEditMode)
-            {
-                _diagram?.SelectionChanged -= OnSelectionChanged;
-                _diagram?.Changed -= OnDiagramChanged;
-                UnsubscribeEditEvents();
-            }
-            LoadFullState(state, readOnly: !AppState.IsEditMode);
-            await SyncSubscriptionsAsync(prevTopics, AppState.SubscribedTopics);
-            if (AppState.IsEditMode && _diagram != null)
-            {
-                _diagram.SelectionChanged += OnSelectionChanged;
-                _diagram.Changed += OnDiagramChanged;
-                SubscribeEditEvents();
-                UpdateSelectionState();
-            }
-            AppState.SetDiagramName(name);
-            AppState.MarkSaved();
-            await SaveLastDiagramName(name);
-            AppState.AddRecentFile(name);
-            await SaveRecentFiles();
-            var nodeCount = state.Pages?.Sum(p => p.Nodes.Count) ?? state.Nodes.Count;
-            Snackbar.Add($"Opened '{name}' ({nodeCount} nodes)", Severity.Info);
-            StateHasChanged();
-            await Task.Delay(100);
-            RefreshAll();
-            StateHasChanged();
-        }
-        else
-        {
-            // File was deleted — remove from MRU and persist
-            AppState.SetRecentFiles(AppState.RecentFiles.Where(f => f != name));
-            await SaveRecentFiles();
-            Snackbar.Add($"'{name}' not found — removed from recent files", Severity.Warning);
         }
     }
 
@@ -1223,28 +1160,6 @@ public partial class Display : IDisposable
         catch { return null; }
     }
 
-    private async Task<List<string>> LoadRecentFiles()
-    {
-        try
-        {
-            var json = await JSRuntime.InvokeAsync<string?>("localStorage.getItem", RecentFilesKey);
-            if (string.IsNullOrEmpty(json)) return [];
-            return System.Text.Json.JsonSerializer.Deserialize<List<string>>(json) ?? [];
-        }
-        catch { return []; }
-    }
-
-    private async Task SaveRecentFiles(IEnumerable<string>? files = null)
-    {
-        try
-        {
-            var list = files?.ToList() ?? AppState.RecentFiles.ToList();
-            var json = System.Text.Json.JsonSerializer.Serialize(list);
-            await JSRuntime.InvokeVoidAsync("localStorage.setItem", RecentFilesKey, json);
-        }
-        catch { /* ignore */ }
-    }
-
     private async Task<bool> ConfirmDiscardChanges(string action)
     {
         var result = await DialogService.ShowMessageBoxAsync(
@@ -1263,7 +1178,6 @@ public partial class Display : IDisposable
 
         // These are subscribed regardless of edit mode
         if (_onMenuOpen       != null) AppState.MenuOpen       -= _onMenuOpen;
-        if (_onMenuOpenRecent != null) AppState.MenuOpenRecent -= _onMenuOpenRecent;
         if (_onMenuSetActivePage != null) AppState.MenuSetActivePage -= _onMenuSetActivePage;
 
         if (AppState.IsEditMode)

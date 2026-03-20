@@ -6,14 +6,14 @@
 <div style="@ContainerStyle()"
      class=@("pa-1 default-node log-node"+(Node.Group!=null?" grouped":"")+(Node.Selected?" selected":""))
      @ondblclick="OnDoubleClick">
-    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
+    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden;min-width:0;">
         @if (!string.IsNullOrEmpty(Node.Title))
         {
             <div style="font-size:0.75rem;font-weight:500;padding:2px 4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                 @Node.Title
             </div>
         }
-        <div style="flex:1;overflow-y:auto;min-height:0;width:100%;">
+        <div style="flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;min-width:0;">
             <MudSimpleTable Dense="true" Hover="false" Striped="true" Bordered="false"
                             Style="font-size:0.7rem;font-family:monospace;width:100%;table-layout:fixed;"
                             Class="pa-0">

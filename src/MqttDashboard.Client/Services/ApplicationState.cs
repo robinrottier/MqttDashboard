@@ -129,26 +129,6 @@ public class ApplicationState
     public void MarkEdited() { IsEdited = true; NotifyStateChangedAsync(); }
     public void MarkSaved() { IsEdited = false; NotifyStateChangedAsync(); }
 
-    // Recent files (persisted to localStorage by the Display page)
-    private readonly List<string> _recentFiles = new();
-    public IReadOnlyList<string> RecentFiles => _recentFiles.AsReadOnly();
-
-    public void SetRecentFiles(IEnumerable<string> files)
-    {
-        _recentFiles.Clear();
-        _recentFiles.AddRange(files.Take(10));
-        NotifyStateChangedAsync();
-    }
-
-    public void AddRecentFile(string name)
-    {
-        _recentFiles.Remove(name);
-        _recentFiles.Insert(0, name);
-        while (_recentFiles.Count > 10)
-            _recentFiles.RemoveAt(_recentFiles.Count - 1);
-        NotifyStateChangedAsync();
-    }
-
     // Clipboard
     private List<NodeState> _clipboard = new();
     public bool HasClipboard => _clipboard.Count > 0;
@@ -217,7 +197,6 @@ public class ApplicationState
     public event Action? MenuSaveAs;
     public event Action? MenuOpen;
     public event Action? MenuDiagramProperties;
-    public event Action<string>? MenuOpenRecent;
 
     public event Action? OnStateChanged;
 
@@ -310,7 +289,6 @@ public class ApplicationState
     public void TriggerRedo() => MenuRedo?.Invoke();
     public void TriggerSaveAs() => MenuSaveAs?.Invoke();
     public void TriggerOpen() => MenuOpen?.Invoke();
-    public void TriggerOpenRecent(string name) => MenuOpenRecent?.Invoke(name);
     public void TriggerDiagramProperties() => MenuDiagramProperties?.Invoke();
 
     public BlazorDiagram GetOrCreateDiagram()
@@ -420,6 +398,15 @@ public class ApplicationState
                 node.Metadata = nodeState.Metadata ?? new Dictionary<string, string>();
                 node.DataTopic = nodeState.DataTopic;
                 node.DataTopic2 = nodeState.DataTopic2;
+                if (nodeState.DataTopics != null && nodeState.DataTopics.Count > 0)
+                {
+                    node.DataTopics = new List<string>(nodeState.DataTopics);
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(nodeState.DataTopic)) node.DataTopics.Add(nodeState.DataTopic);
+                    if (!string.IsNullOrEmpty(nodeState.DataTopic2)) node.DataTopics.Add(nodeState.DataTopic2);
+                }
                 node.FontSize = nodeState.FontSize;
                 node.LinkAnimation = nodeState.LinkAnimation;
                 node.NodeType = nodeState.NodeType ?? "Text";
@@ -543,8 +530,9 @@ public class ApplicationState
                 BackgroundColor = node.BackgroundColor,
                 IconColor = node.IconColor,
                 Metadata = node.Metadata ?? new Dictionary<string, string>(),
-                DataTopic = node.DataTopic,
-                DataTopic2 = node.DataTopic2,
+                DataTopic = node.DataTopics.Count > 0 ? node.DataTopics[0] : node.DataTopic,
+                DataTopic2 = node.DataTopics.Count > 1 ? node.DataTopics[1] : node.DataTopic2,
+                DataTopics = node.DataTopics.Count > 0 ? new List<string>(node.DataTopics) : null,
                 FontSize = node.FontSize,
                 LinkAnimation = node.LinkAnimation,
                 NodeType = node.NodeType ?? "Text",
@@ -671,7 +659,7 @@ public class ApplicationState
     public async Task AddSubscriptionAsync(string topic)
     {
         SubscribedTopics.Add(topic);
-        MarkEdited();
+        if (IsEditMode) MarkEdited();
         NotifyStateChangedAsync();
         await Task.CompletedTask;
     }
@@ -679,7 +667,7 @@ public class ApplicationState
     public async Task RemoveSubscriptionAsync(string topic)
     {
         SubscribedTopics.Remove(topic);
-        MarkEdited();
+        if (IsEditMode) MarkEdited();
         NotifyStateChangedAsync();
         await Task.CompletedTask;
     }

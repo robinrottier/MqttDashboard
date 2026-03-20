@@ -7,38 +7,30 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ## BUGS
 - [ ] Node properties dialog
 	- [ ] Can this dialog be moveable and have apply button to changes dynamically without closing
-- [ ] Data item topics per node
-	- [ ] Data binding should not just be 2 items but a variable list that can be added to.
-	- [ ] So "+" in the properties dialog to configure another, "x" to remove a current one
-	- [ ] Handle list of items with an index in changed event for example
-	- [ ] "Link animation" has property for index of which data item to animate upon
 - [ ] Property transition
-	- [ ] Guage and battery, Color transition has property to select index of which topic to tranistion upon and which value to display
+	- [ ] Gauge and battery, Color transition has property to select index of which topic to transition upon and which value to display
 	- [ ] The color boxes in the transition/colour editor should have a chooser popup (via a button) to help with selecting the various types and well-known values
 	- [ ] this would be same as "Background color" for main node property, so either 3 small buttons
 	      or a single button goes to a dialog with 3 tabs, one for each of the colour modes
 - [ ] In future, colour transitions may drive other properties (e.g. intensity, flashing, shading) — bear that in mind for the model
+- [ ] Data item topics per node
+	- [ ] "Link animation" has property for index of which data item to animate upon
 - [ ] Page tabs
 	- [ ] Use MudTabs and related controls for displaying
 	- [ ] Position option: support top/left/right/bottom
 	- [ ] Drag to reorder pages
 - [ ] mqtt publishing should have other parameters (e.g. message expiry)
 - [ ] Widgets:
-	- [ ] TReeview should be mudtreeview based
-	- [ ] Log viewer should be Mud SImple Table (It is), columns choices for date (and format), time (and format), topic path, topic name, value
-	- [ ] Is it 100% of whole node? doesnt look like it, maybe another continer in the heirarchy stops it going full width of whats visible
+	- [ ] Log viewer columns: choices for date (and format), time (and format), topic path, topic name, value
 - [ ] Deployment version / update checking
 	- [ ] Latest version checks checks for tags ... but the actual docker image may not be available for some time later. Can it check actual images in ghcr?
 	- [ ] We want to be able to select beta/non-latest pre-releases as an option i.e follow release only stream or latest beta stream
 	- [ ] Can the image update itself somehow from within the docker container? even if it has to do a restart or exit and allow docker to restart it with a new version pulled.
 	- [ ] How would we revert to a previous version if an update proved bad?
 - [ ] User application settings should be in data directory so persist over deployments.:
-	- [ ] Startup behavoir
+	- [ ] Startup behaviour
 	- [ ] Admin password hash
-	- [ ] ...this is probably in the applicatestate file?
-- [ ] Remove the MRU files feature ...doesnt seem to be working well
-- [ ] NOt in edit mode, clean start loaded a file... I simply went to OPen and it said "unsaved changes..." when clearly nothign was edited
-- [ ] "OPen dashboard" dialog shoul dhave a small bin icon on each line to allow you to delete it, with a confirmation prompt
+	- [ ] ...this is probably in the applicationstate file?
 
 ## 🟡 Features
 

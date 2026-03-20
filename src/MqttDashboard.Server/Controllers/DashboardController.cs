@@ -101,4 +101,13 @@ public class DashboardController : ControllerBase
         var success = await _storageService.SaveDiagramByNameAsync(name, diagramState);
         return success ? Ok() : StatusCode(500, "Failed to save");
     }
+
+    [HttpDelete("{name}")]
+    [ServiceFilter(typeof(RequireAdminFilter))]
+    public async Task<ActionResult> DeleteDiagramByName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return BadRequest("Name required");
+        var success = await _storageService.DeleteDashboardByNameAsync(name);
+        return success ? Ok() : NotFound();
+    }
 }

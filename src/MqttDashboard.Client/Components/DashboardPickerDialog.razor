@@ -1,4 +1,7 @@
 @using MudBlazor
+@using MqttDashboard.Services
+@inject IDashboardService DashboardService
+@inject IDialogService DialogService
 
 <MudDialog>
     <TitleContent>
@@ -6,9 +9,18 @@
     </TitleContent>
     <DialogContent>
         <MudList T="string" SelectionMode="SelectionMode.SingleSelection" @bind-SelectedValue="_selected" Dense="true">
-            @foreach (var name in DiagramNames)
+            @foreach (var name in _names)
             {
-                <MudListItem Value="@name" Text="@name" />
+                var n = name;
+                <MudListItem Value="@n" Dense="true">
+                    <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                        <span>@n</span>
+                        <div @onclick:stopPropagation="true">
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                           OnClick="@(() => DeleteAsync(n))" />
+                        </div>
+                    </div>
+                </MudListItem>
             }
         </MudList>
     </DialogContent>
@@ -24,6 +36,25 @@
     [Parameter] public List<string> DiagramNames { get; set; } = [];
 
     private string? _selected;
+    private List<string> _names = [];
+
+    protected override void OnParametersSet() => _names = [..DiagramNames];
+
+    private async Task DeleteAsync(string name)
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            "Delete Dashboard",
+            $"Delete '{name}'? This cannot be undone.",
+            yesText: "Delete", cancelText: "Cancel");
+        if (confirmed != true) return;
+
+        var ok = await DashboardService.DeleteDashboardByNameAsync(name);
+        if (ok)
+        {
+            _names.Remove(name);
+            if (_selected == name) _selected = null;
+        }
+    }
 
     private void Submit() => MudDialog.Close(DialogResult.Ok(_selected ?? string.Empty));
     private void Cancel() => MudDialog.Cancel();

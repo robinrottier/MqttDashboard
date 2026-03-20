@@ -225,4 +225,26 @@ public class DashboardStorageService
         }
         finally { _lock.Release(); }
     }
+
+    public async Task<bool> DeleteDashboardByNameAsync(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return false;
+        var safeName = new string(name.Where(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == ' ').ToArray()).Trim();
+        if (string.IsNullOrWhiteSpace(safeName)) return false;
+        var filePath = Path.Combine(_dashboardsPath, $"{safeName}.json");
+        await _lock.WaitAsync();
+        try
+        {
+            if (!File.Exists(filePath)) return false;
+            File.Delete(filePath);
+            _logger.LogInformation("Deleted dashboard '{Name}' from {Path}", safeName, filePath);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete dashboard '{Name}'", name);
+            return false;
+        }
+        finally { _lock.Release(); }
+    }
 }

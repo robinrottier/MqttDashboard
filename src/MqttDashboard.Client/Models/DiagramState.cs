@@ -101,6 +101,7 @@ public class NodeState
     // MQTT Data Binding
     public string? DataTopic { get; set; }
     public string? DataTopic2 { get; set; }
+    public List<string>? DataTopics { get; set; }
     public int? FontSize { get; set; }
     public string? LinkAnimation { get; set; }
 

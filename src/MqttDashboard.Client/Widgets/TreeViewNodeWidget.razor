@@ -18,7 +18,10 @@
         else
         {
             <div style="flex:1;overflow-y:auto;font-size:0.75rem;min-height:0;padding:2px 0;">
-                @RenderTree(_tree)
+                <MudTreeView T="TreeNode" Dense="true" Hover="true"
+                             Style="font-size:0.75rem;font-family:monospace;overflow:auto;width:100%;height:100%;">
+                    @RenderMudTreeItem(_tree)
+                </MudTreeView>
             </div>
         }
     </div>
@@ -152,53 +155,34 @@
         return null;
     }
 
-    private RenderFragment RenderTree(TreeNode node, int depth = 0) => builder =>
+    private RenderFragment RenderMudTreeItem(TreeNode node) => builder =>
     {
-        if (depth > 10) return;
-        var indent = depth * 12;
         var isHighlighted = _changedAt.TryGetValue(node.FullTopic, out var changedTime) &&
                             (DateTime.Now - changedTime).TotalSeconds < 2;
-        builder.OpenElement(0, "div");
-        builder.AddAttribute(1, "style", $"padding-left:{indent}px;");
-        builder.OpenElement(2, "div");
-        var rowStyle = "display:flex;align-items:center;gap:4px;cursor:pointer;padding:1px 2px;border-radius:2px;" +
-                       (isHighlighted ? "background:var(--mud-palette-warning-hover);" : "");
-        builder.AddAttribute(3, "style", rowStyle);
-        builder.AddAttribute(4, "onclick", EventCallback.Factory.Create(this, () => { node.Expanded = !node.Expanded; StateHasChanged(); }));
+
+        builder.OpenComponent<MudTreeViewItem<TreeNode>>(0);
+        builder.AddAttribute(1, "Value", node);
+        builder.AddAttribute(2, "Expanded", node.Expanded);
+        builder.AddAttribute(3, "ExpandedChanged", EventCallback.Factory.Create<bool>(this, v => node.Expanded = v));
+
+        var displayText = node.Children.Count > 0
+            ? node.Label
+            : (Node.ShowValues && node.Value != null ? $"{node.Label}: {node.Value}" : node.Label);
+        builder.AddAttribute(4, "Text", displayText);
+
+        if (isHighlighted)
+            builder.AddAttribute(5, "Style", "background:var(--mud-palette-warning-hover);");
+
         if (node.Children.Count > 0)
         {
-            builder.OpenElement(5, "span");
-            builder.AddAttribute(6, "style", "opacity:0.5;font-size:0.65rem;width:10px;");
-            builder.AddContent(7, node.Expanded ? "▼" : "▶");
-            builder.CloseElement();
+            builder.AddAttribute(6, "ChildContent", (RenderFragment)(childBuilder =>
+            {
+                foreach (var child in node.Children)
+                    childBuilder.AddContent(0, RenderMudTreeItem(child));
+            }));
         }
-        else
-        {
-            builder.OpenElement(8, "span");
-            builder.AddAttribute(9, "style", "width:10px;display:inline-block;");
-            builder.AddContent(10, "");
-            builder.CloseElement();
-        }
-        builder.OpenElement(11, "span");
-        builder.AddAttribute(12, "style", "flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:" + (node.Children.Count > 0 ? "500" : "400") + ";");
-        builder.AddContent(13, node.Label);
-        builder.CloseElement();
-        if (Node.ShowValues && node.Value != null)
-        {
-            builder.OpenElement(14, "span");
-            builder.AddAttribute(15, "style", "opacity:0.7;font-size:0.65rem;white-space:nowrap;");
-            builder.AddContent(16, node.Value);
-            builder.CloseElement();
-        }
-        builder.CloseElement(); // inner div
-        if (node.Expanded && node.Children.Count > 0)
-        {
-            builder.OpenElement(17, "div");
-            foreach (var child in node.Children)
-                builder.AddContent(18, RenderTree(child, depth + 1));
-            builder.CloseElement();
-        }
-        builder.CloseElement(); // outer div
+
+        builder.CloseComponent();
     };
 
     public override void Dispose()

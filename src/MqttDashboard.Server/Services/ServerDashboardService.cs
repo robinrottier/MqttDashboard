@@ -51,6 +51,12 @@ public class ServerDashboardService : IDashboardService
         return await _storage.SaveDashboardByNameAsync(name, diagramState);
     }
 
+    public async Task<bool> DeleteDashboardByNameAsync(string name)
+    {
+        if (!IsAdminAuthorized()) return false;
+        return await _storage.DeleteDashboardByNameAsync(name);
+    }
+
     private bool IsAdminAuthorized()
     {
         var authEnabled = !string.IsNullOrEmpty(_configuration["Auth:AdminPasswordHash"]);

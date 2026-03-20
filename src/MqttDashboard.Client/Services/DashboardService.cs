@@ -94,6 +94,16 @@ public class DashboardService : IDashboardService
             return false;
         }
     }
+
+    public async Task<bool> DeleteDashboardByNameAsync(string name)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"api/dashboard/{Uri.EscapeDataString(name)}");
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex) { _logger?.LogError(ex, "Error deleting dashboard '{Name}'", name); return false; }
+    }
 }
 
 
