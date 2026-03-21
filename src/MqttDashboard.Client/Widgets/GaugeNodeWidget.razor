@@ -5,10 +5,13 @@
 
 <MudTooltip Delay="500" Arrow="true" Placement="Placement.Top">
     <TooltipContent>
-        @if (!string.IsNullOrEmpty(Node.DataTopic))
+        @{
+            var primaryTopic = Node.DataTopics.Count > 0 ? string.Join(", ", Node.DataTopics) : Node.DataTopic;
+        }
+        @if (!string.IsNullOrEmpty(primaryTopic))
         {
             <div>
-                <strong>Topic:</strong> @Node.DataTopic<br/>
+                <strong>Topic:</strong> @primaryTopic<br/>
                 <strong>Value:</strong> @(Node.DataValue?.ToString() ?? "—")<br/>
                 <strong>Updated:</strong> @(Node.DataLastUpdated.HasValue ? Node.DataLastUpdated.Value.ToString("HH:mm:ss") : "—")
             </div>
@@ -124,15 +127,11 @@
         if (Node.ColorThresholds.Count > 0 && Node.DataValue != null &&
             double.TryParse(Node.DataValue.ToString(), out var dThresh))
         {
-            var origin = Node.ArcOrigin ?? Node.MinValue;
-            var distance = Math.Abs(dThresh - origin);
-            string? color = null;
             foreach (var t in Node.ColorThresholds)
             {
-                if (t.Direction == ">=" && distance >= t.Value) color = t.Color;
-                else if (t.Direction == "<=" && distance <= t.Value) color = t.Color;
+                if (t.Direction == ">=" && dThresh >= t.Value) return t.Color;
+                if (t.Direction == "<=" && dThresh <= t.Value) return t.Color;
             }
-            if (color != null) return color;
         }
         return _percent switch
         {

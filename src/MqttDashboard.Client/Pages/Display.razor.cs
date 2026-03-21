@@ -10,6 +10,7 @@ using MqttDashboard.Services;
 using MqttDashboard.Widgets;
 using MqttDashboard.Components;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.JSInterop;
 using MudBlazor;
 
@@ -23,6 +24,7 @@ public partial class Display : IDisposable
     [Inject] private IDialogService DialogService { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
     [Inject] private HttpClient Http { get; set; } = default!;
+    [Inject] private NavigationManager Nav { get; set; } = default!;
 
     // Multi-page diagram state
     private List<BlazorDiagram?> _diagrams = [null];
@@ -57,6 +59,7 @@ public partial class Display : IDisposable
     private Action<int>? _onMenuSetActivePage;
     private DateTimeOffset _lastUndoPushByMove = DateTimeOffset.MinValue;
     private readonly List<(NodeModel Node, Action<Blazor.Diagrams.Core.Models.Base.Model> Handler)> _nodeChangedSubscriptions = new();
+    private IDisposable? _locationChangingRegistration;
 
     private const string LastDiagramKey = "mqttdashboard_lastDiagram";
 
@@ -67,6 +70,8 @@ public partial class Display : IDisposable
             AppState.SetInteractive();
             AppState.OnToggleEditModeRequested += OnToggleEditModeRequested;
             AppState.OnStateChanged += OnAppStateChanged;
+
+            _locationChangingRegistration = Nav.RegisterLocationChangingHandler(OnLocationChanging);
 
             // Subscribe Open / OpenRecent for all modes (not just edit mode)
             _onMenuOpen = () => InvokeAsync(OpenDiagram);
@@ -211,6 +216,20 @@ public partial class Display : IDisposable
 
     private void OnAppStateChanged() => InvokeAsync(StateHasChanged);
 
+    private async ValueTask OnLocationChanging(LocationChangingContext context)
+    {
+        if (AppState.IsEditMode && AppState.IsEdited)
+        {
+            var confirmed = await DialogService.ShowMessageBoxAsync(
+                "Unsaved Changes",
+                "You have unsaved changes that will be lost. Leave without saving?",
+                yesText: "Leave",
+                cancelText: "Stay");
+            if (confirmed != true)
+                context.PreventNavigation();
+        }
+    }
+
     // ── Mode switching ────────────────────────────────────────────────────────
 
     private void OnToggleEditModeRequested()
@@ -239,16 +258,19 @@ public partial class Display : IDisposable
             else
             {
                 // Discard — revert to pre-edit snapshot
-                AppState.MarkSaved();
                 if (_editSnapshot != null)
                 {
+                    UnsubscribeEditEvents();
                     _suppressDirty = true;
                     try { LoadFullState(_editSnapshot, readOnly: true); }
                     finally { _suppressDirty = false; }
+                    AppState.SetEditMode(false);
                     AppState.MarkSaved();
+                    AppState.UpdateSelectionState(false, false);
                     StateHasChanged();
                     return;
                 }
+                AppState.MarkSaved();
             }
         }
 
@@ -311,6 +333,8 @@ public partial class Display : IDisposable
         await Task.Delay(50);
         RefreshAll();
         StateHasChanged();
+        // Suppress any spurious Changed events fired during RefreshAll
+        if (enterEditMode) AppState.MarkSaved();
     }
 
     private void SubscribeEditEvents()
@@ -435,6 +459,7 @@ public partial class Display : IDisposable
             "Battery"  => new BatteryNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))  { Title = $"Battery {_nodeCounter++}" },
             "Log"      => new LogNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))      { Title = $"Log {_nodeCounter++}" },
             "TreeView" => new TreeViewNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400))) { Title = $"Tree {_nodeCounter++}" },
+            "Image"    => new ImageNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))    { Title = $"Image {_nodeCounter++}" },
             _          => new MudNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))      { Title = $"Node {_nodeCounter++}" },
         };
 
@@ -749,6 +774,10 @@ public partial class Display : IDisposable
             {
                 ns.RootTopic = tv.RootTopic; ns.ShowValues = tv.ShowValues;
             }
+            else if (n is ImageNodeModel img)
+            {
+                ns.StaticImageUrl = img.StaticImageUrl; ns.ObjectFit = img.ObjectFit;
+            }
             return ns;
         }).ToList();
     }
@@ -853,6 +882,11 @@ public partial class Display : IDisposable
                 {
                     RootTopic = ns.RootTopic ?? string.Empty,
                     ShowValues = ns.ShowValues ?? true,
+                },
+                "Image" => new ImageNodeModel(new Point(ns.X + offset, ns.Y + offset))
+                {
+                    StaticImageUrl = ns.StaticImageUrl ?? string.Empty,
+                    ObjectFit = ns.ObjectFit ?? "contain",
                 },
                 _ => new MudNodeModel(new Point(ns.X + offset, ns.Y + offset)),
             };
@@ -1041,25 +1075,28 @@ public partial class Display : IDisposable
         try
         {
             var state = BuildFullState();
-            var success = await DashboardService.SaveDashboardByNameAsync(AppState.DiagramName, state);
+            var name = string.IsNullOrEmpty(AppState.DiagramName) ? "Default" : AppState.DiagramName;
+            if (string.IsNullOrEmpty(AppState.DiagramName))
+                AppState.SetDiagramName("Default");
+            var success = await DashboardService.SaveDashboardByNameAsync(name, state);
             if (success)
             {
                 AppState.MarkSaved();
-                await SaveLastDiagramName(AppState.DiagramName);
+                await SaveLastDiagramName(name);
                 var nodeCount = state.Pages?.Sum(p => p.Nodes.Count) ?? state.Nodes.Count;
                 var linkCount = state.Pages?.Sum(p => p.Links.Count) ?? state.Links.Count;
-                Snackbar.Add($"Saved '{AppState.DiagramName}' ({nodeCount} nodes, {linkCount} links)", Severity.Success);
+                Snackbar.Add($"Saved '{name}' ({nodeCount} nodes, {linkCount} links)", Severity.Success);
                 return true;
             }
             else
             {
-                Snackbar.Add($"Failed to save '{AppState.DiagramName}' — check server logs for details", Severity.Error);
+                Snackbar.Add($"Failed to save '{name}' — check server logs for details", Severity.Error);
                 return false;
             }
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error saving '{AppState.DiagramName}': {ex.Message}", Severity.Error);
+            Snackbar.Add($"Error saving: {ex.Message}", Severity.Error);
             return false;
         }
     }
@@ -1099,7 +1136,7 @@ public partial class Display : IDisposable
         var node = _diagram.GetSelectedModels().OfType<MudNodeModel>().FirstOrDefault();
         if (node == null) { Snackbar.Add("No node selected", Severity.Warning); return; }
         var parameters = new DialogParameters { { "Node", node } };
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true, BackdropClick = true };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true, BackdropClick = false };
         var dialog = await DialogService.ShowAsync<NodePropertyEditor>("Edit Node Properties", parameters, options);
         var result = await dialog.Result;
         if (result is { Canceled: false })
@@ -1169,10 +1206,33 @@ public partial class Display : IDisposable
         return result == true;
     }
 
+    // ── Node alignment ────────────────────────────────────────────────────────
+
+    private void AlignNodes(string alignment)
+    {
+        if (_diagram == null) return;
+        var nodes = _diagram.GetSelectedModels().OfType<NodeModel>().ToList();
+        if (nodes.Count < 2) { Snackbar.Add("Select 2+ nodes to align", Severity.Info); return; }
+        PushUndoSnapshot();
+        switch (alignment)
+        {
+            case "left":    var left    = nodes.Min(n => n.Position.X);                                       foreach (var n in nodes) n.SetPosition(left, n.Position.Y); break;
+            case "right":   var right   = nodes.Max(n => n.Position.X + (n.Size?.Width ?? 100));              foreach (var n in nodes) n.SetPosition(right - (n.Size?.Width ?? 100), n.Position.Y); break;
+            case "top":     var top     = nodes.Min(n => n.Position.Y);                                       foreach (var n in nodes) n.SetPosition(n.Position.X, top); break;
+            case "bottom":  var bottom  = nodes.Max(n => n.Position.Y + (n.Size?.Height ?? 50));              foreach (var n in nodes) n.SetPosition(n.Position.X, bottom - (n.Size?.Height ?? 50)); break;
+            case "centerH": var cx = nodes.Average(n => n.Position.X + (n.Size?.Width ?? 100) / 2.0);        foreach (var n in nodes) n.SetPosition(cx - (n.Size?.Width ?? 100) / 2.0, n.Position.Y); break;
+            case "centerV": var cy = nodes.Average(n => n.Position.Y + (n.Size?.Height ?? 50) / 2.0);        foreach (var n in nodes) n.SetPosition(n.Position.X, cy - (n.Size?.Height ?? 50) / 2.0); break;
+        }
+        foreach (var n in nodes) n.Refresh();
+        _diagram.Refresh();
+        StateHasChanged();
+    }
+
     // ── Dispose ───────────────────────────────────────────────────────────────
 
     public void Dispose()
     {
+        _locationChangingRegistration?.Dispose();
         AppState.OnToggleEditModeRequested -= OnToggleEditModeRequested;
         AppState.OnStateChanged -= OnAppStateChanged;
 

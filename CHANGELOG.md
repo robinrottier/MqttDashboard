@@ -21,6 +21,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Page tab rename** — double-click a page tab in edit mode to rename it inline.
 - **Variable data topics per node** — each node now supports a configurable list of MQTT topics (instead of a fixed two-topic limit). The node properties editor shows a dynamic list with per-topic text fields, a clear (✕) adornment on each, and an **Add Topic** button. Old `DataTopic`/`DataTopic2` files are automatically migrated on load; saves write both the new list and the legacy fields for backward compatibility.
 - **Dashboard delete from Open dialog** — the Open Dashboard dialog now has a trash icon on each row. Clicking it shows a confirmation prompt and, on confirm, permanently deletes the dashboard file via `DELETE /api/dashboard/{name}`.
+- **Image node** — new widget that displays an image from a static URL or a live MQTT topic value (topic publishes the URL). Supports `object-fit` modes (contain / cover / fill / scale-down). Shows a placeholder icon when no URL is configured.
+- **Node alignment tools** — in edit mode with 2+ nodes selected, a row of alignment buttons appears: align left, right, top, bottom, center horizontally, center vertically.
 
 ### Fixed
 - **Auth on clean start** — cookie authentication services were only registered when `Auth:AdminPasswordHash` was already set at startup. On a first-ever run, setting the admin password via the Setup page then trying to log in threw `"No sign-in authentication handlers are registered"`. Auth services and middleware are now always registered unconditionally.
@@ -34,6 +36,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **False dirty flag after discarding changes** — choosing "Discard" when exiting edit mode now correctly clears the edited flag, so opening a new file afterwards no longer prompts for unsaved changes.
 - **Discard reverts page additions/deletions** — choosing "Discard" when exiting edit mode now restores the full dashboard state (including page structure) to the snapshot taken when edit mode was entered. Previously, added or deleted pages persisted after discard.
 - **Log table fills full node width** — added `min-width:0;` and `overflow-x:hidden` to the flex container so the `MudSimpleTable` correctly occupies 100 % of the widget's width.
+- **Node properties dialog no longer dismisses on backdrop click** — clicking outside the node properties editor no longer closes it, preventing accidental loss of in-progress edits.
+- **Discard fully exits edit mode** — previously, discarding changes reloaded the snapshot but left edit mode active (grid visible, page tab controls still shown, edit switch still indicating edit mode). Discard now properly calls `SetEditMode(false)` and unsubscribes all edit-mode event handlers.
+- **Entering edit mode on blank page no longer shows red (dirty)** — `RefreshAll()` called after enabling edit mode was firing `Changed` events that marked the dashboard as edited. `MarkSaved()` is now called after `RefreshAll()` to clear any spurious dirty flag.
+- **"Setup" banner hides when already on the Setup page** — the "Admin password not configured" alert in the header was shown unconditionally when the setup API reported no password set. It now hides itself when the current URL contains `/setup`.
+- **Setup page: Enter key submits form** — pressing Enter in either password field on the first-time setup page now submits the form (same as clicking the button).
+- **Setup page: Set Password button disabled when input is invalid** — the button is now greyed out when passwords are empty, too short (< 8 characters), or do not match each other.
+- **Save on unnamed dashboard defaults to "Default"** — saving a new dashboard that was never given a name previously used an empty string as the filename, resulting in `"Saved ''"`. It now falls back to `"Default"` as the filename and updates the dashboard name accordingly.
+- **Grid size default inconsistency (10 vs 20)** — `DiagramState.GridSize` and `PageState.GridSize` defaulted to `20` in the model but the code created new canvases with `10`. Both defaults are now `10`, so new files and newly-added pages are consistent.
+- **Home icon now prompts for unsaved changes** — clicking the home/logo icon in the app bar while in edit mode with unsaved changes now shows the "Unsaved Changes — Leave without saving?" confirmation, the same as navigating away by any other means.
+- **Gauge colour transitions now compare the raw value, not distance** — `GetArcColor()` was computing `Math.Abs(value − arcOrigin)` (distance from origin) and comparing that against thresholds. It now compares the actual data value directly. Rules also use **first-match** semantics (returns on the first matching threshold) instead of last-match.
+- **Gauge tooltip shows "No data topic configured" even when topics are set** — the tooltip was checking the legacy `DataTopic` field instead of the new `DataTopics` list, so topics added via the multi-topic UI were invisible to it.
 
 ### Changed
 - **TreeView widget uses `MudTreeView`** — replaced the hand-rolled recursive `RenderFragment` builder with MudBlazor `MudTreeView<TreeNode>` / `MudTreeViewItem<TreeNode>` components. Expansion state and highlight behaviour are preserved.
@@ -51,6 +64,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Link animation in base class** — `TriggerLinkAnimation()` moved to `BaseNodeWithDataWidget`; all node types now support the Link Animation property without per-widget code
 - **Exit-edit prompt** — switching out of edit mode (or clicking the view button) when the dashboard has unsaved changes now shows a Save / Discard / Cancel dialog
 - File/Save now saves to the currently-open filename (was always saving to `diagram.json`); snackbar confirms the filename saved
+- **About dialog** — deployment type moved to the Runtime/Debug section; "Last Checked" is now a tooltip on the Latest Version row (not a separate row); "Check" button is inline with the version; "Up to date" chip is on the same row as the version; Close button replaced with the dialog's ✕ button; dialog widened to `MaxWidth.Medium`.
+- **Gauge colour transition label updated** — node property editor label changed from "by distance from Arc Origin" to "by value", and "Last matching rule wins" to "First matching rule wins".
 
 ### Fixed
 - MQTT reconnect storm — `MQTTnet` v5 fires `DisconnectedAsync` even on failed `ConnectAsync` attempts; added `_isReconnecting` interlocked flag to prevent cascading parallel reconnect loops

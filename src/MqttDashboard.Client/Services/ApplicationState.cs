@@ -94,6 +94,7 @@ public class ApplicationState
     public bool IsEditMode { get; private set; } = false;
     public bool HasSelectedNode { get; private set; } = false;
     public bool HasSingleSelectedNode { get; private set; } = false;
+    public bool IsMultiSelected => HasSelectedNode && !HasSingleSelectedNode;
 
     // Auth state
     public bool IsAdmin { get; private set; } = true; // default true when auth not configured
@@ -329,6 +330,7 @@ public class ApplicationState
         diagram.RegisterComponent<BatteryNodeModel, BatteryNodeWidget>();
         diagram.RegisterComponent<LogNodeModel, LogNodeWidget>();
         diagram.RegisterComponent<TreeViewNodeModel, TreeViewNodeWidget>();
+        diagram.RegisterComponent<ImageNodeModel, ImageNodeWidget>();
 
         if (state != null)
         {
@@ -383,6 +385,11 @@ public class ApplicationState
                     {
                         RootTopic = nodeState.RootTopic ?? string.Empty,
                         ShowValues = nodeState.ShowValues ?? true,
+                    },
+                    "Image" => new ImageNodeModel(position: new Point(nodeState.X, nodeState.Y))
+                    {
+                        StaticImageUrl = nodeState.StaticImageUrl ?? string.Empty,
+                        ObjectFit = nodeState.ObjectFit ?? "contain",
                     },
                     _ => new MudNodeModel(position: new Point(nodeState.X, nodeState.Y)),
                 };
@@ -581,6 +588,11 @@ public class ApplicationState
             {
                 nodeState.RootTopic = tv.RootTopic;
                 nodeState.ShowValues = tv.ShowValues;
+            }
+            else if (node is ImageNodeModel img)
+            {
+                nodeState.StaticImageUrl = img.StaticImageUrl;
+                nodeState.ObjectFit = img.ObjectFit;
             }
 
             // Save ports

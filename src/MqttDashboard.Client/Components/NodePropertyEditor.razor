@@ -202,9 +202,9 @@
                                  Margin="Margin.Dense"
                                  Placeholder="none (arc from MinValue)" />
                 <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1 mb-1">
-                    Color Transitions (by distance from Arc Origin). Last matching rule wins.
+                    Color Transitions (by value). First matching rule wins.
                 </MudText>
-                <ColorTransitionEditor Thresholds="gaugeNode.ColorThresholds" ValueLabel="Distance from origin" />
+                <ColorTransitionEditor Thresholds="gaugeNode.ColorThresholds" ValueLabel="Value" />
             }
 
             <!-- Battery-specific settings -->
@@ -288,6 +288,30 @@
                     <MudSelectItem Value="1">1 — At Least Once</MudSelectItem>
                     <MudSelectItem Value="2">2 — Exactly Once</MudSelectItem>
                 </MudSelect>
+            }
+
+            <!-- Image-specific settings -->
+            @if (Node is ImageNodeModel imageNode)
+            {
+                <MudDivider Class="my-2" />
+                <MudText Typo="Typo.caption" Class="mb-1">Image Settings</MudText>
+                <MudTextField @bind-Value="imageNode.StaticImageUrl"
+                              Label="Static Image URL"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              HelperText="Used when no data topic. Supports http/https/data URLs" />
+                <MudSelect @bind-Value="imageNode.ObjectFit"
+                           Label="Object Fit"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Dense="true"
+                           Class="mt-1">
+                    <MudSelectItem Value="@("contain")">Contain (fit inside)</MudSelectItem>
+                    <MudSelectItem Value="@("cover")">Cover (fill, crop edges)</MudSelectItem>
+                    <MudSelectItem Value="@("fill")">Fill (stretch)</MudSelectItem>
+                    <MudSelectItem Value="@("scale-down")">Scale Down</MudSelectItem>
+                </MudSelect>
+                <MudCheckBox T="bool" @bind-Value="imageNode.ShowTitle" Label="Show Title" Dense="true" Class="mt-1" />
             }
 
             <!-- Custom Metadata -->
