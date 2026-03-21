@@ -7,18 +7,21 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ## BUGS
 - [ ] Node properties dialog
 	- [ ] Can this dialog be moveable and have apply button to changes dynamically without closing
+	- [ ] Edit node dialog...click outside it and it closes...should not be the case, it should be modal and instead have an apply button to make changes real time. Ideally it would be moveable too (so effect on diagram can be seen)
 - [ ] Property transition
 	- [ ] Gauge and battery, Color transition has property to select index of which topic to transition upon and which value to display
 	- [ ] The color boxes in the transition/colour editor should have a chooser popup (via a button) to help with selecting the various types and well-known values
 	- [ ] this would be same as "Background color" for main node property, so either 3 small buttons
 	      or a single button goes to a dialog with 3 tabs, one for each of the colour modes
+	- [ ] Color transition"when" needs "else" condition to specify default colour when no conditions met
+	- [ ] Also a means to drag reordering around the conditions to specify which is first match
 - [ ] In future, colour transitions may drive other properties (e.g. intensity, flashing, shading) — bear that in mind for the model
 - [ ] Data item topics per node
 	- [ ] "Link animation" has property for index of which data item to animate upon
 - [ ] Page tabs
-	- [ ] Use MudTabs and related controls for displaying
-	- [ ] Position option: support top/left/right/bottom
-	- [ ] Drag to reorder pages
+	- [ ] Use MudTabs and related controls for displaying. MudTabs has a different model...every page is rendered inside tab component BUT maybe there's a way to use index of selected tab to render it outside MudTabs component?
+	- [ ] Position option for tabs: top/left/right/bottom in dashboard properties
+	- [ ] Drag to reorder pages when in edit mode. MudTabs would support this but need setting noticed and saved.
 - [ ] mqtt publishing should have other parameters (e.g. message expiry)
 - [ ] Widgets:
 	- [ ] Log viewer columns: choices for date (and format), time (and format), topic path, topic name, value
@@ -30,7 +33,33 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] User application settings should be in data directory so persist over deployments.:
 	- [ ] Startup behaviour
 	- [ ] Admin password hash
-	- [ ] ...this is probably in the applicationstate file?
+	- [ ] ...this is probably in the applicationstate file
+- [ ] STartup sequence from a clean, new install...
+	- [ ] "Admin password not configured. Set up now →" correclty displayed...follow link and shows first time setup (again..correct) BUT the "admin password not configured. setup now" still is shown...dont show it once login setup is shown
+	- [ ] First time setup screen... "enter" should work to finsih the dialog and set password
+	- [ ] Set password button should be greyed if password's not entered, confirmed, or not sufficient quality
+	- [ ] About box
+		- [ ] ... "deployment line e..g docker" should be in runtime/debug section
+		- [ ] ... instead of close button, have "X" close in top right corner
+		- [ ] "latest version" and "last checked" lines look more spaced than others...should be all in same compact table as previous lines
+		- [ ] Make dialog wider, if screen res allows, to avoid some of the cramped layout and long lines wrapping
+		- [ ] The "Up to date" badge shou ldbe against the version on 2nd line
+		- [ ] "Last tchecked" shoul dbe a tooltip over the latest version line and not its own line, "Check now" shou ldbe button on the right of latest version line
+	- [ ] Blank page at startup...went into edit mode and out again and it prompted for "save changes" ... but no changes made at all. As soon as entered edit mode icon is red?
+	- [ ] ANd when selecting discard .. returned to view mode BUT grid stayed visible and page tabs stayed in edit mode with "X" and "+" and menus reflected edit mode even though slider indicated readonly mode
+	- [ ] IN edit mode, click top left icon to return to home screen and no prompt to save changes==> shoudl follow same logic as eleswhere
+	- [ ] Guage node
+		- [ ] We dont need unit. Surely its just the text field format and if user wants a UNit they put it there e..g {0:0}W
+		- [ ] color transition says "distance form arc origin" but it shoul dbe simply based on value
+		- [ ] color transition shou dbe "first match" not last
+		- [ ] Ive added a data topic, but it still says "No topic added"
+		- [ ] GUage needs a way to specify which topic (0 based index) is used to set guage value, default 0, first.
+		- [ ] "Transition properties" should be reusable component ..other things will have same issue, like battery
+	- [ ] File save on a new, unnamed document and it said "File '' saved" ...shoul dhave said "Default" which seems ot be file name its using
+	- [ ] The tooltip over dashboatd title when editing, should include filename aswell as display name, just so its clear whats happening.
+	- [ ] Did a file save on a new doc. Grid was previously shown as 10px (I think), on reload an reeneter edit mode the grid now looks like 20. Its never  been set ...so somewhere default value is getting confued.
+	- [ ] 
+
 
 ## 🟡 Features
 
@@ -56,7 +85,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Page tab overflow handling (scrolling/dropdown when many pages)
 - [ ] Swipe left/right gesture on mobile
 - [ ] Page reordering (drag tabs)
-- [ ] Current "Data" cold be replaced by an optional page (tree view and log of all live values)
+- [ ] Current "Data" could be replaced by an optional page (tree view and log of all live values)
 	- [ ] user would create this is they wanted it manually or its some how a quick add page option when you create a new, empty dashboard
 	- [ ] ...just need a way to specify dashboard set of requests ..so maybe thats in Dashboard properties dialog
 
