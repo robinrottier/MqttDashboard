@@ -47,6 +47,30 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ---
 
+## 2026-03-22 — Link animation startup fix (SSR/F5 flash + initial-value timing)
+
+**Commit:** _(this batch)_
+**Timestamp:** 2026-03-22 ~19:55 UTC
+**Branch:** FEAT-C
+
+### Items completed
+
+#### Fix: Link animations flash on F5 refresh / not shown until first live data arrives
+**Root cause (two issues):**
+1. `SetupDataWatchers()` was called on every `OnParametersSet`, which fires for every re-render of the node widget. Each call disposed and recreated all watchers and re-seeded from cache, calling `TriggerLinkAnimation()` on each re-run. During `RefreshAll()`, every node got its watchers torn down and rebuilt, causing an animation reset flash.
+2. On initial load, `SetupDataWatchers()` seeds from cache and calls `TriggerLinkAnimation()` + `l.Refresh()` before the diagram SVG is rendered (the DiagramCanvas is guarded by `!IsInteractive`). So the animation update was lost. Animations only showed when first live data arrived.
+
+**Fix:**
+- `Widgets/BaseNodeWithDataWidget.cs` — Added `_watcherTopicsKey` (string?). `SetupDataWatchers()` now returns early if `Node.DataTopics` key matches `_watcherTopicsKey`, preventing redundant teardown/rebuild on repeated `OnParametersSet` calls. Key is cleared on `Dispose()` to ensure proper re-init.
+- Added `OnAfterRenderAsync(bool firstRender)` override: calls `TriggerLinkAnimation()` when `firstRender = true`. Node widgets only mount (and fire `firstRender`) after `IsInteractive = true` because the DiagramCanvas is inside an `@if (AppState.IsInteractive)` guard in Display.razor. This ensures animation fires when the SVG is actually in the DOM.
+- Promoted `TriggerLinkAnimation()` from `private` to `protected` (needed by `OnAfterRenderAsync`; also available to subclasses).
+
+### Notes
+- Fixes both "lines only shown on first data update" (timing) and "F5 flash" (redundant re-initialization).
+- Build: 0 errors, 11/11 tests passed.
+
+---
+
 ## 2026-03-22 — Dirty flag on selection fix, log width, link delete dirty tracking
 
 **Commit:** _(this batch)_

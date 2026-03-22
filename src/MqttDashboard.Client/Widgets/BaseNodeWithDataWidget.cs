@@ -15,6 +15,8 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
 {
     private readonly List<IDisposable> _dataWatchers = new();
     private bool _disposed = false;
+    // Track the last topics key so we skip SetupDataWatchers when nothing has changed.
+    private string? _watcherTopicsKey = null;
 
     protected override void OnInitialized()
     {
@@ -28,8 +30,26 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
         SetupDataWatchers();
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Ensure link animations are applied once the SVG is in the DOM.
+            // Node widgets only mount after IsInteractive = true (guarded by @if in Display.razor),
+            // so firstRender reliably fires when the diagram canvas is rendered.
+            TriggerLinkAnimation();
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
     protected void SetupDataWatchers()
     {
+        // Skip rebuild if topics haven't changed — prevents redundant re-runs
+        // from every OnParametersSet (triggered by RefreshAll, StateHasChanged, etc.).
+        var topicsKey = string.Join(",", Node.DataTopics);
+        if (topicsKey == _watcherTopicsKey) return;
+        _watcherTopicsKey = topicsKey;
+
         foreach (var w in _dataWatchers) w.Dispose();
         _dataWatchers.Clear();
 
@@ -94,7 +114,7 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
     /// Updates link animation direction on all outgoing links based on the current DataValue
     /// and the node's LinkAnimation setting. Runs automatically on every data update.
     /// </summary>
-    private void TriggerLinkAnimation()
+    protected void TriggerLinkAnimation()
     {
         if (Node.LinkAnimation == null || Node.LinkAnimation == "None") return;
         if (Node.DataValue == null || !double.TryParse(Node.DataValue.ToString(), out var d)) return;
@@ -179,6 +199,7 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
     public override void Dispose()
     {
         _disposed = true;
+        _watcherTopicsKey = null;
         foreach (var w in _dataWatchers) w.Dispose();
         _dataWatchers.Clear();
         base.Dispose();
