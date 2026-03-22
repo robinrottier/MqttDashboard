@@ -35,6 +35,8 @@ Or other functional group of code logic into other smaller discrete projects tha
 
 Perhaps "..WebServerOnly" could be combined into a single hosting project, maybe with different port for side-x-side hosting of various blazor models.
 
+IN longer term they may be a MAUI desktop application that combines all aspect of this app (server/client rolled into one), using MAUI Blazor web view. This would run standalone, so the structure should always support that in the future.
+
 ### Test projects
 
 Currently unit tests are in `MqttDashboard.Client.Tests` and `MqttDashboard.Server.Tests`. Both use xUnit and Moq. Test the client-side code by mocking the `SignalRService` and `MqttDataCache` to simulate incoming MQTT messages and verify widget state updates.
@@ -193,7 +195,9 @@ Each run thru codepilot should implement a batch of changes, run all tets possib
 
 Remove items from TODO when completed and add to CHANGELOG with a note / section with same comment as commit message (and timestamp) for that batch of work
 
-It shou ldbe easy to review CHANGELOG after each batch of copilot assitance and be able to review or test items claimed to be fixed/implemented and further comment if necessary (e.g. move back into TODO)
+It should be easy to review CHANGELOG after each batch of copilot assitance and be able to review or test items claimed to be fixed/implemented and further comment if necessary (e.g. move back into TODO)
+
+If this conflicts with convention for CHANGELOG then we can have a seperate detailed "DEVCHANGELOG" whih works in this fashion and the normal CHANGELOG stays as it would normally be
 
 If an item in TODO is demed to be too big or complex, it can be broken down into smaller items and added to TODO as such, with a reference to the original item.
 
