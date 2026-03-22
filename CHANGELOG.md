@@ -25,7 +25,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 - **Undo greyed on entering Edit Mode** — entering Edit Mode now clears the undo/redo stack so Undo is correctly disabled until the first change is made.
 - **Reload from disc exits Edit Mode** — reloading the dashboard now always exits Edit Mode (with a prompt to discard unsaved changes) and resets dirty state, instead of staying in Edit Mode with a false dirty indicator.
-- **Dirty flag set on node selection** — selecting a node in edit mode incorrectly marked the dashboard as modified. `OnDiagramChanged` now defers the dirty mark; selection events cancel the pending mark. Real edits still mark dirty correctly.
+- **Dirty flag set on node selection** — selecting a node in edit mode no longer marks the dashboard as modified. Root cause was `OnNodeChanged` calling `MarkEdited()` directly; it now uses the same deferred `_pendingDirtyMark` pattern as diagram-level events, so `OnSelectionChanged` can cancel it. Also removed redundant dirty logic from `OnDiagramChanged` (now only triggers `StateHasChanged`). Link add/remove events now explicitly call `MarkEdited() + PushUndoSnapshot()`.
+- **Log view width expands with content** — added `overflow:hidden` to `ContainerStyle()` in `BaseNodeWidget`; all node widgets now clip content to their declared size.
 - **Default color thresholds for new Battery nodes** — new Battery widgets now start with sensible defaults: red ≤25%, orange ≤50%, green ≥50%.
 - **Default color thresholds for new Gauge nodes** — new Gauge widgets now start with red for values ≤0 and green for values ≥0.
 - **Log and TreeView 100% width** — added scoped CSS to force MudBlazor internal elements to fill full widget width.

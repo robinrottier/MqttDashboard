@@ -6,8 +6,6 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ## BUGS
 - [ ] Lines animated on first SSR render then cleared — lines in blazor.diagrams SVG layer (SSR→WASM handoff timing); also lines only drawn on first data update rather than on first value
-- [ ] Dirty flag still fires on selection (enter edit mode, select node → dirty; investigate `_pendingDirtyMark` pattern in `OnDiagramChanged`)
-- [ ] Log view changes width depending on message length — should fill widget width, not content width
 - [ ] F5 full-page refresh: many link animations fire then clear before settling — possibly Blazor Diagrams SVG layer not pre-rendering
 
 ## 🟡 Enhancements

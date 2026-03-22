@@ -351,7 +351,8 @@ public partial class Display : IDisposable
 
     private void SubscribeEditEvents()
     {
-        _diagram!.Links.Added += OnLinkAdded;
+        _diagram!.Links.Added   += OnLinkAdded;
+        _diagram!.Links.Removed += OnLinkRemoved;
         AppState.MenuAddNode       += AddNode;
         AppState.MenuDeleteNode    += DeleteSelectedNode;
         AppState.MenuCutSelected   += CutSelectedNodes;
@@ -393,7 +394,8 @@ public partial class Display : IDisposable
 
     private void UnsubscribeEditEvents()
     {
-        _diagram?.Links.Added -= OnLinkAdded;
+        _diagram?.Links.Added   -= OnLinkAdded;
+        _diagram?.Links.Removed -= OnLinkRemoved;
         AppState.MenuAddNode       -= AddNode;
         AppState.MenuDeleteNode    -= DeleteSelectedNode;
         AppState.MenuCutSelected   -= CutSelectedNodes;
@@ -434,20 +436,9 @@ public partial class Display : IDisposable
 
     private void OnDiagramChanged()
     {
-        if (_suppressDirty) return;
-        // Defer the dirty mark: if SelectionChanged fires synchronously right after
-        // (Blazor.Diagrams fires Changed then SelectionChanged for selection events),
-        // OnSelectionChanged will clear the flag before the queued work runs.
-        _pendingDirtyMark = true;
-        _ = InvokeAsync(() =>
-        {
-            if (_pendingDirtyMark)
-            {
-                _pendingDirtyMark = false;
-                AppState.MarkEdited();
-                StateHasChanged();
-            }
-        });
+        // Keep the UI in sync for link add/remove and other diagram-level changes.
+        // Dirty tracking is handled per-node (OnNodeChanged) and per-link (OnLinkAdded/Removed).
+        InvokeAsync(StateHasChanged);
     }
 
     private void OnLinkAdded(Blazor.Diagrams.Core.Models.Base.BaseLinkModel link)
@@ -455,6 +446,12 @@ public partial class Display : IDisposable
         if (link is not LinkModel lm) return;
         if ((link.Source?.Model is PortModel port ? port.Parent : link.Source?.Model) is NodeModel sourceNode)
             AppState.CheckForLinkAnimation(sourceNode, lm);
+        if (!_suppressDirty) { AppState.MarkEdited(); PushUndoSnapshot(); }
+    }
+
+    private void OnLinkRemoved(Blazor.Diagrams.Core.Models.Base.BaseLinkModel link)
+    {
+        if (!_suppressDirty) { AppState.MarkEdited(); PushUndoSnapshot(); }
     }
 
     private void UpdateSelectionState()
@@ -1201,14 +1198,24 @@ public partial class Display : IDisposable
 
     private void OnNodeChanged(NodeModel node)
     {
-        AppState.MarkEdited();
-        var now = DateTimeOffset.UtcNow;
-        if ((now - _lastUndoPushByMove).TotalSeconds >= 1.5)
+        if (_suppressDirty) return;
+        // Defer the dirty/undo mark: if the change was a selection event, diagram.SelectionChanged
+        // fires synchronously right after node.Changed, and OnSelectionChanged clears _pendingDirtyMark
+        // before the queued callback runs — so selection-only changes never mark dirty.
+        _pendingDirtyMark = true;
+        _ = InvokeAsync(() =>
         {
-            _lastUndoPushByMove = now;
-            PushUndoSnapshot();
-        }
-        InvokeAsync(StateHasChanged);
+            if (!_pendingDirtyMark) return;
+            _pendingDirtyMark = false;
+            AppState.MarkEdited();
+            var now = DateTimeOffset.UtcNow;
+            if ((now - _lastUndoPushByMove).TotalSeconds >= 1.5)
+            {
+                _lastUndoPushByMove = now;
+                PushUndoSnapshot();
+            }
+            StateHasChanged();
+        });
     }
 
     private async Task ShowDiagramPropertiesAsync()

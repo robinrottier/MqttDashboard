@@ -47,6 +47,36 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ---
 
+## 2026-03-22 — Dirty flag on selection fix, log width, link delete dirty tracking
+
+**Commit:** _(this batch)_
+**Timestamp:** 2026-03-22 ~19:40 UTC
+**Branch:** FEAT-C
+
+### Items completed
+
+#### Fix: Dirty flag fires on node selection
+**Root cause:** `OnNodeChanged(node)` called `AppState.MarkEdited()` directly (no deferral), so every node.Changed event — including selection — instantly marked the diagram dirty. The `_pendingDirtyMark` pattern existed only in `OnDiagramChanged`, which fires separately.
+
+**Fix:**
+- `Pages/Display.razor.cs` — `OnNodeChanged`: removed direct `MarkEdited()` call; now uses the same `_pendingDirtyMark = true` + `InvokeAsync(...)` deferred pattern. `OnSelectionChanged` clears the flag before the callback runs for selection events, so selection doesn't mark dirty. Real moves/resizes still trigger dirty + undo push.
+- `OnDiagramChanged`: removed all dirty logic; now only calls `InvokeAsync(StateHasChanged)` (diagram-level `Changed` was redundant for dirty tracking now that per-node events handle it).
+
+#### Fix: Link removal doesn't mark diagram dirty
+- `Pages/Display.razor.cs` — added `OnLinkRemoved` handler: calls `AppState.MarkEdited() + PushUndoSnapshot()`.
+- `SubscribeEditEvents`: added `_diagram.Links.Removed += OnLinkRemoved`.
+- `UnsubscribeEditEvents`: added unsubscription.
+- `OnLinkAdded`: added `MarkEdited() + PushUndoSnapshot()` (link additions also now explicitly mark dirty).
+
+#### Fix: Log view width expands with long content
+- `Widgets/BaseNodeWidget.cs` — `ContainerStyle()`: added `overflow:hidden` to the size string. All node widgets now clip any overflowing content to their declared size.
+
+### Notes
+- `align-toolbar-grey` and `error-ui-css` were already correctly implemented — marked done.
+- Build: 0 errors, 11/11 tests passed.
+
+---
+
 ## 2026-03-22 — ColorTransition class refactor (Gauge + Battery)
 
 **Commit:** _(this batch)_
