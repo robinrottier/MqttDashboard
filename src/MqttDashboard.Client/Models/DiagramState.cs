@@ -137,6 +137,9 @@ public class NodeState
     // Gauge ArcOrigin and shared color thresholds (used by Gauge and Battery)
     public double? ArcOrigin { get; set; }
     public List<GaugeColorThresholdState>? ColorThresholds { get; set; }
+    // Gauge-specific display options
+    public int? GaugeDataTopicIndex { get; set; }
+    public string? TextPosition { get; set; }
 
     // Title position (all node types)
     public string? TitlePosition { get; set; }
@@ -145,6 +148,7 @@ public class NodeState
     public int? MaxEntries { get; set; }
     public bool? ShowTime { get; set; }
     public bool? ShowDate { get; set; }
+    public bool? ShowTopic { get; set; }
 
     // TreeView-specific
     public string? RootTopic { get; set; }
@@ -172,6 +176,7 @@ public class GaugeColorThresholdState
     public double Value { get; set; }
     public string Color { get; set; } = "var(--mud-palette-primary)";
     public string Direction { get; set; } = ">=";
+    public int TopicIndex { get; set; } = 0;
 }
 
 public class GridRowState

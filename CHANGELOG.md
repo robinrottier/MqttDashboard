@@ -8,6 +8,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Gauge: text position** — the static Text label can now be displayed above or below the gauge arc (new "Text Position" property, default: Below).
+- **Gauge: value topic index** — new "Value Topic" setting lets you specify which data topic (0-based) drives the gauge arc and displayed value, enabling a node with multiple topics to show one as the gauge reading.
+- **Gauge: per-threshold topic index** — each color transition rule now has an optional "Topic #" field (shown in the Color Transitions editor). The rule is evaluated against the value from that topic index, so different thresholds can watch different incoming topics.
+- **Log: always-show topic column** — new "Always Show Topic Column" checkbox in Log settings. Previously the topic column only appeared for wildcard subscriptions; it can now be forced on for any log node.
 - **Grid node** — new widget displaying a configurable table of MQTT values. Define column headers and rows; each cell is independently bound to an MQTT topic. Persisted as `GridColumnHeaders` / `GridRows` in the dashboard file.
 - **Log node pause button** — small Pause/Play icon button in the log widget header allows freezing the log to inspect entries without new data pushing them off screen.
 - **Reconnect value replay** — after a SignalR reconnect (browser refresh, network glitch), the server's last-known value for every subscribed topic is pushed into the client cache immediately, so widgets show current data without waiting for the next MQTT message.

@@ -347,7 +347,9 @@ public class ApplicationState
                         MaxValue = nodeState.MaxValue ?? 100,
                         Unit = nodeState.Unit,
                         ArcOrigin = nodeState.ArcOrigin,
-                        ColorThresholds = nodeState.ColorThresholds?.Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList() ?? new(),
+                        DataTopicIndex = nodeState.GaugeDataTopicIndex ?? 0,
+                        TextPosition = nodeState.TextPosition ?? "Below",
+                        ColorThresholds = nodeState.ColorThresholds?.Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color, Direction = t.Direction, TopicIndex = t.TopicIndex }).ToList() ?? new(),
                     },
                     "Switch" => new SwitchNodeModel(position: new Point(nodeState.X, nodeState.Y))
                     {
@@ -381,6 +383,7 @@ public class ApplicationState
                         MaxEntries = nodeState.MaxEntries ?? 20,
                         ShowTime = nodeState.ShowTime ?? true,
                         ShowDate = nodeState.ShowDate ?? false,
+                        ShowTopic = nodeState.ShowTopic ?? false,
                     },
                     "TreeView" => new TreeViewNodeModel(position: new Point(nodeState.X, nodeState.Y))
                     {
@@ -565,8 +568,10 @@ public class ApplicationState
                 nodeState.MaxValue = g.MaxValue;
                 nodeState.Unit = g.Unit;
                 nodeState.ArcOrigin = g.ArcOrigin;
+                nodeState.GaugeDataTopicIndex = g.DataTopicIndex != 0 ? g.DataTopicIndex : null;
+                nodeState.TextPosition = g.TextPosition != "Below" ? g.TextPosition : null;
                 nodeState.ColorThresholds = g.ColorThresholds.Count > 0
-                    ? g.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList()
+                    ? g.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color, Direction = t.Direction, TopicIndex = t.TopicIndex }).ToList()
                     : null;
             }
             else if (node is SwitchNodeModel s)
@@ -595,6 +600,7 @@ public class ApplicationState
                 nodeState.MaxEntries = log.MaxEntries;
                 nodeState.ShowTime = log.ShowTime;
                 nodeState.ShowDate = log.ShowDate;
+                nodeState.ShowTopic = log.ShowTopic ? true : null;
             }
             else if (node is TreeViewNodeModel tv)
             {

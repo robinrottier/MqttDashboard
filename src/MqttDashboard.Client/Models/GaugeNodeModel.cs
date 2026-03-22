@@ -26,9 +26,19 @@ public class GaugeNodeModel : MudNodeModel
     public double? ArcOrigin { get; set; }
 
     /// <summary>
-    /// Ordered list of threshold color stops. Last matching rule wins.
-    /// Each threshold has a Direction ("&gt;=" or "&lt;=") and a Value.
-    /// Matching is based on absolute distance from ArcOrigin.
+    /// 0-based index of the data topic whose value drives the gauge arc and label.
+    /// 0 = first topic (DataValue), 1 = second topic (DataValue2).
+    /// </summary>
+    public int DataTopicIndex { get; set; } = 0;
+
+    /// <summary>
+    /// Where the static Text label is displayed relative to the gauge arc: "Above" or "Below" (default).
+    /// </summary>
+    public string TextPosition { get; set; } = "Below";
+
+    /// <summary>
+    /// Ordered list of color thresholds. First matching rule wins.
+    /// Each threshold has a Direction ("&gt;=" or "&lt;="), a Value, and an optional TopicIndex.
     /// </summary>
     public List<GaugeColorThreshold> ColorThresholds { get; set; }
 }
@@ -37,6 +47,8 @@ public class GaugeColorThreshold
 {
     public double Value { get; set; }
     public string Color { get; set; } = "var(--mud-palette-primary)";
-    /// <summary>Direction of the threshold comparison. Valid values: "&gt;=" (default) or "&lt;=".</summary>
+    /// <summary>Direction of the threshold comparison: ">=" or "<=".</summary>
     public string Direction { get; set; } = ">=";
+    /// <summary>0-based topic index whose value is compared. 0 = DataValue, 1 = DataValue2.</summary>
+    public int TopicIndex { get; set; } = 0;
 }

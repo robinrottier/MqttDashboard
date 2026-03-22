@@ -7,6 +7,41 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ---
 
+## 2026-03-22 — Gauge enhancements, log topic column, color transition topic index
+**Commit:** TBD · 2026-03-22 UTC  
+**Branch:** FEAT-C
+
+### What was done
+
+**Fixed: Gauge properties dialog compaction**  
+- `NodePropertyEditor.razor` — all four fields (Min, Max, Origin, Unit) now live in a single `MudGrid` row with `xs="3"` each. Previously Origin was on its own line and the old informational `<MudText>` about text position is removed (replaced by the TextPosition selector).
+
+**Added: Gauge text position (above / below arc)**  
+- `GaugeNodeModel.cs` — added `TextPosition` property (string, default `"Below"`).  
+- `GaugeNodeWidget.razor` — when `TextPosition == "Above"`, the static Text `<div>` is rendered before the SVG; otherwise it renders after (existing "below" behavior).  
+- `NodePropertyEditor.razor` — `MudSelect` for TextPosition (Below arc / Above arc).  
+- `DiagramState.cs` / `ApplicationState.cs` — persisted as `NodeState.TextPosition`; only written when non-default (saves `null` = "Below" for clean JSON).
+
+**Added: Gauge value topic index selector**  
+- `GaugeNodeModel.cs` — added `DataTopicIndex` property (int, default `0`).  
+- `GaugeNodeWidget.razor` — added `private object? ActiveValue` helper that returns `Node.DataValue2` when `DataTopicIndex == 1`, else `Node.DataValue`. `UpdatePercent()`, `GetArcColor()`, and `FormatValue()` all use `ActiveValue`. Also added `OnData2Updated()` override so the widget repaints when either topic updates (correct value is read via `ActiveValue`).  
+- `NodePropertyEditor.razor` — `MudNumericField` labelled "Value Topic (0-based)" with helper text.  
+- `DiagramState.cs` / `ApplicationState.cs` — persisted as `NodeState.GaugeDataTopicIndex`; written as `null` when 0 (default).
+
+**Added: Per-threshold topic index in color transitions**  
+- `GaugeColorThreshold.cs` (in `GaugeNodeModel.cs`) — added `TopicIndex` property (int, default `0`).  
+- `GaugeNodeWidget.razor` `GetArcColor()` — each threshold now uses `t.TopicIndex == 1 ? Node.DataValue2 : Node.DataValue` for its comparison. Different thresholds can watch different topics on the same node.  
+- `ColorTransitionEditor.razor` — added `ShowTopicIndex` bool parameter (default `false`). When true, a small "Topic #" `MudNumericField` (min=0) is prepended to each threshold row; grid widths adjust (`When` drops from `xs="3"` to `xs="2"`, Color from `xs="4"` to `xs="3"`). Gauge passes `ShowTopicIndex="true"`; Battery does not.  
+- `GaugeColorThresholdState` / `ApplicationState.cs` — `TopicIndex` serialised and round-tripped.
+
+**Added: Log "always show topic column"**  
+- `LogNodeModel.cs` — added `ShowTopic` bool (default `false`).  
+- `LogNodeWidget.razor` — topic column and its `colspan` now show when `IsWildcard || Node.ShowTopic`. Header and data cell both updated.  
+- `NodePropertyEditor.razor` — added `MudCheckBox` "Always Show Topic Column" to the Log settings section.  
+- `DiagramState.cs` / `ApplicationState.cs` — persisted as `NodeState.ShowTopic`; written as `null` when false.
+
+---
+
 ## 2026-03-22 — Bug fixes batch 2: dirty flag, thresholds, log pause, width, reconnect
 **Commit:** `52f7f93` · 2026-03-22 17:11 UTC  
 **Branch:** FEAT-C

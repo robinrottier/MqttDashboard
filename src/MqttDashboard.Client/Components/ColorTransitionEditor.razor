@@ -7,7 +7,15 @@
         @foreach (var threshold in Thresholds.ToList())
         {
             <MudGrid Spacing="1" Class="mb-1">
-                <MudItem xs="3">
+                @if (ShowTopicIndex)
+                {
+                    <MudItem xs="2">
+                        <MudNumericField T="int" Value="threshold.TopicIndex"
+                                         ValueChanged="v => threshold.TopicIndex = Math.Max(0, v)"
+                                         Label="Topic #" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" />
+                    </MudItem>
+                }
+                <MudItem xs="@(ShowTopicIndex ? 2 : 3)">
                     <MudSelect T="string" Value="threshold.Direction"
                                ValueChanged="v => threshold.Direction = v"
                                Label="When" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true">
@@ -20,7 +28,7 @@
                                      ValueChanged="v => threshold.Value = v"
                                      Label="@ValueLabel" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
-                <MudItem xs="4">
+                <MudItem xs="@(ShowTopicIndex ? 3 : 4)">
                     <MudStack Row="true" Spacing="0" AlignItems="AlignItems.Center">
                         <div style="@($"width:24px;height:24px;background:{threshold.Color};border:1px solid var(--mud-palette-divider);border-radius:3px;cursor:pointer;flex-shrink:0;")"
                              @onclick="@(() => _editingThreshold = (_editingThreshold == threshold ? null : threshold))"></div>
@@ -65,6 +73,7 @@
 @code {
     [Parameter] public List<GaugeColorThreshold>? Thresholds { get; set; }
     [Parameter] public string ValueLabel { get; set; } = "Value";
+    [Parameter] public bool ShowTopicIndex { get; set; } = false;
 
     private GaugeColorThreshold? _editingThreshold;
 
