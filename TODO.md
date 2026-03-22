@@ -13,7 +13,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 	- [ ] `DataValue` and `DataLastUpdated` should be arrays parallel to topics
 	- [ ] Update all widgets, persistence, SignalR, and `BaseNodeWithDataWidget` to use new structure
 - [ ] Log view changes width depending on message length — should fill widget width, not content width
-- [ ] Disable panning on the Blazor Diagram canvas — causing accidental drags; may be reintroduced later
+- [ ] DONE. Disable panning on the Blazor Diagram canvas — causing accidental drags; may be reintroduced later
 - [ ] F5 full-page refresh: many link animations fire then clear before settling — possibly Blazor Diagrams SVG layer not pre-rendering
 
 

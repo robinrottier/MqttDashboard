@@ -208,6 +208,7 @@ Do not worry about Old saved files and backward compatiblity for now, as the for
    - Otherwise → ask the user to stash or commit (suggest `"chore: WIP"`) before starting.
 2. Read `TODO.md` to understand the current backlog.
 3. Read `DEVCHANGELOG.md` (top section) to understand what was done last session.
+4. Any TODOs marked (by other) as DONE should be verified if possible, removed and added to CHANGELOGs
 
 ### During a session
 

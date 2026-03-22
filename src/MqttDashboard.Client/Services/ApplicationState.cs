@@ -311,7 +311,9 @@ public class ApplicationState
             {
                 DefaultRouter = new NormalRouter(),
                 DefaultPathGenerator = new SmoothPathGenerator()
-            }
+            },
+            // disable panning (for now) ...seems just to confuse
+            AllowPanning = false,
         };
         if (!readOnly)
         {
