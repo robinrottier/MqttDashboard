@@ -189,6 +189,10 @@ In **`GetDiagramState()`** — add an `else if (node is MyNodeModel m)` block to
 
 ## Development workflow
 
+### General
+
+Do not worry about Old saved files and backward compatiblity for now, as the format is still evolving. If you need to make breaking changes to the file format, it's fine
+
 ### Files
 
 | File | Purpose |
