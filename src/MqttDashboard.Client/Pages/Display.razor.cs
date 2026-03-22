@@ -56,6 +56,7 @@ public partial class Display : IDisposable
     private Action? _onMenuOpen;
     private Action? _onMenuUndo;
     private Action? _onMenuRedo;
+    private Action? _onMenuUndoAll;
     private Action? _onMenuDiagramProperties;
     private Action? _onMenuPaste;
     private Action? _onMenuAddPage;
@@ -281,6 +282,8 @@ public partial class Display : IDisposable
         {
             // Snapshot current state before any edit-mode changes
             _editSnapshot = BuildFullState();
+            // Start each edit session with a clean undo stack
+            AppState.ClearUndoRedo();
         }
 
         if (AppState.IsEditMode)
@@ -365,6 +368,7 @@ public partial class Display : IDisposable
         _onMenuSaveAs         = () => InvokeAsync(SaveAsDiagram);
         _onMenuUndo           = () => InvokeAsync(UndoAction);
         _onMenuRedo           = () => InvokeAsync(RedoAction);
+        _onMenuUndoAll        = () => InvokeAsync(UndoAllAction);
 
         AppState.MenuSaveDiagram    += _onMenuSaveDiagram;
         AppState.MenuReloadDiagram  += _onMenuReloadDiagram;
@@ -372,6 +376,7 @@ public partial class Display : IDisposable
         AppState.MenuSaveAs         += _onMenuSaveAs;
         AppState.MenuUndo           += _onMenuUndo;
         AppState.MenuRedo           += _onMenuRedo;
+        AppState.MenuUndoAll        += _onMenuUndoAll;
 
         _onMenuDiagramProperties = () => InvokeAsync(ShowDiagramPropertiesAsync);
         AppState.MenuDiagramProperties += _onMenuDiagramProperties;
@@ -404,6 +409,7 @@ public partial class Display : IDisposable
         if (_onMenuSaveAs         != null) AppState.MenuSaveAs         -= _onMenuSaveAs;
         if (_onMenuUndo           != null) AppState.MenuUndo           -= _onMenuUndo;
         if (_onMenuRedo           != null) AppState.MenuRedo           -= _onMenuRedo;
+        if (_onMenuUndoAll        != null) AppState.MenuUndoAll        -= _onMenuUndoAll;
 
         if (_onMenuDiagramProperties != null) AppState.MenuDiagramProperties -= _onMenuDiagramProperties;
         if (_onMenuAddPage           != null) AppState.MenuAddPage           -= _onMenuAddPage;
@@ -414,7 +420,7 @@ public partial class Display : IDisposable
         _nodeChangedSubscriptions.Clear();
 
         _onMenuSaveDiagram = _onMenuReloadDiagram = _onMenuEditProperties = null;
-        _onMenuSaveAs = _onMenuUndo = _onMenuRedo = _onMenuDiagramProperties = _onMenuAddPage = null;
+        _onMenuSaveAs = _onMenuUndo = _onMenuRedo = _onMenuUndoAll = _onMenuDiagramProperties = _onMenuAddPage = null;
     }
 
     // ── Diagram event handlers ────────────────────────────────────────────────
@@ -558,31 +564,22 @@ public partial class Display : IDisposable
             UnsubscribeEditEvents();
         }
 
+        AppState.SetEditMode(false);
         AppState.MarkSaved();
         AppState.ClearUndoRedo();
         var savedState = await DashboardService.LoadDashboardAsync();
         if (savedState != null && (savedState.Nodes.Count > 0 || savedState.Pages?.Count > 0))
         {
             var prevTopics = AppState.SubscribedTopics.ToHashSet();
-            LoadFullState(savedState, readOnly: !AppState.IsEditMode);
+            LoadFullState(savedState, readOnly: true);
             await SyncSubscriptionsAsync(prevTopics, AppState.SubscribedTopics);
-            var gs = _diagram?.Options.GridSize;
-            if (AppState.IsEditMode && gs.HasValue)
-                AppState.SetGridSize((int)gs.Value);
             var nodeCount = savedState.Pages?.Sum(p => p.Nodes.Count) ?? savedState.Nodes.Count;
             Snackbar.Add($"Dashboard reloaded ({nodeCount} nodes)", Severity.Info);
         }
         else
         {
-            LoadFullState(null, readOnly: !AppState.IsEditMode);
+            LoadFullState(null, readOnly: true);
             Snackbar.Add("No saved dashboard found", Severity.Warning);
-        }
-        if (AppState.IsEditMode && _diagram != null)
-        {
-            _diagram.SelectionChanged += OnSelectionChanged;
-            _diagram.Changed += OnDiagramChanged;
-            SubscribeEditEvents();
-            UpdateSelectionState();
         }
         StateHasChanged();
     }
@@ -955,6 +952,17 @@ public partial class Display : IDisposable
         if (previous == null) return;
         await ApplyDiagramState(previous);
         Snackbar.Add("Undo", Severity.Info);
+    }
+
+    private async Task UndoAllAction()
+    {
+        if (_diagram == null || !AppState.CanUndo || _editSnapshot == null) return;
+        _suppressDirty = true;
+        try { await ApplyDiagramState(_editSnapshot); }
+        finally { _suppressDirty = false; }
+        AppState.ClearUndoRedo();
+        AppState.MarkSaved();
+        Snackbar.Add("Reverted to saved state", Severity.Info);
     }
 
     private async Task RedoAction()

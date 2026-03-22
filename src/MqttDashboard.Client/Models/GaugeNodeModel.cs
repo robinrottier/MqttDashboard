@@ -37,8 +37,14 @@ public class GaugeNodeModel : MudNodeModel
     public string TextPosition { get; set; } = "Below";
 
     /// <summary>
+    /// 0-based index of the data topic used for color threshold comparisons.
+    /// Applies to all thresholds. 0 = DataValue, 1 = DataValue2.
+    /// </summary>
+    public int ColorTopicIndex { get; set; } = 0;
+
+    /// <summary>
     /// Ordered list of color thresholds. First matching rule wins.
-    /// Each threshold has a Direction ("&gt;=" or "&lt;="), a Value, and an optional TopicIndex.
+    /// Each threshold has a Direction ("&gt;=" or "&lt;=") and a Value.
     /// </summary>
     public List<GaugeColorThreshold> ColorThresholds { get; set; }
 }
@@ -49,6 +55,4 @@ public class GaugeColorThreshold
     public string Color { get; set; } = "var(--mud-palette-primary)";
     /// <summary>Direction of the threshold comparison: ">=" or "<=".</summary>
     public string Direction { get; set; } = ">=";
-    /// <summary>0-based topic index whose value is compared. 0 = DataValue, 1 = DataValue2.</summary>
-    public int TopicIndex { get; set; } = 0;
 }

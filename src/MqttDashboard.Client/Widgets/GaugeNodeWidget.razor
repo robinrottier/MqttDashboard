@@ -135,10 +135,10 @@
     {
         if (Node.ColorThresholds.Count > 0)
         {
-            foreach (var t in Node.ColorThresholds)
+            var colorVal = Node.ColorTopicIndex == 1 ? Node.DataValue2 : Node.DataValue;
+            if (colorVal != null && double.TryParse(colorVal.ToString(), out var dThresh))
             {
-                var val = t.TopicIndex == 1 ? Node.DataValue2 : Node.DataValue;
-                if (val != null && double.TryParse(val.ToString(), out var dThresh))
+                foreach (var t in Node.ColorThresholds)
                 {
                     if (t.Direction == ">=" && dThresh >= t.Value) return t.Color;
                     if (t.Direction == "<=" && dThresh <= t.Value) return t.Color;

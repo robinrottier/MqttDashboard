@@ -7,6 +7,46 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ---
 
+## 2026-03-22 — Undo state fixes, log columns, color transition per-node, UndoAll
+
+**Commit:** _(to be filled after commit)_
+**Timestamp:** 2026-03-22 ~18:15 UTC
+**Branch:** FEAT-C
+
+### Items completed
+
+#### Fix: Color transition topic index is per-node, not per-threshold
+- `Models/GaugeNodeModel.cs` — removed `TopicIndex` from `GaugeColorThreshold`; `ColorTopicIndex` already on `GaugeNodeModel` (added earlier this session)
+- `Widgets/GaugeNodeWidget.razor` — `GetArcColor()` uses `Node.ColorTopicIndex` for all threshold comparisons
+- `Components/ColorTransitionEditor.razor` — reverted: no per-threshold topic field; clean 3-column layout (When / Value / Color)
+- `Components/NodePropertyEditor.razor` — Gauge section: `ColorTopicIndex` spinner in same row as `DataTopicIndex`; removed `ShowTopicIndex` param from `ColorTransitionEditor` call
+- `Models/DiagramState.cs` — `GaugeColorTopicIndex` on `NodeState`; `TopicIndex` removed from `GaugeColorThresholdState`
+- `Services/ApplicationState.cs` — serialize/deserialize updated; `GaugeColorTopicIndex` null-when-0 for clean JSON
+
+#### Fix: Log column options — full independent booleans, no wildcard logic
+- `Models/LogNodeModel.cs` — replaced `ShowTopic` with six booleans: `ShowDate`, `ShowTime`, `ShowTopicFull`, `ShowTopicPath`, `ShowTopicName`, `ShowValue`
+- `Widgets/LogNodeWidget.razor` — removed `IsWildcard`; all 6 columns driven by model booleans; added `TopicPath(topic)` and `TopicName(topic)` helper methods; `colCount` computed inline for empty-row colspan
+- `Components/NodePropertyEditor.razor` — Log section: replaced single ShowTopic checkbox with 6-checkbox responsive grid (3 per row)
+- `Models/DiagramState.cs` — replaced `ShowTopic` with `ShowTopicFull`, `ShowTopicPath`, `ShowTopicName`, `ShowValue` fields
+- `Services/ApplicationState.cs` — serialize/deserialize updated; `ShowValue` written as null when true (clean JSON default)
+
+#### Fix: Undo stack cleared on entering Edit Mode
+- `Pages/Display.razor.cs` — in `SwitchMode(enterEditMode:true)`, added `AppState.ClearUndoRedo()` immediately after capturing `_editSnapshot`. Entering Edit Mode is now always a clean undo state.
+
+#### Fix: Reload from disc exits Edit Mode
+- `Pages/Display.razor.cs` — rewrote `ReloadDiagram()`: always calls `AppState.SetEditMode(false)` + `AppState.MarkSaved()` + `AppState.ClearUndoRedo()` before loading; always loads with `readOnly: true`; removed the re-subscription block that was restoring Edit Mode after reload.
+
+#### Added: Undo All menu item
+- `Services/ApplicationState.cs` — added `event Action? MenuUndoAll` and `TriggerUndoAll()` method
+- `Layout/AppMenu.razor` — added `<MudMenuItem Label="Undo All" ...>` after Redo; added `private void UndoAll() => AppState.TriggerUndoAll();`
+- `Pages/Display.razor.cs` — added `_onMenuUndoAll` private field; wired in `SubscribeEditEvents` / unwired in `UnsubscribeEditEvents` / nulled in null-out block; added `UndoAllAction()` async method that applies `_editSnapshot`, clears undo/redo, marks saved, shows snackbar — uses `_suppressDirty` guard to prevent false dirty mark during replay
+
+### Notes
+- All builds succeeded with 0 errors (pre-existing MUD0002 warning on LogNodeWidget `Title` attribute is unchanged)
+- `UndoAllAction` applies the pre-edit snapshot (`_editSnapshot`) not the last undo state, so it always fully reverts to the clean state — regardless of how many changes were made
+
+---
+
 ## 2026-03-22 — Gauge enhancements, log topic column, color transition topic index
 **Commit:** `5378e80` · 2026-03-22 UTC  
 **Branch:** FEAT-C

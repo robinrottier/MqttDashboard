@@ -8,26 +8,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Undo All** — new Edit menu item that reverts all unsaved changes in a single step, returning the diagram to its state at the time Edit Mode was entered (stays in Edit Mode).
 - **Gauge: text position** — the static Text label can now be displayed above or below the gauge arc (new "Text Position" property, default: Below).
-- **Gauge: value topic index** — new "Value Topic" setting lets you specify which data topic (0-based) drives the gauge arc and displayed value, enabling a node with multiple topics to show one as the gauge reading.
-- **Gauge: per-threshold topic index** — each color transition rule now has an optional "Topic #" field (shown in the Color Transitions editor). The rule is evaluated against the value from that topic index, so different thresholds can watch different incoming topics.
-- **Log: always-show topic column** — new "Always Show Topic Column" checkbox in Log settings. Previously the topic column only appeared for wildcard subscriptions; it can now be forced on for any log node.
+- **Gauge: value topic index** — new "Value Topic" setting lets you specify which data topic (0-based) drives the gauge arc and displayed value.
+- **Gauge: color transition topic index** — single "Color Topic" setting (per node, not per threshold) controls which data topic drives all color transition rules.
+- **Log: independent column toggles** — six checkboxes (Date / Time / Full Topic / Topic Path / Topic Name / Value) independently control which log columns are visible. Replaced the previous wildcard-conditional topic column toggle.
 - **Grid node** — new widget displaying a configurable table of MQTT values. Define column headers and rows; each cell is independently bound to an MQTT topic. Persisted as `GridColumnHeaders` / `GridRows` in the dashboard file.
 - **Log node pause button** — small Pause/Play icon button in the log widget header allows freezing the log to inspect entries without new data pushing them off screen.
-- **Reconnect value replay** — after a SignalR reconnect (browser refresh, network glitch), the server's last-known value for every subscribed topic is pushed into the client cache immediately, so widgets show current data without waiting for the next MQTT message.
+- **Reconnect value replay** — after a SignalR reconnect, the server's last-known value for every subscribed topic is pushed into the client cache immediately.
 
 ### Fixed
-- **Dirty flag set on node selection** — selecting a node in edit mode incorrectly marked the dashboard as modified. `OnDiagramChanged` now defers the dirty mark via `InvokeAsync`; if `SelectionChanged` fires synchronously afterward (Blazor.Diagrams fires both in sequence for selection events), the deferred mark is cancelled. Real edits (node move, resize, add/delete) still mark dirty correctly.
-- **Default color thresholds for new Battery nodes** — new Battery widgets now start with sensible defaults: red ≤25%, orange ≤50%, green ≥50%. Previously the threshold list was empty and the widget showed no color variation.
-- **Default color thresholds for new Gauge nodes** — new Gauge widgets now start with red for values ≤0 and green for values ≥0, providing an immediate visual indication of sign without manual configuration.
-- **Log and TreeView 100% width** — added scoped CSS (`LogNodeWidget.razor.css`, `TreeViewNodeWidget.razor.css`) with `::deep` selectors to force MudBlazor's internal `mud-table-container` / `mud-table-root` / `mud-treeview` elements to fill the full widget width. Also added `min-width:0` to the TreeView flex container.
-- **Link animation initial seed regression** — corrected the startup animation fix to call `OnData1Updated()` + `TriggerLinkAnimation()` (not `OnData1ReceivedCore`) on the initial cache seed; avoids duplicate log entries being appended every time `OnParametersSet` fires.
-- **`#blazor-error-ui` always visible / pale yellow** — added `display: none` default and prominent dark-red/white styling to `app.css`; the error panel is now properly hidden until Blazor raises an unhandled exception.
-- **Alignment toolbar buttons greyed** — added `Color="Color.Primary"` to all six alignment `MudIconButton` elements so they appear clearly active in multi-select edit mode.
+- **Undo greyed on entering Edit Mode** — entering Edit Mode now clears the undo/redo stack so Undo is correctly disabled until the first change is made.
+- **Reload from disc exits Edit Mode** — reloading the dashboard now always exits Edit Mode (with a prompt to discard unsaved changes) and resets dirty state, instead of staying in Edit Mode with a false dirty indicator.
+- **Dirty flag set on node selection** — selecting a node in edit mode incorrectly marked the dashboard as modified. `OnDiagramChanged` now defers the dirty mark; selection events cancel the pending mark. Real edits still mark dirty correctly.
+- **Default color thresholds for new Battery nodes** — new Battery widgets now start with sensible defaults: red ≤25%, orange ≤50%, green ≥50%.
+- **Default color thresholds for new Gauge nodes** — new Gauge widgets now start with red for values ≤0 and green for values ≥0.
+- **Log and TreeView 100% width** — added scoped CSS to force MudBlazor internal elements to fill full widget width.
+- **Link animation initial seed regression** — corrected startup animation fix to call `OnData1Updated()` + `TriggerLinkAnimation()` correctly on initial cache seed.
+- **`#blazor-error-ui` always visible / pale yellow** — error panel is now properly hidden until Blazor raises an unhandled exception.
+- **Alignment toolbar buttons greyed** — added `Color="Color.Primary"` to all alignment buttons.
 
 ### Added
-- **OS clipboard integration** — copy/paste of nodes now writes to and reads from the browser's native clipboard (via `navigator.clipboard`), enabling cross-window and cross-tab paste. Falls back gracefully to in-memory clipboard if the Clipboard API is unavailable or permission is denied.
-- **Startup dashboard setting** — admin-configurable system-wide startup behaviour: *Last Used* (per-browser localStorage restore, previous behaviour), *Specific File* (always open a named dashboard for every new session), or *None* (blank canvas). Configure via **Startup Settings…** in the admin menu. Setting is stored in `appsettings.user.json`.
+- **OS clipboard integration** — copy/paste of nodes now writes to and reads from the browser's native clipboard, enabling cross-window and cross-tab paste.
+- **Startup dashboard setting** — admin-configurable system-wide startup behaviour: *Last Used*, *Specific File*, or *None*.
 - `GET /api/settings/startup` and `POST /api/settings/startup` API endpoints.
 - **Log node** — new widget showing a scrolling timestamped history of messages received on a topic. Configurable max entries, optional date and time columns.
 - **TreeView node** — new widget displaying all live MQTT topics and values under a configurable root prefix in a collapsible tree using `MudTreeView`. Optional value column.

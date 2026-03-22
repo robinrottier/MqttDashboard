@@ -5,16 +5,22 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ---
 
 ## BUGS
-- [ ] And ive seen lines being animated on first render (ssr?) and then cleared a few seconds later. Also still with issues about only drawing lines on data updates rather than on first value
-- [ ] Confirm data on server side has a "lazy cache" so that if client side request is dropped then server doesnt drop immediately. Some delay (configurable) could be added so data stays present with no references for 30 secs say
-- [ ] Enter edit mode, select a node and immediately edit is dirty, icon is red. ~~selection-marks-dirty fixed~~ Still: after undoing all changes the dirty flag stays red (undo doesn't detect "back to saved state")
-- [ ] Gauge node
-	- [ ] ...there should be a pattern here where the inner mud based control is basically always 100% of the outer node area (allow for title, text or common things)
+- [ ] Lines animated on first SSR render then cleared — lines in blazor.diagrams SVG layer (SSR→WASM handoff timing); also lines only drawn on first data update rather than on first value
+- [ ] Server-side "lazy cache": if client request is dropped, server should keep data live for a configurable delay (e.g. 30s) before removing references
+- [ ] Dirty flag still fires on selection (enter edit mode, select node → dirty; investigate `_pendingDirtyMark` pattern in `OnDiagramChanged`)
+- [ ] Multiple data items per node has been done wrongly — large structural refactor required:
+	- [ ] Remove `DataTopic` and `DataTopic2`; replace with `DataTopics` as an `IList<string>`
+	- [ ] `DataValue` and `DataLastUpdated` should be arrays parallel to topics
+	- [ ] Update all widgets, persistence, SignalR, and `BaseNodeWithDataWidget` to use new structure
+- [ ] Log view changes width depending on message length — should fill widget width, not content width
+- [ ] Disable panning on the Blazor Diagram canvas — causing accidental drags; may be reintroduced later
+- [ ] F5 full-page refresh: many link animations fire then clear before settling — possibly Blazor Diagrams SVG layer not pre-rendering
+
 
 ## 🟡 Enhancements
 
 - [ ] Property transition
-	- [ ] Gauge and battery, Color transition has property to select index of which topic to transition upon — **done for Gauge** (TopicIndex per threshold); Battery still uses single-value model
+	- [x] Gauge and battery, Color transition has property to select index of which topic to transition upon — **done for Gauge** (`ColorTopicIndex` per node, not per threshold); Battery still uses single-value model
 	- [ ] The color boxes in the transition/colour editor should have a chooser popup (via a button) to help with selecting the various types and well-known values
 	- [ ] this would be same as "Background color" for main node property, so either 3 small buttons
 	      or a single button goes to a dialog with 3 tabs, one for each of the colour modes
@@ -32,7 +38,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] IMage:
 	- [ ] also needs option to upload a bitmap and stored locally as content  or should it be byte values in dashboard file?)
 	- [ ] option to go "behind" or "ontop" other nodes.. maybe z-order roperty for all nodes? HOw does this fit in with blazor.diagrams, maybe it has it already
-- [ ] Log viewer columns: choices for date (and format), time (and format), topic path, topic name, topic full path&name, value — **Show Topic column toggle done**; date/time format options still open
+- [ ] Log viewer columns: choices for date (and format), time (and format), topic path, topic name, topic full path&name, value — **Full 6-column boolean options done**; date/time format options still open
 - [ ] Log view needs a "pause" button to stop updates. — **Done** (previous session)
 - [ ] mqtt publishing should have other parameters (e.g. message expiry)
 - [ ] Confirm- mqtt publishing is reusable compoennts (especially configuration of it in node properties)

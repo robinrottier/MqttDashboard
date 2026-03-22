@@ -195,6 +195,7 @@ public class ApplicationState
     public event Action? MenuReloadDiagram;
     public event Action? MenuUndo;
     public event Action? MenuRedo;
+    public event Action? MenuUndoAll;
     public event Action? MenuSaveAs;
     public event Action? MenuOpen;
     public event Action? MenuDiagramProperties;
@@ -288,6 +289,7 @@ public class ApplicationState
     public void TriggerReloadDiagram() => MenuReloadDiagram?.Invoke();
     public void TriggerUndo() => MenuUndo?.Invoke();
     public void TriggerRedo() => MenuRedo?.Invoke();
+    public void TriggerUndoAll() => MenuUndoAll?.Invoke();
     public void TriggerSaveAs() => MenuSaveAs?.Invoke();
     public void TriggerOpen() => MenuOpen?.Invoke();
     public void TriggerDiagramProperties() => MenuDiagramProperties?.Invoke();
@@ -348,8 +350,9 @@ public class ApplicationState
                         Unit = nodeState.Unit,
                         ArcOrigin = nodeState.ArcOrigin,
                         DataTopicIndex = nodeState.GaugeDataTopicIndex ?? 0,
+                        ColorTopicIndex = nodeState.GaugeColorTopicIndex ?? 0,
                         TextPosition = nodeState.TextPosition ?? "Below",
-                        ColorThresholds = nodeState.ColorThresholds?.Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color, Direction = t.Direction, TopicIndex = t.TopicIndex }).ToList() ?? new(),
+                        ColorThresholds = nodeState.ColorThresholds?.Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList() ?? new(),
                     },
                     "Switch" => new SwitchNodeModel(position: new Point(nodeState.X, nodeState.Y))
                     {
@@ -383,7 +386,10 @@ public class ApplicationState
                         MaxEntries = nodeState.MaxEntries ?? 20,
                         ShowTime = nodeState.ShowTime ?? true,
                         ShowDate = nodeState.ShowDate ?? false,
-                        ShowTopic = nodeState.ShowTopic ?? false,
+                        ShowTopicFull = nodeState.ShowTopicFull ?? false,
+                        ShowTopicPath = nodeState.ShowTopicPath ?? false,
+                        ShowTopicName = nodeState.ShowTopicName ?? false,
+                        ShowValue = nodeState.ShowValue ?? true,
                     },
                     "TreeView" => new TreeViewNodeModel(position: new Point(nodeState.X, nodeState.Y))
                     {
@@ -569,9 +575,10 @@ public class ApplicationState
                 nodeState.Unit = g.Unit;
                 nodeState.ArcOrigin = g.ArcOrigin;
                 nodeState.GaugeDataTopicIndex = g.DataTopicIndex != 0 ? g.DataTopicIndex : null;
+                nodeState.GaugeColorTopicIndex = g.ColorTopicIndex != 0 ? g.ColorTopicIndex : null;
                 nodeState.TextPosition = g.TextPosition != "Below" ? g.TextPosition : null;
                 nodeState.ColorThresholds = g.ColorThresholds.Count > 0
-                    ? g.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color, Direction = t.Direction, TopicIndex = t.TopicIndex }).ToList()
+                    ? g.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList()
                     : null;
             }
             else if (node is SwitchNodeModel s)
@@ -600,7 +607,10 @@ public class ApplicationState
                 nodeState.MaxEntries = log.MaxEntries;
                 nodeState.ShowTime = log.ShowTime;
                 nodeState.ShowDate = log.ShowDate;
-                nodeState.ShowTopic = log.ShowTopic ? true : null;
+                nodeState.ShowTopicFull = log.ShowTopicFull ? true : null;
+                nodeState.ShowTopicPath = log.ShowTopicPath ? true : null;
+                nodeState.ShowTopicName = log.ShowTopicName ? true : null;
+                nodeState.ShowValue = !log.ShowValue ? false : null;
             }
             else if (node is TreeViewNodeModel tv)
             {

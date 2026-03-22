@@ -44,8 +44,9 @@
     @if (IsEditMode)
     {
     <MudMenu Label="Edit" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
-        <MudMenuItem Label="Undo" OnClick="Undo" Disabled="@(!AppState.CanUndo)" />
-        <MudMenuItem Label="Redo" OnClick="Redo" Disabled="@(!AppState.CanRedo)" />
+        <MudMenuItem Label="Undo"     OnClick="Undo"     Disabled="@(!AppState.CanUndo)" />
+        <MudMenuItem Label="Redo"     OnClick="Redo"     Disabled="@(!AppState.CanRedo)" />
+        <MudMenuItem Label="Undo All" OnClick="UndoAll"  Disabled="@(!AppState.CanUndo)" />
         <MudDivider />
         <MudMenuItem Label="Add Node"    OnClick="MenuAddNode"    Disabled="@(!IsEditMode)" />
         <MudMenuItem Label="Delete Node" OnClick="MenuDeleteNode" Disabled="@(!AppState.HasSelectedNode)" />
@@ -195,6 +196,7 @@
     private void MenuDiagramProperties()  => AppState.TriggerDiagramProperties();
     private void Undo()               => AppState.TriggerUndo();
     private void Redo()               => AppState.TriggerRedo();
+    private void UndoAll()            => AppState.TriggerUndoAll();
     private void MenuAddNode()        => AppState.TriggerAddNode();
     private void MenuDeleteNode()     => AppState.TriggerDeleteNode();
     private void MenuCutSelected()    => AppState.TriggerCutSelected();

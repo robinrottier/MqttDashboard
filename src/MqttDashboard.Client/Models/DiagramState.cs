@@ -139,6 +139,7 @@ public class NodeState
     public List<GaugeColorThresholdState>? ColorThresholds { get; set; }
     // Gauge-specific display options
     public int? GaugeDataTopicIndex { get; set; }
+    public int? GaugeColorTopicIndex { get; set; }
     public string? TextPosition { get; set; }
 
     // Title position (all node types)
@@ -148,7 +149,10 @@ public class NodeState
     public int? MaxEntries { get; set; }
     public bool? ShowTime { get; set; }
     public bool? ShowDate { get; set; }
-    public bool? ShowTopic { get; set; }
+    public bool? ShowTopicFull { get; set; }
+    public bool? ShowTopicPath { get; set; }
+    public bool? ShowTopicName { get; set; }
+    public bool? ShowValue { get; set; }
 
     // TreeView-specific
     public string? RootTopic { get; set; }
@@ -176,7 +180,6 @@ public class GaugeColorThresholdState
     public double Value { get; set; }
     public string Color { get; set; } = "var(--mud-palette-primary)";
     public string Direction { get; set; } = ">=";
-    public int TopicIndex { get; set; } = 0;
 }
 
 public class GridRowState
