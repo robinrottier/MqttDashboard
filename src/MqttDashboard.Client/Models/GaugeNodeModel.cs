@@ -7,6 +7,11 @@ public class GaugeNodeModel : MudNodeModel
     public GaugeNodeModel(Point? position = null) : base(position)
     {
         NodeType = "Gauge";
+        ColorThresholds =
+        [
+            new GaugeColorThreshold { Value = 0, Direction = "<=", Color = "var(--mud-palette-error)" },
+            new GaugeColorThreshold { Value = 0, Direction = ">=", Color = "var(--mud-palette-success)" },
+        ];
     }
 
     public double MinValue { get; set; } = 0;
@@ -25,7 +30,7 @@ public class GaugeNodeModel : MudNodeModel
     /// Each threshold has a Direction ("&gt;=" or "&lt;=") and a Value.
     /// Matching is based on absolute distance from ArcOrigin.
     /// </summary>
-    public List<GaugeColorThreshold> ColorThresholds { get; set; } = new();
+    public List<GaugeColorThreshold> ColorThresholds { get; set; }
 }
 
 public class GaugeColorThreshold

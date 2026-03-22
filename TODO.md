@@ -5,19 +5,14 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ---
 
 ## BUGS
-- [ ] And ive seen lines being animated on first render (ssr?) and then cleared a few seconds later. Also still with issues about only draewing lines on dta updates rather than on first value
-- [ ] If I refresh and "rejoin the server" then all the data must stillbe there so values shoul dbe avilabale immediately
-- [ ] Confirm data on server side has a "lazy cache" so that if client side request is dropped then server doesnt drop immediately. SOme delay (configurable) coul dbe added so data stays present with no references so 30 secs say
-- [ ] Enter edit mode, select a node and immediately edit is dirty, icon is red. No real changes. And undo does nothing...although ihad 2 undo's before greying the menu (so there was something to undo) but when all undone the flag was still red.
+- [ ] And ive seen lines being animated on first render (ssr?) and then cleared a few seconds later. Also still with issues about only drawing lines on data updates rather than on first value
+- [ ] Confirm data on server side has a "lazy cache" so that if client side request is dropped then server doesnt drop immediately. Some delay (configurable) could be added so data stays present with no references for 30 secs say
+- [ ] Enter edit mode, select a node and immediately edit is dirty, icon is red. ~~selection-marks-dirty fixed~~ Still: after undoing all changes the dirty flag stays red (undo doesn't detect "back to saved state")
 - [ ] Gauge node
-	- [ ] Guage properties dialog compaction... "Min", "Max", "Origin" and "Unit" can all be on one line
-	- [ ] "The "Text" field above is displayed as a static label below the gauge arc. " message...actually text shoul dhave a display option either above or below the guage.
-	- [ ] Gauge needs a way to specify which topic (0 based index) is used to set gauge value, default 0, first. All data nodes that h ave special display item will need this.
-	- [ ] Default guage setup needs 2 transitions... below zero, red, above zero green
-- [ ] Defaoult battery should have 3 transition for red < <25%, orange < 50% and green >= 50%)
-- [ ] Log window table section is still not 100% of the outer widget
-- [ ] Likewise treeview not 100%...it should be 
-- [ ] ...there shoul dbe a patterm here where the inner mud based control is basically always 100% of the outer node area (allow for title, text or common things)
+	- [ ] Gauge properties dialog compaction... "Min", "Max", "Origin" and "Unit" can all be on one line
+	- [ ] "The "Text" field above is displayed as a static label below the gauge arc. " message...actually text should have a display option either above or below the gauge.
+	- [ ] Gauge needs a way to specify which topic (0 based index) is used to set gauge value, default 0, first. All data nodes that have special display item will need this.
+- [ ] ...there should be a pattern here where the inner mud based control is basically always 100% of the outer node area (allow for title, text or common things)
 
 ## 🟡 Enhancements
 

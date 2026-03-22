@@ -21,5 +21,6 @@ public interface ISignalRService : IAsyncDisposable
     Task UnsubscribeFromTopicAsync(string topic);
     Task<string> GetMqttBrokerInfoAsync();
     Task<int> GetConnectedClientCountAsync();
+    Task<Dictionary<string, string>> GetCurrentValuesForTopicsAsync(List<string> topics);
     Task PublishMessageAsync(string topic, string payload, bool retain = false, int qos = 0);
 }

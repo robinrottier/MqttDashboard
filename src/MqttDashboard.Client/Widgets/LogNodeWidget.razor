@@ -7,12 +7,16 @@
      class=@("pa-1 default-node log-node"+(Node.Group!=null?" grouped":"")+(Node.Selected?" selected":""))
      @ondblclick="OnDoubleClick">
     <div style="display:flex;flex-direction:column;height:100%;overflow:hidden;min-width:0;">
-        @if (!string.IsNullOrEmpty(Node.Title))
-        {
-            <div style="font-size:0.75rem;font-weight:500;padding:2px 4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        <div style="display:flex;align-items:center;gap:2px;padding:2px 4px 0;min-height:18px;flex-shrink:0;">
+            <div style="font-size:0.75rem;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:@(string.IsNullOrEmpty(Node.Title) ? "0" : "1");">
                 @Node.Title
             </div>
-        }
+            <MudIconButton Icon="@(_paused ? Icons.Material.Filled.PlayArrow : Icons.Material.Filled.Pause)"
+                           Size="Size.Small"
+                           Style="margin:0;padding:0;width:16px;height:16px;min-width:unset;opacity:0.45;"
+                           Title="@(_paused ? "Resume" : "Pause updates")"
+                           OnClick="@(() => _paused = !_paused)" />
+        </div>
         <div style="flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;min-width:0;">
             <MudSimpleTable Dense="true" Hover="false" Striped="true" Bordered="false"
                             Style="font-size:0.7rem;font-family:monospace;width:100%;table-layout:fixed;"
@@ -65,6 +69,8 @@
     // never races with an MQTT callback modifying the same list.
     private List<LogEntry> _entries = [];
 
+    private bool _paused = false;
+
     private bool IsWildcard => !string.IsNullOrEmpty(Node.DataTopic) &&
         (Node.DataTopic.Contains('#') || Node.DataTopic.Contains('+'));
 
@@ -78,6 +84,7 @@
 
     protected override void OnData1ReceivedCore(string topic, object? rawValue)
     {
+        if (_paused) return;
         var value = rawValue?.ToString() ?? "";
         var max = Math.Max(1, Node.MaxEntries);
         // Build a new list and atomically replace; never mutate in-place to

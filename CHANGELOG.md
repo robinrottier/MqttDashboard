@@ -9,12 +9,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - **Grid node** — new widget displaying a configurable table of MQTT values. Define column headers and rows; each cell is independently bound to an MQTT topic. Persisted as `GridColumnHeaders` / `GridRows` in the dashboard file.
+- **Log node pause button** — small Pause/Play icon button in the log widget header allows freezing the log to inspect entries without new data pushing them off screen.
+- **Reconnect value replay** — after a SignalR reconnect (browser refresh, network glitch), the server's last-known value for every subscribed topic is pushed into the client cache immediately, so widgets show current data without waiting for the next MQTT message.
 
 ### Fixed
+- **Dirty flag set on node selection** — selecting a node in edit mode incorrectly marked the dashboard as modified. `OnDiagramChanged` now defers the dirty mark via `InvokeAsync`; if `SelectionChanged` fires synchronously afterward (Blazor.Diagrams fires both in sequence for selection events), the deferred mark is cancelled. Real edits (node move, resize, add/delete) still mark dirty correctly.
+- **Default color thresholds for new Battery nodes** — new Battery widgets now start with sensible defaults: red ≤25%, orange ≤50%, green ≥50%. Previously the threshold list was empty and the widget showed no color variation.
+- **Default color thresholds for new Gauge nodes** — new Gauge widgets now start with red for values ≤0 and green for values ≥0, providing an immediate visual indication of sign without manual configuration.
+- **Log and TreeView 100% width** — added scoped CSS (`LogNodeWidget.razor.css`, `TreeViewNodeWidget.razor.css`) with `::deep` selectors to force MudBlazor's internal `mud-table-container` / `mud-table-root` / `mud-treeview` elements to fill the full widget width. Also added `min-width:0` to the TreeView flex container.
 - **Link animation initial seed regression** — corrected the startup animation fix to call `OnData1Updated()` + `TriggerLinkAnimation()` (not `OnData1ReceivedCore`) on the initial cache seed; avoids duplicate log entries being appended every time `OnParametersSet` fires.
 - **`#blazor-error-ui` always visible / pale yellow** — added `display: none` default and prominent dark-red/white styling to `app.css`; the error panel is now properly hidden until Blazor raises an unhandled exception.
 - **Alignment toolbar buttons greyed** — added `Color="Color.Primary"` to all six alignment `MudIconButton` elements so they appear clearly active in multi-select edit mode.
-- **Link animation not starting until first value update** — `SetupDataWatchers()` now calls `OnData1ReceivedCore()` and `TriggerLinkAnimation()` when seeding the initial value from the data cache, so animations are active as soon as the widget loads.
 
 ### Added
 - **OS clipboard integration** — copy/paste of nodes now writes to and reads from the browser's native clipboard (via `navigator.clipboard`), enabling cross-window and cross-tab paste. Falls back gracefully to in-memory clipboard if the Clipboard API is unavailable or permission is denied.

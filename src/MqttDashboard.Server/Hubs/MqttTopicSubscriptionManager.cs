@@ -144,6 +144,9 @@ public class MqttTopicSubscriptionManager
         return interestedClients;
     }
 
+    /// <summary>Returns true if the given topic subscription <paramref name="filter"/> matches a concrete <paramref name="topic"/>.</summary>
+    public bool TopicMatchesFilter(string filter, string topic) => TopicMatches(filter, topic);
+
     private bool TopicMatches(string filter, string topic)
     {
         // Handle exact match

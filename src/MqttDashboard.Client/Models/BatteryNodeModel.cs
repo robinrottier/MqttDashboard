@@ -7,13 +7,19 @@ public class BatteryNodeModel : MudNodeModel
     public BatteryNodeModel(Point? position = null) : base(position)
     {
         NodeType = "Battery";
+        ColorThresholds =
+        [
+            new GaugeColorThreshold { Value = 25,  Direction = "<=", Color = "var(--mud-palette-error)" },
+            new GaugeColorThreshold { Value = 50,  Direction = "<=", Color = "var(--mud-palette-warning)" },
+            new GaugeColorThreshold { Value = 100, Direction = ">=", Color = "var(--mud-palette-success)" },
+        ];
     }
 
     public double MinValue { get; set; } = 0;
     public double MaxValue { get; set; } = 100;
 
     /// <summary>Threshold-based color stops. Value is compared against percentage (0-100). Last match wins.</summary>
-    public List<GaugeColorThreshold> ColorThresholds { get; set; } = new();
+    public List<GaugeColorThreshold> ColorThresholds { get; set; }
 
     /// <summary>CSS colour when charge is low (below 20%). Default: error red.</summary>
     [System.Obsolete("Use ColorThresholds instead.")]

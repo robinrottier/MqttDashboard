@@ -37,6 +37,9 @@ public partial class Display : IDisposable
 
     // Suppress dirty tracking during mode switches and diagram loading
     private bool _suppressDirty = false;
+    // Deferred dirty flag: set by OnDiagramChanged, cleared by OnSelectionChanged.
+    // Ensures selection-only changes (which fire both Changed and SelectionChanged) don't mark the diagram dirty.
+    private bool _pendingDirtyMark = false;
 
     // Inline tab rename state
     private int _renamingPageIndex = -1;
@@ -418,6 +421,7 @@ public partial class Display : IDisposable
 
     private void OnSelectionChanged(object model)
     {
+        _pendingDirtyMark = false; // Selection alone doesn't dirty the diagram
         UpdateSelectionState();
         InvokeAsync(StateHasChanged);
     }
@@ -425,8 +429,19 @@ public partial class Display : IDisposable
     private void OnDiagramChanged()
     {
         if (_suppressDirty) return;
-        AppState.MarkEdited();
-        InvokeAsync(StateHasChanged);
+        // Defer the dirty mark: if SelectionChanged fires synchronously right after
+        // (Blazor.Diagrams fires Changed then SelectionChanged for selection events),
+        // OnSelectionChanged will clear the flag before the queued work runs.
+        _pendingDirtyMark = true;
+        _ = InvokeAsync(() =>
+        {
+            if (_pendingDirtyMark)
+            {
+                _pendingDirtyMark = false;
+                AppState.MarkEdited();
+                StateHasChanged();
+            }
+        });
     }
 
     private void OnLinkAdded(Blazor.Diagrams.Core.Models.Base.BaseLinkModel link)

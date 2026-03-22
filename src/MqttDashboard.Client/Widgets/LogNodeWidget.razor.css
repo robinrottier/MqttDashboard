@@ -1,0 +1,14 @@
+/* Force the MudSimpleTable and its internal elements to fill the widget width */
+::deep .mud-simple-table {
+    width: 100%;
+}
+
+::deep .mud-table-container {
+    width: 100%;
+    overflow-x: hidden;
+}
+
+::deep .mud-table-root {
+    width: 100%;
+    table-layout: fixed;
+}
