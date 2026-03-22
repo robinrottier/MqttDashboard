@@ -8,7 +8,7 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 ---
 
 ## 2026-03-22 — Gauge enhancements, log topic column, color transition topic index
-**Commit:** TBD · 2026-03-22 UTC  
+**Commit:** `5378e80` · 2026-03-22 UTC  
 **Branch:** FEAT-C
 
 ### What was done
