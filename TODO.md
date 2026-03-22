@@ -5,7 +5,6 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ---
 
 ## BUGS
-- [ ] ON startup, LInes only seem to start animating on a value update BUT value is already there as its shown in text?
 - [ ] And ive seen lines being animated on first render (ssr?) and then cleared a few seconds later
 - [ ] Node properties dialog
 	- [ ] Can this dialog be moveable and have apply button to changes dynamically without closing
@@ -44,25 +43,11 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] IMage:
 	- [ ] also needs option to upload a bitmap and stored locally as content  or should it be byte values in dashboard file?)
 	- [ ] option to go "behind" or "ontop" other nodes.. maybe z-order roperty for all nodes? HOw does this fit in with blazor.diagrams, maybe it has it already
-- [ ] I set grid to 10, saved doc, reloaded it and went into edit mode ...grid was 20?
-- [ ] Current grid seelction should be indicated by tick in menu...looked like0 was written to saved file
-- [ ] Edit mode, multi seelction. the alignment toolbar is visiable but all greyed? this was on dev.
-- [ ] Exceptions in code are not very visible...panel at bottom is pake yellow and not visible. Need better logging of that case too
-- [ ] Try handle this error:
-	[11:32:24 WRN] Microsoft.AspNetCore.Components.Server.Circuits.RemoteRenderer: Unhandled exception rendering component: Collection was modified; enumeration operation may not execute.
-	System.InvalidOperationException: Collection was modified; enumeration operation may not execute.
-	   at System.Collections.Generic.List`1.Enumerator.MoveNext()
-	   at MqttDashboard.Widgets.LogNodeWidget.<BuildRenderTree>b__0_0(RenderTreeBuilder __builder2) in C:\Users\robin\source\repos\MqttDashboard\src\MqttDashboard.Client\Widgets\LogNodeWidget.razor:line 37
-	   at Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder.AddContent(Int32 sequence, RenderFragment fragment)
-	   at MudBlazor.MudSimpleTable.BuildRenderTree(RenderTreeBuilder __builder)
-	   at Microsoft.AspNetCore.Components.Rendering.ComponentState.RenderIntoBatch(RenderBatchBuilder batchBuilder, RenderFragment renderFragment, Exception& renderFragmentException)
-	[11:32:24 ERR] Microsoft.AspNetCore.Components.Server.Circuits.CircuitHost: Unhandled exception in circuit 'Wx6kAmLCLHnzEH6ZU5l6kJV1DASTHZST6ix2V-m0PQs'.
-	System.InvalidOperationException: Collection was modified; enumeration operation may not execute.
-	   at System.Collections.Generic.List`1.Enumerator.MoveNext()
-	   at MqttDashboard.Widgets.LogNodeWidget.<BuildRenderTree>b__0_0(RenderTreeBuilder __builder2) in C:\Users\robin\source\repos\MqttDashboard\src\MqttDashboard.Client\Widgets\LogNodeWidget.razor:line 37
-	   at Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder.AddContent(Int32 sequence, RenderFragment fragment)
-	   at MudBlazor.MudSimpleTable.BuildRenderTree(RenderTreeBuilder __builder)
-	   at Microsoft.AspNetCore.Components.Rendering.ComponentState.RenderIntoBatch(RenderBatchBuilder batchBuilder, RenderFragment renderFragment, Exception& renderFragmentException)
+- [ ] I set grid to 10, saved doc, reloaded it and went into edit mode ...grid was 20? ~~fixed~~
+- [ ] Current grid seelction should be indicated by tick in menu...looked like0 was written to saved file ~~fixed~~
+- [ ] Edit mode, multi seelction. the alignment toolbar is visiable but all greyed? this was on dev. ~~fixed~~
+- [ ] Exceptions in code are not very visible...panel at bottom is pake yellow and not visible. Need better logging of that case too ~~fixed~~
+- [ ] LogNodeWidget "Collection was modified" race condition ~~fixed~~
 
 
 ## 🟡 Features
