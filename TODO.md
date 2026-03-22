@@ -43,11 +43,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] IMage:
 	- [ ] also needs option to upload a bitmap and stored locally as content  or should it be byte values in dashboard file?)
 	- [ ] option to go "behind" or "ontop" other nodes.. maybe z-order roperty for all nodes? HOw does this fit in with blazor.diagrams, maybe it has it already
-- [ ] I set grid to 10, saved doc, reloaded it and went into edit mode ...grid was 20? ~~fixed~~
-- [ ] Current grid seelction should be indicated by tick in menu...looked like0 was written to saved file ~~fixed~~
-- [ ] Edit mode, multi seelction. the alignment toolbar is visiable but all greyed? this was on dev. ~~fixed~~
-- [ ] Exceptions in code are not very visible...panel at bottom is pake yellow and not visible. Need better logging of that case too ~~fixed~~
-- [ ] LogNodeWidget "Collection was modified" race condition ~~fixed~~
+
 
 
 ## 🟡 Features
