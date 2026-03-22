@@ -5,9 +5,22 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ---
 
 ## BUGS
-- [ ] And ive seen lines being animated on first render (ssr?) and then cleared a few seconds later
-- [ ] Node properties dialog
-	- [ ] Can this dialog be moveable and have apply button to changes dynamically without closing
+- [ ] And ive seen lines being animated on first render (ssr?) and then cleared a few seconds later. Also still with issues about only draewing lines on dta updates rather than on first value
+- [ ] If I refresh and "rejoin the server" then all the data must stillbe there so values shoul dbe avilabale immediately
+- [ ] Confirm data on server side has a "lazy cache" so that if client side request is dropped then server doesnt drop immediately. SOme delay (configurable) coul dbe added so data stays present with no references so 30 secs say
+- [ ] Enter edit mode, select a node and immediately edit is dirty, icon is red. No real changes. And undo does nothing...although ihad 2 undo's before greying the menu (so there was something to undo) but when all undone the flag was still red.
+- [ ] Gauge node
+	- [ ] Guage properties dialog compaction... "Min", "Max", "Origin" and "Unit" can all be on one line
+	- [ ] "The "Text" field above is displayed as a static label below the gauge arc. " message...actually text shoul dhave a display option either above or below the guage.
+	- [ ] Gauge needs a way to specify which topic (0 based index) is used to set gauge value, default 0, first. All data nodes that h ave special display item will need this.
+	- [ ] Default guage setup needs 2 transitions... below zero, red, above zero green
+- [ ] Defaoult battery should have 3 transition for red < <25%, orange < 50% and green >= 50%)
+- [ ] Log window table section is still not 100% of the outer widget
+- [ ] Likewise treeview not 100%...it should be 
+- [ ] ...there shoul dbe a patterm here where the inner mud based control is basically always 100% of the outer node area (allow for title, text or common things)
+
+## 🟡 Enhancements
+
 - [ ] Property transition
 	- [ ] Gauge and battery, Color transition has property to select index of which topic to transition upon and which value to display
 	- [ ] The color boxes in the transition/colour editor should have a chooser popup (via a button) to help with selecting the various types and well-known values
@@ -22,28 +35,15 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 	- [ ] Use MudTabs and related controls for displaying. MudTabs has a different model...every page is rendered inside tab component BUT maybe there's a way to use index of selected tab to render it outside MudTabs component?
 	- [ ] Position option for tabs: top/left/right/bottom in dashboard properties
 	- [ ] Drag to reorder pages when in edit mode. MudTabs would support this but need setting noticed and saved.
-- [ ] mqtt publishing should have other parameters (e.g. message expiry)
-- [ ] Widgets:
-	- [ ] Log viewer columns: choices for date (and format), time (and format), topic path, topic name, value
-- [ ] Deployment version / update checking
-	- [ ] Latest version checks checks for tags ... but the actual docker image may not be available for some time later. Can it check actual images in ghcr?
-	- [ ] We want to be able to select beta/non-latest pre-releases as an option i.e follow release only stream or latest beta stream
-	- [ ] Can the image update itself somehow from within the docker container? even if it has to do a restart or exit and allow docker to restart it with a new version pulled.
-	- [ ] How would we revert to a previous version if an update proved bad?
-- [ ] User application settings should be in data directory so persist over deployments.:
-	- [ ] Startup behaviour
-	- [ ] Admin password hash
-	- [ ] ...this is probably in the applicationstate file
-- [ ] Gauge node
-	- [ ] Guage properties dialog compaction... "Min", "Max", "Origin" and "Unit" can all be on one line
-	- [ ] "The "Text" field above is displayed as a static label below the gauge arc. " message...actually text shoul dhave a display option either above or below the guage.
-	- [ ] Gauge needs a way to specify which topic (0 based index) is used to set gauge value, default 0, first. All data nodes that h ave special display item will need this.
-	- [ ] Default guage setup needs 2 transitions... below zero, red, above zero green
-- [ ] The tooltip over dashboard title when editing, should include filename as well as display name, just so its clear whats happening.
+- [ ] Node properties dialog
+	- [ ] Can this dialog be moveable and have apply button to changes dynamically without closing
 - [ ] IMage:
 	- [ ] also needs option to upload a bitmap and stored locally as content  or should it be byte values in dashboard file?)
 	- [ ] option to go "behind" or "ontop" other nodes.. maybe z-order roperty for all nodes? HOw does this fit in with blazor.diagrams, maybe it has it already
-
+- [ ] Log viewer columns: choices for date (and format), time (and format), topic path, topic name, topic full path&name, value
+- [ ] Log view needs a "pause" button to stop updates.
+- [ ] mqtt publishing should have other parameters (e.g. message expiry)
+- [ ] Confirm- mqtt publishing is reusable compoennts (especially configuration of it in node properties)
 
 
 ## 🟡 Features
@@ -107,6 +107,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ### FEAT-J: User management & auth
 - [ ] Multi-user with roles: read-only / read-write / admin
 - [ ] Builds on existing `ServerAuthService` / admin password hash mechanism
+- [ ] User registration mechanism (username, email, password) with email verification.
 
 ### FEAT-K: Dashboard versioning & Git integration
 - [ ] Snapshot history for dashboards (previous versions, compare/diff)
@@ -116,6 +117,20 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Single Docker image supporting both server-only and WASM modes (different ports, shared data dir)
 - [ ] Read-only runtime mode — view-only, no login/edit UI exposed
 - [ ] Admin interface: runtime monitoring, logs, connected clients, dashboard file management
+
+### FEAT-M: Settings persistence
+- [ ] User set application settings should be in data directory so persist over deployments.:
+	- [ ] Startup behaviour
+	- [ ] Admin password hash
+	- [ ] ...this is probably in the applicationstate file
+
+### FEAT-N: Self-updating deployment
+- [ ] Deployment version / update checking
+	- [ ] Latest version checks checks for tags ... but the actual docker image may not be available for some time later. Can it check actual images in ghcr?
+	- [ ] We want to be able to select beta/non-latest pre-releases as an option i.e follow release only stream or latest beta stream
+	- [ ] Can the image update itself somehow from within the docker container? even if it has to do a restart or exit and allow docker to restart it with a new version pulled.
+	- [ ] How would we revert to a previous version if an update proved bad?
+
 
 ---
 
