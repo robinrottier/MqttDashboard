@@ -6,6 +6,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ## BUGS
 - [ ] ON startup, LInes only seem to start animating on a value update BUT value is already there as its shown in text?
+- [ ] And ive seen lines being animated on first render (ssr?) and then cleared a few seconds later
 - [ ] Node properties dialog
 	- [ ] Can this dialog be moveable and have apply button to changes dynamically without closing
 - [ ] Property transition
@@ -79,6 +80,10 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ### FEAT-C: Additional node types _(Gauge, Switch, Battery, Log, TreeView, Image done — see CHANGELOG)_
 - [ ] **Text node** - different node shapes (circle, diamond, etc.)
 - [ ] **Grid** — table with rows/columns mapped to MQTT values
+	- [ ] Data topic like path/blah/+/+ ...row is from first "+" and column from second +
+	- [ ] So could also have "path/blah/+/value/+"
+	- [ ] and "path/blah/+/+/value" would mean row from first match againt + , column name in 2nd + match BUT actual value taken form value field there
+	- [ ] This could be a whole load of test cases
 - [ ] **Chart** — in-memory time-series sparkline graph
 - [ ] **Markdown / HTML** — formatted static content, optionally with data substitution
 - [ ] **IFrame** — embed another web page
