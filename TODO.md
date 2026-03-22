@@ -5,9 +5,9 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ---
 
 ## BUGS
+- [ ] ON startup, LInes only seem to start animating on a value update BUT value is already there as its shown in text?
 - [ ] Node properties dialog
 	- [ ] Can this dialog be moveable and have apply button to changes dynamically without closing
-	- [x] Edit node dialog...click outside it and it closes...should not be the case, it should be modal — **fixed: BackdropClick=false**
 - [ ] Property transition
 	- [ ] Gauge and battery, Color transition has property to select index of which topic to transition upon and which value to display
 	- [ ] The color boxes in the transition/colour editor should have a chooser popup (via a button) to help with selecting the various types and well-known values
@@ -35,9 +35,33 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 	- [ ] Admin password hash
 	- [ ] ...this is probably in the applicationstate file
 - [ ] Gauge node
-	- [ ] We dont need unit. Surely its just the text field format and if user wants a Unit they put it there e.g {0:0}W
-	- [ ] Gauge needs a way to specify which topic (0 based index) is used to set gauge value, default 0, first.
+	- [ ] Guage properties dialog compaction... "Min", "Max", "Origin" and "Unit" can all be on one line
+	- [ ] "The "Text" field above is displayed as a static label below the gauge arc. " message...actually text shoul dhave a display option either above or below the guage.
+	- [ ] Gauge needs a way to specify which topic (0 based index) is used to set gauge value, default 0, first. All data nodes that h ave special display item will need this.
+	- [ ] Default guage setup needs 2 transitions... below zero, red, above zero green
 - [ ] The tooltip over dashboard title when editing, should include filename as well as display name, just so its clear whats happening.
+- [ ] IMage:
+	- [ ] also needs option to upload a bitmap and stored locally as content  or should it be byte values in dashboard file?)
+	- [ ] option to go "behind" or "ontop" other nodes.. maybe z-order roperty for all nodes? HOw does this fit in with blazor.diagrams, maybe it has it already
+- [ ] I set grid to 10, saved doc, reloaded it and went into edit mode ...grid was 20?
+- [ ] Current grid seelction should be indicated by tick in menu...looked like0 was written to saved file
+- [ ] Edit mode, multi seelction. the alignment toolbar is visiable but all greyed? this was on dev.
+- [ ] Exceptions in code are not very visible...panel at bottom is pake yellow and not visible. Need better logging of that case too
+- [ ] Try handle this error:
+	[11:32:24 WRN] Microsoft.AspNetCore.Components.Server.Circuits.RemoteRenderer: Unhandled exception rendering component: Collection was modified; enumeration operation may not execute.
+	System.InvalidOperationException: Collection was modified; enumeration operation may not execute.
+	   at System.Collections.Generic.List`1.Enumerator.MoveNext()
+	   at MqttDashboard.Widgets.LogNodeWidget.<BuildRenderTree>b__0_0(RenderTreeBuilder __builder2) in C:\Users\robin\source\repos\MqttDashboard\src\MqttDashboard.Client\Widgets\LogNodeWidget.razor:line 37
+	   at Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder.AddContent(Int32 sequence, RenderFragment fragment)
+	   at MudBlazor.MudSimpleTable.BuildRenderTree(RenderTreeBuilder __builder)
+	   at Microsoft.AspNetCore.Components.Rendering.ComponentState.RenderIntoBatch(RenderBatchBuilder batchBuilder, RenderFragment renderFragment, Exception& renderFragmentException)
+	[11:32:24 ERR] Microsoft.AspNetCore.Components.Server.Circuits.CircuitHost: Unhandled exception in circuit 'Wx6kAmLCLHnzEH6ZU5l6kJV1DASTHZST6ix2V-m0PQs'.
+	System.InvalidOperationException: Collection was modified; enumeration operation may not execute.
+	   at System.Collections.Generic.List`1.Enumerator.MoveNext()
+	   at MqttDashboard.Widgets.LogNodeWidget.<BuildRenderTree>b__0_0(RenderTreeBuilder __builder2) in C:\Users\robin\source\repos\MqttDashboard\src\MqttDashboard.Client\Widgets\LogNodeWidget.razor:line 37
+	   at Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder.AddContent(Int32 sequence, RenderFragment fragment)
+	   at MudBlazor.MudSimpleTable.BuildRenderTree(RenderTreeBuilder __builder)
+	   at Microsoft.AspNetCore.Components.Rendering.ComponentState.RenderIntoBatch(RenderBatchBuilder batchBuilder, RenderFragment renderFragment, Exception& renderFragmentException)
 
 
 ## 🟡 Features

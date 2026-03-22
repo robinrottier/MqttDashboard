@@ -151,7 +151,7 @@ public partial class Display : IDisposable
             }
             else
             {
-                _pageStates = [new DiagramState { GridSize = AppState.GridSize > 0 ? AppState.GridSize : 20 }];
+                _pageStates = [new DiagramState { GridSize = AppState.GridSize > 0 ? AppState.GridSize : 10 }];
                 _diagrams = [null];
                 _activePageIndex = 0;
                 _diagrams[0] = AppState.GetOrCreateDiagram();
@@ -307,8 +307,14 @@ public partial class Display : IDisposable
             if (enterEditMode)
             {
                 if (_diagram.Options.GridSize == null)
-                    _diagram.Options.GridSize = AppState.GridSize > 0 ? AppState.GridSize : 10;
-                AppState.SetGridSize(_diagram.Options.GridSize.HasValue ? (int)_diagram.Options.GridSize.Value : 10);
+                {
+                    // Diagram was created read-only (GridSize not set in options).
+                    // Restore from the saved page state, not the ApplicationState default.
+                    var savedGs = _pageStates[_activePageIndex].GridSize;
+                    _diagram.Options.GridSize = savedGs == 0 ? null : Math.Abs(savedGs);
+                    _diagram.Options.GridSnapToCenter = savedGs < 0;
+                }
+                AppState.SetGridSize(_diagram.Options.GridSize.HasValue ? (int)_diagram.Options.GridSize.Value : 0);
                 _diagram.Options.AllowMultiSelection = true;
                 _diagram.SelectionChanged += OnSelectionChanged;
                 _diagram.Changed += OnDiagramChanged;
@@ -460,6 +466,7 @@ public partial class Display : IDisposable
             "Log"      => new LogNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))      { Title = $"Log {_nodeCounter++}" },
             "TreeView" => new TreeViewNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400))) { Title = $"Tree {_nodeCounter++}" },
             "Image"    => new ImageNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))    { Title = $"Image {_nodeCounter++}" },
+            "Grid"     => new GridNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))     { Title = $"Grid {_nodeCounter++}" },
             _          => new MudNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))      { Title = $"Node {_nodeCounter++}" },
         };
 
@@ -505,7 +512,7 @@ public partial class Display : IDisposable
             AppState.MarkSaved();
             AppState.ClearUndoRedo();
 
-            _pageStates = [new DiagramState { GridSize = AppState.GridSize > 0 ? AppState.GridSize : 20 }];
+            _pageStates = [new DiagramState { GridSize = AppState.GridSize > 0 ? AppState.GridSize : 10 }];
             _diagrams = [null];
             _activePageIndex = 0;
             AppState.SetPageNames(["Page 1"], 0);
@@ -618,7 +625,7 @@ public partial class Display : IDisposable
     private async Task AddPageAsync()
     {
         var newPageName = $"Page {_pageStates.Count + 1}";
-        var newPageState = new DiagramState { GridSize = AppState.GridSize > 0 ? AppState.GridSize : 20 };
+        var newPageState = new DiagramState { GridSize = AppState.GridSize > 0 ? AppState.GridSize : 10 };
         _pageStates.Add(newPageState);
         _diagrams.Add(null);
         var newNames = new List<string>(AppState.PageNames) { newPageName };

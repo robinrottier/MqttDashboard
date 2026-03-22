@@ -47,7 +47,7 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
             var v = AppState.DataCache.GetValue(capturedTopic);
             if (v != null)
             {
-                if (idx == 0) { Node.DataValue = v; Node.DataLastUpdated = DateTime.Now; OnData1Updated(); }
+                if (idx == 0) { Node.DataValue = v; Node.DataLastUpdated = DateTime.Now; OnData1ReceivedCore(capturedTopic, v); TriggerLinkAnimation(); }
                 else if (idx == 1) { Node.DataValue2 = v; Node.DataLastUpdated2 = DateTime.Now; OnData2Updated(); }
             }
 

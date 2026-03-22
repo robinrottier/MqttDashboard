@@ -8,6 +8,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Grid node** — new widget displaying a configurable table of MQTT values. Define column headers and rows; each cell is independently bound to an MQTT topic. Persisted as `GridColumnHeaders` / `GridRows` in the dashboard file.
+
+### Fixed
+- **LogNodeWidget "Collection was modified" exception** — `_entries` is now replaced atomically (new list assigned each update) instead of mutated in-place, so the Blazor render thread can never encounter a half-modified list.
+- **Link animation not starting until first value update** — `SetupDataWatchers()` now calls `OnData1ReceivedCore()` and `TriggerLinkAnimation()` when seeding the initial value from the data cache, so animations are active as soon as the widget loads.
+- **Grid size reverts to 20 on entering edit mode** — when switching into edit mode, the saved page's `GridSize` is now used to restore diagram options instead of the stale `ApplicationState.GridSize` default. Also aligned the `ApplicationState.GridSize` default from 20 → 10 to match `DiagramState`/`PageState` defaults.
+- **Grid menu shows active selection** — the Options → Grid submenu now shows a tick (✓) next to the currently active grid size, matching the Theme submenu behaviour.
+
+### Added
 - **OS clipboard integration** — copy/paste of nodes now writes to and reads from the browser's native clipboard (via `navigator.clipboard`), enabling cross-window and cross-tab paste. Falls back gracefully to in-memory clipboard if the Clipboard API is unavailable or permission is denied.
 - **Startup dashboard setting** — admin-configurable system-wide startup behaviour: *Last Used* (per-browser localStorage restore, previous behaviour), *Specific File* (always open a named dashboard for every new session), or *None* (blank canvas). Configure via **Startup Settings…** in the admin menu. Setting is stored in `appsettings.user.json`.
 - `GET /api/settings/startup` and `POST /api/settings/startup` API endpoints.

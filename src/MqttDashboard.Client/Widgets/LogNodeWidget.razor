@@ -34,7 +34,7 @@
                     }
                     else
                     {
-                        @foreach (var entry in _entries)
+                        @foreach (var entry in _entries) // _entries is replaced atomically; never mutated in-place
                         {
                             <tr>
                                 @if (Node.ShowDate || Node.ShowTime) { <td style="opacity:0.6;white-space:nowrap;">@FormatTimestamp(entry.At)</td> }
@@ -61,7 +61,9 @@
 
 @code {
     private record LogEntry(DateTime At, string Topic, string Value);
-    private readonly List<LogEntry> _entries = [];
+    // Replaced atomically (never mutated in-place) so the render loop
+    // never races with an MQTT callback modifying the same list.
+    private List<LogEntry> _entries = [];
 
     private bool IsWildcard => !string.IsNullOrEmpty(Node.DataTopic) &&
         (Node.DataTopic.Contains('#') || Node.DataTopic.Contains('+'));
@@ -77,9 +79,12 @@
     protected override void OnData1ReceivedCore(string topic, object? rawValue)
     {
         var value = rawValue?.ToString() ?? "";
-        _entries.Insert(0, new LogEntry(DateTime.Now, topic, value));
-        while (_entries.Count > Math.Max(1, Node.MaxEntries))
-            _entries.RemoveAt(_entries.Count - 1);
+        var max = Math.Max(1, Node.MaxEntries);
+        // Build a new list and atomically replace; never mutate in-place to
+        // avoid "Collection was modified" in the render thread.
+        var next = new List<LogEntry>(max) { new(DateTime.Now, topic, value) };
+        next.AddRange(_entries.Take(max - 1));
+        _entries = next;
     }
 
     private string FormatTimestamp(DateTime at)

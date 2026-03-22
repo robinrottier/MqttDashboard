@@ -154,6 +154,10 @@ public class NodeState
     public string? StaticImageUrl { get; set; }
     public string? ObjectFit { get; set; }
 
+    // Grid-specific
+    public List<string>? GridColumnHeaders { get; set; }
+    public List<GridRowState>? GridRows { get; set; }
+
     public List<PortState> Ports { get; set; } = new();
 }
 
@@ -168,6 +172,12 @@ public class GaugeColorThresholdState
     public double Value { get; set; }
     public string Color { get; set; } = "var(--mud-palette-primary)";
     public string Direction { get; set; } = ">=";
+}
+
+public class GridRowState
+{
+    public string Label { get; set; } = string.Empty;
+    public List<string> Topics { get; set; } = new();
 }
 
 public class LinkState

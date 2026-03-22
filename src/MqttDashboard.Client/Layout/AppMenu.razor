@@ -120,10 +120,30 @@
                 </MudMenuItem>
             </MudMenu>
             <MudMenu Label="Grid" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
-                <MudMenuItem Label="None"           OnClick="() => SetGrid(0)" />
-                <MudMenuItem Label="Small (5 px)"   OnClick="() => SetGrid(5)" />
-                <MudMenuItem Label="Medium (10 px)" OnClick="() => SetGrid(10)" />
-                <MudMenuItem Label="Large (20 px)"  OnClick="() => SetGrid(20)" />
+                <MudMenuItem OnClick="() => SetGrid(0)">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.GridSize == 0 ? "" : "visibility:hidden")" />
+                        <MudText>None</MudText>
+                    </MudStack>
+                </MudMenuItem>
+                <MudMenuItem OnClick="() => SetGrid(5)">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.GridSize == 5 ? "" : "visibility:hidden")" />
+                        <MudText>Small (5 px)</MudText>
+                    </MudStack>
+                </MudMenuItem>
+                <MudMenuItem OnClick="() => SetGrid(10)">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.GridSize == 10 ? "" : "visibility:hidden")" />
+                        <MudText>Medium (10 px)</MudText>
+                    </MudStack>
+                </MudMenuItem>
+                <MudMenuItem OnClick="() => SetGrid(20)">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.GridSize == 20 ? "" : "visibility:hidden")" />
+                        <MudText>Large (20 px)</MudText>
+                    </MudStack>
+                </MudMenuItem>
             </MudMenu>
         }
         @if (AppState.AuthEnabled && AppState.IsAdmin)

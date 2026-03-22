@@ -87,7 +87,7 @@ public class ApplicationState
         !string.IsNullOrEmpty(DiagramName) ? DiagramName :
         "Untitled";
 
-    public int GridSize { get; private set; } = 20;
+    public int GridSize { get; private set; } = 10;
     public string CanvasBackgroundColor { get; private set; } = string.Empty;
 
     // Edit mode state (set by Edit page)
@@ -331,6 +331,7 @@ public class ApplicationState
         diagram.RegisterComponent<LogNodeModel, LogNodeWidget>();
         diagram.RegisterComponent<TreeViewNodeModel, TreeViewNodeWidget>();
         diagram.RegisterComponent<ImageNodeModel, ImageNodeWidget>();
+        diagram.RegisterComponent<GridNodeModel, GridNodeWidget>();
 
         if (state != null)
         {
@@ -390,6 +391,17 @@ public class ApplicationState
                     {
                         StaticImageUrl = nodeState.StaticImageUrl ?? string.Empty,
                         ObjectFit = nodeState.ObjectFit ?? "contain",
+                    },
+                    "Grid" => new GridNodeModel(position: new Point(nodeState.X, nodeState.Y))
+                    {
+                        ColumnHeaders = nodeState.GridColumnHeaders?.Count > 0
+                            ? nodeState.GridColumnHeaders
+                            : ["Value"],
+                        Rows = nodeState.GridRows?.Select(rs => new GridRowDefinition
+                        {
+                            Label = rs.Label,
+                            Topics = new List<string>(rs.Topics),
+                        }).ToList() ?? [new GridRowDefinition { Label = "Row 1", Topics = [""] }],
                     },
                     _ => new MudNodeModel(position: new Point(nodeState.X, nodeState.Y)),
                 };
@@ -593,6 +605,15 @@ public class ApplicationState
             {
                 nodeState.StaticImageUrl = img.StaticImageUrl;
                 nodeState.ObjectFit = img.ObjectFit;
+            }
+            else if (node is GridNodeModel grid)
+            {
+                nodeState.GridColumnHeaders = new List<string>(grid.ColumnHeaders);
+                nodeState.GridRows = grid.Rows.Select(r => new GridRowState
+                {
+                    Label = r.Label,
+                    Topics = new List<string>(r.Topics),
+                }).ToList();
             }
 
             // Save ports
