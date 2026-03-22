@@ -49,7 +49,7 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ## 2026-03-22 — DataTopic refactor, Battery topic index parity
 
-**Commit:** _(to be filled after commit)_
+**Commit:** `ac7b2f9`
 **Timestamp:** 2026-03-22 ~18:50 UTC
 **Branch:** FEAT-C
 
