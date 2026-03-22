@@ -9,7 +9,7 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ## 2026-03-22 — Undo state fixes, log columns, color transition per-node, UndoAll
 
-**Commit:** _(to be filled after commit)_
+**Commit:** `dbb63cb`
 **Timestamp:** 2026-03-22 ~18:15 UTC
 **Branch:** FEAT-C
 
