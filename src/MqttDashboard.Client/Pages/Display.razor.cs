@@ -917,8 +917,8 @@ public partial class Display : IDisposable
             node.BackgroundColor = ns.BackgroundColor;
             node.IconColor = ns.IconColor;
             node.Metadata = ns.Metadata ?? new Dictionary<string, string>();
-            node.DataTopic = ns.DataTopic;
-            node.DataTopic2 = ns.DataTopic2;
+            if (!string.IsNullOrEmpty(ns.DataTopic)) node.DataTopics.Add(ns.DataTopic);
+            if (!string.IsNullOrEmpty(ns.DataTopic2) && ns.DataTopic2 != ns.DataTopic) node.DataTopics.Add(ns.DataTopic2);
             node.FontSize = ns.FontSize;
             node.LinkAnimation = ns.LinkAnimation;
             node.TitlePosition = ns.TitlePosition ?? "Above";

@@ -47,7 +47,45 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ---
 
-## 2026-03-22 — Gauge enhancements, log topic column, color transition topic index
+## 2026-03-22 — DataTopic refactor, Battery topic index parity
+
+**Commit:** _(to be filled after commit)_
+**Timestamp:** 2026-03-22 ~18:50 UTC
+**Branch:** FEAT-C
+
+### Items completed
+
+#### Refactor: DataTopic/DataTopic2 → computed from DataTopics list
+- `Models/MudNodeModel.cs` — removed settable `DataTopic`/`DataTopic2` properties; replaced with computed read-only accessors (`=> DataTopics[0]`/`[1]`). Added `DataValues` (object?[]) and `DataUpdatedTimes` (DateTime?[]) arrays; added computed compat `DataValue`/`DataValue2`/`DataLastUpdated`/`DataLastUpdated2` getters. `DataTopics` list is now the single source of truth.
+- `Widgets/BaseNodeWithDataWidget.cs` — `SetupDataWatchers()` now sizes `DataValues`/`DataUpdatedTimes` arrays to match topic count and writes to `Node.DataValues[idx]`/`Node.DataUpdatedTimes[idx]`. Removed old scalar writes. The fallback to `DataTopic`/`DataTopic2` is gone (DataTopics list must be populated by deserialization).
+- `Services/ApplicationState.cs`:
+  - Removed `node.DataTopic = nodeState.DataTopic` and `node.DataTopic2 = nodeState.DataTopic2` (computed, can't be set)
+  - `CreateQuickAddNode`: changed `DataTopic = topicPath` → `DataTopics = new List<string> { topicPath }` in object initializer
+  - Serialization: simplified `DataTopic`/`DataTopic2` write to use computed props (cleaner, same output)
+- `Pages/Display.razor.cs` — paste/copy node path also used `node.DataTopic = ...`; fixed to use `node.DataTopics.Add(...)`.
+
+#### Fix: Battery gets same DataTopicIndex + ColorTopicIndex as Gauge
+- `Models/BatteryNodeModel.cs` — added `DataTopicIndex` (int, default 0) and `ColorTopicIndex` (int, default 0) properties
+- `Widgets/BatteryNodeWidget.razor`:
+  - Added `ActiveValue` computed property (mirrors Gauge): `Node.DataTopicIndex == 1 ? Node.DataValue2 : Node.DataValue`
+  - Added `ColorValue` computed property: `Node.ColorTopicIndex == 1 ? Node.DataValue2 : Node.DataValue`
+  - `UpdatePercent()` now uses `ActiveValue` instead of `Node.DataValue`
+  - Added `protected override void OnData2Updated() => UpdatePercent()` (so DataTopicIndex=1 also updates fill)
+  - `GetFillColor()` now uses `ColorValue` for threshold comparisons instead of `_percent` when a ColorValue is available
+  - `FormatPercent()` uses `ActiveValue`
+- `Models/DiagramState.cs` — added generic `DataTopicIndex`/`ColorTopicIndex` fields; kept `GaugeDataTopicIndex`/`GaugeColorTopicIndex` as backward-compat read-only fallback fields
+- `Services/ApplicationState.cs` — Gauge deserialise: fallback chain `DataTopicIndex ?? GaugeDataTopicIndex ?? 0`; Gauge serialise: writes to `DataTopicIndex`/`ColorTopicIndex` (not Gauge-specific names); Battery deserialise+serialise: reads/writes `DataTopicIndex`/`ColorTopicIndex`
+- `Components/NodePropertyEditor.razor` — Battery section: added 2-column row with "Value Topic (0-based)" and "Color Topic (0-based)" spinners, identical layout to Gauge
+
+### Notes
+- `DataValue`/`DataValue2`/`DataLastUpdated`/`DataLastUpdated2` are still usable everywhere as computed shims; no widget code required changing
+- Old dashboard files with scalar `DataTopic`/`DataTopic2` fields (and no `DataTopics` array) are migrated transparently on load
+- `GaugeDataTopicIndex`/`GaugeColorTopicIndex` in JSON are still read (fallback); new saves write generic `DataTopicIndex`/`ColorTopicIndex` — so old Gauge configs load correctly after upgrade
+- All 11 tests pass; 0 build errors
+
+---
+
+
 **Commit:** `5378e80` · 2026-03-22 UTC  
 **Branch:** FEAT-C
 

@@ -227,6 +227,14 @@
                     </MudItem>
                 </MudGrid>
                 <MudCheckBox T="bool" @bind-Value="batteryNode.ShowPercent" Label="Show Percentage" Dense="true" Class="mt-1" />
+                <MudGrid Spacing="2" Class="mt-1">
+                    <MudItem xs="6">
+                        <MudNumericField @bind-Value="batteryNode.DataTopicIndex" Label="Value Topic (0-based)" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" HelperText="Which topic drives fill level" />
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudNumericField @bind-Value="batteryNode.ColorTopicIndex" Label="Color Topic (0-based)" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" HelperText="Which topic drives color rules" />
+                    </MudItem>
+                </MudGrid>
                 <MudText Typo="Typo.caption" Class="mt-2 mb-1">Color Transitions (by percentage 0-100). Last matching rule wins.</MudText>
                 <ColorTransitionEditor Thresholds="batteryNode.ColorThresholds" ValueLabel="Percent (0-100)" />
                 <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1">

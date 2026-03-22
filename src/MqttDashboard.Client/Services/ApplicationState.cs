@@ -351,8 +351,8 @@ public class ApplicationState
                         MaxValue = nodeState.MaxValue ?? 100,
                         Unit = nodeState.Unit,
                         ArcOrigin = nodeState.ArcOrigin,
-                        DataTopicIndex = nodeState.GaugeDataTopicIndex ?? 0,
-                        ColorTopicIndex = nodeState.GaugeColorTopicIndex ?? 0,
+                        DataTopicIndex  = nodeState.DataTopicIndex  ?? nodeState.GaugeDataTopicIndex  ?? 0,
+                        ColorTopicIndex = nodeState.ColorTopicIndex ?? nodeState.GaugeColorTopicIndex ?? 0,
                         TextPosition = nodeState.TextPosition ?? "Below",
                         ColorThresholds = nodeState.ColorThresholds?.Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList() ?? new(),
                     },
@@ -373,6 +373,8 @@ public class ApplicationState
                         MinValue = nodeState.MinValue ?? 0,
                         MaxValue = nodeState.MaxValue ?? 100,
                         ShowPercent = nodeState.BatteryShowPercent ?? true,
+                        DataTopicIndex  = nodeState.DataTopicIndex  ?? 0,
+                        ColorTopicIndex = nodeState.ColorTopicIndex ?? 0,
                         ColorThresholds = nodeState.ColorThresholds?.Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList()
                             ?? (nodeState.LowColor != null || nodeState.MedColor != null || nodeState.HighColor != null
                                 ? new List<GaugeColorThreshold>
@@ -426,15 +428,14 @@ public class ApplicationState
                 node.BackgroundColor = nodeState.BackgroundColor;
                 node.IconColor = nodeState.IconColor;
                 node.Metadata = nodeState.Metadata ?? new Dictionary<string, string>();
-                node.DataTopic = nodeState.DataTopic;
-                node.DataTopic2 = nodeState.DataTopic2;
+                // Populate DataTopics — new format first, fall back to scalar fields for old files.
                 if (nodeState.DataTopics != null && nodeState.DataTopics.Count > 0)
                 {
                     node.DataTopics = new List<string>(nodeState.DataTopics);
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(nodeState.DataTopic)) node.DataTopics.Add(nodeState.DataTopic);
+                    if (!string.IsNullOrEmpty(nodeState.DataTopic))  node.DataTopics.Add(nodeState.DataTopic);
                     if (!string.IsNullOrEmpty(nodeState.DataTopic2)) node.DataTopics.Add(nodeState.DataTopic2);
                 }
                 node.FontSize = nodeState.FontSize;
@@ -560,8 +561,8 @@ public class ApplicationState
                 BackgroundColor = node.BackgroundColor,
                 IconColor = node.IconColor,
                 Metadata = node.Metadata ?? new Dictionary<string, string>(),
-                DataTopic = node.DataTopics.Count > 0 ? node.DataTopics[0] : node.DataTopic,
-                DataTopic2 = node.DataTopics.Count > 1 ? node.DataTopics[1] : node.DataTopic2,
+                DataTopic  = node.DataTopic,   // computed from DataTopics[0]; kept for old-file compat
+                DataTopic2 = node.DataTopic2,  // computed from DataTopics[1]; kept for old-file compat
                 DataTopics = node.DataTopics.Count > 0 ? new List<string>(node.DataTopics) : null,
                 FontSize = node.FontSize,
                 LinkAnimation = node.LinkAnimation,
@@ -576,8 +577,8 @@ public class ApplicationState
                 nodeState.MaxValue = g.MaxValue;
                 nodeState.Unit = g.Unit;
                 nodeState.ArcOrigin = g.ArcOrigin;
-                nodeState.GaugeDataTopicIndex = g.DataTopicIndex != 0 ? g.DataTopicIndex : null;
-                nodeState.GaugeColorTopicIndex = g.ColorTopicIndex != 0 ? g.ColorTopicIndex : null;
+                nodeState.DataTopicIndex  = g.DataTopicIndex  != 0 ? g.DataTopicIndex  : null;
+                nodeState.ColorTopicIndex = g.ColorTopicIndex != 0 ? g.ColorTopicIndex : null;
                 nodeState.TextPosition = g.TextPosition != "Below" ? g.TextPosition : null;
                 nodeState.ColorThresholds = g.ColorThresholds.Count > 0
                     ? g.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList()
@@ -600,6 +601,8 @@ public class ApplicationState
                 nodeState.MinValue = b.MinValue;
                 nodeState.MaxValue = b.MaxValue;
                 nodeState.BatteryShowPercent = b.ShowPercent;
+                nodeState.DataTopicIndex  = b.DataTopicIndex  != 0 ? b.DataTopicIndex  : null;
+                nodeState.ColorTopicIndex = b.ColorTopicIndex != 0 ? b.ColorTopicIndex : null;
                 nodeState.ColorThresholds = b.ColorThresholds.Count > 0
                     ? b.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList()
                     : null;
@@ -774,7 +777,7 @@ public class ApplicationState
             new Blazor.Diagrams.Core.Geometry.Point(100 + diagram.Nodes.Count * 20, 100))
         {
             Title = nodeName,
-            DataTopic = topicPath,
+            DataTopics = new List<string> { topicPath },
         };
         // try be clever with formatting...
         string? format = null;

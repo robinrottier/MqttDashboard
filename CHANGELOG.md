@@ -8,14 +8,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Battery: value topic index + color topic index** — Battery nodes now have the same `DataTopicIndex` and `ColorTopicIndex` controls as Gauge nodes. Allows a battery widget to display and colour based on a specific topic when multiple topics are bound.
 - **Undo All** — new Edit menu item that reverts all unsaved changes in a single step, returning the diagram to its state at the time Edit Mode was entered (stays in Edit Mode).
 - **Gauge: text position** — the static Text label can now be displayed above or below the gauge arc (new "Text Position" property, default: Below).
 - **Gauge: value topic index** — new "Value Topic" setting lets you specify which data topic (0-based) drives the gauge arc and displayed value.
-- **Gauge: color transition topic index** — single "Color Topic" setting (per node, not per threshold) controls which data topic drives all color transition rules.
-- **Log: independent column toggles** — six checkboxes (Date / Time / Full Topic / Topic Path / Topic Name / Value) independently control which log columns are visible. Replaced the previous wildcard-conditional topic column toggle.
-- **Grid node** — new widget displaying a configurable table of MQTT values. Define column headers and rows; each cell is independently bound to an MQTT topic. Persisted as `GridColumnHeaders` / `GridRows` in the dashboard file.
-- **Log node pause button** — small Pause/Play icon button in the log widget header allows freezing the log to inspect entries without new data pushing them off screen.
+- **Gauge / Battery: color transition topic index** — single "Color Topic" setting (per node, not per threshold) controls which data topic drives all color transition rules.
+- **Log: independent column toggles** — six checkboxes (Date / Time / Full Topic / Topic Path / Topic Name / Value) independently control which log columns are visible.
+- **Grid node** — new widget displaying a configurable table of MQTT values.
+- **Log node pause button** — Pause/Play icon button in the log widget header allows freezing the log.
 - **Reconnect value replay** — after a SignalR reconnect, the server's last-known value for every subscribed topic is pushed into the client cache immediately.
+
+### Refactored
+- **DataTopic / DataTopic2 replaced by DataTopics list** — `MudNodeModel.DataTopic` and `DataTopic2` are now computed read-only accessors on top of the canonical `DataTopics` list. Runtime data values are stored as `DataValues[]` / `DataUpdatedTimes[]` arrays, parallel to topics. Old dashboard files are read transparently via fallback migration.
 
 ### Fixed
 - **Undo greyed on entering Edit Mode** — entering Edit Mode now clears the undo/redo stack so Undo is correctly disabled until the first change is made.

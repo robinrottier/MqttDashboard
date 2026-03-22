@@ -137,7 +137,10 @@ public class NodeState
     // Gauge ArcOrigin and shared color thresholds (used by Gauge and Battery)
     public double? ArcOrigin { get; set; }
     public List<GaugeColorThresholdState>? ColorThresholds { get; set; }
-    // Gauge-specific display options
+    // DataTopicIndex / ColorTopicIndex shared by Gauge and Battery
+    public int? DataTopicIndex { get; set; }
+    public int? ColorTopicIndex { get; set; }
+    // Legacy Gauge-specific names kept for reading old dashboard files
     public int? GaugeDataTopicIndex { get; set; }
     public int? GaugeColorTopicIndex { get; set; }
     public string? TextPosition { get; set; }

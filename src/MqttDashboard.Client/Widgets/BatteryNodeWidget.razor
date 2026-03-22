@@ -64,6 +64,11 @@
 @code {
     private double _percent = 0;
 
+    // Returns the value that drives the fill level, honoring DataTopicIndex.
+    private object? ActiveValue => Node.DataTopicIndex == 1 ? Node.DataValue2 : Node.DataValue;
+    // Returns the value used for color threshold evaluation, honoring ColorTopicIndex.
+    private object? ColorValue  => Node.ColorTopicIndex == 1 ? Node.DataValue2 : Node.DataValue;
+
     protected override void OnInitialized()
     {
         Node.MinimumDimensions = new(50, 70);
@@ -73,11 +78,12 @@
     }
 
     protected override void OnData1Updated() => UpdatePercent();
+    protected override void OnData2Updated() => UpdatePercent();
 
     private void UpdatePercent()
     {
-        if (Node.DataValue == null) { _percent = 0; return; }
-        if (double.TryParse(Node.DataValue.ToString(), out var d))
+        if (ActiveValue == null) { _percent = 0; return; }
+        if (double.TryParse(ActiveValue.ToString(), out var d))
         {
             var range = Node.MaxValue - Node.MinValue;
             _percent = range == 0 ? 0 : Math.Clamp((d - Node.MinValue) / range, 0.0, 1.0);
@@ -89,11 +95,13 @@
         if (Node.ColorThresholds.Count > 0)
         {
             var pct = _percent * 100;
+            var cv = ColorValue;
+            double colorDouble = cv != null && double.TryParse(cv.ToString(), out var parsed) ? parsed : pct;
             string? color = null;
             foreach (var t in Node.ColorThresholds)
             {
-                if (t.Direction == ">=" && pct >= t.Value) color = t.Color;
-                else if (t.Direction == "<=" && pct <= t.Value) color = t.Color;
+                if (t.Direction == ">=" && colorDouble >= t.Value) color = t.Color;
+                else if (t.Direction == "<=" && colorDouble <= t.Value) color = t.Color;
             }
             if (color != null) return color;
         }
@@ -109,8 +117,8 @@
 
     private string FormatPercent()
     {
-        if (!Node.ShowPercent || Node.DataValue == null) return "";
-        if (double.TryParse(Node.DataValue.ToString(), out var d))
+        if (!Node.ShowPercent || ActiveValue == null) return "";
+        if (double.TryParse(ActiveValue.ToString(), out _))
         {
             var pct = (int)Math.Round(_percent * 100);
             return $"{pct}%";

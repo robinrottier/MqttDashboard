@@ -18,6 +18,12 @@ public class BatteryNodeModel : MudNodeModel
     public double MinValue { get; set; } = 0;
     public double MaxValue { get; set; } = 100;
 
+    /// <summary>Index into DataTopics that drives the fill level (default: 0).</summary>
+    public int DataTopicIndex { get; set; } = 0;
+
+    /// <summary>Index into DataTopics that is evaluated for color threshold rules (default: 0).</summary>
+    public int ColorTopicIndex { get; set; } = 0;
+
     /// <summary>Threshold-based color stops. Value is compared against percentage (0-100). Last match wins.</summary>
     public List<GaugeColorThreshold> ColorThresholds { get; set; }
 
