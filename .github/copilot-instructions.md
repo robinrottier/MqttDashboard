@@ -195,7 +195,7 @@ In **`GetDiagramState()`** — add an `else if (node is MyNodeModel m)` block to
 |------|---------|
 | `TODO.md` | Backlog — bugs, enhancements, ideas. User edits this between sessions. |
 | `DEVCHANGELOG.md` | **Detailed** per-Copilot-session log. One section per batch, newest first. Used for review. |
-| `CHANGELOG.md` | Standard Keep-a-Changelog release log. Updated per release, not per Copilot session. |
+| `CHANGELOG.md` | Public-facing [Keep a Changelog](https://keepachangelog.com) format. Updated each session under `[Unreleased]`. User/contributor readable — less detail than DEVCHANGELOG. |
 
 ### At the start of a session
 
@@ -219,7 +219,7 @@ In **`GetDiagramState()`** — add an `else if (node is MyNodeModel m)` block to
    - Sub-heading: commit hash + UTC timestamp + branch
    - One sub-section per item: what file(s) changed, why, how it works, any caveats or known remaining issues (use ⚠️).
    - This section is the primary review artifact — write enough detail that each item can be independently verified or pushed back to TODO.
-3. **Update `CHANGELOG.md`** in conventional Keep-a-Changelog format (group under `[Unreleased]`).
+3. **Update `CHANGELOG.md`** under `[Unreleased]` in standard [Keep a Changelog](https://keepachangelog.com) format (`### Added`, `### Fixed`, `### Changed`). This is the user/contributor-facing log — summarise what changed and why it matters, without internal implementation detail. Less verbose than DEVCHANGELOG.
 4. **Commit** all changes on the current branch (feature branch or `develop`). Commit message format: `<type>: <short summary>` (e.g. `fix:`, `feat:`, `chore:`, `docs:`). Always include the Co-authored-by trailer.
 
 ### Releases (GitHub-initiated)
