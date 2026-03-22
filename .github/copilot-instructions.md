@@ -205,4 +205,6 @@ OR if being left for some discusion or further thought then add a comment to tha
 
 At end of each batch of work, copilot can commit all changes so repo using current branch (which will be either develop or a feature branch for current batch)
 
+At the start pf a new batch of work make sure repo is clean and commited. Prompt if not to either stash, or just commit with message "Updates" or similar and then start new batch of work. If the only changed file is just the TODO file then auto-commit that and read it.
+
 ON whole releases initiated from github, add comment in CHANGELOG with release name and date and link to github release notes.
