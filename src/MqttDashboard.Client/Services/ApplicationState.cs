@@ -351,10 +351,9 @@ public class ApplicationState
                         MaxValue = nodeState.MaxValue ?? 100,
                         Unit = nodeState.Unit,
                         ArcOrigin = nodeState.ArcOrigin,
-                        DataTopicIndex  = nodeState.DataTopicIndex  ?? nodeState.GaugeDataTopicIndex  ?? 0,
-                        ColorTopicIndex = nodeState.ColorTopicIndex ?? nodeState.GaugeColorTopicIndex ?? 0,
+                        DataTopicIndex = nodeState.DataTopicIndex ?? 0,
                         TextPosition = nodeState.TextPosition ?? "Below",
-                        ColorThresholds = nodeState.ColorThresholds?.Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList() ?? new(),
+                        GaugeColor = DeserializeColorTransition(nodeState.GaugeColor),
                     },
                     "Switch" => new SwitchNodeModel(position: new Point(nodeState.X, nodeState.Y))
                     {
@@ -373,17 +372,8 @@ public class ApplicationState
                         MinValue = nodeState.MinValue ?? 0,
                         MaxValue = nodeState.MaxValue ?? 100,
                         ShowPercent = nodeState.BatteryShowPercent ?? true,
-                        DataTopicIndex  = nodeState.DataTopicIndex  ?? 0,
-                        ColorTopicIndex = nodeState.ColorTopicIndex ?? 0,
-                        ColorThresholds = nodeState.ColorThresholds?.Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList()
-                            ?? (nodeState.LowColor != null || nodeState.MedColor != null || nodeState.HighColor != null
-                                ? new List<GaugeColorThreshold>
-                                  {
-                                      new() { Value = 0,  Direction = ">=", Color = nodeState.LowColor  ?? "var(--mud-palette-error)" },
-                                      new() { Value = 20, Direction = ">=", Color = nodeState.MedColor  ?? "var(--mud-palette-warning)" },
-                                      new() { Value = 50, Direction = ">=", Color = nodeState.HighColor ?? "var(--mud-palette-success)" },
-                                  }
-                                : new()),
+                        DataTopicIndex = nodeState.DataTopicIndex ?? 0,
+                        BatteryColor = DeserializeColorTransition(nodeState.BatteryColor),
                     },
                     "Log" => new LogNodeModel(position: new Point(nodeState.X, nodeState.Y))
                     {
@@ -577,12 +567,9 @@ public class ApplicationState
                 nodeState.MaxValue = g.MaxValue;
                 nodeState.Unit = g.Unit;
                 nodeState.ArcOrigin = g.ArcOrigin;
-                nodeState.DataTopicIndex  = g.DataTopicIndex  != 0 ? g.DataTopicIndex  : null;
-                nodeState.ColorTopicIndex = g.ColorTopicIndex != 0 ? g.ColorTopicIndex : null;
+                nodeState.DataTopicIndex = g.DataTopicIndex != 0 ? g.DataTopicIndex : null;
                 nodeState.TextPosition = g.TextPosition != "Below" ? g.TextPosition : null;
-                nodeState.ColorThresholds = g.ColorThresholds.Count > 0
-                    ? g.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList()
-                    : null;
+                nodeState.GaugeColor = SerializeColorTransition(g.GaugeColor);
             }
             else if (node is SwitchNodeModel s)
             {
@@ -601,11 +588,8 @@ public class ApplicationState
                 nodeState.MinValue = b.MinValue;
                 nodeState.MaxValue = b.MaxValue;
                 nodeState.BatteryShowPercent = b.ShowPercent;
-                nodeState.DataTopicIndex  = b.DataTopicIndex  != 0 ? b.DataTopicIndex  : null;
-                nodeState.ColorTopicIndex = b.ColorTopicIndex != 0 ? b.ColorTopicIndex : null;
-                nodeState.ColorThresholds = b.ColorThresholds.Count > 0
-                    ? b.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList()
-                    : null;
+                nodeState.DataTopicIndex = b.DataTopicIndex != 0 ? b.DataTopicIndex : null;
+                nodeState.BatteryColor = SerializeColorTransition(b.BatteryColor);
             }
             else if (node is LogNodeModel log)
             {
@@ -823,6 +807,36 @@ public class ApplicationState
             //node.AddPort(alignment);
             node.AddPort(new MudPortModel(node, alignment));
         }
+    }
+
+    public static ColorTransition DeserializeColorTransitionStatic(ColorTransitionState? state)
+        => DeserializeColorTransition(state);
+
+    public static ColorTransitionState? SerializeColorTransitionStatic(ColorTransition ct)
+        => SerializeColorTransition(ct);
+
+    private static ColorTransition DeserializeColorTransition(ColorTransitionState? state)
+    {
+        if (state == null) return new ColorTransition();
+        return new ColorTransition
+        {
+            ColorTopicIndex = state.ColorTopicIndex ?? 0,
+            ColorThresholds = state.ColorThresholds?
+                .Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color, Direction = t.Direction })
+                .ToList() ?? new()
+        };
+    }
+
+    private static ColorTransitionState? SerializeColorTransition(ColorTransition ct)
+    {
+        if (ct.ColorThresholds.Count == 0 && ct.ColorTopicIndex == 0) return null;
+        return new ColorTransitionState
+        {
+            ColorTopicIndex = ct.ColorTopicIndex != 0 ? ct.ColorTopicIndex : null,
+            ColorThresholds = ct.ColorThresholds.Count > 0
+                ? ct.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList()
+                : null
+        };
     }
 
 

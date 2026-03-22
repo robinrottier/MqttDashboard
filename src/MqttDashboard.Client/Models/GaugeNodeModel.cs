@@ -7,11 +7,14 @@ public class GaugeNodeModel : MudNodeModel
     public GaugeNodeModel(Point? position = null) : base(position)
     {
         NodeType = "Gauge";
-        ColorThresholds =
-        [
-            new GaugeColorThreshold { Value = 0, Direction = "<=", Color = "var(--mud-palette-error)" },
-            new GaugeColorThreshold { Value = 0, Direction = ">=", Color = "var(--mud-palette-success)" },
-        ];
+        GaugeColor = new ColorTransition
+        {
+            ColorThresholds =
+            [
+                new GaugeColorThreshold { Value = 0, Direction = "<=", Color = "var(--mud-palette-error)" },
+                new GaugeColorThreshold { Value = 0, Direction = ">=", Color = "var(--mud-palette-success)" },
+            ]
+        };
     }
 
     public double MinValue { get; set; } = 0;
@@ -20,39 +23,16 @@ public class GaugeNodeModel : MudNodeModel
 
     /// <summary>
     /// Value at which the arc originates (the "zero" point of the arc).
-    /// When set, the arc draws from this value to the current value.
     /// When null, defaults to MinValue (arc always starts from the left end).
     /// </summary>
     public double? ArcOrigin { get; set; }
 
-    /// <summary>
-    /// 0-based index of the data topic whose value drives the gauge arc and label.
-    /// 0 = first topic (DataValue), 1 = second topic (DataValue2).
-    /// </summary>
+    /// <summary>0-based index of the data topic whose value drives the gauge arc and label.</summary>
     public int DataTopicIndex { get; set; } = 0;
 
-    /// <summary>
-    /// Where the static Text label is displayed relative to the gauge arc: "Above" or "Below" (default).
-    /// </summary>
+    /// <summary>Where the static Text label is displayed relative to the gauge arc: "Above" or "Below" (default).</summary>
     public string TextPosition { get; set; } = "Below";
 
-    /// <summary>
-    /// 0-based index of the data topic used for color threshold comparisons.
-    /// Applies to all thresholds. 0 = DataValue, 1 = DataValue2.
-    /// </summary>
-    public int ColorTopicIndex { get; set; } = 0;
-
-    /// <summary>
-    /// Ordered list of color thresholds. First matching rule wins.
-    /// Each threshold has a Direction ("&gt;=" or "&lt;=") and a Value.
-    /// </summary>
-    public List<GaugeColorThreshold> ColorThresholds { get; set; }
-}
-
-public class GaugeColorThreshold
-{
-    public double Value { get; set; }
-    public string Color { get; set; } = "var(--mud-palette-primary)";
-    /// <summary>Direction of the threshold comparison: ">=" or "<=".</summary>
-    public string Direction { get; set; } = ">=";
+    /// <summary>Colour transition settings (topic index + threshold rules) for this gauge.</summary>
+    public ColorTransition GaugeColor { get; set; } = new();
 }

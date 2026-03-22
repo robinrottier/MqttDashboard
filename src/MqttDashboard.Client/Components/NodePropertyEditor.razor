@@ -205,12 +205,12 @@
                         <MudNumericField @bind-Value="gaugeNode.DataTopicIndex" Label="Value Topic (0-based)" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" HelperText="Which data topic drives the gauge (0=first)" />
                     </MudItem>
                     <MudItem xs="4">
-                        <MudNumericField @bind-Value="gaugeNode.ColorTopicIndex" Label="Color Topic (0-based)" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" HelperText="Which data topic is used for color rules" />
+                        <MudNumericField @bind-Value="gaugeNode.GaugeColor.ColorTopicIndex" Label="Color Topic (0-based)" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" HelperText="Which data topic is used for color rules" />
                     </MudItem>
                 </MudGrid>
                 <MudDivider Class="my-1" />
                 <MudText Typo="Typo.caption" Class="mb-1">Color Transitions (by value). First matching rule wins.</MudText>
-                <ColorTransitionEditor Thresholds="gaugeNode.ColorThresholds" ValueLabel="Value" />
+                <ColorTransitionEditor Thresholds="gaugeNode.GaugeColor.ColorThresholds" ValueLabel="Value" />
             }
 
             <!-- Battery-specific settings -->
@@ -232,11 +232,11 @@
                         <MudNumericField @bind-Value="batteryNode.DataTopicIndex" Label="Value Topic (0-based)" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" HelperText="Which topic drives fill level" />
                     </MudItem>
                     <MudItem xs="6">
-                        <MudNumericField @bind-Value="batteryNode.ColorTopicIndex" Label="Color Topic (0-based)" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" HelperText="Which topic drives color rules" />
+                        <MudNumericField @bind-Value="batteryNode.BatteryColor.ColorTopicIndex" Label="Color Topic (0-based)" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" HelperText="Which topic drives color rules" />
                     </MudItem>
                 </MudGrid>
                 <MudText Typo="Typo.caption" Class="mt-2 mb-1">Color Transitions (by percentage 0-100). Last matching rule wins.</MudText>
-                <ColorTransitionEditor Thresholds="batteryNode.ColorThresholds" ValueLabel="Percent (0-100)" />
+                <ColorTransitionEditor Thresholds="batteryNode.BatteryColor.ColorThresholds" ValueLabel="Percent (0-100)" />
                 <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1">
                     Example: add ≥ 0 → red, ≥ 20 → orange, ≥ 50 → green.
                 </MudText>

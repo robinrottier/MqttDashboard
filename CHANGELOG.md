@@ -19,6 +19,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Reconnect value replay** — after a SignalR reconnect, the server's last-known value for every subscribed topic is pushed into the client cache immediately.
 
 ### Refactored
+- **ColorTransition class** — Gauge and Battery color threshold settings are now grouped in a `ColorTransition` object (`GaugeColor` / `BatteryColor` on their respective models). `GaugeColorThreshold` moved to shared `ColorTransition.cs`. Obsolete flat color fields (`LowColor`, `MedColor`, `HighColor`, etc.) removed.
 - **DataTopic / DataTopic2 replaced by DataTopics list** — `MudNodeModel.DataTopic` and `DataTopic2` are now computed read-only accessors on top of the canonical `DataTopics` list. Runtime data values are stored as `DataValues[]` / `DataUpdatedTimes[]` arrays, parallel to topics. Old dashboard files are read transparently via fallback migration.
 
 ### Fixed

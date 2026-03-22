@@ -1,13 +1,13 @@
-using Blazor.Diagrams.Core.Models;
-using Blazor.Diagrams.Core.Geometry;
 
 namespace MqttDashboard.Models
 {
-    public class MudNodeModel : NodeModel
+    public class MudNodeModel(Blazor.Diagrams.Core.Geometry.Point? position = null) : Blazor.Diagrams.Core.Models.NodeModel(position)
     {
-        public MudNodeModel(Point? position = null) : base(position)
-        {
-        }
+        /// <summary>
+        /// Position of the title relative to the main content: "Above", "Below", "Left", "Right". Defaults to "Above".
+        /// (Title is inherited from base blazor diagram node model)
+        /// </summary>
+        public string TitlePosition { get; set; } = "Above";
 
         /// <summary>
         /// Icon name from MudBlazor Icons (e.g., Icons.Material.Filled.Home)
@@ -18,6 +18,11 @@ namespace MqttDashboard.Models
         /// Human-readable icon name for display
         /// </summary>
         public string? IconName { get; set; }
+
+        /// <summary>
+        /// Icon color
+        /// </summary>
+        public string? IconColor { get; set; }
 
         /// <summary>
         /// Format string for the body text. Use {0} for first data value, {1} for second, etc.
@@ -31,17 +36,12 @@ namespace MqttDashboard.Models
         public string? BackgroundColor { get; set; }
 
         /// <summary>
-        /// Icon color
-        /// </summary>
-        public string? IconColor { get; set; }
-
-        /// <summary>
         /// Custom metadata dictionary for future extensibility
         /// </summary>
         public Dictionary<string, string> Metadata { get; set; } = new();
 
         /// <summary>
-        /// List of MQTT topics for data binding. Replaces the old DataTopic / DataTopic2 scalars.
+        /// List of MQTT topics for data binding
         /// </summary>
         public List<string> DataTopics { get; set; } = new();
 
@@ -73,7 +73,5 @@ namespace MqttDashboard.Models
         /// <summary>Node type discriminator. Defaults to "Text" (existing text/display node).</summary>
         public string NodeType { get; set; } = "Text";
 
-        /// <summary>Position of the title relative to the main content: "Above", "Below", "Left", "Right". Defaults to "Above".</summary>
-        public string TitlePosition { get; set; } = "Above";
     }
 }

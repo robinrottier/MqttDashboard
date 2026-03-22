@@ -133,12 +133,12 @@
 
     private string GetArcColor()
     {
-        if (Node.ColorThresholds.Count > 0)
+        if (Node.GaugeColor.ColorThresholds.Count > 0)
         {
-            var colorVal = Node.ColorTopicIndex == 1 ? Node.DataValue2 : Node.DataValue;
+            var colorVal = Node.GaugeColor.ColorTopicIndex == 1 ? Node.DataValue2 : Node.DataValue;
             if (colorVal != null && double.TryParse(colorVal.ToString(), out var dThresh))
             {
-                foreach (var t in Node.ColorThresholds)
+                foreach (var t in Node.GaugeColor.ColorThresholds)
                 {
                     if (t.Direction == ">=" && dThresh >= t.Value) return t.Color;
                     if (t.Direction == "<=" && dThresh <= t.Value) return t.Color;

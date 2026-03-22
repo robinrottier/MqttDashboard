@@ -112,10 +112,9 @@ public class NodeState
     public double? MinValue { get; set; }
     public double? MaxValue { get; set; }
     public string? Unit { get; set; }
-    // Kept for backward compat reading of old files (not written by new code)
-    public double? MidPoint { get; set; }
-    public string? NegativeColor { get; set; }
-    public string? PositiveColor { get; set; }
+    public double? ArcOrigin { get; set; }
+    public int? DataTopicIndex { get; set; }
+    public string? TextPosition { get; set; }
 
     // Switch-specific
     public string? PublishTopic { get; set; }
@@ -128,22 +127,12 @@ public class NodeState
     public bool? SwitchRetain { get; set; }
     public int? SwitchQosLevel { get; set; }
 
-    // Battery-specific (kept for backward compat reading of old files)
-    public string? LowColor { get; set; }
-    public string? MedColor { get; set; }
-    public string? HighColor { get; set; }
+    // Battery-specific
     public bool? BatteryShowPercent { get; set; }
 
-    // Gauge ArcOrigin and shared color thresholds (used by Gauge and Battery)
-    public double? ArcOrigin { get; set; }
-    public List<GaugeColorThresholdState>? ColorThresholds { get; set; }
-    // DataTopicIndex / ColorTopicIndex shared by Gauge and Battery
-    public int? DataTopicIndex { get; set; }
-    public int? ColorTopicIndex { get; set; }
-    // Legacy Gauge-specific names kept for reading old dashboard files
-    public int? GaugeDataTopicIndex { get; set; }
-    public int? GaugeColorTopicIndex { get; set; }
-    public string? TextPosition { get; set; }
+    // Colour transition (Gauge = GaugeColor, Battery = BatteryColor — stored as a nested object)
+    public ColorTransitionState? GaugeColor { get; set; }
+    public ColorTransitionState? BatteryColor { get; set; }
 
     // Title position (all node types)
     public string? TitlePosition { get; set; }
@@ -176,6 +165,12 @@ public class PortState
 {
     public string Id { get; set; } = string.Empty;
     public string Alignment { get; set; } = string.Empty;
+}
+
+public class ColorTransitionState
+{
+    public int? ColorTopicIndex { get; set; }
+    public List<GaugeColorThresholdState>? ColorThresholds { get; set; }
 }
 
 public class GaugeColorThresholdState

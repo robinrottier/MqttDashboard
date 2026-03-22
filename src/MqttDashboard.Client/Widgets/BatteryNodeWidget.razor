@@ -66,8 +66,8 @@
 
     // Returns the value that drives the fill level, honoring DataTopicIndex.
     private object? ActiveValue => Node.DataTopicIndex == 1 ? Node.DataValue2 : Node.DataValue;
-    // Returns the value used for color threshold evaluation, honoring ColorTopicIndex.
-    private object? ColorValue  => Node.ColorTopicIndex == 1 ? Node.DataValue2 : Node.DataValue;
+    // Returns the value used for color threshold evaluation, honoring BatteryColor.ColorTopicIndex.
+    private object? ColorValue  => Node.BatteryColor.ColorTopicIndex == 1 ? Node.DataValue2 : Node.DataValue;
 
     protected override void OnInitialized()
     {
@@ -92,27 +92,20 @@
 
     private string GetFillColor()
     {
-        if (Node.ColorThresholds.Count > 0)
+        if (Node.BatteryColor.ColorThresholds.Count > 0)
         {
             var pct = _percent * 100;
             var cv = ColorValue;
             double colorDouble = cv != null && double.TryParse(cv.ToString(), out var parsed) ? parsed : pct;
             string? color = null;
-            foreach (var t in Node.ColorThresholds)
+            foreach (var t in Node.BatteryColor.ColorThresholds)
             {
                 if (t.Direction == ">=" && colorDouble >= t.Value) color = t.Color;
                 else if (t.Direction == "<=" && colorDouble <= t.Value) color = t.Color;
             }
             if (color != null) return color;
         }
-        return _percent switch
-        {
-#pragma warning disable CS0618
-            < 0.2 => Node.LowColor ?? "var(--mud-palette-error)",
-            < 0.5 => Node.MedColor ?? "var(--mud-palette-warning)",
-            _     => Node.HighColor ?? "var(--mud-palette-success)"
-#pragma warning restore CS0618
-        };
+        return "var(--mud-palette-primary)";
     }
 
     private string FormatPercent()

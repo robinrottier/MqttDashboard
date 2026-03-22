@@ -770,9 +770,9 @@ public partial class Display : IDisposable
             {
                 ns.MinValue = g.MinValue; ns.MaxValue = g.MaxValue; ns.Unit = g.Unit;
                 ns.ArcOrigin = g.ArcOrigin;
-                ns.ColorThresholds = g.ColorThresholds.Count > 0
-                    ? g.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList()
-                    : null;
+                ns.DataTopicIndex = g.DataTopicIndex != 0 ? g.DataTopicIndex : null;
+                ns.TextPosition = g.TextPosition != "Below" ? g.TextPosition : null;
+                ns.GaugeColor = ApplicationState.SerializeColorTransitionStatic(g.GaugeColor);
             }
             else if (n is SwitchNodeModel s)
             {
@@ -781,9 +781,8 @@ public partial class Display : IDisposable
             else if (n is BatteryNodeModel b)
             {
                 ns.MinValue = b.MinValue; ns.MaxValue = b.MaxValue; ns.BatteryShowPercent = b.ShowPercent;
-                ns.ColorThresholds = b.ColorThresholds.Count > 0
-                    ? b.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList()
-                    : null;
+                ns.DataTopicIndex = b.DataTopicIndex != 0 ? b.DataTopicIndex : null;
+                ns.BatteryColor = ApplicationState.SerializeColorTransitionStatic(b.BatteryColor);
             }
             else if (n is LogNodeModel log)
             {
@@ -876,7 +875,9 @@ public partial class Display : IDisposable
                     MaxValue = ns.MaxValue ?? 100,
                     Unit = ns.Unit,
                     ArcOrigin = ns.ArcOrigin,
-                    ColorThresholds = ns.ColorThresholds?.Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList() ?? new(),
+                    DataTopicIndex = ns.DataTopicIndex ?? 0,
+                    TextPosition = ns.TextPosition ?? "Below",
+                    GaugeColor = ApplicationState.DeserializeColorTransitionStatic(ns.GaugeColor),
                 },
                 "Switch" => new SwitchNodeModel(new Point(ns.X + offset, ns.Y + offset))
                 {
@@ -889,7 +890,8 @@ public partial class Display : IDisposable
                     MinValue = ns.MinValue ?? 0,
                     MaxValue = ns.MaxValue ?? 100,
                     ShowPercent = ns.BatteryShowPercent ?? true,
-                    ColorThresholds = ns.ColorThresholds?.Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList() ?? new(),
+                    DataTopicIndex = ns.DataTopicIndex ?? 0,
+                    BatteryColor = ApplicationState.DeserializeColorTransitionStatic(ns.BatteryColor),
                 },
                 "Log" => new LogNodeModel(new Point(ns.X + offset, ns.Y + offset))
                 {

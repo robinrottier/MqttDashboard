@@ -47,6 +47,32 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ---
 
+## 2026-03-22 — ColorTransition class refactor (Gauge + Battery)
+
+**Commit:** _(this batch)_
+**Timestamp:** 2026-03-22
+**Branch:** FEAT-C
+
+### Items completed
+
+#### Refactor: Introduce `ColorTransition` class to wrap color threshold state
+- `Models/ColorTransition.cs` — NEW FILE. Contains `ColorTransition` (wraps `ColorTopicIndex` + `List<GaugeColorThreshold>`) and `GaugeColorThreshold` (moved from `GaugeNodeModel`).
+- `Models/GaugeNodeModel.cs` — `ColorThresholds` and `ColorTopicIndex` removed; replaced by single `GaugeColor` property of type `ColorTransition`. `GaugeColorThreshold` class removed from this file.
+- `Models/BatteryNodeModel.cs` — `ColorThresholds` and `ColorTopicIndex` removed; replaced by single `BatteryColor` property of type `ColorTransition`. Obsolete `LowColor`, `MedColor`, `HighColor`, `MidPoint`, `NegativeColor`, `PositiveColor` fields removed entirely.
+- `Widgets/GaugeNodeWidget.razor` — `GetArcColor()` now uses `Node.GaugeColor.ColorThresholds` and `Node.GaugeColor.ColorTopicIndex`.
+- `Widgets/BatteryNodeWidget.razor` — `ColorValue` helper uses `Node.BatteryColor.ColorTopicIndex`; `GetFillColor()` uses `Node.BatteryColor.ColorThresholds`. Obsolete color fallback code removed.
+- `Components/NodePropertyEditor.razor` — all Gauge and Battery color bindings updated to new nested paths (`gaugeNode.GaugeColor.*`, `batteryNode.BatteryColor.*`).
+- `Models/DiagramState.cs` — stripped all legacy flat fields (`ColorThresholds`, `ColorTopicIndex`, `GaugeColorTopicIndex`, `LowColor`, etc.); added `ColorTransitionState` DTO; `NodeState.GaugeColor` and `NodeState.BatteryColor` are `ColorTransitionState?`.
+- `Services/ApplicationState.cs` — added `DeserializeColorTransition()` / `SerializeColorTransition()` private helpers + `DeserializeColorTransitionStatic()` / `SerializeColorTransitionStatic()` public static wrappers; Gauge and Battery deserialize/serialize blocks updated to use helpers.
+- `Pages/Display.razor.cs` — copy/paste node serialization updated for Gauge and Battery (was using old flat `ColorThresholds`; now calls `SerializeColorTransitionStatic` / `DeserializeColorTransitionStatic`).
+
+### Notes
+- No backward compat with old JSON files — nodes will load with empty color transitions if saved with old format.
+- `Display.razor.cs` also had copy-node code referencing old fields — fixed in same batch.
+- Build: 0 errors, 11/11 tests passed.
+
+---
+
 ## 2026-03-22 — DataTopic refactor, Battery topic index parity
 
 **Commit:** `ac7b2f9`

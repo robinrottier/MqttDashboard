@@ -6,12 +6,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ## BUGS
 - [ ] Lines animated on first SSR render then cleared — lines in blazor.diagrams SVG layer (SSR→WASM handoff timing); also lines only drawn on first data update rather than on first value
-- [ ] Server-side "lazy cache": if client request is dropped, server should keep data live for a configurable delay (e.g. 30s) before removing references
 - [ ] Dirty flag still fires on selection (enter edit mode, select node → dirty; investigate `_pendingDirtyMark` pattern in `OnDiagramChanged`)
-- [ ] Multiple data items per node — structural refactor:
-	- [x] `DataTopics` list replaces `DataTopic`/`DataTopic2` — `DataTopic`/`DataTopic2` are now computed read-only convenience accessors
-	- [x] `DataValues[]` and `DataUpdatedTimes[]` arrays replace individual `DataValue`/`DataValue2`/`DataLastUpdated`/`DataLastUpdated2` scalars
-	- [ ] Widgets beyond index 0/1 — generalise `ActiveValue` / color helpers for arbitrary index once > 2 topics are needed
 - [ ] Log view changes width depending on message length — should fill widget width, not content width
 - [ ] F5 full-page refresh: many link animations fire then clear before settling — possibly Blazor Diagrams SVG layer not pre-rendering
 
@@ -20,6 +15,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Server-side "lazy cache": if client request is dropped, server should keep data live for a configurable delay (e.g. 30s) before removing references
 - [ ] Property transition
 	- [x] `ColorTopicIndex` and `DataTopicIndex` per node — **done for both Gauge and Battery**
+	- [x] `ColorTransition` class wraps `ColorTopicIndex` + `ColorThresholds` — **done; `GaugeColor` on GaugeNodeModel, `BatteryColor` on BatteryNodeModel**
 	- [ ] The color boxes in the transition/colour editor should have a chooser popup (via a button) to help with selecting the various types and well-known values
 	- [ ] this would be same as "Background color" for main node property, so either 3 small buttons
 	      or a single button goes to a dialog with 3 tabs, one for each of the colour modes
