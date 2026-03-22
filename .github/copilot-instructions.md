@@ -189,22 +189,39 @@ In **`GetDiagramState()`** — add an `else if (node is MyNodeModel m)` block to
 
 ## Development workflow
 
-New requirements and bugs will be documented in TODO.md
+### Files
 
-Each run thru codepilot should implement a batch of changes, run all tets possible etc and then update TODO and CHANGELOG.
+| File | Purpose |
+|------|---------|
+| `TODO.md` | Backlog — bugs, enhancements, ideas. User edits this between sessions. |
+| `DEVCHANGELOG.md` | **Detailed** per-Copilot-session log. One section per batch, newest first. Used for review. |
+| `CHANGELOG.md` | Standard Keep-a-Changelog release log. Updated per release, not per Copilot session. |
 
-Remove items from TODO when completed and add to CHANGELOG with a note / section with same comment as commit message (and timestamp) for that batch of work
+### At the start of a session
 
-It should be easy to review CHANGELOG after each batch of copilot assitance and be able to review or test items claimed to be fixed/implemented and further comment if necessary (e.g. move back into TODO)
+1. Check `git status`. If the repo is dirty:
+   - If only `TODO.md` changed → auto-commit it with message `"chore: update TODO"` and continue.
+   - Otherwise → ask the user to stash or commit (suggest `"chore: WIP"`) before starting.
+2. Read `TODO.md` to understand the current backlog.
+3. Read `DEVCHANGELOG.md` (top section) to understand what was done last session.
 
-If this conflicts with convention for CHANGELOG then we can have a seperate detailed "DEVCHANGELOG" whih works in this fashion and the normal CHANGELOG stays as it would normally be
+### During a session
 
-If an item in TODO is demed to be too big or complex, it can be broken down into smaller items and added to TODO as such, with a reference to the original item.
+- Work through TODO items in batches. Prefer surgical, tested changes.
+- If a TODO item is too large or complex, break it into smaller items and add them to `TODO.md` with a reference to the original. Or note it as "needs discussion" with a comment.
+- Run existing tests (`dotnet test MqttDashboard.slnx`) after significant changes.
 
-OR if being left for some discusion or further thought then add a comment to that effect which may then be expanded upon
+### At the end of a session
 
-At end of each batch of work, copilot can commit all changes so repo using current branch (which will be either develop or a feature branch for current batch)
+1. **Remove completed items from `TODO.md`.**
+2. **Update `DEVCHANGELOG.md`** — prepend a new section at the top:
+   - Heading: `## YYYY-MM-DD — <short description>`
+   - Sub-heading: commit hash + UTC timestamp + branch
+   - One sub-section per item: what file(s) changed, why, how it works, any caveats or known remaining issues (use ⚠️).
+   - This section is the primary review artifact — write enough detail that each item can be independently verified or pushed back to TODO.
+3. **Update `CHANGELOG.md`** in conventional Keep-a-Changelog format (group under `[Unreleased]`).
+4. **Commit** all changes on the current branch (feature branch or `develop`). Commit message format: `<type>: <short summary>` (e.g. `fix:`, `feat:`, `chore:`, `docs:`). Always include the Co-authored-by trailer.
 
-At the start pf a new batch of work make sure repo is clean and commited. Prompt if not to either stash, or just commit with message "Updates" or similar and then start new batch of work. If the only changed file is just the TODO file then auto-commit that and read it.
+### Releases (GitHub-initiated)
 
-ON whole releases initiated from github, add comment in CHANGELOG with release name and date and link to github release notes.
+When a release is published on GitHub, add a section to `CHANGELOG.md` with the release name, date, and a link to the GitHub release notes. The patch-release workflow (`.github/workflows/patch-release.yml`) handles tag bumping automatically; major/minor releases are tagged manually.
