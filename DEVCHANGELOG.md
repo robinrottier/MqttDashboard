@@ -7,7 +7,35 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ---
 
-## 2026-03-24 — Widget/model architecture refactor: shared layout, attributes, property groups
+## 2026-03-23 — Remove Grid/Image node types; add background image to base node
+
+**Commit:** _(see below)_
+**Branch:** develop
+
+### Removed
+- `GridNodeModel.cs` + `GridNodeWidget.razor` — Grid node removed entirely. Was an outlier: its per-cell MQTT topic model didn't fit the base `StandardNodeLayout` pattern, and the wildcard-topic routing design (path/+/+ → row/column) needed for a useful Grid is a larger feature best deferred.
+- `ImageNodeModel.cs` + `ImageNodeWidget.razor` — Image node removed as a separate type.
+
+### Changed
+- `MudNodeModel` — added three new base properties available on **all** node types:
+  - `BackgroundImageUrl` (string?) — static CSS background image URL
+  - `BackgroundObjectFit` (string, default "cover") — background-size: "cover", "contain", or "fill" (→ `100% 100%`)
+  - `BackgroundImageFromData` (bool) — when true, uses the node's first MQTT data value as the background image URL (dynamic image from broker)
+- `StandardNodeLayout.razor` — `ContainerStyle` now computes `background-image` + `background-size` + `background-position` from the new base properties.
+- `NodePropertyEditor.razor` — replaced Image-specific and Grid-specific sections with a universal "Background Image" section (URL, Image Fit dropdown, "Use data value as URL" checkbox) shown for every node type.
+- `ApplicationState.cs` — removed Image/Grid component registrations, removed type-specific deserialise/serialise blocks for Image and Grid, added base background image round-trip for all node types. Legacy `Image` NodeType entries in saved files load cleanly as plain Text nodes with the `BackgroundImageUrl` set from the old `StaticImageUrl` field.
+- `DiagramState.cs` / `NodeState` — added `BackgroundImageUrl`, `BackgroundObjectFit`, `BackgroundImageFromData` as base fields; removed `GridColumnHeaders`/`GridRows`/`GridRowState`; kept `StaticImageUrl`/`ObjectFit` as nullable read-only legacy fields for old-file compat.
+- `Display.razor.cs` — removed Image/Grid from `AddNode()` and paste/copy snapshots; added background image to base paste restore.
+- `NodeTypePickerDialog.razor` — removed Image and Grid entries.
+- `NodePropertyEditor.razor.cs` — removed `AddGridColumn`, `RemoveGridColumn`, `EnsureGridTopicSlots` helpers.
+
+### Caveats
+⚠️ Old saved files with `"NodeType": "Grid"` nodes will load as plain text nodes and their row/column data will be lost. This is intentional — backward compat for format is deprioritised per project notes.
+⚠️ Old `"NodeType": "Image"` nodes load as plain text nodes with `BackgroundImageUrl` set from the old `StaticImageUrl` field, so images are preserved.
+
+---
+
+: shared layout, attributes, property groups
 
 **Commit:** `dde31e9`
 **Branch:** develop

@@ -27,9 +27,6 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 	- [ ] Drag to reorder pages when in edit mode. MudTabs would support this but need setting noticed and saved.
 - [ ] Node properties dialog
 	- [ ] Can this dialog be moveable and have apply button to changes dynamically without closing
-- [ ] IMage:
-	- [ ] also needs option to upload a bitmap and stored locally as content  or should it be byte values in dashboard file?)
-	- [ ] option to go "behind" or "ontop" other nodes.. maybe z-order roperty for all nodes? HOw does this fit in with blazor.diagrams, maybe it has it already
 - [ ] Log viewer columns: choices for date (and format), time (and format), topic path, topic name, topic full path&name, value — **Full 6-column boolean options done**; date/time format options still open
 - [ ] Log view needs a "pause" button to stop updates. — **Done** (previous session)
 - [ ] mqtt publishing should have other parameters (e.g. message expiry)
@@ -48,13 +45,8 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Option: "virtual topics" defined at dashboard level, computed from raw MQTT values, reusable across nodes
 - [ ] Option to write calculated values back to the MQTT broker
 
-### FEAT-C: Additional node types _(Gauge, Switch, Battery, Log, TreeView, Image done — see CHANGELOG)_
+### FEAT-C: Additional node types _(Gauge, Switch, Battery, Log, TreeView done — see CHANGELOG)_
 - [ ] **Text node** - different node shapes (circle, diamond, etc.)
-- [ ] **Grid** — table with rows/columns mapped to MQTT values
-	- [ ] Data topic like path/blah/+/+ ...row is from first "+" and column from second +
-	- [ ] So could also have "path/blah/+/value/+"
-	- [ ] and "path/blah/+/+/value" would mean row from first match againt + , column name in 2nd + match BUT actual value taken form value field there
-	- [ ] This could be a whole load of test cases
 - [ ] **Chart** — in-memory time-series sparkline graph
 - [ ] **Markdown / HTML** — formatted static content, optionally with data substitution
 - [ ] **IFrame** — embed another web page

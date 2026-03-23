@@ -150,13 +150,14 @@ public class NodeState
     public string? RootTopic { get; set; }
     public bool? ShowValues { get; set; }
 
-    // Image-specific
+    // Image/background (base — any node type)
+    public string? BackgroundImageUrl { get; set; }
+    public string? BackgroundObjectFit { get; set; }
+    public bool? BackgroundImageFromData { get; set; }
+
+    // Legacy image node fields — kept for loading old files; mapped to base properties on load
     public string? StaticImageUrl { get; set; }
     public string? ObjectFit { get; set; }
-
-    // Grid-specific
-    public List<string>? GridColumnHeaders { get; set; }
-    public List<GridRowState>? GridRows { get; set; }
 
     public List<PortState> Ports { get; set; } = new();
 }
@@ -178,12 +179,6 @@ public class GaugeColorThresholdState
     public double Value { get; set; }
     public string Color { get; set; } = "var(--mud-palette-primary)";
     public string Direction { get; set; } = ">=";
-}
-
-public class GridRowState
-{
-    public string Label { get; set; } = string.Empty;
-    public List<string> Topics { get; set; } = new();
 }
 
 public class LinkState

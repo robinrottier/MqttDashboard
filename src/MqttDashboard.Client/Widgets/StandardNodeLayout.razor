@@ -42,9 +42,30 @@
     /// <summary>When false the title is never rendered, even if Node.Title is set.</summary>
     [Parameter] public bool ShowTitle { get; set; } = true;
 
-    private string ContainerStyle =>
-        (Node.Size != null ? $"width:{Node.Size.Width}px;height:{Node.Size.Height}px;" : "") +
-        (!string.IsNullOrEmpty(Node.BackgroundColor) ? $"background-color:{Node.BackgroundColor};" : "");
+    private string ContainerStyle
+    {
+        get
+        {
+            var sb = new System.Text.StringBuilder();
+            if (Node.Size != null) sb.Append($"width:{Node.Size.Width}px;height:{Node.Size.Height}px;");
+            if (!string.IsNullOrEmpty(Node.BackgroundColor)) sb.Append($"background-color:{Node.BackgroundColor};");
+            var bgUrl = Node.BackgroundImageFromData
+                ? Node.DataValue?.ToString()
+                : Node.BackgroundImageUrl;
+            if (!string.IsNullOrEmpty(bgUrl))
+            {
+                sb.Append($"background-image:url('{bgUrl}');");
+                var bgSize = Node.BackgroundObjectFit switch
+                {
+                    "contain" => "contain",
+                    "fill"    => "100% 100%",
+                    _         => "cover",
+                };
+                sb.Append($"background-size:{bgSize};background-position:center;background-repeat:no-repeat;");
+            }
+            return sb.ToString();
+        }
+    }
 
     private string CssClass =>
         $"default-node{(string.IsNullOrEmpty(ExtraCssClass) ? "" : " " + ExtraCssClass)}" +

@@ -36,6 +36,25 @@ namespace MqttDashboard.Models
         public string? BackgroundColor { get; set; }
 
         /// <summary>
+        /// Static background image URL (http/https/data URI).
+        /// Displayed as the node background behind all content.
+        /// </summary>
+        public string? BackgroundImageUrl { get; set; }
+
+        /// <summary>
+        /// How the background image fills the node container.
+        /// CSS background-size value: "cover", "contain", or "100% 100%" (fill/stretch).
+        /// Defaults to "cover".
+        /// </summary>
+        public string BackgroundObjectFit { get; set; } = "cover";
+
+        /// <summary>
+        /// When true, the first MQTT data value is used as the background image URL
+        /// instead of <see cref="BackgroundImageUrl"/>.
+        /// </summary>
+        public bool BackgroundImageFromData { get; set; }
+
+        /// <summary>
         /// Custom metadata dictionary for future extensibility
         /// </summary>
         public Dictionary<string, string> Metadata { get; set; } = new();

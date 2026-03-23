@@ -483,8 +483,6 @@ public partial class Display : IDisposable
             "Battery"  => new BatteryNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))  { Title = $"Battery {_nodeCounter++}" },
             "Log"      => new LogNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))      { Title = $"Log {_nodeCounter++}" },
             "TreeView" => new TreeViewNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400))) { Title = $"Tree {_nodeCounter++}" },
-            "Image"    => new ImageNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))    { Title = $"Image {_nodeCounter++}" },
-            "Grid"     => new GridNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))     { Title = $"Grid {_nodeCounter++}" },
             _          => new MudNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))      { Title = $"Node {_nodeCounter++}" },
         };
 
@@ -789,10 +787,10 @@ public partial class Display : IDisposable
             {
                 ns.RootTopic = tv.RootTopic; ns.ShowValues = tv.ShowValues;
             }
-            else if (n is ImageNodeModel img)
-            {
-                ns.StaticImageUrl = img.StaticImageUrl; ns.ObjectFit = img.ObjectFit;
-            }
+            // Base background image
+            if (!string.IsNullOrEmpty(n.BackgroundImageUrl)) ns.BackgroundImageUrl = n.BackgroundImageUrl;
+            if (n.BackgroundObjectFit != "cover") ns.BackgroundObjectFit = n.BackgroundObjectFit;
+            if (n.BackgroundImageFromData) ns.BackgroundImageFromData = true;
             return ns;
         }).ToList();
     }
@@ -896,11 +894,6 @@ public partial class Display : IDisposable
                     RootTopic = ns.RootTopic ?? string.Empty,
                     ShowValues = ns.ShowValues ?? true,
                 },
-                "Image" => new ImageNodeModel(new Point(ns.X + offset, ns.Y + offset))
-                {
-                    StaticImageUrl = ns.StaticImageUrl ?? string.Empty,
-                    ObjectFit = ns.ObjectFit ?? "contain",
-                },
                 _ => new MudNodeModel(new Point(ns.X + offset, ns.Y + offset)),
             };
             node.Title = ns.Title;
@@ -916,6 +909,10 @@ public partial class Display : IDisposable
             node.FontSize = ns.FontSize;
             node.LinkAnimation = ns.LinkAnimation;
             node.TitlePosition = ns.TitlePosition ?? "Above";
+            // Base background image
+            if (!string.IsNullOrEmpty(ns.BackgroundImageUrl)) node.BackgroundImageUrl = ns.BackgroundImageUrl;
+            if (ns.BackgroundObjectFit != null) node.BackgroundObjectFit = ns.BackgroundObjectFit;
+            if (ns.BackgroundImageFromData == true) node.BackgroundImageFromData = true;
             node.Size = new Blazor.Diagrams.Core.Geometry.Size(ns.Width, ns.Height);
             foreach (var ps in ns.Ports)
             {

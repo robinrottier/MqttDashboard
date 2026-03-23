@@ -311,84 +311,34 @@
                 </MudSelect>
             }
 
-            <!-- Image-specific settings -->
-            @if (Node is ImageNodeModel imageNode)
-            {
-                <MudDivider Class="my-2" />
-                <MudText Typo="Typo.caption" Class="mb-1">Image Settings</MudText>
-                <MudTextField @bind-Value="imageNode.StaticImageUrl"
-                              Label="Static Image URL"
-                              Variant="Variant.Outlined"
-                              Margin="Margin.Dense"
-                              HelperText="Used when no data topic. Supports http/https/data URLs" />
-                <MudSelect @bind-Value="imageNode.ObjectFit"
-                           Label="Object Fit"
-                           Variant="Variant.Outlined"
-                           Margin="Margin.Dense"
-                           Dense="true"
-                           Class="mt-1">
-                    <MudSelectItem Value="@("contain")">Contain (fit inside)</MudSelectItem>
-                    <MudSelectItem Value="@("cover")">Cover (fill, crop edges)</MudSelectItem>
-                    <MudSelectItem Value="@("fill")">Fill (stretch)</MudSelectItem>
-                    <MudSelectItem Value="@("scale-down")">Scale Down</MudSelectItem>
-                </MudSelect>
-                <MudCheckBox T="bool" @bind-Value="imageNode.ShowTitle" Label="Show Title" Dense="true" Class="mt-1" />
-            }
 
-            <!-- Grid-specific settings -->
-            @if (Node is GridNodeModel gridNode)
-            {
-                <MudDivider Class="my-2" />
-                <MudText Typo="Typo.caption" Class="mb-1">Grid Settings</MudText>
-                <MudText Typo="Typo.subtitle2">Columns</MudText>
-                @for (int ci = 0; ci < gridNode.ColumnHeaders.Count; ci++)
-                {
-                    var colIdx = ci;
-                    <div style="display:flex;align-items:center;gap:4px;">
-                        <MudTextField Label="@($"Column {colIdx + 1} Header")"
-                                      Value="@gridNode.ColumnHeaders[colIdx]"
-                                      ValueChanged="@((string v) => { gridNode.ColumnHeaders[colIdx] = v; EnsureGridTopicSlots(gridNode); })"
-                                      Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Clear"
-                                      OnAdornmentClick="@(() => RemoveGridColumn(gridNode, colIdx))"
-                                      Variant="Variant.Outlined" Margin="Margin.Dense" />
-                    </div>
-                }
-                <MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small"
-                           OnClick="@(() => AddGridColumn(gridNode))">Add Column</MudButton>
-
-                <MudDivider Class="my-1" />
-                <MudText Typo="Typo.subtitle2" Class="mt-1">Rows</MudText>
-                @for (int ri = 0; ri < gridNode.Rows.Count; ri++)
-                {
-                    var rowIdx = ri;
-                    var row = gridNode.Rows[rowIdx];
-                    <MudPaper Outlined="true" Class="pa-2 mb-1">
-                        <MudTextField Label="Row Label"
-                                      @bind-Value="row.Label"
-                                      Variant="Variant.Outlined"
-                                      Margin="Margin.Dense" />
-                        @for (int ci2 = 0; ci2 < gridNode.ColumnHeaders.Count; ci2++)
-                        {
-                            var colIdx2 = ci2;
-                            while (row.Topics.Count <= colIdx2) row.Topics.Add(string.Empty);
-                            <MudTextField Label="@($"Topic → {gridNode.ColumnHeaders[colIdx2]}")"
-                                          Value="@row.Topics[colIdx2]"
-                                          ValueChanged="@((string v) => row.Topics[colIdx2] = v)"
-                                          Variant="Variant.Outlined"
-                                          Margin="Margin.Dense"
-                                          Class="mt-1"
-                                          Placeholder="MQTT topic" />
-                        }
-                        <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
-                                       Size="Size.Small" Color="Color.Error"
-                                       OnClick="@(() => gridNode.Rows.RemoveAt(rowIdx))" />
-                    </MudPaper>
-                }
-                <MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small"
-                           OnClick="@(() => gridNode.Rows.Add(new GridRowDefinition { Label = $"Row {gridNode.Rows.Count + 1}", Topics = Enumerable.Repeat(string.Empty, gridNode.ColumnHeaders.Count).ToList() }))">
-                    Add Row
-                </MudButton>
-            }
+            <!-- Background Image (all node types) -->
+            <MudDivider Class="my-2" />
+            <MudText Typo="Typo.caption" Class="mb-1">Background Image</MudText>
+            <MudTextField @bind-Value="@Node.BackgroundImageUrl"
+                          Label="Image URL"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Placeholder="https://… or data:image/…"
+                          HelperText="Displayed as the node background. Leave blank for none." />
+            <MudGrid Spacing="2" Class="mt-1">
+                <MudItem xs="7">
+                    <MudSelect @bind-Value="@Node.BackgroundObjectFit"
+                               Label="Image Fit"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               Dense="true">
+                        <MudSelectItem Value="@("cover")">Cover (fill, crop edges)</MudSelectItem>
+                        <MudSelectItem Value="@("contain")">Contain (fit inside)</MudSelectItem>
+                        <MudSelectItem Value="@("fill")">Fill (stretch)</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="5" Class="d-flex align-center">
+                    <MudCheckBox T="bool" @bind-Value="@Node.BackgroundImageFromData"
+                                 Label="Use data value as URL"
+                                 Dense="true" />
+                </MudItem>
+            </MudGrid>
 
             <!-- Custom Metadata -->
             @if (Node.Metadata.Any())

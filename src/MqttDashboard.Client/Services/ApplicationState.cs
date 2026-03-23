@@ -334,8 +334,6 @@ public class ApplicationState
         diagram.RegisterComponent<BatteryNodeModel, BatteryNodeWidget>();
         diagram.RegisterComponent<LogNodeModel, LogNodeWidget>();
         diagram.RegisterComponent<TreeViewNodeModel, TreeViewNodeWidget>();
-        diagram.RegisterComponent<ImageNodeModel, ImageNodeWidget>();
-        diagram.RegisterComponent<GridNodeModel, GridNodeWidget>();
 
         if (state != null)
         {
@@ -396,21 +394,12 @@ public class ApplicationState
                         RootTopic = nodeState.RootTopic ?? string.Empty,
                         ShowValues = nodeState.ShowValues ?? true,
                     },
-                    "Image" => new ImageNodeModel(position: new Point(nodeState.X, nodeState.Y))
+                    "Image" => new MudNodeModel(position: new Point(nodeState.X, nodeState.Y))
                     {
-                        StaticImageUrl = nodeState.StaticImageUrl ?? string.Empty,
-                        ObjectFit = nodeState.ObjectFit ?? "contain",
-                    },
-                    "Grid" => new GridNodeModel(position: new Point(nodeState.X, nodeState.Y))
-                    {
-                        ColumnHeaders = nodeState.GridColumnHeaders?.Count > 0
-                            ? nodeState.GridColumnHeaders
-                            : ["Value"],
-                        Rows = nodeState.GridRows?.Select(rs => new GridRowDefinition
-                        {
-                            Label = rs.Label,
-                            Topics = new List<string>(rs.Topics),
-                        }).ToList() ?? [new GridRowDefinition { Label = "Row 1", Topics = [""] }],
+                        // Legacy Image nodes become plain Text nodes with a background image
+                        BackgroundImageUrl    = nodeState.BackgroundImageUrl ?? nodeState.StaticImageUrl ?? string.Empty,
+                        BackgroundObjectFit   = nodeState.BackgroundObjectFit ?? nodeState.ObjectFit ?? "cover",
+                        BackgroundImageFromData = nodeState.BackgroundImageFromData ?? false,
                     },
                     _ => new MudNodeModel(position: new Point(nodeState.X, nodeState.Y)),
                 };
@@ -438,6 +427,13 @@ public class ApplicationState
                 node.LinkAnimation = nodeState.LinkAnimation;
                 node.NodeType = nodeState.NodeType ?? "Text";
                 node.TitlePosition = nodeState.TitlePosition ?? "Above";
+                // Background image (base — applies to all node types)
+                if (!string.IsNullOrEmpty(nodeState.BackgroundImageUrl))
+                    node.BackgroundImageUrl = nodeState.BackgroundImageUrl;
+                if (nodeState.BackgroundObjectFit != null)
+                    node.BackgroundObjectFit = nodeState.BackgroundObjectFit;
+                if (nodeState.BackgroundImageFromData == true)
+                    node.BackgroundImageFromData = true;
 
                 diagram.Nodes.Add(node);
                 nodeMap[nodeState.Id] = node;
@@ -612,20 +608,14 @@ public class ApplicationState
                 nodeState.RootTopic = tv.RootTopic;
                 nodeState.ShowValues = tv.ShowValues;
             }
-            else if (node is ImageNodeModel img)
-            {
-                nodeState.StaticImageUrl = img.StaticImageUrl;
-                nodeState.ObjectFit = img.ObjectFit;
-            }
-            else if (node is GridNodeModel grid)
-            {
-                nodeState.GridColumnHeaders = new List<string>(grid.ColumnHeaders);
-                nodeState.GridRows = grid.Rows.Select(r => new GridRowState
-                {
-                    Label = r.Label,
-                    Topics = new List<string>(r.Topics),
-                }).ToList();
-            }
+
+            // Base background image (any node type)
+            if (!string.IsNullOrEmpty(node.BackgroundImageUrl))
+                nodeState.BackgroundImageUrl = node.BackgroundImageUrl;
+            if (node.BackgroundObjectFit != "cover")
+                nodeState.BackgroundObjectFit = node.BackgroundObjectFit;
+            if (node.BackgroundImageFromData)
+                nodeState.BackgroundImageFromData = true;
 
             // Save ports
             foreach (var port in node.Ports)

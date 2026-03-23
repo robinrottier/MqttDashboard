@@ -8,10 +8,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- **Shared widget layout component** (`StandardNodeLayout`) — all visual nodes (Gauge, Battery, Switch, Image) now share a single outer shell that handles tooltip, container styling, title positioning (Above/Below/Left/Right), double-click to edit, and port rendering. Eliminates ~35 lines of boilerplate per widget.
+- **Background image on any node** — all node types now have `BackgroundImageUrl`, `BackgroundObjectFit` (cover/contain/fill), and `BackgroundImageFromData` (use MQTT value as URL) properties. Set via the new "Background Image" section in the property editor.
+- **Shared widget layout component** (`StandardNodeLayout`) — all visual nodes (Gauge, Battery, Switch) share a single outer shell that handles tooltip, container styling, title positioning, double-click to edit, and port rendering.
 - **Shared tooltip component** (`DataValueTooltipContent`) — replaces 5 near-identical inline tooltip blocks across widgets.
 - **`NumericRangeSettings` shared POCO** — Min, Max, Origin (midpoint/zero-point), and DataTopicIndex grouped into a reusable object shared by Gauge and Battery models.
 - **Node property attribute infrastructure** — `[NpText]`, `[NpNumeric]`, `[NpCheckbox]`, `[NpSelect]`, `[NpCustom]` attributes annotate model properties. `NodePropertyRenderer` component reads them via reflection and renders the matching MudBlazor controls automatically.
+
+### Removed
+- **Image node** — removed as a separate node type. Use any node (e.g. Text) with the new background image URL property instead. Old saved `Image` nodes load correctly with the image URL preserved.
+- **Grid node** — removed. Wildcard topic → row/column binding is a larger feature deferred to a future release.
+
+
 - **`NumericRangeEditor` component** — edits a `NumericRangeSettings` group (Min, Max, Origin, DataTopicIndex) in one place; used by both Gauge and Battery.
 - **`ColorTransitionGroupEditor` component** — wraps the existing `ColorTransitionEditor` with a `ColorTopicIndex` field; receives the whole `ColorTransition` group object.
 
