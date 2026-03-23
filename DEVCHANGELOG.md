@@ -47,6 +47,26 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ---
 
+## 2026-03-23 — Fix: Undo All reverts to empty page
+
+**Commit:** _(this batch)_
+**Timestamp:** 2026-03-23 ~00:15 UTC
+**Branch:** FEAT-C
+
+### Bug fixed
+
+#### Fix: Undo All reverts to empty page
+**Root cause:** `UndoAllAction` called `ApplyDiagramState(_editSnapshot)`. `ApplyDiagramState` calls `CreateDiagramFromState(state, ...)` which expects a flat single-page `DiagramState` (with `Nodes` / `Links` at top level). But `_editSnapshot` from `BuildFullState()` with multiple pages is a *wrapper* `DiagramState` with a `Pages` list and empty top-level `Nodes` / `Links`. `CreateDiagramFromState` saw an empty node list and produced an empty diagram.
+
+**Fix:** `Pages/Display.razor.cs` — `UndoAllAction` now uses `LoadFullState(_editSnapshot, readOnly: false)` which correctly handles both single-page and multi-page snapshots. After `LoadFullState`, edit-mode event handlers are re-attached (`SelectionChanged`, `Changed`, `SubscribeEditEvents`, `UpdateSelectionState`). The old `ApplyDiagramState` call for `UndoAll` is removed.
+
+Same issue exists for regular Undo/Redo if they ever snapshot a multi-page state — noted for future hardening (regular Undo/Redo only snapshot the active page via `GetDiagramState()`, so they are safe for now).
+
+### Notes
+- Build: 0 errors, 11/11 tests passed.
+
+---
+
 ## 2026-03-22 — Link animation startup fix (SSR/F5 flash + initial-value timing)
 
 **Commit:** _(this batch)_

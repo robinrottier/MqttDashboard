@@ -956,11 +956,38 @@ public partial class Display : IDisposable
     private async Task UndoAllAction()
     {
         if (_diagram == null || !AppState.CanUndo || _editSnapshot == null) return;
+
+        // Unsubscribe from all current diagrams before replacing them
+        UnsubscribeEditEvents();
+        foreach (var d in _diagrams.OfType<BlazorDiagram>())
+        {
+            d.SelectionChanged -= OnSelectionChanged;
+            d.Changed -= OnDiagramChanged;
+        }
+
         _suppressDirty = true;
-        try { await ApplyDiagramState(_editSnapshot); }
+        try
+        {
+            // LoadFullState handles both single-page and multi-page snapshots correctly.
+            // ApplyDiagramState would produce an empty page for multi-page snapshots
+            // because it passes the wrapper DiagramState (with Pages list, no Nodes) to
+            // CreateDiagramFromState which would see an empty node list.
+            LoadFullState(_editSnapshot, readOnly: false);
+        }
         finally { _suppressDirty = false; }
+
+        // Re-attach edit-mode event handlers for the (now active) page
+        _diagram!.SelectionChanged += OnSelectionChanged;
+        _diagram!.Changed += OnDiagramChanged;
+        SubscribeEditEvents();
+        UpdateSelectionState();
+
         AppState.ClearUndoRedo();
         AppState.MarkSaved();
+        StateHasChanged();
+        await Task.Delay(50);
+        RefreshAll();
+        StateHasChanged();
         Snackbar.Add("Reverted to saved state", Severity.Info);
     }
 
