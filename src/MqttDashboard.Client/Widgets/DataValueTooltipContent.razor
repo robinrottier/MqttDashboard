@@ -1,0 +1,34 @@
+@using MqttDashboard.Models
+
+@{
+    var hasTopics = Node.DataTopics.Count > 0 && Node.DataTopics.Any(t => !string.IsNullOrEmpty(t));
+}
+@if (hasTopics)
+{
+    <div>
+        @for (int i = 0; i < Node.DataTopics.Count; i++)
+        {
+            var topic = Node.DataTopics[i];
+            if (string.IsNullOrEmpty(topic)) continue;
+            var val     = Node.DataValues.Length > i ? Node.DataValues[i] : null;
+            var updated = Node.DataUpdatedTimes.Length > i ? Node.DataUpdatedTimes[i] : null;
+            <div>
+                @if (Node.DataTopics.Count > 1) { <strong>Topic @(i + 1):</strong> } else { <strong>Topic:</strong> }
+                @topic<br/>
+                <strong>Value:</strong> @(val?.ToString() ?? "—")
+                @if (updated.HasValue)
+                {
+                    <><br/><strong>Updated:</strong> @updated.Value.ToString("HH:mm:ss")</>
+                }
+            </div>
+        }
+    </div>
+}
+else
+{
+    <span>No data topic configured</span>
+}
+
+@code {
+    [Parameter] public MudNodeModel Node { get; set; } = null!;
+}

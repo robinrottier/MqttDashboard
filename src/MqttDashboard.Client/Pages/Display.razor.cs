@@ -868,11 +868,8 @@ public partial class Display : IDisposable
             {
                 "Gauge" => new GaugeNodeModel(new Point(ns.X + offset, ns.Y + offset))
                 {
-                    MinValue = ns.MinValue ?? 0,
-                    MaxValue = ns.MaxValue ?? 100,
+                    Range = new NumericRangeSettings { Min = ns.MinValue ?? 0, Max = ns.MaxValue ?? 100, Origin = ns.ArcOrigin, DataTopicIndex = ns.DataTopicIndex ?? 0 },
                     Unit = ns.Unit,
-                    ArcOrigin = ns.ArcOrigin,
-                    DataTopicIndex = ns.DataTopicIndex ?? 0,
                     TextPosition = ns.TextPosition ?? "Below",
                     GaugeColor = ApplicationState.DeserializeColorTransitionStatic(ns.GaugeColor),
                 },
@@ -884,10 +881,8 @@ public partial class Display : IDisposable
                 },
                 "Battery" => new BatteryNodeModel(new Point(ns.X + offset, ns.Y + offset))
                 {
-                    MinValue = ns.MinValue ?? 0,
-                    MaxValue = ns.MaxValue ?? 100,
+                    Range = new NumericRangeSettings { Min = ns.MinValue ?? 0, Max = ns.MaxValue ?? 100, DataTopicIndex = ns.DataTopicIndex ?? 0 },
                     ShowPercent = ns.BatteryShowPercent ?? true,
-                    DataTopicIndex = ns.DataTopicIndex ?? 0,
                     BatteryColor = ApplicationState.DeserializeColorTransitionStatic(ns.BatteryColor),
                 },
                 "Log" => new LogNodeModel(new Point(ns.X + offset, ns.Y + offset))

@@ -11,7 +11,15 @@ public class ImageNodeModel : MudNodeModel
         MinimumDimensions = new Size(60, 60);
     }
 
+    [NpText("Static Image URL", Category = "Image", Order = 1,
+        HelperText = "Used when no data topic. Supports http/https/data URLs")]
     public string StaticImageUrl { get; set; } = string.Empty;
-    public string ObjectFit { get; set; } = "contain"; // contain, cover, fill, scale-down
+
+    [NpSelect("Object Fit", "contain", "cover", "fill", "scale-down",
+        Category = "Image", Order = 2,
+        Labels = ["Contain (fit inside)", "Cover (fill, crop edges)", "Fill (stretch)", "Scale Down"])]
+    public string ObjectFit { get; set; } = "contain";
+
+    [NpCheckbox("Show Title", Category = "Image", Order = 3)]
     public bool ShowTitle { get; set; } = true;
 }

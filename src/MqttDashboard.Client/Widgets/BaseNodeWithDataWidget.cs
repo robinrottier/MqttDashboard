@@ -146,6 +146,29 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
     /// <summary>Called after DataValue2 (topic 2) is updated. Override to react.</summary>
     protected virtual void OnData2Updated() { }
 
+    // ── Title positioning helpers ─────────────────────────────────────────────────
+    // Used by widgets that position a title relative to their visual content.
+    // Moves the four identical private copies out of individual widget classes.
+
+    protected string TitlePos =>
+        string.IsNullOrEmpty(Node.TitlePosition) ? "Above" : Node.TitlePosition;
+
+    protected bool ShowTitleFirst() =>
+        (TitlePos == "Above" || TitlePos == "Left") && !string.IsNullOrEmpty(Node.Title);
+
+    protected string OuterFlexStyle() => TitlePos switch
+    {
+        "Left"  => "display:flex;flex-direction:row;align-items:center;height:100%;",
+        "Right" => "display:flex;flex-direction:row;align-items:center;height:100%;",
+        _       => "display:flex;flex-direction:column;height:100%;"
+    };
+
+    protected string TitleDivStyle() => TitlePos switch
+    {
+        "Left" or "Right" => "text-align:center;font-size:0.75rem;font-weight:500;padding:2px 4px;max-width:4rem;word-wrap:break-word;",
+        _ => "text-align:center;font-size:0.75rem;font-weight:500;padding:2px 4px 0;"
+    };
+
     /// <summary>
     /// Formats <see cref="MudNodeModel.Text"/> using data values as positional args:
     /// {0} = DataValues[0], {1} = DataValues[1], etc. Supports C# format specifiers

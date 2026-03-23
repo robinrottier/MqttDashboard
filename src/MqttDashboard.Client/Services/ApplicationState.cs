@@ -347,11 +347,14 @@ public class ApplicationState
                 {
                     "Gauge" => new GaugeNodeModel(position: new Point(nodeState.X, nodeState.Y))
                     {
-                        MinValue = nodeState.MinValue ?? 0,
-                        MaxValue = nodeState.MaxValue ?? 100,
+                        Range = new NumericRangeSettings
+                        {
+                            Min = nodeState.MinValue ?? 0,
+                            Max = nodeState.MaxValue ?? 100,
+                            Origin = nodeState.ArcOrigin,
+                            DataTopicIndex = nodeState.DataTopicIndex ?? 0,
+                        },
                         Unit = nodeState.Unit,
-                        ArcOrigin = nodeState.ArcOrigin,
-                        DataTopicIndex = nodeState.DataTopicIndex ?? 0,
                         TextPosition = nodeState.TextPosition ?? "Below",
                         GaugeColor = DeserializeColorTransition(nodeState.GaugeColor),
                     },
@@ -369,10 +372,13 @@ public class ApplicationState
                     },
                     "Battery" => new BatteryNodeModel(position: new Point(nodeState.X, nodeState.Y))
                     {
-                        MinValue = nodeState.MinValue ?? 0,
-                        MaxValue = nodeState.MaxValue ?? 100,
+                        Range = new NumericRangeSettings
+                        {
+                            Min = nodeState.MinValue ?? 0,
+                            Max = nodeState.MaxValue ?? 100,
+                            DataTopicIndex = nodeState.DataTopicIndex ?? 0,
+                        },
                         ShowPercent = nodeState.BatteryShowPercent ?? true,
-                        DataTopicIndex = nodeState.DataTopicIndex ?? 0,
                         BatteryColor = DeserializeColorTransition(nodeState.BatteryColor),
                     },
                     "Log" => new LogNodeModel(position: new Point(nodeState.X, nodeState.Y))
@@ -563,11 +569,11 @@ public class ApplicationState
             // Type-specific properties
             if (node is GaugeNodeModel g)
             {
-                nodeState.MinValue = g.MinValue;
-                nodeState.MaxValue = g.MaxValue;
+                nodeState.MinValue = g.Range.Min;
+                nodeState.MaxValue = g.Range.Max;
                 nodeState.Unit = g.Unit;
-                nodeState.ArcOrigin = g.ArcOrigin;
-                nodeState.DataTopicIndex = g.DataTopicIndex != 0 ? g.DataTopicIndex : null;
+                nodeState.ArcOrigin = g.Range.Origin;
+                nodeState.DataTopicIndex = g.Range.DataTopicIndex != 0 ? g.Range.DataTopicIndex : null;
                 nodeState.TextPosition = g.TextPosition != "Below" ? g.TextPosition : null;
                 nodeState.GaugeColor = SerializeColorTransition(g.GaugeColor);
             }
@@ -585,10 +591,10 @@ public class ApplicationState
             }
             else if (node is BatteryNodeModel b)
             {
-                nodeState.MinValue = b.MinValue;
-                nodeState.MaxValue = b.MaxValue;
+                nodeState.MinValue = b.Range.Min;
+                nodeState.MaxValue = b.Range.Max;
                 nodeState.BatteryShowPercent = b.ShowPercent;
-                nodeState.DataTopicIndex = b.DataTopicIndex != 0 ? b.DataTopicIndex : null;
+                nodeState.DataTopicIndex = b.Range.DataTopicIndex != 0 ? b.Range.DataTopicIndex : null;
                 nodeState.BatteryColor = SerializeColorTransition(b.BatteryColor);
             }
             else if (node is LogNodeModel log)

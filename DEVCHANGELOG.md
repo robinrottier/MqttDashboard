@@ -7,6 +7,51 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ---
 
+## 2026-03-24 — Widget/model architecture refactor: shared layout, attributes, property groups
+
+**Commit:** _(see below)_
+**Branch:** develop
+
+### New files
+
+| File | Purpose |
+|---|---|
+| `Models/NodePropertyAttributes.cs` | `[NpText]`, `[NpNumeric]`, `[NpCheckbox]`, `[NpSelect]`, `[NpCustom]` attributes for model properties. `NpNumericAttribute.Min/Max` use `double.NaN` as "no limit" sentinel (attribute parameters can't be nullable types). |
+| `Models/NumericRangeSettings.cs` | Shared POCO: `Min`, `Max`, `Origin?`, `DataTopicIndex`. Used by both `GaugeNodeModel` and `BatteryNodeModel`. |
+| `Widgets/DataValueTooltipContent.razor` | Shared tooltip content component accepting `MudNodeModel`. Shows all topics with values + timestamps; single "No data topic configured" fallback. Replaces 5 near-identical inline tooltip blocks. |
+| `Widgets/StandardNodeLayout.razor` | Shared outer shell for visual nodes (Gauge, Battery, Switch, Image). Injects `AppState`; handles tooltip, container div + CSS class + background colour, title positioning (Above/Below/Left/Right), double-click → edit, port rendering. Accepts `ExtraContent` RenderFragment + optional `ShowTitle` bool. Correctly suppresses both title positions when `ShowTitle=false` (fixes a bug in the old `ImageNodeWidget` where the title would still appear below even when `ShowTitle=false` with `TitlePos=Above`). |
+| `Components/NumericRangeEditor.razor` | MudGrid editor for `NumericRangeSettings`: Min, Max, Origin (nullable), DataTopicIndex. Accepts `[Parameter] object? Value` (cast to `NumericRangeSettings` internally). |
+| `Components/ColorTransitionGroupEditor.razor` | Wraps existing `ColorTransitionEditor`. Accepts `[Parameter] object? Value` (cast to `ColorTransition`). Shows `ColorTopicIndex` numeric field + delegates threshold list to `ColorTransitionEditor`. |
+| `Components/NodePropertyRenderer.razor` | Reflection-driven control renderer. Loops over `[NpXxx]` attributes on the node type filtered by `Category`; renders matching MudBlazor controls. Uses `RenderTreeBuilder` delegate pattern for generic `MudNumericField<T>` and `MudSelect<T>`. `NpCustom` → `DynamicComponent` with `Node` + `Value` params. |
+
+### Modified files
+
+**Models:**
+- `GaugeNodeModel.cs` — `MinValue/MaxValue/ArcOrigin/DataTopicIndex` replaced by `NumericRangeSettings Range`. Read-only convenience accessors (`MinValue => Range.Min` etc.) kept for backward compat in widget render code. Added `[NpCustom]`, `[NpText]`, `[NpSelect]` attributes.
+- `BatteryNodeModel.cs` — same pattern as Gauge with `NumericRangeSettings Range`. Added `[NpCustom]`, `[NpCheckbox]` attributes.
+- `SwitchNodeModel.cs` — added `[NpText]`/`[NpSelect]`/`[NpCheckbox]` to all properties.
+- `ImageNodeModel.cs` — added `[NpText]`/`[NpSelect]`/`[NpCheckbox]` to all properties.
+- `LogNodeModel.cs` — added `[NpNumeric]`/`[NpCheckbox]` to all properties.
+- `TreeViewNodeModel.cs` — added `[NpText]`/`[NpCheckbox]` to all properties.
+
+**Widgets:**
+- `BaseNodeWithDataWidget.cs` — added `protected` title positioning methods: `TitlePos`, `ShowTitleFirst()`, `OuterFlexStyle()`, `TitleDivStyle()`. These are now in one place; previously copied identically into 4 widget files.
+- `GaugeNodeWidget.razor` — fully refactored to use `<StandardNodeLayout>`. Removed title methods, tooltip, container div, port loop (~35 lines of boilerplate). Only SVG arc + text remain as `<ExtraContent>`.
+- `BatteryNodeWidget.razor` — same refactor as Gauge.
+- `SwitchNodeWidget.razor` — same refactor (removed `@using Blazor.Diagrams.Components.Renderers`).
+- `ImageNodeWidget.razor` — same refactor; passes `ShowTitle="@Node.ShowTitle"` to `StandardNodeLayout`.
+
+**Services/Pages:**
+- `ApplicationState.cs` — Gauge/Battery deserialization uses `Range = new NumericRangeSettings { Min=..., Max=..., Origin=..., DataTopicIndex=... }`. Serialization uses `g.Range.Min` etc.
+- `Display.razor.cs` — paste-cloning code updated to use `Range = new NumericRangeSettings { ... }` instead of assigning flat read-only accessors.
+- `NodePropertyEditor.razor` — Gauge/Battery property sections updated to use `gaugeNode.Range.Min` etc. (direct two-way binding to the POCO properties). Node property renderer (`NodePropertyRenderer`) infrastructure created but NodePropertyEditor still uses hand-crafted sections for all node types — the full migration from `@if (Node is XxxModel)` to `NodePropertyRenderer` is deferred; the infrastructure is now in place.
+
+### Caveats / remaining work
+⚠️ `NodePropertyRenderer` is created and compiles, but `NodePropertyEditor.razor` still uses manual type-dispatch for all node types. The renderer infrastructure can be adopted incrementally — annotate a model property with `[NpXxx]`, add a Category, and `NodePropertyRenderer` will render it automatically.
+⚠️ `NpCustom` attributes on model properties reference `typeof(NumericRangeEditor)` which is in `MqttDashboard.Components` — a slight model→UI namespace dependency. Acceptable for now; could be removed by using string-based component lookup in future.
+
+---
+
 ## 2026-03-23 — Bug fixes: node resize loop, port visibility, alignment toolbar, save/save-as
 
 **Commit:** `492a2cc`

@@ -7,7 +7,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **Shared widget layout component** (`StandardNodeLayout`) — all visual nodes (Gauge, Battery, Switch, Image) now share a single outer shell that handles tooltip, container styling, title positioning (Above/Below/Left/Right), double-click to edit, and port rendering. Eliminates ~35 lines of boilerplate per widget.
+- **Shared tooltip component** (`DataValueTooltipContent`) — replaces 5 near-identical inline tooltip blocks across widgets.
+- **`NumericRangeSettings` shared POCO** — Min, Max, Origin (midpoint/zero-point), and DataTopicIndex grouped into a reusable object shared by Gauge and Battery models.
+- **Node property attribute infrastructure** — `[NpText]`, `[NpNumeric]`, `[NpCheckbox]`, `[NpSelect]`, `[NpCustom]` attributes annotate model properties. `NodePropertyRenderer` component reads them via reflection and renders the matching MudBlazor controls automatically.
+- **`NumericRangeEditor` component** — edits a `NumericRangeSettings` group (Min, Max, Origin, DataTopicIndex) in one place; used by both Gauge and Battery.
+- **`ColorTransitionGroupEditor` component** — wraps the existing `ColorTransitionEditor` with a `ColorTopicIndex` field; receives the whole `ColorTransition` group object.
+
 ### Fixed
+- **Image title not hidden correctly** — when `ShowTitle=false` with `TitlePosition=Above`, the title was still being rendered in the "below" position. `StandardNodeLayout` fixes this by checking `ShowTitle` for both positions.
+
+### Changed
+- `GaugeNodeModel` and `BatteryNodeModel` — flat `MinValue`, `MaxValue`, `ArcOrigin`, `DataTopicIndex` properties replaced by a `NumericRangeSettings Range` group. Read-only convenience accessors preserved for backward compatibility. ⚠️ Breaking change to in-memory model; dashboard files still load correctly (flat fields in `NodeState` are mapped on load).
+
+
 - **Node infinite resize loop** — clearing the Title field on a Text node while in edit mode caused the node to grow indefinitely. `MudCardHeader` was removed from the DOM when both title and icon were empty, causing Blazor.Diagrams to repeatedly re-measure and resize the node. Fixed by always rendering the header but hiding it with `display:none` when both fields are empty.
 - **Ports invisible on all non-Text nodes** — ports added to Gauge, Switch, Battery, Grid, Image, Log, and TreeView nodes were not visible. Two causes: (1) `overflow:hidden` in `ContainerStyle()` was clipping ports positioned on the node edge; (2) `pa-1` padding on the outer container div created a blank border ring inside the node boundary. Fixed by removing `overflow:hidden` from `BaseNodeWidget.ContainerStyle()` and removing the outer `pa-1` padding class from all affected widgets.
 - **Alignment toolbar buttons unclickable** — multi-select alignment toolbar was visible but clicking the alignment icons had no effect. The diagram canvas was intercepting clicks before they reached the toolbar overlay. Fixed by adding `position:relative` to the canvas container and raising the toolbar's `z-index` from `10` to `1000`.

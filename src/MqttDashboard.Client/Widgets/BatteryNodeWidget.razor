@@ -1,72 +1,40 @@
 @using MqttDashboard.Models
 @using MqttDashboard.Services
-@using Blazor.Diagrams.Components.Renderers
 @inherits BaseNodeWithDataWidget<BatteryNodeModel>
 
-<MudTooltip Delay="500" Arrow="true" Placement="Placement.Top">
-    <TooltipContent>
-        @if (!string.IsNullOrEmpty(Node.DataTopic))
-        {
-            <div>
-                <strong>Topic:</strong> @Node.DataTopic<br/>
-                <strong>Value:</strong> @(Node.DataValue?.ToString() ?? "—")<br/>
-                <strong>Updated:</strong> @(Node.DataLastUpdated.HasValue ? Node.DataLastUpdated.Value.ToString("HH:mm:ss") : "—")
-            </div>
-        }
-        else { <span>No data topic configured</span> }
-    </TooltipContent>
-    <ChildContent>
-        <div style="@ContainerStyle()"
-             class=@("default-node battery-node"+(Node.Group != null ? " grouped" : "")+(Node.Selected ? " selected" : ""))
-             @ondblclick="OnDoubleClick">
-            <div style="@OuterFlexStyle()">
-                @if (ShowTitleFirst())
-                {
-                    <div style="@TitleDivStyle()">@Node.Title</div>
+<StandardNodeLayout Node="Node" ExtraCssClass="battery-node">
+    <ExtraContent>
+        <div style="flex:1;min-height:0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <!-- Battery SVG: terminal nub on top, body below, fill from bottom -->
+            <svg viewBox="0 0 40 70" style="width:auto;height:80%;max-height:60px;display:block;">
+                <!-- Terminal nub -->
+                <rect x="13" y="0" width="14" height="5" rx="2" fill="currentColor" opacity="0.6"/>
+                <!-- Battery body outline -->
+                <rect x="3" y="5" width="34" height="60" rx="4" stroke="currentColor" stroke-width="2.5" fill="none"/>
+                <!-- Fill level (from bottom up) -->
+                @{
+                    var fillH = (int)(54 * Math.Clamp(_percent, 0.0, 1.0));
+                    var fillY = 59 - fillH;
                 }
-                <div style="flex:1;min-height:0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-                    <!-- Battery SVG: terminal nub on top, body below, fill from bottom -->
-                    <svg viewBox="0 0 40 70" style="width:auto;height:80%;max-height:60px;display:block;">
-                        <!-- Terminal nub -->
-                        <rect x="13" y="0" width="14" height="5" rx="2" fill="currentColor" opacity="0.6"/>
-                        <!-- Battery body outline -->
-                        <rect x="3" y="5" width="34" height="60" rx="4" stroke="currentColor" stroke-width="2.5" fill="none"/>
-                        <!-- Fill level (from bottom up) -->
-                        @{
-                            var fillH = (int)(54 * Math.Clamp(_percent, 0.0, 1.0));
-                            var fillY = 59 - fillH;
-                        }
-                        @if (fillH > 0)
-                        {
-                            <rect x="5" y="@fillY" width="30" height="@fillH" rx="2" fill="@GetFillColor()"/>
-                        }
-                        <!-- Percentage text centred in battery -->
-                        @((MarkupString)$"<text x=\"20\" y=\"40\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"14\" font-weight=\"bold\" fill=\"currentColor\">{FormatPercent()}</text>")
-                    </svg>
-                    @if (!string.IsNullOrEmpty(Node.Text))
-                    {
-                        <div style="text-align:center;font-size:0.7rem;padding:1px 2px;word-break:break-word;">@FormatText()</div>
-                    }
-                </div>
-                @if (!ShowTitleFirst() && !string.IsNullOrEmpty(Node.Title))
+                @if (fillH > 0)
                 {
-                    <div style="@TitleDivStyle()">@Node.Title</div>
+                    <rect x="5" y="@fillY" width="30" height="@fillH" rx="2" fill="@GetFillColor()"/>
                 }
-            </div>
-            @foreach (var port in Node.Ports)
+                <!-- Percentage text centred in battery -->
+                @((MarkupString)$"<text x=\"20\" y=\"40\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"14\" font-weight=\"bold\" fill=\"currentColor\">{FormatPercent()}</text>")
+            </svg>
+            @if (!string.IsNullOrEmpty(Node.Text))
             {
-                <PortRenderer @key="port" Port="port" Style="@PortStyle(port as MudPortModel)" />
+                <div style="text-align:center;font-size:0.7rem;padding:1px 2px;word-break:break-word;">@FormatText()</div>
             }
         </div>
-    </ChildContent>
-</MudTooltip>
+    </ExtraContent>
+</StandardNodeLayout>
 
 @code {
     private double _percent = 0;
 
-    // Returns the value that drives the fill level, honoring DataTopicIndex.
     private object? ActiveValue => Node.DataTopicIndex == 1 ? Node.DataValue2 : Node.DataValue;
-    // Returns the value used for color threshold evaluation, honoring BatteryColor.ColorTopicIndex.
     private object? ColorValue  => Node.BatteryColor.ColorTopicIndex == 1 ? Node.DataValue2 : Node.DataValue;
 
     protected override void OnInitialized()
@@ -118,15 +86,4 @@
         }
         return "";
     }
-
-    private string TitlePos => string.IsNullOrEmpty(Node.TitlePosition) ? "Above" : Node.TitlePosition;
-    private bool ShowTitleFirst() => (TitlePos == "Above" || TitlePos == "Left") && !string.IsNullOrEmpty(Node.Title);
-    private string OuterFlexStyle() => TitlePos switch {
-        "Left" or "Right" => "display:flex;flex-direction:row;align-items:center;height:100%;",
-        _ => "display:flex;flex-direction:column;height:100%;"
-    };
-    private string TitleDivStyle() => TitlePos switch {
-        "Left" or "Right" => "text-align:center;font-size:0.75rem;font-weight:500;padding:2px 4px;max-width:4rem;word-wrap:break-word;",
-        _ => "text-align:center;font-size:0.75rem;font-weight:500;padding:2px 4px 0;"
-    };
 }

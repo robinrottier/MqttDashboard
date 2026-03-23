@@ -1,73 +1,43 @@
 @using MqttDashboard.Models
 @using MqttDashboard.Services
-@using Blazor.Diagrams.Components.Renderers
 @inject ISignalRService SignalRService
 @inherits BaseNodeWithDataWidget<SwitchNodeModel>
 
-<MudTooltip Delay="500" Arrow="true" Placement="Placement.Top">
-    <TooltipContent>
-        @if (!string.IsNullOrEmpty(Node.DataTopic))
-        {
-            <div>
-                <strong>Topic:</strong> @Node.DataTopic<br/>
-                <strong>Value:</strong> @(Node.DataValue?.ToString() ?? "—")<br/>
-                <strong>Updated:</strong> @(Node.DataLastUpdated.HasValue ? Node.DataLastUpdated.Value.ToString("HH:mm:ss") : "—")
-            </div>
-        }
-        else { <span>No data topic configured</span> }
-    </TooltipContent>
-    <ChildContent>
-        <div style="@ContainerStyle()"
-             class=@("default-node switch-node"+(Node.Group != null ? " grouped" : "")+(Node.Selected ? " selected" : ""))
-             @ondblclick="OnDoubleClick">
-            <div style="@OuterFlexStyle()">
-                @if (ShowTitleFirst())
-                {
-                    <div style="@TitleDivStyle()">@Node.Title</div>
-                }
-                <div style="flex:1;min-height:0;min-width:0;display:flex;align-items:center;justify-content:center;">
-                    @if (Node.SwitchStyle == "IconOnly")
-                    {
-                        <MudIconButton Icon="@(_isOn ? Icons.Material.Filled.ToggleOn : Icons.Material.Filled.ToggleOff)"
-                                       Color="@(_isOn ? Color.Success : Color.Default)"
-                                       Size="Size.Large" Style="padding:0;"
-                                       OnClick="@(async () => await Toggle())"
-                                       Disabled="Node.IsReadOnly" />
-                    }
-                    else if (Node.SwitchStyle == "Compact")
-                    {
-                        <MudSwitch T="bool" Value="@_isOn"
-                                   ValueChanged="@(async _ => await Toggle())"
-                                   Color="Color.Success"
-                                   UncheckedColor="Color.Default"
-                                   Disabled="Node.IsReadOnly"
-                                   Label="@(_isOn ? Node.OnText : Node.OffText)"
-                                   Style="margin:0;" />
-                    }
-                    else
-                    {
-                        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-                            <MudSwitch T="bool" Value="@_isOn"
-                                       ValueChanged="@(async _ => await Toggle())"
-                                       Color="Color.Success"
-                                       UncheckedColor="Color.Default"
-                                       Disabled="Node.IsReadOnly"
-                                       Label="@(_isOn ? Node.OnText : Node.OffText)" />
-                        </div>
-                    }
-                </div>
-                @if (!ShowTitleFirst() && !string.IsNullOrEmpty(Node.Title))
-                {
-                    <div style="@TitleDivStyle()">@Node.Title</div>
-                }
-            </div>
-            @foreach (var port in Node.Ports)
+<StandardNodeLayout Node="Node" ExtraCssClass="switch-node">
+    <ExtraContent>
+        <div style="flex:1;min-height:0;min-width:0;display:flex;align-items:center;justify-content:center;">
+            @if (Node.SwitchStyle == "IconOnly")
             {
-                <PortRenderer @key="port" Port="port" Style="@PortStyle(port as MudPortModel)" />
+                <MudIconButton Icon="@(_isOn ? Icons.Material.Filled.ToggleOn : Icons.Material.Filled.ToggleOff)"
+                               Color="@(_isOn ? Color.Success : Color.Default)"
+                               Size="Size.Large" Style="padding:0;"
+                               OnClick="@(async () => await Toggle())"
+                               Disabled="Node.IsReadOnly" />
+            }
+            else if (Node.SwitchStyle == "Compact")
+            {
+                <MudSwitch T="bool" Value="@_isOn"
+                           ValueChanged="@(async _ => await Toggle())"
+                           Color="Color.Success"
+                           UncheckedColor="Color.Default"
+                           Disabled="Node.IsReadOnly"
+                           Label="@(_isOn ? Node.OnText : Node.OffText)"
+                           Style="margin:0;" />
+            }
+            else
+            {
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+                    <MudSwitch T="bool" Value="@_isOn"
+                               ValueChanged="@(async _ => await Toggle())"
+                               Color="Color.Success"
+                               UncheckedColor="Color.Default"
+                               Disabled="Node.IsReadOnly"
+                               Label="@(_isOn ? Node.OnText : Node.OffText)" />
+                </div>
             }
         </div>
-    </ChildContent>
-</MudTooltip>
+    </ExtraContent>
+</StandardNodeLayout>
 
 @code {
     private bool _isOn = false;
@@ -84,7 +54,7 @@
 
     private void UpdateState()
     {
-        var val = Node.DataValue?.ToString() ?? "";
+        var val   = Node.DataValue?.ToString() ?? "";
         var onVal = string.IsNullOrEmpty(Node.OnValue) ? "1" : Node.OnValue;
         _isOn = val.Equals(onVal, StringComparison.OrdinalIgnoreCase)
              || val == "true" || val == "on";
@@ -97,21 +67,7 @@
         if (string.IsNullOrEmpty(publishTopic)) return;
         var payload = _isOn
             ? (string.IsNullOrEmpty(Node.OffValue) ? "0" : Node.OffValue)
-            : (string.IsNullOrEmpty(Node.OnValue) ? "1" : Node.OnValue);
+            : (string.IsNullOrEmpty(Node.OnValue)  ? "1" : Node.OnValue);
         await SignalRService.PublishMessageAsync(publishTopic, payload, Node.Retain, Node.QosLevel);
     }
-
-    private string TitlePos => string.IsNullOrEmpty(Node.TitlePosition) ? "Above" : Node.TitlePosition;
-    private bool ShowTitleFirst() => (TitlePos == "Above" || TitlePos == "Left") && !string.IsNullOrEmpty(Node.Title);
-    private string OuterFlexStyle() => TitlePos switch
-    {
-        "Left"  => "display:flex;flex-direction:row;align-items:center;height:100%;",
-        "Right" => "display:flex;flex-direction:row;align-items:center;height:100%;",
-        _       => "display:flex;flex-direction:column;height:100%;"
-    };
-    private string TitleDivStyle() => TitlePos switch
-    {
-        "Left" or "Right" => "text-align:center;font-size:0.75rem;font-weight:500;padding:2px 4px;max-width:4rem;word-wrap:break-word;",
-        _ => "text-align:center;font-size:0.75rem;font-weight:500;padding:2px 4px 0;"
-    };
 }

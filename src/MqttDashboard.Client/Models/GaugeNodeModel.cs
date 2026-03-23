@@ -1,4 +1,5 @@
 using Blazor.Diagrams.Core.Geometry;
+using MqttDashboard.Components;
 
 namespace MqttDashboard.Models;
 
@@ -17,22 +18,21 @@ public class GaugeNodeModel : MudNodeModel
         };
     }
 
-    public double MinValue { get; set; } = 0;
-    public double MaxValue { get; set; } = 100;
+    [NpCustom("Range", typeof(NumericRangeEditor), Category = "Gauge", Order = 1)]
+    public NumericRangeSettings Range { get; set; } = new();
+
+    [NpText("Unit", Category = "Gauge", Order = 2, Placeholder = "°C, W…")]
     public string? Unit { get; set; }
 
-    /// <summary>
-    /// Value at which the arc originates (the "zero" point of the arc).
-    /// When null, defaults to MinValue (arc always starts from the left end).
-    /// </summary>
-    public double? ArcOrigin { get; set; }
-
-    /// <summary>0-based index of the data topic whose value drives the gauge arc and label.</summary>
-    public int DataTopicIndex { get; set; } = 0;
-
-    /// <summary>Where the static Text label is displayed relative to the gauge arc: "Above" or "Below" (default).</summary>
+    [NpSelect("Text Position", "Below", "Above", Category = "Gauge", Order = 3, Labels = ["Below arc", "Above arc"])]
     public string TextPosition { get; set; } = "Below";
 
-    /// <summary>Colour transition settings (topic index + threshold rules) for this gauge.</summary>
+    [NpCustom("Color Transitions", typeof(ColorTransitionGroupEditor), Category = "Gauge", Order = 4)]
     public ColorTransition GaugeColor { get; set; } = new();
+
+    // Backward-compatible convenience accessors used by the widget rendering code.
+    public double MinValue => Range.Min;
+    public double MaxValue => Range.Max;
+    public double? ArcOrigin => Range.Origin;
+    public int DataTopicIndex => Range.DataTopicIndex;
 }

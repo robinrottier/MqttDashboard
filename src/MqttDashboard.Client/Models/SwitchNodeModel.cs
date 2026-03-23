@@ -9,30 +9,34 @@ public class SwitchNodeModel : MudNodeModel
         NodeType = "Switch";
     }
 
-    /// <summary>Topic to publish to when toggled. Defaults to DataTopic if empty.</summary>
+    [NpText("Publish Topic", Category = "Switch", Order = 1, Placeholder = "Defaults to Data Topic if empty")]
     public string? PublishTopic { get; set; }
 
-    /// <summary>Payload to publish when switched ON.</summary>
+    [NpText("ON Value", Category = "Switch", Order = 2, Placeholder = "1")]
     public string OnValue { get; set; } = "1";
 
-    /// <summary>Payload to publish when switched OFF.</summary>
+    [NpText("OFF Value", Category = "Switch", Order = 3, Placeholder = "0")]
     public string OffValue { get; set; } = "0";
 
-    /// <summary>Display style: "Full" (chip + icon), "Compact" (single row with text+icon), "IconOnly" (icon only).</summary>
+    [NpSelect("Switch Style", "Full", "Compact", "IconOnly",
+        Category = "Switch", Order = 4,
+        Labels = ["Full (chip + icon)", "Compact (text + icon)", "Icon Only"])]
     public string SwitchStyle { get; set; } = "Full";
 
-    /// <summary>Text shown when state is ON.</summary>
+    [NpText("ON Text", Category = "Switch", Order = 5, Placeholder = "ON")]
     public string OnText { get; set; } = "ON";
 
-    /// <summary>Text shown when state is OFF.</summary>
+    [NpText("OFF Text", Category = "Switch", Order = 6, Placeholder = "OFF")]
     public string OffText { get; set; } = "OFF";
 
-    /// <summary>If true, the switch cannot be toggled by the user and does not publish to MQTT.</summary>
+    [NpCheckbox("Read Only (display only, no toggle)", Category = "Switch", Order = 7)]
     public bool IsReadOnly { get; set; } = false;
 
-    /// <summary>If true, the MQTT message will be published with the retain flag set.</summary>
+    [NpCheckbox("Retain message (broker stores last value)", Category = "Publish", Order = 8)]
     public bool Retain { get; set; } = false;
 
-    /// <summary>MQTT Quality of Service level: 0 = At Most Once, 1 = At Least Once, 2 = Exactly Once.</summary>
+    [NpSelect("QoS Level", "0", "1", "2",
+        Category = "Publish", Order = 9,
+        Labels = ["0 — At Most Once (fire and forget)", "1 — At Least Once", "2 — Exactly Once"])]
     public int QosLevel { get; set; } = 0;
 }
