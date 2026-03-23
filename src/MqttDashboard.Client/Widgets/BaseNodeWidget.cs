@@ -18,7 +18,7 @@ public abstract class BaseNodeWidget<TNode> : ComponentBase, IDisposable
     protected string ContainerStyle()
     {
         var size = Node.Size != null
-            ? $"width:{Node.Size.Width}px;height:{Node.Size.Height}px;overflow:hidden;"
+            ? $"width:{Node.Size.Width}px;height:{Node.Size.Height}px;"
             : string.Empty;
         var bg = !string.IsNullOrEmpty(Node.BackgroundColor)
             ? $"background-color:{Node.BackgroundColor};"

@@ -18,7 +18,7 @@
     </TooltipContent>
     <ChildContent>
         <div style="@ContainerStyle()"
-             class=@("pa-1 default-node switch-node"+(Node.Group != null ? " grouped" : "")+(Node.Selected ? " selected" : ""))
+             class=@("default-node switch-node"+(Node.Group != null ? " grouped" : "")+(Node.Selected ? " selected" : ""))
              @ondblclick="OnDoubleClick">
             <div style="@OuterFlexStyle()">
                 @if (ShowTitleFirst())

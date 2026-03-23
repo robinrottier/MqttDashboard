@@ -29,25 +29,22 @@
             Style="@GenerateStyle()" 
             Class=@("pa-1 default-node"+(Node.Group != null ? " grouped" : "")+(Node.Selected ? " selected" : ""))
             @ondblclick="OnDoubleClick">
-        @if (!string.IsNullOrEmpty(Node.Icon) || !string.IsNullOrEmpty(Node.Title))
-        {
-            <MudCardHeader Class="pa-0">
-                <CardHeaderContent>
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="0" Class="pa-1">
-                        @if (!string.IsNullOrEmpty(Node.Icon))
-                        {
-                            <MudIcon Icon="@Node.Icon"
-                            Color="@GetIconColor()"
-                            Size="MudBlazor.Size.Small" />
-                        }
-                        @if (!string.IsNullOrEmpty(Node.Title))
-                        {
-                            <MudText Style="text-align:center" Typo="Typo.body2">@(Node.Title)</MudText>
-                        }
-                    </MudStack>
-                </CardHeaderContent>
-            </MudCardHeader>
-        }
+        <MudCardHeader Class="pa-0" style="@(string.IsNullOrEmpty(Node.Icon) && string.IsNullOrEmpty(Node.Title) ? "display:none" : "")">
+            <CardHeaderContent>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="0" Class="pa-1">
+                    @if (!string.IsNullOrEmpty(Node.Icon))
+                    {
+                        <MudIcon Icon="@Node.Icon"
+                        Color="@GetIconColor()"
+                        Size="MudBlazor.Size.Small" />
+                    }
+                    @if (!string.IsNullOrEmpty(Node.Title))
+                    {
+                        <MudText Style="text-align:center" Typo="Typo.body2">@(Node.Title)</MudText>
+                    }
+                </MudStack>
+            </CardHeaderContent>
+        </MudCardHeader>
         @if (!string.IsNullOrEmpty(Node.Text))
         {
         <MudCardContent Class="pa-0">

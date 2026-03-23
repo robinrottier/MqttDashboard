@@ -1051,6 +1051,17 @@ public partial class Display : IDisposable
         var result = await dialog.Result;
         if (result is { Canceled: false, Data: string name } && !string.IsNullOrWhiteSpace(name))
         {
+            // Check for existing file and confirm overwrite
+            var existing = await DashboardService.ListDashboardsAsync();
+            if (existing.Any(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase))
+                && !string.Equals(name, AppState.DiagramName, StringComparison.OrdinalIgnoreCase))
+            {
+                var overwrite = await DialogService.ShowMessageBoxAsync(
+                    "Overwrite?",
+                    $"A dashboard named '{name}' already exists. Overwrite it?",
+                    yesText: "Overwrite", cancelText: "Cancel");
+                if (overwrite != true) return;
+            }
             var state = BuildFullState();
             var success = await DashboardService.SaveDashboardByNameAsync(name, state);
             if (success)
@@ -1128,12 +1139,15 @@ public partial class Display : IDisposable
 
     private async Task<bool> SaveDashboard()
     {
+        if (string.IsNullOrEmpty(AppState.DiagramName))
+        {
+            Snackbar.Add("No filename — use Save As to save this dashboard", Severity.Warning);
+            return false;
+        }
         try
         {
             var state = BuildFullState();
-            var name = string.IsNullOrEmpty(AppState.DiagramName) ? "Default" : AppState.DiagramName;
-            if (string.IsNullOrEmpty(AppState.DiagramName))
-                AppState.SetDiagramName("Default");
+            var name = AppState.DiagramName;
             var success = await DashboardService.SaveDashboardByNameAsync(name, state);
             if (success)
             {
@@ -1204,8 +1218,8 @@ public partial class Display : IDisposable
 
     private string CanvasStyle =>
         string.IsNullOrEmpty(AppState.CanvasBackgroundColor)
-            ? "width: 100%; height: calc(100vh - 100px); overflow: hidden;"
-            : $"width: 100%; height: calc(100vh - 100px); overflow: hidden; background-color: {AppState.CanvasBackgroundColor};";
+            ? "position:relative;width: 100%; height: calc(100vh - 100px); overflow: hidden;"
+            : $"position:relative;width: 100%; height: calc(100vh - 100px); overflow: hidden; background-color: {AppState.CanvasBackgroundColor};";
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 

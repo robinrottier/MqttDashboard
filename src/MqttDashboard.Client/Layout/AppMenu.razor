@@ -20,7 +20,7 @@
         {
             <MudMenuItem Label="Reload from Disk" OnClick="ReloadDiagram" />
             <MudDivider />
-            <MudMenuItem Label="Save"                 OnClick="SaveDashboard"            />
+            <MudMenuItem Label="Save" Disabled="@string.IsNullOrEmpty(AppState.DiagramName)" OnClick="SaveDashboard" />
             <MudMenuItem Label="Save As…"             OnClick="SaveAsDiagram"          />
             <MudDivider />
             <MudMenuItem Label="Dashboard Properties…"  OnClick="MenuDiagramProperties"  />

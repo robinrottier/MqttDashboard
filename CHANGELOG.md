@@ -7,6 +7,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- **Node infinite resize loop** — clearing the Title field on a Text node while in edit mode caused the node to grow indefinitely. `MudCardHeader` was removed from the DOM when both title and icon were empty, causing Blazor.Diagrams to repeatedly re-measure and resize the node. Fixed by always rendering the header but hiding it with `display:none` when both fields are empty.
+- **Ports invisible on all non-Text nodes** — ports added to Gauge, Switch, Battery, Grid, Image, Log, and TreeView nodes were not visible. Two causes: (1) `overflow:hidden` in `ContainerStyle()` was clipping ports positioned on the node edge; (2) `pa-1` padding on the outer container div created a blank border ring inside the node boundary. Fixed by removing `overflow:hidden` from `BaseNodeWidget.ContainerStyle()` and removing the outer `pa-1` padding class from all affected widgets.
+- **Alignment toolbar buttons unclickable** — multi-select alignment toolbar was visible but clicking the alignment icons had no effect. The diagram canvas was intercepting clicks before they reached the toolbar overlay. Fixed by adding `position:relative` to the canvas container and raising the toolbar's `z-index` from `10` to `1000`.
+- **File → New incorrectly enables Save** — after creating a new (unsaved) dashboard, the Save menu item was enabled and clicking it would silently save as `"Default"`. Save is now disabled when no filename is set (`DiagramName` is empty); a warning snackbar is shown if Save is somehow triggered without a filename.
+- **Save As overwrites without confirmation** — entering an existing dashboard name in the Save As dialog silently overwrote it. Save As now checks the server file list and shows an "Overwrite?" confirmation dialog before proceeding.
+
 ### Added
 - **Battery: value topic index + color topic index** — Battery nodes now have the same `DataTopicIndex` and `ColorTopicIndex` controls as Gauge nodes. Allows a battery widget to display and colour based on a specific topic when multiple topics are bound.
 - **Undo All** — new Edit menu item that reverts all unsaved changes in a single step, returning the diagram to its state at the time Edit Mode was entered (stays in Edit Mode).

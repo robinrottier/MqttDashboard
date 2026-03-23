@@ -4,7 +4,7 @@
 @inherits BaseNodeWidget<TreeViewNodeModel>
 
 <div style="@ContainerStyle()"
-     class=@("pa-1 default-node treeview-node"+(Node.Group!=null?" grouped":"")+(Node.Selected?" selected":""))
+     class=@("default-node treeview-node"+(Node.Group!=null?" grouped":"")+(Node.Selected?" selected":""))
      @ondblclick="OnDoubleClick">
     <div style="display:flex;flex-direction:column;height:100%;overflow:hidden;min-width:0;">
         @if (!string.IsNullOrEmpty(Node.Title))

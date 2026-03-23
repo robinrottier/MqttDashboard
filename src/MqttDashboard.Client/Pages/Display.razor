@@ -78,7 +78,7 @@ else
     <MudPaper @key="_diagram" Elevation="2" Style="@CanvasStyle">
         @if (AppState.IsEditMode && AppState.IsMultiSelected)
         {
-            <MudPaper Elevation="1" Style="position:absolute;z-index:10;top:4px;left:50%;transform:translateX(-50%);display:flex;gap:2px;padding:2px 4px;border-radius:8px;">
+            <MudPaper Elevation="1" Style="position:absolute;z-index:1000;top:4px;left:50%;transform:translateX(-50%);display:flex;gap:2px;padding:2px 4px;border-radius:8px;">
                 <MudTooltip Text="Align Left Edges">
                     <MudIconButton Icon="@Icons.Material.Filled.AlignHorizontalLeft" Size="Size.Small" Color="Color.Primary" OnClick='() => AlignNodes("left")' />
                 </MudTooltip>

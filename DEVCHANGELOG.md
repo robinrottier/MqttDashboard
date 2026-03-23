@@ -7,7 +7,51 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ---
 
-## 2026-03-22 — Undo state fixes, log columns, color transition per-node, UndoAll
+## 2026-03-23 — Bug fixes: node resize loop, port visibility, alignment toolbar, save/save-as
+
+**Commit:** (pending)
+**Timestamp:** 2026-03-23 ~18:15 UTC
+**Branch:** FEAT-C
+
+### bug-node-grow — Node grows indefinitely when Title is cleared
+**Files:** `src/MqttDashboard.Client/Widgets/MudNodeWidget.razor`
+
+`<MudCardHeader>` was conditionally removed from the DOM when both `Node.Title` and `Node.Icon` were empty. Blazor.Diagrams re-measures node content height after each render; losing the header element caused a size change, which triggered another render, which re-measured again → infinite loop. Fix: always render the `MudCardHeader` but apply `style="display:none"` when both fields are empty. The DOM structure stays stable; Blazor.Diagrams sees no size change.
+
+---
+
+### bug-port-invisible — Ports invisible on all non-Text nodes; blank border visible
+**Files:** `src/MqttDashboard.Client/Widgets/BaseNodeWidget.cs`, `GaugeNodeWidget.razor`, `SwitchNodeWidget.razor`, `BatteryNodeWidget.razor`, `GridNodeWidget.razor`, `ImageNodeWidget.razor`, `LogNodeWidget.razor`, `TreeViewNodeWidget.razor`
+
+Two root causes:
+1. `ContainerStyle()` in `BaseNodeWidget` added `overflow:hidden` whenever `Node.Size` was set. Ports (rendered inside that container) were clipped at the node boundary. Removed `overflow:hidden` from the style string.
+2. All affected widgets applied `pa-1` (4 px MudBlazor padding) on the outer container div, creating a visible blank gap between the node's outer border and its content. Removed `pa-1` from the outer div in all 7 widgets. Inner content retains its own spacing as needed.
+
+`MudNodeWidget` was unaffected because it renders ports outside the `<MudCard>` element.
+
+---
+
+### bug-align-toolbar — Alignment toolbar buttons unclickable
+**Files:** `src/MqttDashboard.Client/Pages/Display.razor`, `Display.razor.cs`
+
+The alignment toolbar overlay (`position:absolute;z-index:10`) was inside a `<MudPaper>` that lacked `position:relative`. The `<DiagramCanvas>` SVG was rendered on top and intercepting pointer events. Two fixes:
+1. Added `position:relative` to `CanvasStyle` so the absolute-positioned toolbar is scoped to the canvas container.
+2. Raised toolbar `z-index` from `10` → `1000` to ensure it sits above all diagram canvas elements.
+
+---
+
+### bug-new-save-state — Save enabled after New; Save As overwrites silently
+**Files:** `src/MqttDashboard.Client/Layout/AppMenu.razor`, `src/MqttDashboard.Client/Pages/Display.razor.cs`
+
+Two problems:
+1. After File → New, `DiagramName` is empty but the Save menu item was enabled. `SaveDashboard()` had a silent fallback: `var name = string.IsNullOrEmpty(...) ? "Default" : ...`. Fixed: Save menu item now has `Disabled="@string.IsNullOrEmpty(AppState.DiagramName)"`. The silent fallback removed; `SaveDashboard()` returns early with a warning snackbar if no filename is set.
+2. Save As did not check for an existing file before overwriting. Fixed: after the user enters a name, `ListDashboardsAsync()` is called; if a match exists (case-insensitive) and it differs from the current filename, a MudBlazor "Overwrite?" confirm dialog is shown before proceeding.
+
+Note: `DiagramName` (filename on disk, no extension) and `DiagramDisplayName` (human label in JSON, shown in title bar) are distinct — Save/Save As operate on the filename only.
+
+---
+
+
 
 **Commit:** `dbb63cb`
 **Timestamp:** 2026-03-22 ~18:15 UTC
