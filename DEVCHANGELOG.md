@@ -9,7 +9,7 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ## 2026-03-23 — Bug fixes: node resize loop, port visibility, alignment toolbar, save/save-as
 
-**Commit:** (pending)
+**Commit:** `492a2cc`
 **Timestamp:** 2026-03-23 ~18:15 UTC
 **Branch:** FEAT-C
 
