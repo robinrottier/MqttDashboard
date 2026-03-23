@@ -322,7 +322,7 @@
                           Placeholder="https://… or data:image/…"
                           HelperText="Displayed as the node background. Leave blank for none." />
             <MudGrid Spacing="2" Class="mt-1">
-                <MudItem xs="7">
+                <MudItem xs="12">
                     <MudSelect @bind-Value="@Node.BackgroundObjectFit"
                                Label="Image Fit"
                                Variant="Variant.Outlined"
@@ -332,11 +332,6 @@
                         <MudSelectItem Value="@("contain")">Contain (fit inside)</MudSelectItem>
                         <MudSelectItem Value="@("fill")">Fill (stretch)</MudSelectItem>
                     </MudSelect>
-                </MudItem>
-                <MudItem xs="5" Class="d-flex align-center">
-                    <MudCheckBox T="bool" @bind-Value="@Node.BackgroundImageFromData"
-                                 Label="Use data value as URL"
-                                 Dense="true" />
                 </MudItem>
             </MudGrid>
 

@@ -790,7 +790,6 @@ public partial class Display : IDisposable
             // Base background image
             if (!string.IsNullOrEmpty(n.BackgroundImageUrl)) ns.BackgroundImageUrl = n.BackgroundImageUrl;
             if (n.BackgroundObjectFit != "cover") ns.BackgroundObjectFit = n.BackgroundObjectFit;
-            if (n.BackgroundImageFromData) ns.BackgroundImageFromData = true;
             return ns;
         }).ToList();
     }
@@ -912,7 +911,6 @@ public partial class Display : IDisposable
             // Base background image
             if (!string.IsNullOrEmpty(ns.BackgroundImageUrl)) node.BackgroundImageUrl = ns.BackgroundImageUrl;
             if (ns.BackgroundObjectFit != null) node.BackgroundObjectFit = ns.BackgroundObjectFit;
-            if (ns.BackgroundImageFromData == true) node.BackgroundImageFromData = true;
             node.Size = new Blazor.Diagrams.Core.Geometry.Size(ns.Width, ns.Height);
             foreach (var ps in ns.Ports)
             {

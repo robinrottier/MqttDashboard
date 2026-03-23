@@ -153,7 +153,7 @@ public class NodeState
     // Image/background (base — any node type)
     public string? BackgroundImageUrl { get; set; }
     public string? BackgroundObjectFit { get; set; }
-    public bool? BackgroundImageFromData { get; set; }
+    public bool? BackgroundImageFromData { get; set; } // legacy field, ignored on load
 
     // Legacy image node fields — kept for loading old files; mapped to base properties on load
     public string? StaticImageUrl { get; set; }

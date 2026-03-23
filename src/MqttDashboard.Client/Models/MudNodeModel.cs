@@ -52,7 +52,7 @@ namespace MqttDashboard.Models
         /// When true, the first MQTT data value is used as the background image URL
         /// instead of <see cref="BackgroundImageUrl"/>.
         /// </summary>
-        public bool BackgroundImageFromData { get; set; }
+
 
         /// <summary>
         /// Custom metadata dictionary for future extensibility

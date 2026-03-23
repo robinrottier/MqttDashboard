@@ -49,9 +49,7 @@
             var sb = new System.Text.StringBuilder();
             if (Node.Size != null) sb.Append($"width:{Node.Size.Width}px;height:{Node.Size.Height}px;");
             if (!string.IsNullOrEmpty(Node.BackgroundColor)) sb.Append($"background-color:{Node.BackgroundColor};");
-            var bgUrl = Node.BackgroundImageFromData
-                ? Node.DataValue?.ToString()
-                : Node.BackgroundImageUrl;
+            var bgUrl = Node.BackgroundImageUrl;
             if (!string.IsNullOrEmpty(bgUrl))
             {
                 sb.Append($"background-image:url('{bgUrl}');");

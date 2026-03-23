@@ -399,7 +399,6 @@ public class ApplicationState
                         // Legacy Image nodes become plain Text nodes with a background image
                         BackgroundImageUrl    = nodeState.BackgroundImageUrl ?? nodeState.StaticImageUrl ?? string.Empty,
                         BackgroundObjectFit   = nodeState.BackgroundObjectFit ?? nodeState.ObjectFit ?? "cover",
-                        BackgroundImageFromData = nodeState.BackgroundImageFromData ?? false,
                     },
                     _ => new MudNodeModel(position: new Point(nodeState.X, nodeState.Y)),
                 };
@@ -432,8 +431,6 @@ public class ApplicationState
                     node.BackgroundImageUrl = nodeState.BackgroundImageUrl;
                 if (nodeState.BackgroundObjectFit != null)
                     node.BackgroundObjectFit = nodeState.BackgroundObjectFit;
-                if (nodeState.BackgroundImageFromData == true)
-                    node.BackgroundImageFromData = true;
 
                 diagram.Nodes.Add(node);
                 nodeMap[nodeState.Id] = node;
@@ -614,8 +611,6 @@ public class ApplicationState
                 nodeState.BackgroundImageUrl = node.BackgroundImageUrl;
             if (node.BackgroundObjectFit != "cover")
                 nodeState.BackgroundObjectFit = node.BackgroundObjectFit;
-            if (node.BackgroundImageFromData)
-                nodeState.BackgroundImageFromData = true;
 
             // Save ports
             foreach (var port in node.Ports)
