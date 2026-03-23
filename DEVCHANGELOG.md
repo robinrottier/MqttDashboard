@@ -9,7 +9,7 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ## 2026-03-24 — Widget/model architecture refactor: shared layout, attributes, property groups
 
-**Commit:** _(see below)_
+**Commit:** `dde31e9`
 **Branch:** develop
 
 ### New files
