@@ -9,7 +9,7 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ## 2026-03-23 — Remove Grid/Image node types; add background image to base node
 
-**Commit:** _(see below)_
+**Commit:** `2074325`
 **Branch:** develop
 
 ### Removed
