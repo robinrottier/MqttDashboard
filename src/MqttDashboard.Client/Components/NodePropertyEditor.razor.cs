@@ -1,6 +1,7 @@
 using MqttDashboard.Models;
 using MudBlazor;
 using Microsoft.AspNetCore.Components;
+using System.Reflection;
 
 namespace MqttDashboard.Components;
 
@@ -151,4 +152,14 @@ public partial class NodePropertyEditor
     {
         MudDialog?.Cancel();
     }
+
+    /// <summary>
+    /// Returns the distinct [NpXxx]-annotated categories on this node type, in declaration order.
+    /// These are the node-type-specific categories rendered by NodePropertyRenderer.
+    /// </summary>
+    private IEnumerable<string> GetNodeSpecificCategories() =>
+        Node.GetType().GetProperties()
+            .Select(p => p.GetCustomAttribute<NodePropertyAttribute>()?.Category)
+            .Where(c => !string.IsNullOrEmpty(c))
+            .Distinct()!;
 }

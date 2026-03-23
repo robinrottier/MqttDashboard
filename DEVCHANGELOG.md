@@ -7,6 +7,44 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ---
 
+## 2026-03-23 — Widget/property-editor architecture refactor (Phase 2+3 completion)
+
+**Branch:** develop
+
+### Widget refactor: MudNodeWidget uses StandardNodeLayout
+
+**`StandardNodeLayout.razor`** updated to support icon rendering alongside the title:
+- Added `HasTitleContent` computed property — title area renders when either `Node.Icon` or `Node.Title` is non-empty (was only checking title)
+- Added `IconColor` computed property (same enum mapping as MudNodeWidget previously had inline)
+- Updated `TitleDivStyle`: Left/Right positions use column-flex with centred icon above text; Above/Below use row-flex with icon+text side by side
+- Removed duplicated icon-color logic from `MudNodeWidget`
+
+**`MudNodeWidget.razor`** fully replaced with `StandardNodeLayout` wrapper:
+- Removed ~90 lines of custom MudCard/MudCardHeader/MudCardContent/tooltip/port rendering — all now inherited from `StandardNodeLayout`
+- Text content passed as `ExtraContent` RenderFragment
+- Now benefits from: proper `DataValueTooltipContent` (multi-topic aware, sanitised), background image support, correct port rendering, double-click via `AppState.TriggerEditProperties()`
+- Fixed latent bug: old widget checked `Node.DataTopic` (legacy singular field) as the loop condition inside a loop over `Node.DataTopics`
+
+### Property editor refactor: reflection-driven, no more @if blocks
+
+**`NodePropertyEditor.razor`** — removed 5 `@if (Node is XxxModel)` blocks (~135 lines):
+- Replaced with a 4-line `@foreach (var category in GetNodeSpecificCategories())` loop that renders `<NodePropertyRenderer Node="Node" Category="@category" />`
+- Each node-type-specific category gets a `<MudDivider>` + caption heading + the renderer
+- `NodePropertyRenderer.razor` (already existed) reads `[NpXxx]` attributes via reflection and renders the appropriate MudBlazor control (MudTextField, MudNumericField, MudCheckBox, MudSelect, DynamicComponent for custom group editors)
+
+**`NodePropertyEditor.razor.cs`** — added `GetNodeSpecificCategories()`:
+- Reflects over the current node's type, collects distinct `Category` values from all `[NpXxx]`-annotated properties, returns them in declaration order
+- Added `using System.Reflection`
+
+**Effect of this change:**
+- Adding a new node type no longer requires editing `NodePropertyEditor.razor` — just annotate the model properties with `[NpCustom]`/`[NpText]`/`[NpNumeric]`/`[NpCheckbox]`/`[NpSelect]` attributes and they appear automatically
+- ⚠️ Minor visual change: node-specific fields are now stacked vertically rather than in compact MudGrid rows (e.g. Gauge: Min/Max/Origin/Unit now stack instead of appearing in one row). Functionally identical.
+
+### Removed Grid/Image editor extractor todos
+- `refactor-editor-grid` and `refactor-editor-image` marked done (those node types no longer exist)
+
+---
+
 ## 2026-03-23 — Fix InvalidCharacterError from invalid chars in MQTT payloads
 
 **Branch:** develop
