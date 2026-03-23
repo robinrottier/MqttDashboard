@@ -23,6 +23,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **`ColorTransitionGroupEditor` component** — wraps the existing `ColorTransitionEditor` with a `ColorTopicIndex` field; receives the whole `ColorTransition` group object.
 
 ### Fixed
+- **InvalidCharacterError crash** — when an MQTT broker sent payloads containing null bytes (U+0000) or other characters that are invalid in HTML/XML text nodes (lone surrogates, C0/C1 control chars), Blazor's DOM update would throw `InvalidCharacterError`, killing the circuit. Fixed by: (1) sanitizing payloads at source in `MqttClientService.SanitizePayload()`, (2) HTML-encoding content injected via `MarkupString` in `BatteryNodeWidget`, (3) sanitizing values before display in `DataValueTooltipContent`.
 - **Image title not hidden correctly** — when `ShowTitle=false` with `TitlePosition=Above`, the title was still being rendered in the "below" position. `StandardNodeLayout` fixes this by checking `ShowTitle` for both positions.
 
 ### Changed

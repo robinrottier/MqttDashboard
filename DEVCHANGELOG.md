@@ -7,6 +7,34 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ---
 
+## 2026-03-23 — Fix InvalidCharacterError from invalid chars in MQTT payloads
+
+**Branch:** develop
+
+### Root cause
+MQTT brokers can send payloads containing null bytes (`\0`, U+0000) or other characters that are illegal in XML 1.0 / HTML DOM text nodes (lone surrogates U+D800–U+DFFF, C0/C1 control chars). When Blazor Server applied a render batch containing these characters in a text node, the browser's DOM API threw `DOMException: InvalidCharacterError`, which Blazor reported as an `InvalidOperationException` and killed the SignalR circuit.
+
+The symptom was intermittent crashes that correlated with MQTT data arriving; the user observed it as a crash when opening the Battery node property editor (the timing coincided with a data update).
+
+### Fix
+Three-layer defence:
+
+1. **`MqttClientService.SanitizePayload()`** (`src/MqttDashboard.Server/Services/MqttClientService.cs`)
+   - New private static helper strips characters outside the valid XML 1.0 character set: keeps `\t`, `\n`, `\r`, U+0020–U+D7FF, U+E000–U+FFFD; discards everything else.
+   - Called at the single point where MQTT payloads are decoded: `var value = SanitizePayload(ConvertPayloadToString(...));`
+
+2. **`BatteryNodeWidget.razor`** — SVG `<text>` rendered via `MarkupString`
+   - `FormatPercent()` output is now wrapped with `System.Net.WebUtility.HtmlEncode()` before being interpolated into the raw HTML string.
+   - `HtmlEncode` also encodes `<`, `>`, `&` so the SVG is always valid markup.
+
+3. **`DataValueTooltipContent.razor`** — displays raw MQTT value in tooltip
+   - Added `SanitizeForDisplay(string?)` local method (same stripping logic) applied to `val?.ToString()` before it's rendered in a text node.
+
+### Cleanup
+- `MudNodeModel.cs` — removed orphaned XML doc comment block that was left dangling after the `BackgroundImageFromData` property was deleted in the previous session.
+
+---
+
 ## 2026-03-23 — Remove Grid/Image node types; add background image to base node
 
 **Commit:** `2074325`

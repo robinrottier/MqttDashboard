@@ -49,12 +49,6 @@ namespace MqttDashboard.Models
         public string BackgroundObjectFit { get; set; } = "cover";
 
         /// <summary>
-        /// When true, the first MQTT data value is used as the background image URL
-        /// instead of <see cref="BackgroundImageUrl"/>.
-        /// </summary>
-
-
-        /// <summary>
         /// Custom metadata dictionary for future extensibility
         /// </summary>
         public Dictionary<string, string> Metadata { get; set; } = new();
