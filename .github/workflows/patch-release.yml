@@ -1,8 +1,13 @@
 name: Patch Release
 
-# Bumps the patch component of the latest stable version tag and pushes it.
-# Then explicitly dispatches the "Create Release" and "Build and Push Docker Image" workflows
-# via the GitHub API (GITHUB_TOKEN push alone won't trigger other workflows — GitHub anti-loop rule).
+# Bumps the patch component of the latest stable version tag and pushes it,
+# then explicitly dispatches the "Create Release" and "Build and Push Docker Image"
+# workflows against the new tag.
+#
+# Background: GitHub Actions blocks on:push triggers in other workflows when the
+# push is made with GITHUB_TOKEN (to prevent infinite loops). We work around this
+# by dispatching the downstream workflows explicitly via the GitHub CLI.
+#
 # For a major or minor bump, create the tag manually: git tag vX.Y.0 && git push origin vX.Y.0
 
 on:
@@ -49,19 +54,15 @@ jobs:
           git tag "${{ steps.version.outputs.tag }}"
           git push origin "${{ steps.version.outputs.tag }}"
 
-      - name: Dispatch release and docker workflows
-        # GITHUB_TOKEN push won't trigger on:push:tags in other workflows (GitHub anti-loop).
-        # Explicitly dispatch them via the API — workflow_dispatch works with GITHUB_TOKEN.
+      - name: Dispatch downstream workflows
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ steps.version.outputs.tag }}"
           REPO="${{ github.repository }}"
-          AUTH="Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}"
-
-          for workflow in release.yml docker.yml; do
-            echo "Dispatching $workflow at ref $TAG"
-            curl -s -X POST \
-              -H "$AUTH" \
-              -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/$REPO/actions/workflows/$workflow/dispatches" \
-              -d "{\"ref\":\"$TAG\"}"
-          done
+          # Small delay to ensure the tag is visible to the GitHub API
+          sleep 5
+          echo "Dispatching Create Release for $TAG"
+          gh workflow run release.yml --ref "$TAG" -R "$REPO"
+          echo "Dispatching Build and Push Docker Image for $TAG"
+          gh workflow run docker.yml  --ref "$TAG" -R "$REPO"
