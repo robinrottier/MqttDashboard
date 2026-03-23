@@ -18,8 +18,15 @@ public class MqttClientService : BackgroundService
     private IMqttClient? _mqttClient;
     private MqttClientOptions? _mqttOptions;
     private readonly ConcurrentDictionary<string, bool> _subscribedTopics = new();
+    private readonly ConcurrentDictionary<string, string> _lastKnownValues = new();
     private CancellationToken _stoppingToken;
     private int _isReconnecting = 0; // 0 = false, 1 = true (Interlocked flag)
+
+    /// <summary>
+    /// Last-known payload for each topic received since server start.
+    /// Used by <see cref="MqttDataHub.GetCurrentValuesForTopics"/> to replay values to reconnecting clients.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> LastKnownValues => _lastKnownValues;
 
     /// <summary>
     /// Fires when an MQTT message is received from the broker. Used by in-process subscribers
@@ -128,6 +135,9 @@ public class MqttClientService : BackgroundService
                 var timestamp = DateTime.UtcNow;
 
                 _logger.LogTrace("Received MQTT message on topic {Topic}: {Payload}", topic, payload);
+
+                // Cache the latest value for each topic so reconnecting clients can replay it.
+                _lastKnownValues[topic] = payload;
 
                 var interestedClients = _subscriptionManager.GetInterestedClients(topic);
 

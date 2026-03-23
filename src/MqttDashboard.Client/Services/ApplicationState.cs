@@ -87,13 +87,14 @@ public class ApplicationState
         !string.IsNullOrEmpty(DiagramName) ? DiagramName :
         "Untitled";
 
-    public int GridSize { get; private set; } = 20;
+    public int GridSize { get; private set; } = 10;
     public string CanvasBackgroundColor { get; private set; } = string.Empty;
 
     // Edit mode state (set by Edit page)
     public bool IsEditMode { get; private set; } = false;
     public bool HasSelectedNode { get; private set; } = false;
     public bool HasSingleSelectedNode { get; private set; } = false;
+    public bool IsMultiSelected => HasSelectedNode && !HasSingleSelectedNode;
 
     // Auth state
     public bool IsAdmin { get; private set; } = true; // default true when auth not configured
@@ -194,6 +195,7 @@ public class ApplicationState
     public event Action? MenuReloadDiagram;
     public event Action? MenuUndo;
     public event Action? MenuRedo;
+    public event Action? MenuUndoAll;
     public event Action? MenuSaveAs;
     public event Action? MenuOpen;
     public event Action? MenuDiagramProperties;
@@ -287,6 +289,7 @@ public class ApplicationState
     public void TriggerReloadDiagram() => MenuReloadDiagram?.Invoke();
     public void TriggerUndo() => MenuUndo?.Invoke();
     public void TriggerRedo() => MenuRedo?.Invoke();
+    public void TriggerUndoAll() => MenuUndoAll?.Invoke();
     public void TriggerSaveAs() => MenuSaveAs?.Invoke();
     public void TriggerOpen() => MenuOpen?.Invoke();
     public void TriggerDiagramProperties() => MenuDiagramProperties?.Invoke();
@@ -308,7 +311,9 @@ public class ApplicationState
             {
                 DefaultRouter = new NormalRouter(),
                 DefaultPathGenerator = new SmoothPathGenerator()
-            }
+            },
+            // disable panning (for now) ...seems just to confuse
+            AllowPanning = false,
         };
         if (!readOnly)
         {
@@ -329,6 +334,8 @@ public class ApplicationState
         diagram.RegisterComponent<BatteryNodeModel, BatteryNodeWidget>();
         diagram.RegisterComponent<LogNodeModel, LogNodeWidget>();
         diagram.RegisterComponent<TreeViewNodeModel, TreeViewNodeWidget>();
+        diagram.RegisterComponent<ImageNodeModel, ImageNodeWidget>();
+        diagram.RegisterComponent<GridNodeModel, GridNodeWidget>();
 
         if (state != null)
         {
@@ -344,7 +351,9 @@ public class ApplicationState
                         MaxValue = nodeState.MaxValue ?? 100,
                         Unit = nodeState.Unit,
                         ArcOrigin = nodeState.ArcOrigin,
-                        ColorThresholds = nodeState.ColorThresholds?.Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList() ?? new(),
+                        DataTopicIndex = nodeState.DataTopicIndex ?? 0,
+                        TextPosition = nodeState.TextPosition ?? "Below",
+                        GaugeColor = DeserializeColorTransition(nodeState.GaugeColor),
                     },
                     "Switch" => new SwitchNodeModel(position: new Point(nodeState.X, nodeState.Y))
                     {
@@ -363,26 +372,39 @@ public class ApplicationState
                         MinValue = nodeState.MinValue ?? 0,
                         MaxValue = nodeState.MaxValue ?? 100,
                         ShowPercent = nodeState.BatteryShowPercent ?? true,
-                        ColorThresholds = nodeState.ColorThresholds?.Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList()
-                            ?? (nodeState.LowColor != null || nodeState.MedColor != null || nodeState.HighColor != null
-                                ? new List<GaugeColorThreshold>
-                                  {
-                                      new() { Value = 0,  Direction = ">=", Color = nodeState.LowColor  ?? "var(--mud-palette-error)" },
-                                      new() { Value = 20, Direction = ">=", Color = nodeState.MedColor  ?? "var(--mud-palette-warning)" },
-                                      new() { Value = 50, Direction = ">=", Color = nodeState.HighColor ?? "var(--mud-palette-success)" },
-                                  }
-                                : new()),
+                        DataTopicIndex = nodeState.DataTopicIndex ?? 0,
+                        BatteryColor = DeserializeColorTransition(nodeState.BatteryColor),
                     },
                     "Log" => new LogNodeModel(position: new Point(nodeState.X, nodeState.Y))
                     {
                         MaxEntries = nodeState.MaxEntries ?? 20,
                         ShowTime = nodeState.ShowTime ?? true,
                         ShowDate = nodeState.ShowDate ?? false,
+                        ShowTopicFull = nodeState.ShowTopicFull ?? false,
+                        ShowTopicPath = nodeState.ShowTopicPath ?? false,
+                        ShowTopicName = nodeState.ShowTopicName ?? false,
+                        ShowValue = nodeState.ShowValue ?? true,
                     },
                     "TreeView" => new TreeViewNodeModel(position: new Point(nodeState.X, nodeState.Y))
                     {
                         RootTopic = nodeState.RootTopic ?? string.Empty,
                         ShowValues = nodeState.ShowValues ?? true,
+                    },
+                    "Image" => new ImageNodeModel(position: new Point(nodeState.X, nodeState.Y))
+                    {
+                        StaticImageUrl = nodeState.StaticImageUrl ?? string.Empty,
+                        ObjectFit = nodeState.ObjectFit ?? "contain",
+                    },
+                    "Grid" => new GridNodeModel(position: new Point(nodeState.X, nodeState.Y))
+                    {
+                        ColumnHeaders = nodeState.GridColumnHeaders?.Count > 0
+                            ? nodeState.GridColumnHeaders
+                            : ["Value"],
+                        Rows = nodeState.GridRows?.Select(rs => new GridRowDefinition
+                        {
+                            Label = rs.Label,
+                            Topics = new List<string>(rs.Topics),
+                        }).ToList() ?? [new GridRowDefinition { Label = "Row 1", Topics = [""] }],
                     },
                     _ => new MudNodeModel(position: new Point(nodeState.X, nodeState.Y)),
                 };
@@ -396,15 +418,14 @@ public class ApplicationState
                 node.BackgroundColor = nodeState.BackgroundColor;
                 node.IconColor = nodeState.IconColor;
                 node.Metadata = nodeState.Metadata ?? new Dictionary<string, string>();
-                node.DataTopic = nodeState.DataTopic;
-                node.DataTopic2 = nodeState.DataTopic2;
+                // Populate DataTopics — new format first, fall back to scalar fields for old files.
                 if (nodeState.DataTopics != null && nodeState.DataTopics.Count > 0)
                 {
                     node.DataTopics = new List<string>(nodeState.DataTopics);
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(nodeState.DataTopic)) node.DataTopics.Add(nodeState.DataTopic);
+                    if (!string.IsNullOrEmpty(nodeState.DataTopic))  node.DataTopics.Add(nodeState.DataTopic);
                     if (!string.IsNullOrEmpty(nodeState.DataTopic2)) node.DataTopics.Add(nodeState.DataTopic2);
                 }
                 node.FontSize = nodeState.FontSize;
@@ -530,8 +551,8 @@ public class ApplicationState
                 BackgroundColor = node.BackgroundColor,
                 IconColor = node.IconColor,
                 Metadata = node.Metadata ?? new Dictionary<string, string>(),
-                DataTopic = node.DataTopics.Count > 0 ? node.DataTopics[0] : node.DataTopic,
-                DataTopic2 = node.DataTopics.Count > 1 ? node.DataTopics[1] : node.DataTopic2,
+                DataTopic  = node.DataTopic,   // computed from DataTopics[0]; kept for old-file compat
+                DataTopic2 = node.DataTopic2,  // computed from DataTopics[1]; kept for old-file compat
                 DataTopics = node.DataTopics.Count > 0 ? new List<string>(node.DataTopics) : null,
                 FontSize = node.FontSize,
                 LinkAnimation = node.LinkAnimation,
@@ -546,9 +567,9 @@ public class ApplicationState
                 nodeState.MaxValue = g.MaxValue;
                 nodeState.Unit = g.Unit;
                 nodeState.ArcOrigin = g.ArcOrigin;
-                nodeState.ColorThresholds = g.ColorThresholds.Count > 0
-                    ? g.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList()
-                    : null;
+                nodeState.DataTopicIndex = g.DataTopicIndex != 0 ? g.DataTopicIndex : null;
+                nodeState.TextPosition = g.TextPosition != "Below" ? g.TextPosition : null;
+                nodeState.GaugeColor = SerializeColorTransition(g.GaugeColor);
             }
             else if (node is SwitchNodeModel s)
             {
@@ -567,20 +588,37 @@ public class ApplicationState
                 nodeState.MinValue = b.MinValue;
                 nodeState.MaxValue = b.MaxValue;
                 nodeState.BatteryShowPercent = b.ShowPercent;
-                nodeState.ColorThresholds = b.ColorThresholds.Count > 0
-                    ? b.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList()
-                    : null;
+                nodeState.DataTopicIndex = b.DataTopicIndex != 0 ? b.DataTopicIndex : null;
+                nodeState.BatteryColor = SerializeColorTransition(b.BatteryColor);
             }
             else if (node is LogNodeModel log)
             {
                 nodeState.MaxEntries = log.MaxEntries;
                 nodeState.ShowTime = log.ShowTime;
                 nodeState.ShowDate = log.ShowDate;
+                nodeState.ShowTopicFull = log.ShowTopicFull ? true : null;
+                nodeState.ShowTopicPath = log.ShowTopicPath ? true : null;
+                nodeState.ShowTopicName = log.ShowTopicName ? true : null;
+                nodeState.ShowValue = !log.ShowValue ? false : null;
             }
             else if (node is TreeViewNodeModel tv)
             {
                 nodeState.RootTopic = tv.RootTopic;
                 nodeState.ShowValues = tv.ShowValues;
+            }
+            else if (node is ImageNodeModel img)
+            {
+                nodeState.StaticImageUrl = img.StaticImageUrl;
+                nodeState.ObjectFit = img.ObjectFit;
+            }
+            else if (node is GridNodeModel grid)
+            {
+                nodeState.GridColumnHeaders = new List<string>(grid.ColumnHeaders);
+                nodeState.GridRows = grid.Rows.Select(r => new GridRowState
+                {
+                    Label = r.Label,
+                    Topics = new List<string>(r.Topics),
+                }).ToList();
             }
 
             // Save ports
@@ -723,7 +761,7 @@ public class ApplicationState
             new Blazor.Diagrams.Core.Geometry.Point(100 + diagram.Nodes.Count * 20, 100))
         {
             Title = nodeName,
-            DataTopic = topicPath,
+            DataTopics = new List<string> { topicPath },
         };
         // try be clever with formatting...
         string? format = null;
@@ -769,6 +807,36 @@ public class ApplicationState
             //node.AddPort(alignment);
             node.AddPort(new MudPortModel(node, alignment));
         }
+    }
+
+    public static ColorTransition DeserializeColorTransitionStatic(ColorTransitionState? state)
+        => DeserializeColorTransition(state);
+
+    public static ColorTransitionState? SerializeColorTransitionStatic(ColorTransition ct)
+        => SerializeColorTransition(ct);
+
+    private static ColorTransition DeserializeColorTransition(ColorTransitionState? state)
+    {
+        if (state == null) return new ColorTransition();
+        return new ColorTransition
+        {
+            ColorTopicIndex = state.ColorTopicIndex ?? 0,
+            ColorThresholds = state.ColorThresholds?
+                .Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color, Direction = t.Direction })
+                .ToList() ?? new()
+        };
+    }
+
+    private static ColorTransitionState? SerializeColorTransition(ColorTransition ct)
+    {
+        if (ct.ColorThresholds.Count == 0 && ct.ColorTopicIndex == 0) return null;
+        return new ColorTransitionState
+        {
+            ColorTopicIndex = ct.ColorTopicIndex != 0 ? ct.ColorTopicIndex : null,
+            ColorThresholds = ct.ColorThresholds.Count > 0
+                ? ct.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList()
+                : null
+        };
     }
 
 

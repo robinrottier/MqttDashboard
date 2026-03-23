@@ -44,8 +44,9 @@
     @if (IsEditMode)
     {
     <MudMenu Label="Edit" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
-        <MudMenuItem Label="Undo" OnClick="Undo" Disabled="@(!AppState.CanUndo)" />
-        <MudMenuItem Label="Redo" OnClick="Redo" Disabled="@(!AppState.CanRedo)" />
+        <MudMenuItem Label="Undo"     OnClick="Undo"     Disabled="@(!AppState.CanUndo)" />
+        <MudMenuItem Label="Redo"     OnClick="Redo"     Disabled="@(!AppState.CanRedo)" />
+        <MudMenuItem Label="Undo All" OnClick="UndoAll"  Disabled="@(!AppState.CanUndo)" />
         <MudDivider />
         <MudMenuItem Label="Add Node"    OnClick="MenuAddNode"    Disabled="@(!IsEditMode)" />
         <MudMenuItem Label="Delete Node" OnClick="MenuDeleteNode" Disabled="@(!AppState.HasSelectedNode)" />
@@ -120,10 +121,30 @@
                 </MudMenuItem>
             </MudMenu>
             <MudMenu Label="Grid" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
-                <MudMenuItem Label="None"           OnClick="() => SetGrid(0)" />
-                <MudMenuItem Label="Small (5 px)"   OnClick="() => SetGrid(5)" />
-                <MudMenuItem Label="Medium (10 px)" OnClick="() => SetGrid(10)" />
-                <MudMenuItem Label="Large (20 px)"  OnClick="() => SetGrid(20)" />
+                <MudMenuItem OnClick="() => SetGrid(0)">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.GridSize == 0 ? "" : "visibility:hidden")" />
+                        <MudText>None</MudText>
+                    </MudStack>
+                </MudMenuItem>
+                <MudMenuItem OnClick="() => SetGrid(5)">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.GridSize == 5 ? "" : "visibility:hidden")" />
+                        <MudText>Small (5 px)</MudText>
+                    </MudStack>
+                </MudMenuItem>
+                <MudMenuItem OnClick="() => SetGrid(10)">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.GridSize == 10 ? "" : "visibility:hidden")" />
+                        <MudText>Medium (10 px)</MudText>
+                    </MudStack>
+                </MudMenuItem>
+                <MudMenuItem OnClick="() => SetGrid(20)">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.GridSize == 20 ? "" : "visibility:hidden")" />
+                        <MudText>Large (20 px)</MudText>
+                    </MudStack>
+                </MudMenuItem>
             </MudMenu>
         }
         @if (AppState.AuthEnabled && AppState.IsAdmin)
@@ -162,7 +183,9 @@
             : uri.AbsolutePath.StartsWith(path, StringComparison.OrdinalIgnoreCase);
     }
 
-    private Task ShowAbout() => DialogService.ShowAsync<AboutDialog>("About Mqtt Dashboard");
+    private Task ShowAbout() => DialogService.ShowAsync<AboutDialog>("About Mqtt Dashboard",
+        new DialogParameters(),
+        new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true });
     private Task ShowStartupSettings() => DialogService.ShowAsync<StartupSettingsDialog>("Startup Settings");
 
     private void NewDiagram()         => AppState.TriggerNewDiagram();
@@ -173,6 +196,7 @@
     private void MenuDiagramProperties()  => AppState.TriggerDiagramProperties();
     private void Undo()               => AppState.TriggerUndo();
     private void Redo()               => AppState.TriggerRedo();
+    private void UndoAll()            => AppState.TriggerUndoAll();
     private void MenuAddNode()        => AppState.TriggerAddNode();
     private void MenuDeleteNode()     => AppState.TriggerDeleteNode();
     private void MenuCutSelected()    => AppState.TriggerCutSelected();

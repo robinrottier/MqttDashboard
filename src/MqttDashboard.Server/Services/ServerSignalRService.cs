@@ -84,6 +84,17 @@ public sealed class ServerSignalRService : ISignalRService
         return Task.FromResult(_connectionTracker.ConnectedCount);
     }
 
+    public Task<Dictionary<string, string>> GetCurrentValuesForTopicsAsync(List<string> topics)
+    {
+        var result = new Dictionary<string, string>();
+        foreach (var kvp in _mqttClientService.LastKnownValues)
+        {
+            if (topics.Any(filter => _subscriptionManager.TopicMatchesFilter(filter, kvp.Key)))
+                result[kvp.Key] = kvp.Value;
+        }
+        return Task.FromResult(result);
+    }
+
     public async Task PublishMessageAsync(string topic, string payload, bool retain = false, int qos = 0)
     {
         await _mqttClientService.PublishMessageAsync(topic, payload, retain, qos);

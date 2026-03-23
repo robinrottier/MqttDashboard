@@ -81,7 +81,7 @@
     </MudAppBar>
 
     <MudMainContent Class="pt-16 pa-2">
-        @if (_setupNeeded)
+        @if (_setupNeeded && !Nav.Uri.Contains("/setup", StringComparison.OrdinalIgnoreCase))
         {
             <MudAlert Severity="Severity.Warning" Class="ma-2">
                 Admin password not configured. <MudLink Href="/setup">Set up now →</MudLink>

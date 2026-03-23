@@ -147,6 +147,29 @@ public partial class NodePropertyEditor
         MudDialog?.Close(DialogResult.Ok(true));
     }
 
+    private void AddGridColumn(GridNodeModel grid)
+    {
+        grid.ColumnHeaders.Add($"Col {grid.ColumnHeaders.Count + 1}");
+        EnsureGridTopicSlots(grid);
+        StateHasChanged();
+    }
+
+    private void RemoveGridColumn(GridNodeModel grid, int colIdx)
+    {
+        if (grid.ColumnHeaders.Count <= 1) return;
+        grid.ColumnHeaders.RemoveAt(colIdx);
+        foreach (var row in grid.Rows)
+            if (row.Topics.Count > colIdx) row.Topics.RemoveAt(colIdx);
+        StateHasChanged();
+    }
+
+    private static void EnsureGridTopicSlots(GridNodeModel grid)
+    {
+        foreach (var row in grid.Rows)
+            while (row.Topics.Count < grid.ColumnHeaders.Count)
+                row.Topics.Add(string.Empty);
+    }
+
     private void Cancel()
     {
         MudDialog?.Cancel();

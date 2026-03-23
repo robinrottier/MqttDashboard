@@ -16,7 +16,7 @@ public class PageState
     public string Name { get; set; } = "Page 1";
     public List<NodeState> Nodes { get; set; } = new();
     public List<LinkState> Links { get; set; } = new();
-    public int GridSize { get; set; } = 20;
+    public int GridSize { get; set; } = 10;
     public string BackgroundColor { get; set; } = string.Empty;
 }
 
@@ -34,7 +34,7 @@ public class DiagramState
 
     public List<NodeState> Nodes { get; set; } = new();
     public List<LinkState> Links { get; set; } = new();
-    public int GridSize { get; set; } = 20; // Default 20px grid; 0 for no grid
+    public int GridSize { get; set; } = 10; // Default 10px grid; 0 for no grid
     public string BackgroundColor { get; set; } = string.Empty;
 
     /// <summary>
@@ -112,10 +112,9 @@ public class NodeState
     public double? MinValue { get; set; }
     public double? MaxValue { get; set; }
     public string? Unit { get; set; }
-    // Kept for backward compat reading of old files (not written by new code)
-    public double? MidPoint { get; set; }
-    public string? NegativeColor { get; set; }
-    public string? PositiveColor { get; set; }
+    public double? ArcOrigin { get; set; }
+    public int? DataTopicIndex { get; set; }
+    public string? TextPosition { get; set; }
 
     // Switch-specific
     public string? PublishTopic { get; set; }
@@ -128,15 +127,12 @@ public class NodeState
     public bool? SwitchRetain { get; set; }
     public int? SwitchQosLevel { get; set; }
 
-    // Battery-specific (kept for backward compat reading of old files)
-    public string? LowColor { get; set; }
-    public string? MedColor { get; set; }
-    public string? HighColor { get; set; }
+    // Battery-specific
     public bool? BatteryShowPercent { get; set; }
 
-    // Gauge ArcOrigin and shared color thresholds (used by Gauge and Battery)
-    public double? ArcOrigin { get; set; }
-    public List<GaugeColorThresholdState>? ColorThresholds { get; set; }
+    // Colour transition (Gauge = GaugeColor, Battery = BatteryColor — stored as a nested object)
+    public ColorTransitionState? GaugeColor { get; set; }
+    public ColorTransitionState? BatteryColor { get; set; }
 
     // Title position (all node types)
     public string? TitlePosition { get; set; }
@@ -145,10 +141,22 @@ public class NodeState
     public int? MaxEntries { get; set; }
     public bool? ShowTime { get; set; }
     public bool? ShowDate { get; set; }
+    public bool? ShowTopicFull { get; set; }
+    public bool? ShowTopicPath { get; set; }
+    public bool? ShowTopicName { get; set; }
+    public bool? ShowValue { get; set; }
 
     // TreeView-specific
     public string? RootTopic { get; set; }
     public bool? ShowValues { get; set; }
+
+    // Image-specific
+    public string? StaticImageUrl { get; set; }
+    public string? ObjectFit { get; set; }
+
+    // Grid-specific
+    public List<string>? GridColumnHeaders { get; set; }
+    public List<GridRowState>? GridRows { get; set; }
 
     public List<PortState> Ports { get; set; } = new();
 }
@@ -159,11 +167,23 @@ public class PortState
     public string Alignment { get; set; } = string.Empty;
 }
 
+public class ColorTransitionState
+{
+    public int? ColorTopicIndex { get; set; }
+    public List<GaugeColorThresholdState>? ColorThresholds { get; set; }
+}
+
 public class GaugeColorThresholdState
 {
     public double Value { get; set; }
     public string Color { get; set; } = "var(--mud-palette-primary)";
     public string Direction { get; set; } = ">=";
+}
+
+public class GridRowState
+{
+    public string Label { get; set; } = string.Empty;
+    public List<string> Topics { get; set; } = new();
 }
 
 public class LinkState

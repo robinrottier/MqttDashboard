@@ -40,22 +40,23 @@
                             }
                             else if (_updateStatus != null)
                             {
-                                <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Deployment</td>
-                                    <td style="padding:6px 16px;font-family:monospace;">@_updateStatus.DeploymentType</td></tr>
-                                <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Latest Version</td>
-                                    <td style="padding:6px 16px;font-family:monospace;">@(_updateStatus.LatestVersion ?? "—")
-                                        @if (!_updateStatus.UpdateAvailable && _updateStatus.LastChecked != null)
-                                        {
-                                            <MudChip T="string" Size="Size.Small" Color="Color.Success" Class="ml-1" Style="height:18px;">Up to date</MudChip>
-                                        }
-                                    </td></tr>
-                                <tr><td style="width:40%;font-weight:500;padding:6px 16px;">Last Checked</td>
-                                    <td style="padding:6px 16px;font-family:monospace;display:flex;align-items:center;gap:8px;">
-                                        @(_updateStatus.LastChecked?.LocalDateTime.ToString("yyyy-MM-dd HH:mm") ?? "Not yet")
-                                        <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="CheckForUpdates" Disabled="_checkingUpdate">
-                                            @(_checkingUpdate ? "Checking..." : "Check")
-                                        </MudButton>
-                                    </td></tr>
+                                <tr>
+                                    <td style="width:40%;font-weight:500;padding:6px 16px;">Latest Version</td>
+                                    <td style="padding:6px 16px;font-family:monospace;">
+                                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                            <MudTooltip Text="@($"Last checked: {(_updateStatus.LastChecked?.LocalDateTime.ToString("yyyy-MM-dd HH:mm") ?? "Not yet")}")" Arrow="true">
+                                                <span>@(_updateStatus.LatestVersion ?? "—")</span>
+                                            </MudTooltip>
+                                            @if (!_updateStatus.UpdateAvailable && _updateStatus.LastChecked != null)
+                                            {
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Success" Style="height:18px;">Up to date</MudChip>
+                                            }
+                                            <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="CheckForUpdates" Disabled="_checkingUpdate">
+                                                @(_checkingUpdate ? "Checking..." : "Check")
+                                            </MudButton>
+                                        </div>
+                                    </td>
+                                </tr>
                             }
                         }
                     </tbody>
@@ -117,6 +118,13 @@
                 <MudCardContent Class="pa-0">
                     <MudSimpleTable Dense="true" Hover="true" Style="overflow: hidden;">
                         <tbody>
+                            @if (_updateStatus != null)
+                            {
+                                <tr>
+                                    <td style="width: 40%; font-weight: 500; padding: 6px 16px;">Deployment</td>
+                                    <td style="padding: 6px 16px; font-family: monospace;">@_updateStatus.DeploymentType</td>
+                                </tr>
+                            }
                             @foreach (var item in _debugInfo)
                             {
                                 <tr>
@@ -131,9 +139,6 @@
         }
 
     </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Close" Variant="Variant.Filled" Color="Color.Primary">Close</MudButton>
-    </DialogActions>
 </MudDialog>
 
 @code {
@@ -274,6 +279,4 @@
             StateHasChanged();
         }
     }
-
-    private void Close() => MudDialog.Close();
 }

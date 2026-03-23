@@ -5,10 +5,13 @@
 
 <MudTooltip Delay="500" Arrow="true" Placement="Placement.Top">
     <TooltipContent>
-        @if (!string.IsNullOrEmpty(Node.DataTopic))
+        @{
+            var primaryTopic = Node.DataTopics.Count > 0 ? string.Join(", ", Node.DataTopics) : Node.DataTopic;
+        }
+        @if (!string.IsNullOrEmpty(primaryTopic))
         {
             <div>
-                <strong>Topic:</strong> @Node.DataTopic<br/>
+                <strong>Topic:</strong> @primaryTopic<br/>
                 <strong>Value:</strong> @(Node.DataValue?.ToString() ?? "—")<br/>
                 <strong>Updated:</strong> @(Node.DataLastUpdated.HasValue ? Node.DataLastUpdated.Value.ToString("HH:mm:ss") : "—")
             </div>
@@ -25,6 +28,10 @@
                     <div style="@TitleDivStyle()">@Node.Title</div>
                 }
                 <div style="flex:1;min-height:0;min-width:0;">
+                    @if (Node.TextPosition == "Above" && !string.IsNullOrEmpty(Node.Text))
+                    {
+                        <div style="text-align:center;font-size:0.75rem;padding:1px 4px;word-break:break-word;">@FormatText()</div>
+                    }
                     <svg viewBox="0 0 120 75" style="width:100%;height:auto;display:block;">
                         <!-- Background arc (full 180° semicircle) -->
                         <path d="M 10 65 A 55 55 0 0 1 110 65"
@@ -41,7 +48,7 @@
                         <!-- Value text and labels rendered via MarkupString to avoid Razor <text> parsing conflict -->
                         @RenderSvgLabels()
                     </svg>
-                    @if (!string.IsNullOrEmpty(Node.Text))
+                    @if (Node.TextPosition != "Above" && !string.IsNullOrEmpty(Node.Text))
                     {
                         <div style="text-align:center;font-size:0.75rem;padding:1px 4px;word-break:break-word;">@FormatText()</div>
                     }
@@ -62,6 +69,9 @@
 @code {
     private double _percent = 0;
 
+    // Returns the value from the topic index specified by DataTopicIndex
+    private object? ActiveValue => Node.DataTopicIndex == 1 ? Node.DataValue2 : Node.DataValue;
+
     protected override void OnInitialized()
     {
         Node.MinimumDimensions = new(80, 80);
@@ -71,11 +81,13 @@
     }
 
     protected override void OnData1Updated() => UpdatePercent();
+    protected override void OnData2Updated() => UpdatePercent();
 
     private void UpdatePercent()
     {
-        if (Node.DataValue == null) { _percent = 0; return; }
-        if (double.TryParse(Node.DataValue.ToString(), out var d))
+        var val = ActiveValue;
+        if (val == null) { _percent = 0; return; }
+        if (double.TryParse(val.ToString(), out var d))
         {
             var range = Node.MaxValue - Node.MinValue;
             _percent = range == 0 ? 0 : Math.Clamp((d - Node.MinValue) / range, 0.0, 1.0);
@@ -121,18 +133,17 @@
 
     private string GetArcColor()
     {
-        if (Node.ColorThresholds.Count > 0 && Node.DataValue != null &&
-            double.TryParse(Node.DataValue.ToString(), out var dThresh))
+        if (Node.GaugeColor.ColorThresholds.Count > 0)
         {
-            var origin = Node.ArcOrigin ?? Node.MinValue;
-            var distance = Math.Abs(dThresh - origin);
-            string? color = null;
-            foreach (var t in Node.ColorThresholds)
+            var colorVal = Node.GaugeColor.ColorTopicIndex == 1 ? Node.DataValue2 : Node.DataValue;
+            if (colorVal != null && double.TryParse(colorVal.ToString(), out var dThresh))
             {
-                if (t.Direction == ">=" && distance >= t.Value) color = t.Color;
-                else if (t.Direction == "<=" && distance <= t.Value) color = t.Color;
+                foreach (var t in Node.GaugeColor.ColorThresholds)
+                {
+                    if (t.Direction == ">=" && dThresh >= t.Value) return t.Color;
+                    if (t.Direction == "<=" && dThresh <= t.Value) return t.Color;
+                }
             }
-            if (color != null) return color;
         }
         return _percent switch
         {
@@ -174,10 +185,11 @@
 
     private string FormatValue()
     {
-        if (Node.DataValue == null) return "—";
-        if (double.TryParse(Node.DataValue.ToString(), out var d))
+        var val = ActiveValue;
+        if (val == null) return "—";
+        if (double.TryParse(val.ToString(), out var d))
             return d.ToString("G4");
-        return Node.DataValue.ToString() ?? "—";
+        return val.ToString() ?? "—";
     }
 
     private string TitlePos => string.IsNullOrEmpty(Node.TitlePosition) ? "Above" : Node.TitlePosition;

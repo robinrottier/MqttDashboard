@@ -10,16 +10,16 @@
         <MudText Class="mb-4">No admin password is configured. Please set a password to enable admin features.</MudText>
 
         <MudTextField @bind-Value="_password" Label="New Password" InputType="InputType.Password"
-                      Required="true" Class="mb-2" />
+                      Required="true" Class="mb-2" @onkeydown="OnKeyDown" />
         <MudTextField @bind-Value="_confirmPassword" Label="Confirm Password" InputType="InputType.Password"
-                      Required="true" Class="mb-4" />
+                      Required="true" Class="mb-4" @onkeydown="OnKeyDown" />
 
         @if (!string.IsNullOrEmpty(_error))
         {
             <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
         }
 
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Submit" Disabled="_submitting">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Submit" Disabled="@(_submitting || !CanSubmit)">
             @(_submitting ? "Saving..." : "Set Password")
         </MudButton>
     </MudPaper>
@@ -30,6 +30,18 @@
     private string _confirmPassword = "";
     private string _error = "";
     private bool _submitting = false;
+
+    private bool CanSubmit =>
+        !string.IsNullOrEmpty(_password) &&
+        !string.IsNullOrEmpty(_confirmPassword) &&
+        _password.Length >= 8 &&
+        _password == _confirmPassword;
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && CanSubmit && !_submitting)
+            await Submit();
+    }
 
     protected override async Task OnInitializedAsync()
     {

@@ -1,13 +1,13 @@
-using Blazor.Diagrams.Core.Models;
-using Blazor.Diagrams.Core.Geometry;
 
 namespace MqttDashboard.Models
 {
-    public class MudNodeModel : NodeModel
+    public class MudNodeModel(Blazor.Diagrams.Core.Geometry.Point? position = null) : Blazor.Diagrams.Core.Models.NodeModel(position)
     {
-        public MudNodeModel(Point? position = null) : base(position)
-        {
-        }
+        /// <summary>
+        /// Position of the title relative to the main content: "Above", "Below", "Left", "Right". Defaults to "Above".
+        /// (Title is inherited from base blazor diagram node model)
+        /// </summary>
+        public string TitlePosition { get; set; } = "Above";
 
         /// <summary>
         /// Icon name from MudBlazor Icons (e.g., Icons.Material.Filled.Home)
@@ -18,6 +18,11 @@ namespace MqttDashboard.Models
         /// Human-readable icon name for display
         /// </summary>
         public string? IconName { get; set; }
+
+        /// <summary>
+        /// Icon color
+        /// </summary>
+        public string? IconColor { get; set; }
 
         /// <summary>
         /// Format string for the body text. Use {0} for first data value, {1} for second, etc.
@@ -31,36 +36,29 @@ namespace MqttDashboard.Models
         public string? BackgroundColor { get; set; }
 
         /// <summary>
-        /// Icon color
-        /// </summary>
-        public string? IconColor { get; set; }
-
-        /// <summary>
         /// Custom metadata dictionary for future extensibility
         /// </summary>
         public Dictionary<string, string> Metadata { get; set; } = new();
 
         /// <summary>
-        /// MQTT topic to bind to for live data updates
-        /// </summary>
-        public string? DataTopic { get; set; }
-
-        /// <summary>
-        /// Optional second MQTT topic
-        /// </summary>
-        public string? DataTopic2 { get; set; }
-
-        /// <summary>
-        /// Variable-length list of MQTT topics for data binding.
-        /// When non-empty, supersedes DataTopic/DataTopic2 for watcher setup.
+        /// List of MQTT topics for data binding
         /// </summary>
         public List<string> DataTopics { get; set; } = new();
 
-        // Runtime-only: populated by MQTT watchers, not serialized
-        public object? DataValue { get; set; }
-        public object? DataValue2 { get; set; }
-        public DateTime? DataLastUpdated { get; set; }
-        public DateTime? DataLastUpdated2 { get; set; }
+        // Computed convenience accessors — these are read-only; set via DataTopics list.
+        public string? DataTopic  => DataTopics.Count > 0 ? DataTopics[0] : null;
+        public string? DataTopic2 => DataTopics.Count > 1 ? DataTopics[1] : null;
+
+        // Runtime-only arrays: populated by MQTT watchers, never serialised.
+        // Length is set by BaseNodeWithDataWidget to match DataTopics.Count.
+        public object?[]   DataValues      { get; set; } = Array.Empty<object?>();
+        public DateTime?[] DataUpdatedTimes { get; set; } = Array.Empty<DateTime?>();
+
+        // Convenience compat getters for the first two slots.
+        public object?   DataValue        => DataValues.Length       > 0 ? DataValues[0]       : null;
+        public object?   DataValue2       => DataValues.Length       > 1 ? DataValues[1]       : null;
+        public DateTime? DataLastUpdated  => DataUpdatedTimes.Length > 0 ? DataUpdatedTimes[0] : null;
+        public DateTime? DataLastUpdated2 => DataUpdatedTimes.Length > 1 ? DataUpdatedTimes[1] : null;
 
         /// <summary>
         /// Optional font size in pixels for data values
@@ -75,7 +73,5 @@ namespace MqttDashboard.Models
         /// <summary>Node type discriminator. Defaults to "Text" (existing text/display node).</summary>
         public string NodeType { get; set; } = "Text";
 
-        /// <summary>Position of the title relative to the main content: "Above", "Below", "Left", "Right". Defaults to "Above".</summary>
-        public string TitlePosition { get; set; } = "Above";
     }
 }

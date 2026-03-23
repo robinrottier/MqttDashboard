@@ -144,6 +144,23 @@ public class MqttInitializationService
                 _logger?.LogWarning(ex, "Failed to restore subscription to {Topic}", topic);
             }
         }
+
+        // Replay last-known values into the local cache so widgets show current data immediately
+        // without waiting for the next MQTT message on each topic.
+        if (_appState.SignalRService != null && topics.Count > 0)
+        {
+            try
+            {
+                var currentValues = await _appState.SignalRService.GetCurrentValuesForTopicsAsync(topics);
+                _logger?.LogInformation("Replaying {Count} cached topic values after reconnect", currentValues.Count);
+                foreach (var kvp in currentValues)
+                    _appState.DataCache.UpdateValue(kvp.Key, kvp.Value);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Failed to replay cached topic values after reconnect");
+            }
+        }
     }
 
     private void HandleDataReceived(MqttDataMessage message) => _appState.AddMessage(message);

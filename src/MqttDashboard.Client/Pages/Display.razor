@@ -76,6 +76,30 @@ else
         </MudPaper>
     }
     <MudPaper @key="_diagram" Elevation="2" Style="@CanvasStyle">
+        @if (AppState.IsEditMode && AppState.IsMultiSelected)
+        {
+            <MudPaper Elevation="1" Style="position:absolute;z-index:10;top:4px;left:50%;transform:translateX(-50%);display:flex;gap:2px;padding:2px 4px;border-radius:8px;">
+                <MudTooltip Text="Align Left Edges">
+                    <MudIconButton Icon="@Icons.Material.Filled.AlignHorizontalLeft" Size="Size.Small" Color="Color.Primary" OnClick='() => AlignNodes("left")' />
+                </MudTooltip>
+                <MudTooltip Text="Center Horizontally">
+                    <MudIconButton Icon="@Icons.Material.Filled.AlignHorizontalCenter" Size="Size.Small" Color="Color.Primary" OnClick='() => AlignNodes("centerH")' />
+                </MudTooltip>
+                <MudTooltip Text="Align Right Edges">
+                    <MudIconButton Icon="@Icons.Material.Filled.AlignHorizontalRight" Size="Size.Small" Color="Color.Primary" OnClick='() => AlignNodes("right")' />
+                </MudTooltip>
+                <MudDivider Vertical="true" FlexItem="true" />
+                <MudTooltip Text="Align Top Edges">
+                    <MudIconButton Icon="@Icons.Material.Filled.AlignVerticalTop" Size="Size.Small" Color="Color.Primary" OnClick='() => AlignNodes("top")' />
+                </MudTooltip>
+                <MudTooltip Text="Center Vertically">
+                    <MudIconButton Icon="@Icons.Material.Filled.AlignVerticalCenter" Size="Size.Small" Color="Color.Primary" OnClick='() => AlignNodes("centerV")' />
+                </MudTooltip>
+                <MudTooltip Text="Align Bottom Edges">
+                    <MudIconButton Icon="@Icons.Material.Filled.AlignVerticalBottom" Size="Size.Small" Color="Color.Primary" OnClick='() => AlignNodes("bottom")' />
+                </MudTooltip>
+            </MudPaper>
+        }
         <CascadingValue Value="_diagram" IsFixed="true">
             <DiagramCanvas>
                 <Widgets>

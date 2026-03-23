@@ -15,6 +15,8 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
 {
     private readonly List<IDisposable> _dataWatchers = new();
     private bool _disposed = false;
+    // Track the last topics key so we skip SetupDataWatchers when nothing has changed.
+    private string? _watcherTopicsKey = null;
 
     protected override void OnInitialized()
     {
@@ -28,14 +30,36 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
         SetupDataWatchers();
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Ensure link animations are applied once the SVG is in the DOM.
+            // Node widgets only mount after IsInteractive = true (guarded by @if in Display.razor),
+            // so firstRender reliably fires when the diagram canvas is rendered.
+            TriggerLinkAnimation();
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
     protected void SetupDataWatchers()
     {
+        // Skip rebuild if topics haven't changed — prevents redundant re-runs
+        // from every OnParametersSet (triggered by RefreshAll, StateHasChanged, etc.).
+        var topicsKey = string.Join(",", Node.DataTopics);
+        if (topicsKey == _watcherTopicsKey) return;
+        _watcherTopicsKey = topicsKey;
+
         foreach (var w in _dataWatchers) w.Dispose();
         _dataWatchers.Clear();
 
         var topics = Node.DataTopics.Count > 0
             ? Node.DataTopics.Cast<string?>().ToList()
-            : new List<string?> { Node.DataTopic, Node.DataTopic2 };
+            : new List<string?>();
+
+        // Size the runtime arrays to match the topic list.
+        Node.DataValues       = new object?[topics.Count];
+        Node.DataUpdatedTimes = new DateTime?[topics.Count];
 
         for (int i = 0; i < topics.Count; i++)
         {
@@ -47,26 +71,23 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
             var v = AppState.DataCache.GetValue(capturedTopic);
             if (v != null)
             {
-                if (idx == 0) { Node.DataValue = v; Node.DataLastUpdated = DateTime.Now; OnData1Updated(); }
-                else if (idx == 1) { Node.DataValue2 = v; Node.DataLastUpdated2 = DateTime.Now; OnData2Updated(); }
+                Node.DataValues[idx]       = v;
+                Node.DataUpdatedTimes[idx] = DateTime.Now;
+                if (idx == 0) { OnData1Updated(); TriggerLinkAnimation(); }
+                else if (idx == 1) OnData2Updated();
             }
 
             var watcher = AppState.DataCache.Watch(capturedTopic, (t, value) =>
             {
                 if (_disposed) return;
+                Node.DataValues[idx]       = value;
+                Node.DataUpdatedTimes[idx] = DateTime.Now;
                 if (idx == 0)
                 {
-                    Node.DataValue = value;
-                    Node.DataLastUpdated = DateTime.Now;
                     OnData1ReceivedCore(t, value);
                     TriggerLinkAnimation();
                 }
-                else if (idx == 1)
-                {
-                    Node.DataValue2 = value;
-                    Node.DataLastUpdated2 = DateTime.Now;
-                    OnData2Updated();
-                }
+                else if (idx == 1) OnData2Updated();
                 OnDataReceivedCore(idx, t, value);
                 try { InvokeAsync(StateHasChanged); } catch { /* circuit may be disconnected */ }
             });
@@ -93,7 +114,7 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
     /// Updates link animation direction on all outgoing links based on the current DataValue
     /// and the node's LinkAnimation setting. Runs automatically on every data update.
     /// </summary>
-    private void TriggerLinkAnimation()
+    protected void TriggerLinkAnimation()
     {
         if (Node.LinkAnimation == null || Node.LinkAnimation == "None") return;
         if (Node.DataValue == null || !double.TryParse(Node.DataValue.ToString(), out var d)) return;
@@ -126,8 +147,8 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
     protected virtual void OnData2Updated() { }
 
     /// <summary>
-    /// Formats <see cref="MudNodeModel.Text"/> using <see cref="MudNodeModel.DataValue"/> as {0}
-    /// and <see cref="MudNodeModel.DataValue2"/> as {1}, supporting C# format specifiers
+    /// Formats <see cref="MudNodeModel.Text"/> using data values as positional args:
+    /// {0} = DataValues[0], {1} = DataValues[1], etc. Supports C# format specifiers
     /// e.g. "Temp: {0:F1}°C". Returns the raw Text if no format tokens are present or on error.
     /// </summary>
     protected string FormatText()
@@ -178,6 +199,7 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
     public override void Dispose()
     {
         _disposed = true;
+        _watcherTopicsKey = null;
         foreach (var w in _dataWatchers) w.Dispose();
         _dataWatchers.Clear();
         base.Dispose();

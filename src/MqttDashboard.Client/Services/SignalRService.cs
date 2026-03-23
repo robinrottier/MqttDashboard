@@ -160,6 +160,16 @@ public class SignalRService : ISignalRService
         return -1;
     }
 
+    public async Task<Dictionary<string, string>> GetCurrentValuesForTopicsAsync(List<string> topics)
+    {
+        if (_hubConnection is not null)
+        {
+            try { return await _hubConnection.InvokeAsync<Dictionary<string, string>>("GetCurrentValuesForTopics", topics) ?? []; }
+            catch (Exception ex) { _logger.LogError(ex, "[SignalR] Failed to get current values"); return []; }
+        }
+        return [];
+    }
+
     public async Task PublishMessageAsync(string topic, string payload, bool retain = false, int qos = 0)
     {
         if (_hubConnection is not null)
