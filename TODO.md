@@ -5,57 +5,10 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ---
 
 ## BUGS
-- [ ] Clean start-it showed a grid on a new dashboard BUT nodes were not snapping to it.
-      Menu item...grid...nothign was ticked, so ticked 10 and now grid is still there and it snaps to it.
-	  File had grid size 10 in it so thats not problem...didnt enable snap on first load
-	  De-seected grid size in menu (i.e. none) and stopped snapping BUT grid still shown at size 10.
-	  --> fix the startup not being snapped
-	  --> remove the "None" option ...for now edit mode always has a grid
-	  --> in fact these properties are in Dashbpoard properties dialog...remove from the "Optins" menu
-- [ ] Actually the app/prodyct title shoudl be MQTT Dashboard (code prefixes still MqttDashboard)
-- [ ] By default, new dashboard should enable "show dashboard name" and grid size shoud be medium 20
-- [ ] Now we dont have "data" page ... remove the page and home submenu items
-- [ ] Save as... current name is prepopulated (good!) but if hit save it should prompt to overwrite as we've gone into "save as" and thats what save as does
-- [ ] Dashboard properties dialog ... "Canvas background" color selection should use to composite color widget (used elsewhere) on a single line
-- [ ] Dashboard properties dialog ... we dont need the "Title bar" section marker
-- [ ] Dashboard properties dialog ... "grid" section -- remove it
-- [ ] Node selected, Edit menu...
-	- [ ] Add port and delete port submenus not relfecting current status:
-	- [ ] if port is already present, add for that port should be greyed and not selectable
-	- [ ] if port is not present, delete for that port should be greyed and not selectable
-	- [ ] "Add port" should have another item for "All" which just adds all 4 ports at once
-- [ ] Alignment toolbar needs other options for same width and same height with appro[ritate icons
-- [ ] Icon color needs the common color properties selector widget 00 unless some reason why it has to be theme only?
-- [ ] Paste multiple nodes and they shoul dall be left selected so can be moved as a group
-- [ ] Serialization file needs alot of work:
-	- [ ] Node type should be first
-	- [ ] The basic props like name, show name, grid, background color, pages,  Then the list of subs, then the list of nodes and then the list of links
-	- [ ] Derived nodes, like guage and battery shoul dhave their props after that i.e. sort of reflecting the class structure heirarchy
-	- [ ] The legacy DataTOpic, Datatopic2, shold go (AND the corresponding implementations...we just want the list/arrays now)
-	- [ ] There seems to be alot of entries for properties not relevant e.g. "OnValue" offvalue" which are switch only.
-		- [ ] Properties should only be written if they apply to that node type
-		- [ ] It should follow same approach as how node properties dialog is built with knownledge from the object of what it is
-	- [ ] The5 dp node cordinates is badly done...if its pixels then we never need more than 2dp in the file, even then give the grid snap we should never get those values?
-	- [ ] I dont see value in writing the node id guid like that ... ons erialization map to a simpler 1 based index for the file
-		- [ ] Deseializing has to ignore the actual node id anyway as they are recreated
-	- [ ] When a dashboard file is written there should be a section at the top for details like:
-		- [ ] Date time written
-		- [ ] Filename
-		- [ ] Logged on user (always admin for now)
-		- [ ] This gets ignored on reading, nothing to do
-- [ ] DOnt mention "Arc" with the origin ... its just "origin" including text and code, property names and file serialization
-- [ ] Node properties... "Background image" and image fit can be on one compact line and shoul dbe  in top section with common properties for all ndoes
-	- [ ] so the order or bits in this diaglog reflects the code srtucture ... common items, then derived items, then further derived class items (if there were any)
-	- [ ] Apart from "Add custom property" ... currently unused anyway but very adhoc and so shoudl be at end
-- [ ] "Edit node properties" dialog title shold be "Edit {tyoe-of-node} Node properties"
-- [ ] We dont need the 2nd line saying "Node propeties" or the node type now as its in the title
-- [ ] TItle and title position can be on one line
-- [ ] We dont need seperator after link animation
-- [ ] We dont need Seciotn name "Mqtt data binding" ... just straight in with mqtt topics is fine
-- [ ] It still seems true that simply selecting a node set the dirty flag?
-- [ ] ANd then selecting undo up to 4 times unti undo is grey did not clear the flag?
-- [ ] And "undo all" even said "reverted to saved state" but still did not clear the flag
-- [ ] After selecting undo all there shoul dbe nothign left to undo ...so undo and undo all ought to be grey?
+
+- [ ] Tooltip on hover over gauge/battery causes an exception shortly after display when the node has a data topic configured and the dashboard also has topics configured. Happens in view mode. Investigate.
+- [ ] Serialization: node ID GUIDs in file — map to sequential 1-based IDs for file (need port+link ID remapping too; deferred due to complexity)
+- [ ] Serialization: logged-on user not yet written to `FileInfo` (always admin for now — fine to leave)
 
 
 ## 🟡 Enhancements

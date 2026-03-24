@@ -783,13 +783,13 @@ public partial class Display : IDisposable
                 Text = n.Text,
                 BackgroundColor = n.BackgroundColor,
                 IconColor = n.IconColor,
-                Metadata = n.Metadata ?? new Dictionary<string, string>(),
+                Metadata = n.Metadata?.Count > 0 ? new Dictionary<string, string>(n.Metadata) : null,
                 DataTopics = n.DataTopics.Count > 0 ? new List<string>(n.DataTopics) : null,
                 FontSize = n.FontSize,
                 LinkAnimation = n.LinkAnimation,
                 NodeType = n.NodeType ?? "Text",
                 TitlePosition = n.TitlePosition,
-                Ports = n.Ports.Select(p => new PortState { Id = p.Id, Alignment = p.Alignment.ToString() }).ToList()
+                Ports = n.Ports.Any() ? n.Ports.Select(p => new PortState { Id = p.Id, Alignment = p.Alignment.ToString() }).ToList() : null,
             };
             if (n is GaugeNodeModel g)
             {
@@ -942,7 +942,7 @@ public partial class Display : IDisposable
             if (!string.IsNullOrEmpty(ns.BackgroundImageUrl)) node.BackgroundImageUrl = ns.BackgroundImageUrl;
             if (ns.BackgroundObjectFit != null) node.BackgroundObjectFit = ns.BackgroundObjectFit;
             node.Size = new Blazor.Diagrams.Core.Geometry.Size(ns.Width, ns.Height);
-            foreach (var ps in ns.Ports)
+            foreach (var ps in ns.Ports ?? [])
             {
                 if (Enum.TryParse<Blazor.Diagrams.Core.Models.PortAlignment>(ps.Alignment, out var alignment))
                     AppState.AddPortToNode(node, alignment);

@@ -109,7 +109,7 @@ public class NodeState
     public string? Text { get; set; }
     public string? BackgroundColor { get; set; }
     public string? IconColor { get; set; }
-    public Dictionary<string, string> Metadata { get; set; } = new();
+    public Dictionary<string, string>? Metadata { get; set; }
 
     // MQTT Data Binding
     public List<string>? DataTopics { get; set; }
@@ -167,7 +167,7 @@ public class NodeState
     public string? StaticImageUrl { get; set; }
     public string? ObjectFit { get; set; }
 
-    public List<PortState> Ports { get; set; } = new();
+    public List<PortState>? Ports { get; set; }
 }
 
 public class PortState

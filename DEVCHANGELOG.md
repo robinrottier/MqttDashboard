@@ -7,6 +7,54 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ---
 
+## 2026-03-24 — Bulk TODO bug fixes: UI cleanup, port menu, alignment, paste, undo, serialization
+
+### Commit: 18e3ca7 (develop)
+
+### Batches completed
+
+#### Batch 1 — Small UI/UX fixes
+- **`MainLayout.razor`**: App title fallback changed from `"Mqtt Dashboard"` → `"MQTT Dashboard"`.
+- **`ApplicationState.cs`**: `ShowDiagramName` default `true`; `GridSize` default `20`; `CreateDiagramFromState` syncs both `_diagram.Options.GridSize` and `AppState.GridSize` from loaded state (previously GridSize property stayed at default, causing snapping to be wrong on first load).
+- **`Display.razor.cs`** `SaveAsDiagram()`: removed `&& !string.Equals(name, AppState.DiagramName, ...)` overwrite guard — Save As now always prompts when file exists.
+- **`DashboardPropertiesDialog.razor`**: removed "Title Bar" section heading; removed Grid section (MudText + MudSelect); replaced `ColorPicker` with `ColorInputRow` for canvas background.
+- **`NodePropertyEditor.razor`**: dialog title now `"Edit {NodeType} Node Properties"`; removed subtitle + node type display lines; Title + TitlePosition on one compact MudGrid row; Background Image + Fit on one compact row, moved to top section; IconColor uses `ColorInputRow` (was MudSelect of enum names); removed "MQTT Data Binding" section header; removed `MudDivider` after link animation.
+- **`StandardNodeLayout.razor`**: `<MudIcon>` now uses `Style="@IconStyle"` (CSS `color:` property) instead of `Color="@IconColor"` (MudBlazor enum). Removed old `IconColor` switch property; added `IconStyle` string property. ⚠️ Old save files with MudBlazor enum names (e.g. `"Primary"`) won't render icon color correctly — backward compat not a concern per user.
+- **`NumericRangeEditor.razor`**: "Arc midpoint / zero-point" helper text changed to "Origin / zero-point".
+
+#### Batch 2 — Grid startup + Options menu
+- **`AppMenu.razor`**: removed entire `<MudMenu Label="Grid">` submenu from Options menu.
+- **`ApplicationState.cs`** `CreateDiagramFromState`: sets `GridSize = X` (public property) in addition to `options.GridSize = X` so snapping is immediately correct on load.
+
+#### Batch 3 — Port menu per-item greying
+- **`ApplicationState.cs`**: added `SelectedNodePorts` (`HashSet<PortAlignment>?`); extended `UpdateSelectionState()` to accept `selectedPorts` parameter; added `MenuAddAllPorts` event and `TriggerAddAllPorts()`.
+- **`Display.razor.cs`**: `UpdateSelectionState()` passes port HashSet from selected node; added `AddAllPortsToSelectedNode()` method; subscribed/unsubscribed `MenuAddAllPorts`.
+- **`AppMenu.razor`**: Add Port items disabled when port exists; Delete Port items disabled when absent; added "All" item to Add Port submenu; added `MenuAddAllPorts()` method.
+
+#### Batch 4 — Paste keeps selection + dirty flag fix
+- **`Display.razor.cs`** paste loop: changed `_diagram.SelectModel(node, true)` → `SelectModel(node, false)` — `true` means "unselect others", so only the last pasted node was ever selected. `false` appends to selection.
+- **`Display.razor.cs`** `OnSelectionChanged`: added `_ = InvokeAsync(() => _pendingDirtyMark = false)` deferred clear alongside the immediate clear. This handles the case where Blazor.Diagrams fires `SelectionChanged` BEFORE `node.Changed` (in that ordering, the immediate clear has no effect since the flag isn't set yet; the deferred clear runs after `node.Changed` has set the flag).
+
+#### Batch 5 — Same Width / Same Height alignment
+- **`Display.razor`**: added two new `<MudIconButton>` items ("Make Same Width" + "Make Same Height") after the existing bottom-align button, separated by a `MudDivider`.
+- **`Display.razor.cs`**: added `SameWidth()` and `SameHeight()` methods — push undo snapshot, find max width/height among selected nodes, resize all to match, refresh.
+
+#### Batch 6 — Serialization cleanup
+- **`DiagramState.cs`**:
+  - Added `DiagramFileInfo` class (`WrittenAt` ISO timestamp, `Filename` string).
+  - `DiagramState`: added `[JsonPropertyOrder(n)]` to all properties (order: Name, ShowDiagramName, GridSize, BackgroundColor, Pages, MqttSubscriptions, Nodes, Links, FileInfo=99).
+  - `NodeState`: moved `NodeType` to top of class with `[JsonPropertyOrder(0)]`; changed coordinate precision from 5dp to 2dp; removed `DataTopic` and `DataTopic2` scalar properties; made `Metadata` and `Ports` nullable (omitted when null by `WhenWritingNull` serializer option).
+- **`ApplicationState.cs`** `GetDiagramState()`: removed `DataTopic`/`DataTopic2` from written output; Metadata written only when non-empty; Ports written only when non-empty; fallback loading of old `DataTopic`/`DataTopic2` scalar fields removed.
+- **`Display.razor.cs`** `BuildFullState()`: populates `FileInfo` with `DateTimeOffset.UtcNow.ToString("o")` and `DiagramName`; sets it on both multi-page and single-page paths.
+- **`DashboardStorageService.cs`**: both `SaveDiagramAsync` and `SaveDiagramByNameAsync` now use `DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull` — null optional properties are omitted from the JSON file entirely.
+
+### Known caveats
+- ⚠️ Icon colors saved with old MudBlazor enum names (e.g. `"Primary"`) will not render correctly — old files are not supported per user decision.
+- ⚠️ Node IDs are still GUIDs in the file; sequential ID mapping was deferred (requires port/link ID remapping).
+- ⚠️ Empty `Metadata: {}` and `Ports: []` are now fully omitted; old files with those empty fields load cleanly.
+
+---
+
 ## 2026-03-24 — Refactor: Remove Data page; move topic management to Dashboard Properties
 
 ### Summary

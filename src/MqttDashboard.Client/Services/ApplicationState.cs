@@ -439,7 +439,7 @@ public class ApplicationState
                 nodeMap[nodeState.Id] = node;
 
                 // Add ports
-                foreach (var portState in nodeState.Ports)
+                foreach (var portState in nodeState.Ports ?? [])
                 {
                     var alignment = Enum.Parse<PortAlignment>(portState.Alignment);
                     AddPortToNode(node, alignment);
@@ -552,7 +552,7 @@ public class ApplicationState
                 Text = node.Text,
                 BackgroundColor = node.BackgroundColor,
                 IconColor = node.IconColor,
-                Metadata = node.Metadata ?? new Dictionary<string, string>(),
+                Metadata = node.Metadata?.Count > 0 ? new Dictionary<string, string>(node.Metadata) : null,
                 DataTopics = node.DataTopics.Count > 0 ? new List<string>(node.DataTopics) : null,
                 FontSize = node.FontSize,
                 LinkAnimation = node.LinkAnimation,
@@ -613,14 +613,10 @@ public class ApplicationState
             if (node.BackgroundObjectFit != "cover")
                 nodeState.BackgroundObjectFit = node.BackgroundObjectFit;
 
-            // Save ports
-            foreach (var port in node.Ports)
+            // Save ports (only if any exist)
+            if (node.Ports.Any())
             {
-                nodeState.Ports.Add(new PortState
-                {
-                    Id = port.Id,
-                    Alignment = port.Alignment.ToString()
-                });
+                nodeState.Ports = node.Ports.Select(p => new PortState { Id = p.Id, Alignment = p.Alignment.ToString() }).ToList();
             }
 
             state.Nodes.Add(nodeState);
