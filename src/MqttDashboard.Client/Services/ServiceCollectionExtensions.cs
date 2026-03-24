@@ -32,6 +32,11 @@ public static class ServiceCollectionExtensions
         // DashboardService is only needed on client-side where HttpClient is available
         // Do not register here - it will be registered in client Program.cs
 
+        // Wrap the framework IJSRuntime so that calls made during prerender or after
+        // circuit disconnect are swallowed rather than crashing the circuit.
+        // Must be last so the framework's IJSRuntime descriptor already exists to capture.
+        services.AddSafeJSRuntime();
+
         return services;
     }
 }
