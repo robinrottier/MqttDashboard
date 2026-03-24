@@ -7,6 +7,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **Data topic management in Dashboard Properties** — MQTT topics are now managed via the Dashboard Properties dialog (topic list with add/remove controls). Dashboard is marked dirty when topics change, so topics are always saved with the dashboard.
+- **"No topics" overlay on Display page** — when no data topics are configured, a centered prompt guides users to Dashboard Properties to add topics (edit mode only; view mode shows an info message).
+
+### Removed
+- **Data page removed** — the separate `/data` page (topic management, data cache explorer, message log) has been removed. Topic management has moved to Dashboard Properties.
+
 ### Fixed
 - **MQTT subscriptions not persisted after restart** — topic add/remove controls on the MqttData page are now hidden in view mode. Topics can only be managed in edit mode (where `MarkEdited()` is called), ensuring they are included in the next dashboard save.
 

@@ -7,7 +7,37 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ---
 
-## 2026-03-24 — Fix: MQTT subscriptions lost on restart
+## 2026-03-24 — Refactor: Remove Data page; move topic management to Dashboard Properties
+
+### Summary
+Removed the `/data` page entirely and moved MQTT topic management into the Dashboard Properties dialog. A "no topics" overlay on the Display page prompts users to configure topics when none are set.
+
+### `src/MqttDashboard.Client/Components/DashboardPropertiesDialog.razor`
+- Added a **Data Topics** section: lists current topics with remove (×) buttons and an add-topic input field (Enter or + button to add).
+- `Apply()` made async (`ApplyAsync`): diffs previous vs new topic set, calls `SignalRService.SubscribeToTopicAsync` / `UnsubscribeFromTopicAsync` for each change, then calls `AppState.SetSubscribedTopics()` + `AppState.MarkEdited()`.
+- Opening this dialog from edit mode is the **only** way to manage topics going forward.
+
+### `src/MqttDashboard.Client/Pages/Display.razor`
+- Added a centered overlay card shown when `AppState.SubscribedTopics.Count == 0`.
+  - **Edit mode**: shows "No data topics configured" + "Configure Topics →" button that opens Dashboard Properties.
+  - **View mode**: shows an info message to switch to edit mode.
+
+### `src/MqttDashboard.Client/Pages/Display.razor.cs`
+- Added `OpenDashboardProperties()` helper (delegates to `ShowDiagramPropertiesAsync()`).
+
+### `src/MqttDashboard.Client/Pages/MqttData.razor` — **DELETED**
+- The entire Data page (topic management, data cache explorer, message log) has been removed.
+- `MqttDataCache` and related services are **not** removed — they're still used by widgets.
+
+### `src/MqttDashboard.Client/Layout/AppMenu.razor`
+- Removed the "Data" menu item that navigated to `/data`.
+
+### `src/MqttDashboard.Client/Layout/NavMenu.razor`
+- Removed the `/data` nav link.
+
+⚠️ Users with dashboards that had no topics will see the overlay on first load and need to open Dashboard Properties to add topics. Backward compat is not a concern per user instruction.
+
+
 
 ### Investigation
 User reported topics added via the MqttData page were not remembered after a server restart.

@@ -80,12 +80,6 @@
                 <MudText>Home</MudText>
             </MudStack>
         </MudMenuItem>
-        <MudMenuItem OnClick='() => Nav.NavigateTo("/data")'>
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(IsCurrentPage("/data") ? "" : "visibility:hidden")" />
-                <MudText>Data</MudText>
-            </MudStack>
-        </MudMenuItem>
     </MudMenu>
 
     <!-- Options (before About) -->

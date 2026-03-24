@@ -1269,6 +1269,9 @@ public partial class Display : IDisposable
         await DialogService.ShowAsync<DashboardPropertiesDialog>("Dashboard Properties", options);
     }
 
+    // Called from the "no topics" overlay on Display.razor
+    private Task OpenDashboardProperties() => ShowDiagramPropertiesAsync();
+
     private async Task SaveLastDiagramName(string name)
     {
         try { await JSRuntime.InvokeVoidAsync("localStorage.setItem", LastDiagramKey, name); }

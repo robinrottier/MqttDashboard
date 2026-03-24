@@ -112,5 +112,25 @@ else
                 </Widgets>
             </DiagramCanvas>
         </CascadingValue>
+        @if (AppState.SubscribedTopics.Count == 0)
+        {
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:500;pointer-events:auto;">
+                <MudPaper Elevation="4" Class="pa-6 d-flex flex-column align-center" Style="gap:12px;border-radius:12px;opacity:0.92;">
+                    <MudIcon Icon="@Icons.Material.Filled.WifiOff" Size="Size.Large" Color="Color.Default" />
+                    <MudText Typo="Typo.h6">No data topics configured</MudText>
+                    @if (AppState.IsEditMode)
+                    {
+                        <MudText Typo="Typo.body2" Align="Align.Center">Add MQTT topics in Dashboard Properties to start receiving data.</MudText>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenDashboardProperties">
+                            Configure Topics →
+                        </MudButton>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Align="Align.Center">Switch to edit mode to add MQTT data topics.</MudText>
+                    }
+                </MudPaper>
+            </div>
+        }
     </MudPaper>
 }
