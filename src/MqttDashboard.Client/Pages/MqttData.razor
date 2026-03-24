@@ -197,6 +197,7 @@
     protected override async Task OnInitializedAsync()
     {
         AppState.OnStateChanged += HandleStateChanged;
+        AppState.OnToggleEditModeRequested += HandleToggleEditMode;
 
         if (!MqttInit.IsInitialized)
         {
@@ -381,6 +382,12 @@
         Snackbar.Add($"Added '{nodeName}' to dashboard", Severity.Success);
     }
 
+    private void HandleToggleEditMode()
+    {
+        AppState.SetEditMode(!AppState.IsEditMode);
+        InvokeAsync(StateHasChanged);
+    }
+
     private string FormatTimestamp(DateTime timestamp)
     {
         var local = timestamp.ToLocalTime();
@@ -392,6 +399,7 @@
     public void Dispose()
     {
         AppState.OnStateChanged -= HandleStateChanged;
+        AppState.OnToggleEditModeRequested -= HandleToggleEditMode;
     }
 
     public async ValueTask DisposeAsync()
