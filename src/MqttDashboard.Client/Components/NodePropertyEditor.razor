@@ -72,40 +72,10 @@
             </MudGrid>
 
             <!-- Background Color -->
-            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
-                <div style="@($"width:30px;height:30px;background-color:{Node.BackgroundColor ?? "transparent"};border:2px solid var(--mud-palette-divider);border-radius:4px;")"></div>
-                <MudTextField Value="@(Node.BackgroundColor ?? "No color")"
-                              Label="Background Color"
-                              Variant="Variant.Outlined"
-                              Margin="Margin.Dense"
-                              ReadOnly="true"
-                              Style="flex-grow:1;" />
-                <MudTooltip Text="Theme Colors">
-                    <MudIconButton Icon="@Icons.Material.Filled.Palette"
-                                   Size="MudBlazor.Size.Small"
-                                   OnClick="@(() => OpenColorPicker(ColorPickerMode.Theme))"
-                                   Class="mt-2" />
-                </MudTooltip>
-                <MudTooltip Text="Named Colors">
-                    <MudIconButton Icon="@Icons.Material.Filled.FormatColorFill"
-                                   Size="MudBlazor.Size.Small"
-                                   OnClick="@(() => OpenColorPicker(ColorPickerMode.Named))"
-                                   Class="mt-2" />
-                </MudTooltip>
-                <MudTooltip Text="Custom Color">
-                    <MudIconButton Icon="@Icons.Material.Filled.Colorize"
-                                   Size="MudBlazor.Size.Small"
-                                   OnClick="@(() => OpenColorPicker(ColorPickerMode.Custom))"
-                                   Class="mt-2" />
-                </MudTooltip>
-                @if (!string.IsNullOrEmpty(Node.BackgroundColor))
-                {
-                    <MudIconButton Icon="@Icons.Material.Filled.Clear"
-                                   Size="MudBlazor.Size.Small"
-                                   OnClick="ClearColor"
-                                   Class="mt-2" />
-                }
-            </MudStack>
+            <ColorInputRow @bind-Value="Node.BackgroundColor"
+                           Label="Background Color"
+                           Placeholder="None"
+                           ShowClear="true" />
 
             <!-- Width, Height, Font Size -->
             <MudGrid Spacing="2">

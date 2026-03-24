@@ -172,6 +172,7 @@ public class ColorTransitionState
 {
     public int? ColorTopicIndex { get; set; }
     public List<GaugeColorThresholdState>? ColorThresholds { get; set; }
+    public string? ElseColor { get; set; }
 }
 
 public class GaugeColorThresholdState

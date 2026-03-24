@@ -11,11 +11,12 @@
             <div style="font-size:0.75rem;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:@(string.IsNullOrEmpty(Node.Title) ? "0" : "1");">
                 @Node.Title
             </div>
-            <MudIconButton Icon="@(_paused ? Icons.Material.Filled.PlayArrow : Icons.Material.Filled.Pause)"
-                           Size="Size.Small"
-                           Style="margin:0;padding:0;width:16px;height:16px;min-width:unset;opacity:0.45;"
-                           Title="@(_paused ? "Resume" : "Pause updates")"
-                           OnClick="@(() => _paused = !_paused)" />
+            <MudTooltip Text="@(_paused ? "Resume" : "Pause updates")">
+                <MudIconButton Icon="@(_paused ? Icons.Material.Filled.PlayArrow : Icons.Material.Filled.Pause)"
+                               Size="Size.Small"
+                               Style="margin:0;padding:0;width:16px;height:16px;min-width:unset;opacity:0.45;"
+                               OnClick="@(() => _paused = !_paused)" />
+            </MudTooltip>
         </div>
         <div style="flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;min-width:0;">
             @{

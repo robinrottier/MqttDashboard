@@ -66,13 +66,13 @@
             var pct = _percent * 100;
             var cv = ColorValue;
             double colorDouble = cv != null && double.TryParse(cv.ToString(), out var parsed) ? parsed : pct;
-            string? color = null;
             foreach (var t in Node.BatteryColor.ColorThresholds)
             {
-                if (t.Direction == ">=" && colorDouble >= t.Value) color = t.Color;
-                else if (t.Direction == "<=" && colorDouble <= t.Value) color = t.Color;
+                if (t.Direction == ">=" && colorDouble >= t.Value) return t.Color;
+                if (t.Direction == "<=" && colorDouble <= t.Value) return t.Color;
             }
-            if (color != null) return color;
+            // No threshold matched — use ElseColor if set
+            if (!string.IsNullOrEmpty(Node.BatteryColor.ElseColor)) return Node.BatteryColor.ElseColor;
         }
         return "var(--mud-palette-primary)";
     }

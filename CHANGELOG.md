@@ -31,6 +31,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Node alignment tools** — in edit mode with 2+ nodes selected, alignment buttons appear.
 - **OS clipboard integration** — copy/paste of nodes uses the browser's native clipboard.
 - **Startup dashboard setting** — admin-configurable: Last Used, Specific File, or None.
+- **Color transition "Else" fallback** — each Gauge/Battery color transition now has an optional "Else Color" that applies when no threshold rule matches. Previously a hardcoded percent-based default was used.
+- **`ColorInputRow` component** — reusable color input row (swatch preview + editable text + Theme/Named/Custom picker buttons + optional clear) used in NodePropertyEditor background color and ColorTransitionEditor threshold rows.
 
 ### Changed
 - **`MudNodeWidget` (Text node)** now uses `StandardNodeLayout` like all other visual nodes — gains multi-topic-aware tooltip, background image support, and consistent port rendering.

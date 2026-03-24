@@ -812,6 +812,7 @@ public class ApplicationState
         return new ColorTransition
         {
             ColorTopicIndex = state.ColorTopicIndex ?? 0,
+            ElseColor = state.ElseColor,
             ColorThresholds = state.ColorThresholds?
                 .Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color, Direction = t.Direction })
                 .ToList() ?? new()
@@ -820,10 +821,11 @@ public class ApplicationState
 
     private static ColorTransitionState? SerializeColorTransition(ColorTransition ct)
     {
-        if (ct.ColorThresholds.Count == 0 && ct.ColorTopicIndex == 0) return null;
+        if (ct.ColorThresholds.Count == 0 && ct.ColorTopicIndex == 0 && ct.ElseColor == null) return null;
         return new ColorTransitionState
         {
             ColorTopicIndex = ct.ColorTopicIndex != 0 ? ct.ColorTopicIndex : null,
+            ElseColor = ct.ElseColor,
             ColorThresholds = ct.ColorThresholds.Count > 0
                 ? ct.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList()
                 : null

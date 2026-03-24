@@ -7,7 +7,63 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ---
 
-## 2026-03-24 — Client-side MQTT sanitization fix (InvalidCharacterError on hover/render)
+## 2026-03-24 — ColorInputRow refactor + color transition ElseColor + battery fix
+
+**Branch:** develop
+
+### New: `ColorInputRow.razor` — reusable color input component
+
+**`src/MqttDashboard.Client/Components/ColorInputRow.razor`** (new file)
+- Parameters: `Value/ValueChanged` (string?), `Label`, `Placeholder`, `ShowClear`
+- Renders: color swatch preview + editable `MudTextField` + three icon buttons (Theme/Named/Custom) + optional clear
+- Internally opens `ColorPickerDialog` using injected `IDialogService`
+- Replaces duplicated color-picker markup in both `NodePropertyEditor` and `ColorTransitionEditor`
+
+### Refactored: `NodePropertyEditor.razor` — Background Color uses `ColorInputRow`
+
+**`src/MqttDashboard.Client/Components/NodePropertyEditor.razor`**
+- Background Color section (was ~35 lines with inline swatch + read-only text + 3 buttons + conditional clear) replaced with a single `<ColorInputRow ... ShowClear="true">` tag
+- Now editable text field (was read-only) — user can type a color directly or use picker buttons
+
+**`src/MqttDashboard.Client/Components/NodePropertyEditor.razor.cs`**
+- Removed `OpenColorPicker(ColorPickerMode mode)` and `ClearColor()` methods (now handled inside `ColorInputRow`)
+
+### Refactored: `ColorTransitionEditor.razor` — threshold rows use `ColorInputRow`
+
+**`src/MqttDashboard.Client/Components/ColorTransitionEditor.razor`**
+- Per-row color (was: inline swatch + editable text + click-to-expand quick-color panel with 15 swatches) replaced with `<ColorInputRow>` — gives full Theme/Named/Custom dialog access on each row
+- Removed `_editingThreshold` state, `_commonColors` static array, and quick-color panel markup
+
+### Added: `ElseColor` fallback for color transitions
+
+**`src/MqttDashboard.Client/Models/ColorTransition.cs`**
+- Added `ElseColor` property (`string?`, default null) — applied when no threshold rule matches
+
+**`src/MqttDashboard.Client/Models/DiagramState.cs`**
+- `ColorTransitionState` — added `ElseColor` property for JSON persistence
+
+**`src/MqttDashboard.Client/Services/ApplicationState.cs`**
+- `DeserializeColorTransition` maps `state.ElseColor`
+- `SerializeColorTransition` saves `ElseColor`; null check extended to include `ElseColor`
+
+**`src/MqttDashboard.Client/Widgets/GaugeNodeWidget.razor`**
+- `GetArcColor()` now returns `Node.GaugeColor.ElseColor` when thresholds are configured but none match (instead of always falling through to the percent-based default)
+
+**`src/MqttDashboard.Client/Widgets/BatteryNodeWidget.razor`**
+- `GetFillColor()` now returns first-matching rule (was accidentally returning last-matching — logic bug fixed)
+- Returns `Node.BatteryColor.ElseColor` when thresholds are configured but none match (was `var(--mud-palette-primary)`)
+
+**`src/MqttDashboard.Client/Components/ColorTransitionGroupEditor.razor`**
+- Added "Else (no rule matched)" section below the transition list using `ColorInputRow` with `ShowClear="true"`
+
+### Fixed: MUD0002 analyzer warning in `LogNodeWidget.razor`
+
+**`src/MqttDashboard.Client/Widgets/LogNodeWidget.razor`**
+- Pause/Play button: `Title="..."` attribute replaced with `<MudTooltip>` wrapper (MudBlazor MUD0002 — `Title` not valid on `MudIconButton`)
+
+---
+
+
 
 **Commit:** 14f0abc  **Branch:** develop
 

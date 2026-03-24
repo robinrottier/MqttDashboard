@@ -17,6 +17,11 @@ public class ColorTransition
     /// Ordered list of threshold rules. First matching rule wins.
     /// </summary>
     public List<GaugeColorThreshold> ColorThresholds { get; set; } = new();
+
+    /// <summary>
+    /// Fallback color used when no threshold rule matches. Null = use the node's built-in default.
+    /// </summary>
+    public string? ElseColor { get; set; }
 }
 
 /// <summary>A single colour-threshold rule: apply <see cref="Color"/> when the data value

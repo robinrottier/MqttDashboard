@@ -108,6 +108,8 @@
                     if (t.Direction == "<=" && dThresh <= t.Value) return t.Color;
                 }
             }
+            // No threshold matched — use ElseColor if set
+            if (!string.IsNullOrEmpty(Node.GaugeColor.ElseColor)) return Node.GaugeColor.ElseColor;
         }
         return _percent switch
         {

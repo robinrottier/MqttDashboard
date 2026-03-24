@@ -60,44 +60,7 @@ public partial class NodePropertyEditor
         }
     }
 
-    private async Task OpenColorPicker(ColorPickerMode mode)
-    {
-        var parameters = new DialogParameters
-        {
-            { "Mode", mode },
-            { "CurrentColor", Node.BackgroundColor }
-        };
 
-        var options = new DialogOptions
-        {
-            MaxWidth = mode == ColorPickerMode.Named ? MaxWidth.Medium : MaxWidth.Small,
-            FullWidth = true,
-            CloseButton = true
-        };
-
-        string title = mode switch
-        {
-            ColorPickerMode.Theme => "Select Theme Color",
-            ColorPickerMode.Named => "Select Named Color",
-            ColorPickerMode.Custom => "Custom Color",
-            _ => "Select Color"
-        };
-
-        var dialog = await DialogService.ShowAsync<ColorPickerDialog>(title, parameters, options);
-        var result = await dialog.Result;
-
-        if (result != null && !result.Canceled && result.Data is string selectedColor)
-        {
-            Node.BackgroundColor = selectedColor;
-            StateHasChanged();
-        }
-    }
-
-    private void ClearColor()
-    {
-        Node.BackgroundColor = null;
-        StateHasChanged();
-    }
 
     private void ClearIcon()
     {

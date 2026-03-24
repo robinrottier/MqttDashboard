@@ -13,6 +13,13 @@
     </MudGrid>
     <MudText Typo="Typo.caption" Class="mb-1">Colour Transitions. First matching rule wins.</MudText>
     <ColorTransitionEditor Thresholds="ColorTransition.ColorThresholds" />
+    <MudDivider Class="my-2" />
+    <MudText Typo="Typo.caption" Class="mb-1">Else (no rule matched)</MudText>
+    <ColorInputRow Value="@ColorTransition.ElseColor"
+                   ValueChanged="@(v => ColorTransition.ElseColor = v)"
+                   Label="Else Color"
+                   Placeholder="Default"
+                   ShowClear="true" />
 }
 
 @code {
