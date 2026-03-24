@@ -5,18 +5,23 @@ using Microsoft.JSInterop;
 namespace MqttDashboard.Services;
 
 /// <summary>
-/// Wraps the framework-registered <see cref="IJSRuntime"/> to silently handle two
-/// failure cases that would otherwise crash the Blazor Server circuit:
+/// Wraps an <see cref="IJSRuntime"/> to silently absorb two failure cases that would
+/// otherwise crash the Blazor Server circuit:
 /// <list type="bullet">
-///   <item><see cref="InvalidOperationException"/> — thrown when a component (or a
-///   third-party library such as MudBlazor or Blazor.Diagrams) calls JS interop during
-///   server-side prerendering or before the circuit is fully interactive.</item>
+///   <item><see cref="InvalidOperationException"/> — thrown when a component calls JS
+///   interop during server-side prerendering or before the circuit is fully
+///   interactive.</item>
 ///   <item><see cref="JSDisconnectedException"/> — thrown when the SignalR connection
 ///   has already been torn down but an in-flight JS call still tries to respond.</item>
 /// </list>
-/// Registered as the <see cref="IJSRuntime"/> in the circuit-scoped DI container so
-/// ALL components — including third-party libraries — automatically receive the guard
-/// with no changes to individual call sites.
+/// <para>
+/// <b>Usage:</b> wrap a known <see cref="IJSRuntime"/> instance in specific components
+/// that need guarded calls. Do <b>not</b> register via
+/// <see cref="SafeJSRuntimeExtensions.AddSafeJSRuntime"/> — see the warning on that
+/// method. The correct fix for premature JS interop during prerendering is to guard
+/// call sites with <c>RendererInfo.IsInteractive</c> or move them into
+/// <c>OnAfterRenderAsync</c>.
+/// </para>
 /// </summary>
 public sealed class SafeJSRuntime : IJSRuntime
 {
@@ -72,17 +77,22 @@ public sealed class SafeJSRuntime : IJSRuntime
 public static class SafeJSRuntimeExtensions
 {
     /// <summary>
-    /// Replaces the framework-registered <see cref="IJSRuntime"/> with
-    /// <see cref="SafeJSRuntime"/>, which catches <see cref="InvalidOperationException"/>
-    /// (circuit not yet interactive / prerender) and <see cref="JSDisconnectedException"/>
-    /// silently, preventing circuit crashes caused by premature or post-disconnect JS calls.
+    /// ⚠️ DO NOT CALL — retained for reference only.
     /// <para>
-    /// Must be called <b>after</b> <c>AddRazorComponents()</c> /
-    /// <c>WebAssemblyHostBuilder.CreateDefault()</c> so the original descriptor already
-    /// exists to capture. Applies to all components in the circuit scope, including
-    /// MudBlazor and Blazor.Diagrams.
+    /// Replacing <see cref="IJSRuntime"/> in the DI container is incompatible with
+    /// Blazor Server's internal architecture. The circuit infrastructure casts the
+    /// resolved <c>IJSRuntime</c> directly to its internal <c>RemoteJSRuntime</c>
+    /// concrete type. Substituting <see cref="SafeJSRuntime"/> breaks that cast,
+    /// causing <see cref="InvalidCastException"/> during circuit initialisation and
+    /// preventing the page from loading.
+    /// </para>
+    /// <para>
+    /// Fix premature JS interop during prerendering by guarding call sites with
+    /// <c>RendererInfo.IsInteractive</c> or moving JS calls into
+    /// <c>OnAfterRenderAsync</c>.
     /// </para>
     /// </summary>
+    [Obsolete("Do not use — breaks Blazor Server circuit initialisation. See XML doc for details.", error: false)]
     public static IServiceCollection AddSafeJSRuntime(this IServiceCollection services)
     {
         var original = services.LastOrDefault(d => d.ServiceType == typeof(IJSRuntime));
@@ -94,8 +104,6 @@ public static class SafeJSRuntimeExtensions
             typeof(IJSRuntime),
             sp =>
             {
-                // Resolve the original concrete implementation without going through
-                // IJSRuntime (which is now us) — avoids circular dependency.
                 var inner = original switch
                 {
                     { ImplementationFactory: not null } =>
