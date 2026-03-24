@@ -57,6 +57,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **MRU (recent files)** — removed; the Open dialog is the sole entry point.
 
 ### Fixed
+- **InvalidCharacterError on hover/render** — SVG `MarkupString` injection in Gauge and Battery widgets used `HtmlEncode` which does not strip null bytes. SVG is XML-strict and rejects null bytes even when HTML-encoded. Fixed by: (1) sanitizing all incoming MQTT string values at `MqttDataCache.UpdateValue` (client-side gateway, covers live and server-replayed cached values), and (2) switching Gauge/Battery SVG text injection to `XmlStringHelper.XmlSafeEncode` (strips invalid XML chars then HTML-encodes). Previous fix only sanitized at the server source; values already in the server's in-memory cache bypassed that.
 - **InvalidCharacterError crash** — MQTT payloads containing null bytes or other HTML-invalid characters killed the Blazor circuit. Fixed by sanitizing at source in `MqttClientService`, HTML-encoding `BatteryNodeWidget` MarkupString content, and sanitizing `DataValueTooltipContent` output.
 - **Image title not hidden correctly** — `StandardNodeLayout` now checks `ShowTitle` for both title positions.
 - **Node infinite resize loop** — clearing the Title field caused the node to grow indefinitely. Fixed by always rendering the header hidden with `display:none` when empty.

@@ -7,7 +7,46 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ---
 
-## 2026-03-23 — Widget/property-editor architecture refactor (Phase 2+3 completion)
+## 2026-03-24 — Client-side MQTT sanitization fix (InvalidCharacterError on hover/render)
+
+**Commit:** 14f0abc  **Branch:** develop
+
+### Root cause analysis
+
+`InvalidCharacterError: String contains an invalid character` was thrown by the browser DOM when rendering SVG `MarkupString` content (gauge/battery widgets). The core issue:
+
+1. `HtmlEncode` (used in both widgets) does **not** strip null bytes (`\0`) — it only encodes `<>&"'`. SVG is parsed as XML which strictly rejects null bytes.
+2. The server-side `SanitizePayload` (from previous session) only applies to data arriving after the server rebuild. MQTT values already in the server's in-memory cache — replayed to clients on reconnect/load — bypassed server sanitization entirely.
+3. On hover, MudTooltip triggers a full component re-render including the SVG `MarkupString`. If `DataValue` contained a null byte, the SVG injection crashed the circuit.
+
+### Fix: `MqttDataCache.UpdateValue` — client-side gateway sanitization
+
+**`src/MqttDashboard.Client/Services/MqttDataCache.cs`**
+- Added `using MqttDashboard.Helpers`
+- `UpdateValue()` now calls `XmlStringHelper.StripInvalidXmlChars(s)` when the incoming value is a string
+- This is the single entry point for ALL MQTT data on the client side — covers both live data and server-replayed cached values
+
+### Fix: new `XmlStringHelper` utility
+
+**`src/MqttDashboard.Client/Helpers/XmlStringHelper.cs`** (new file)
+- `StripInvalidXmlChars(string?)` — strips chars illegal in XML 1.0 (null bytes, lone surrogates, C0/C1 control chars except tab/LF/CR)
+- `XmlSafeEncode(string?)` — strips invalid chars then HTML-encodes; use for any MarkupString SVG injection
+
+### Fix: `GaugeNodeWidget` and `BatteryNodeWidget` SVG encoding
+
+**`src/MqttDashboard.Client/Widgets/GaugeNodeWidget.razor`**
+- `@using MqttDashboard.Helpers` added
+- `RenderSvgLabels()` now calls `XmlStringHelper.XmlSafeEncode()` for the gauge value text and unit text (was `System.Net.WebUtility.HtmlEncode`)
+
+**`src/MqttDashboard.Client/Widgets/BatteryNodeWidget.razor`**
+- `@using MqttDashboard.Helpers` added
+- SVG `<text>` content now uses `XmlStringHelper.XmlSafeEncode(FormatPercent())` (was `HtmlEncode`)
+
+⚠️ The `DataValueTooltipContent.razor` tooltip already had its own `SanitizeForDisplay()` from a previous session — that path was protected. The crash path was the SVG MarkupString re-render on tooltip hover, not the tooltip content itself.
+
+---
+
+
 
 **Branch:** develop
 
