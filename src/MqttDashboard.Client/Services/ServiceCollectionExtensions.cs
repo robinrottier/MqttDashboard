@@ -32,6 +32,11 @@ public static class ServiceCollectionExtensions
         // DashboardService is only needed on client-side where HttpClient is available
         // Do not register here - it will be registered in client Program.cs
 
+        // ⚠️ Do not re-enable: replacing IJSRuntime in DI breaks Blazor Server's internal
+        // RemoteJSRuntime cast during circuit init → InvalidCastException on page load.
+        // Fix is to guard JS interop call sites with RendererInfo.IsInteractive instead.
+        // services.AddSafeJSRuntime();
+
         return services;
     }
 }
