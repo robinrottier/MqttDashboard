@@ -86,9 +86,18 @@ public partial class Display : IDisposable
             AppState.MenuSetActivePage += _onMenuSetActivePage;
 
             var savedState = await DashboardService.LoadDashboardAsync();
+            // Preserve runtime subscriptions — the in-memory set may already include
+            // topics added this session (e.g. from the Data page). These must not be
+            // clobbered when LoadFullState/CreateDiagramFromState sets them from the file.
+            var runtimeTopics = AppState.SubscribedTopics.ToHashSet();
+
             if (savedState != null && (savedState.Nodes.Count > 0 || savedState.Pages?.Count > 0))
             {
                 LoadFullState(savedState, readOnly: true);
+                if (string.IsNullOrEmpty(AppState.DiagramName))
+                    AppState.SetDiagramName("Default");
+                if (runtimeTopics.Count > 0)
+                    AppState.SetSubscribedTopics(runtimeTopics);
                 AppState.MarkSaved();
                 StateHasChanged();
                 await Task.Delay(100);
@@ -98,6 +107,8 @@ public partial class Display : IDisposable
             else
             {
                 LoadFullState(null, readOnly: true);
+                if (string.IsNullOrEmpty(AppState.DiagramName))
+                    AppState.SetDiagramName("Default");
                 AppState.MarkSaved();
                 StateHasChanged();
             }
@@ -112,6 +123,9 @@ public partial class Display : IDisposable
                     if (lastState != null)
                     {
                         LoadFullState(lastState, readOnly: true);
+                        AppState.SetDiagramName(lastName);
+                        if (runtimeTopics.Count > 0)
+                            AppState.SetSubscribedTopics(runtimeTopics);
                         AppState.MarkSaved();
                         StateHasChanged();
                     }
