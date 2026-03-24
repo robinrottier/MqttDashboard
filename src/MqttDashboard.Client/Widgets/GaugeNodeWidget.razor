@@ -1,5 +1,6 @@
 @using MqttDashboard.Models
 @using MqttDashboard.Services
+@using MqttDashboard.Helpers
 @inherits BaseNodeWithDataWidget<GaugeNodeModel>
 
 <StandardNodeLayout Node="Node" ExtraCssClass="gauge-node">
@@ -119,7 +120,7 @@
     private MarkupString RenderSvgLabels()
     {
         var fontSize = Node.FontSize ?? 16;
-        var value = System.Net.WebUtility.HtmlEncode(FormatValue());
+        var value = XmlStringHelper.XmlSafeEncode(FormatValue());
         var sb = new System.Text.StringBuilder();
 
         var tickValue = Node.ArcOrigin;
@@ -139,7 +140,7 @@
 
         sb.Append($"<text x=\"60\" y=\"60\" text-anchor=\"middle\" dominant-baseline=\"auto\" font-size=\"{fontSize}\" font-weight=\"bold\" fill=\"currentColor\">{value}</text>");
         if (!string.IsNullOrEmpty(Node.Unit))
-            sb.Append($"<text x=\"60\" y=\"72\" text-anchor=\"middle\" font-size=\"9\" fill=\"currentColor\" opacity=\"0.7\">{System.Net.WebUtility.HtmlEncode(Node.Unit)}</text>");
+            sb.Append($"<text x=\"60\" y=\"72\" text-anchor=\"middle\" font-size=\"9\" fill=\"currentColor\" opacity=\"0.7\">{XmlStringHelper.XmlSafeEncode(Node.Unit)}</text>");
         sb.Append($"<text x=\"8\" y=\"75\" text-anchor=\"start\" font-size=\"8\" fill=\"currentColor\" opacity=\"0.5\">{Node.MinValue}</text>");
         sb.Append($"<text x=\"112\" y=\"75\" text-anchor=\"end\" font-size=\"8\" fill=\"currentColor\" opacity=\"0.5\">{Node.MaxValue}</text>");
         return new MarkupString(sb.ToString());

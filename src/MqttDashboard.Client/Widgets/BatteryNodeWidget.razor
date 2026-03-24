@@ -1,5 +1,6 @@
 @using MqttDashboard.Models
 @using MqttDashboard.Services
+@using MqttDashboard.Helpers
 @inherits BaseNodeWithDataWidget<BatteryNodeModel>
 
 <StandardNodeLayout Node="Node" ExtraCssClass="battery-node">
@@ -21,7 +22,7 @@
                     <rect x="5" y="@fillY" width="30" height="@fillH" rx="2" fill="@GetFillColor()"/>
                 }
                 <!-- Percentage text centred in battery -->
-                @((MarkupString)$"<text x=\"20\" y=\"40\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"14\" font-weight=\"bold\" fill=\"currentColor\">{System.Net.WebUtility.HtmlEncode(FormatPercent())}</text>")
+                @((MarkupString)$"<text x=\"20\" y=\"40\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"14\" font-weight=\"bold\" fill=\"currentColor\">{XmlStringHelper.XmlSafeEncode(FormatPercent())}</text>")
             </svg>
             @if (!string.IsNullOrEmpty(Node.Text))
             {
