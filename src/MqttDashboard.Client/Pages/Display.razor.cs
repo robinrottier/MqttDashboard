@@ -199,6 +199,12 @@ public partial class Display : IDisposable
         var currentState = AppState.GetDiagramState();
         _pageStates[_activePageIndex] = currentState;
 
+        var fileInfo = new DiagramFileInfo
+        {
+            WrittenAt = DateTimeOffset.UtcNow.ToString("o"),
+            Filename  = !string.IsNullOrEmpty(AppState.DiagramName) ? AppState.DiagramName : null,
+        };
+
         if (_pageStates.Count > 1)
         {
             // Multi-page: serialize as Pages list
@@ -217,10 +223,12 @@ public partial class Display : IDisposable
                     GridSize = ps.GridSize,
                     BackgroundColor = ps.BackgroundColor,
                 }).ToList(),
+                FileInfo = fileInfo,
             };
         }
 
-        // Single page: return flat format for backward compat
+        // Single page
+        currentState.FileInfo = fileInfo;
         return currentState;
     }
 
@@ -374,6 +382,7 @@ public partial class Display : IDisposable
         _onMenuPaste = () => InvokeAsync(PasteNodesAsync);
         AppState.MenuPasteSelected += _onMenuPaste;
         AppState.MenuAddPort       += AddPortToSelectedNode;
+        AppState.MenuAddAllPorts   += AddAllPortsToSelectedNode;
         AppState.MenuDeletePort    += DeletePortFromSelectedNode;
         AppState.MenuNewDiagram    += NewDiagram;
 
@@ -416,6 +425,7 @@ public partial class Display : IDisposable
         AppState.MenuCopySelected  -= CopySelectedNodes;
         if (_onMenuPaste != null) AppState.MenuPasteSelected -= _onMenuPaste;
         AppState.MenuAddPort       -= AddPortToSelectedNode;
+        AppState.MenuAddAllPorts   -= AddAllPortsToSelectedNode;
         AppState.MenuDeletePort    -= DeletePortFromSelectedNode;
         AppState.MenuNewDiagram    -= NewDiagram;
 
@@ -443,7 +453,11 @@ public partial class Display : IDisposable
 
     private void OnSelectionChanged(object model)
     {
-        _pendingDirtyMark = false; // Selection alone doesn't dirty the diagram
+        // Clear both immediately and deferred: if SelectionChanged fires before node.Changed
+        // (Blazor.Diagrams may fire selection first), the deferred clear ensures the flag
+        // set by the subsequent node.Changed callback is still nullified.
+        _pendingDirtyMark = false;
+        _ = InvokeAsync(() => _pendingDirtyMark = false);
         UpdateSelectionState();
         InvokeAsync(StateHasChanged);
     }
@@ -471,7 +485,10 @@ public partial class Display : IDisposable
     private void UpdateSelectionState()
     {
         var selected = _diagram?.GetSelectedModels().OfType<NodeModel>().ToList() ?? [];
-        AppState.UpdateSelectionState(selected.Count > 0, selected.Count == 1);
+        HashSet<PortAlignment>? ports = null;
+        if (selected.Count == 1)
+            ports = selected[0].Ports.OfType<MudPortModel>().Select(p => p.Alignment).ToHashSet();
+        AppState.UpdateSelectionState(selected.Count > 0, selected.Count == 1, ports);
     }
 
     // ── Node operations ───────────────────────────────────────────────────────
@@ -767,8 +784,7 @@ public partial class Display : IDisposable
                 BackgroundColor = n.BackgroundColor,
                 IconColor = n.IconColor,
                 Metadata = n.Metadata ?? new Dictionary<string, string>(),
-                DataTopic = n.DataTopic,
-                DataTopic2 = n.DataTopic2,
+                DataTopics = n.DataTopics.Count > 0 ? new List<string>(n.DataTopics) : null,
                 FontSize = n.FontSize,
                 LinkAnimation = n.LinkAnimation,
                 NodeType = n.NodeType ?? "Text",
@@ -917,8 +933,8 @@ public partial class Display : IDisposable
             node.BackgroundColor = ns.BackgroundColor;
             node.IconColor = ns.IconColor;
             node.Metadata = ns.Metadata ?? new Dictionary<string, string>();
-            if (!string.IsNullOrEmpty(ns.DataTopic)) node.DataTopics.Add(ns.DataTopic);
-            if (!string.IsNullOrEmpty(ns.DataTopic2) && ns.DataTopic2 != ns.DataTopic) node.DataTopics.Add(ns.DataTopic2);
+            if (ns.DataTopics != null)
+                node.DataTopics = new List<string>(ns.DataTopics);
             node.FontSize = ns.FontSize;
             node.LinkAnimation = ns.LinkAnimation;
             node.TitlePosition = ns.TitlePosition ?? "Above";
@@ -933,7 +949,7 @@ public partial class Display : IDisposable
             }
             _diagram.Nodes.Add(node);
             _diagram.Controls.AddFor(node).Add(new Blazor.Diagrams.Core.Controls.Default.ResizeControl(new Blazor.Diagrams.Core.Positions.Resizing.BottomRightResizerProvider()));
-            _diagram.SelectModel(node, true);
+            _diagram.SelectModel(node, false); // false = append to selection, so all pasted nodes stay selected
         }
         UpdateSelectionState();
         Snackbar.Add($"Pasted {toPaste.Count} node(s)", Severity.Info);
@@ -1057,8 +1073,7 @@ public partial class Display : IDisposable
         {
             // Check for existing file and confirm overwrite
             var existing = await DashboardService.ListDashboardsAsync();
-            if (existing.Any(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase))
-                && !string.Equals(name, AppState.DiagramName, StringComparison.OrdinalIgnoreCase))
+            if (existing.Any(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase)))
             {
                 var overwrite = await DialogService.ShowMessageBoxAsync(
                     "Overwrite?",
@@ -1189,6 +1204,20 @@ public partial class Display : IDisposable
         }
     }
 
+    private void AddAllPortsToSelectedNode()
+    {
+        if (_diagram == null) return;
+        var node = _diagram.GetSelectedModels().OfType<NodeModel>().FirstOrDefault();
+        if (node == null) return;
+        foreach (var alignment in new[] { PortAlignment.Top, PortAlignment.Right, PortAlignment.Bottom, PortAlignment.Left })
+        {
+            if (!node.Ports.Any(p => p.Alignment == alignment))
+                AppState.AddPortToNode(node, alignment);
+        }
+        node.Refresh();
+        StateHasChanged();
+    }
+
     private void DeletePortFromSelectedNode(PortAlignment alignment)
     {
         if (_diagram == null) return;
@@ -1211,7 +1240,7 @@ public partial class Display : IDisposable
         if (node == null) { Snackbar.Add("No node selected", Severity.Warning); return; }
         var parameters = new DialogParameters { { "Node", node } };
         var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true, BackdropClick = false };
-        var dialog = await DialogService.ShowAsync<NodePropertyEditor>("Edit Node Properties", parameters, options);
+        var dialog = await DialogService.ShowAsync<NodePropertyEditor>($"Edit {node.NodeType} Node Properties", parameters, options);
         var result = await dialog.Result;
         if (result is { Canceled: false })
         {
@@ -1310,6 +1339,34 @@ public partial class Display : IDisposable
             case "centerH": var cx = nodes.Average(n => n.Position.X + (n.Size?.Width ?? 100) / 2.0);        foreach (var n in nodes) n.SetPosition(cx - (n.Size?.Width ?? 100) / 2.0, n.Position.Y); break;
             case "centerV": var cy = nodes.Average(n => n.Position.Y + (n.Size?.Height ?? 50) / 2.0);        foreach (var n in nodes) n.SetPosition(n.Position.X, cy - (n.Size?.Height ?? 50) / 2.0); break;
         }
+        foreach (var n in nodes) n.Refresh();
+        _diagram.Refresh();
+        StateHasChanged();
+    }
+
+    private void SameWidth()
+    {
+        if (_diagram == null) return;
+        var nodes = _diagram.GetSelectedModels().OfType<NodeModel>().ToList();
+        if (nodes.Count < 2) { Snackbar.Add("Select 2+ nodes to resize", Severity.Info); return; }
+        PushUndoSnapshot();
+        var maxWidth = nodes.Max(n => n.Size?.Width ?? 100);
+        foreach (var n in nodes)
+            n.Size = new Blazor.Diagrams.Core.Geometry.Size(maxWidth, n.Size?.Height ?? 50);
+        foreach (var n in nodes) n.Refresh();
+        _diagram.Refresh();
+        StateHasChanged();
+    }
+
+    private void SameHeight()
+    {
+        if (_diagram == null) return;
+        var nodes = _diagram.GetSelectedModels().OfType<NodeModel>().ToList();
+        if (nodes.Count < 2) { Snackbar.Add("Select 2+ nodes to resize", Severity.Info); return; }
+        PushUndoSnapshot();
+        var maxHeight = nodes.Max(n => n.Size?.Height ?? 50);
+        foreach (var n in nodes)
+            n.Size = new Blazor.Diagrams.Core.Geometry.Size(n.Size?.Width ?? 100, maxHeight);
         foreach (var n in nodes) n.Refresh();
         _diagram.Refresh();
         StateHasChanged();

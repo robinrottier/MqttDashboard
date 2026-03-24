@@ -98,6 +98,13 @@ else
                 <MudTooltip Text="Align Bottom Edges">
                     <MudIconButton Icon="@Icons.Material.Filled.AlignVerticalBottom" Size="Size.Small" Color="Color.Primary" OnClick='() => AlignNodes("bottom")' />
                 </MudTooltip>
+                <MudDivider Vertical="true" FlexItem="true" Style="margin:4px 2px;" />
+                <MudTooltip Text="Make Same Width">
+                    <MudIconButton Icon="@Icons.Material.Filled.SwapHoriz" Size="Size.Small" Color="Color.Primary" OnClick="SameWidth" />
+                </MudTooltip>
+                <MudTooltip Text="Make Same Height">
+                    <MudIconButton Icon="@Icons.Material.Filled.SwapVert" Size="Size.Small" Color="Color.Primary" OnClick="SameHeight" />
+                </MudTooltip>
             </MudPaper>
         }
         <CascadingValue Value="_diagram" IsFixed="true">

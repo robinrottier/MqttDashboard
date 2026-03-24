@@ -17,7 +17,7 @@
                     <div style="@TitleDivStyle">
                         @if (!string.IsNullOrEmpty(Node.Icon))
                         {
-                            <MudIcon Icon="@Node.Icon" Color="@IconColor" Size="MudBlazor.Size.Small" />
+                            <MudIcon Icon="@Node.Icon" Style="@IconStyle" Size="MudBlazor.Size.Small" />
                         }
                         @if (!string.IsNullOrEmpty(Node.Title))
                         {
@@ -31,7 +31,7 @@
                     <div style="@TitleDivStyle">
                         @if (!string.IsNullOrEmpty(Node.Icon))
                         {
-                            <MudIcon Icon="@Node.Icon" Color="@IconColor" Size="MudBlazor.Size.Small" />
+                            <MudIcon Icon="@Node.Icon" Style="@IconStyle" Size="MudBlazor.Size.Small" />
                         }
                         @if (!string.IsNullOrEmpty(Node.Title))
                         {
@@ -112,18 +112,8 @@
     private bool HasTitleContent =>
         !string.IsNullOrEmpty(Node.Icon) || !string.IsNullOrEmpty(Node.Title);
 
-    private MudBlazor.Color IconColor =>
-        Node.IconColor?.ToLower() switch
-        {
-            "primary"   => MudBlazor.Color.Primary,
-            "secondary" => MudBlazor.Color.Secondary,
-            "success"   => MudBlazor.Color.Success,
-            "info"      => MudBlazor.Color.Info,
-            "warning"   => MudBlazor.Color.Warning,
-            "error"     => MudBlazor.Color.Error,
-            "dark"      => MudBlazor.Color.Dark,
-            _           => MudBlazor.Color.Default
-        };
+    private string IconStyle =>
+        string.IsNullOrEmpty(Node.IconColor) ? "" : $"color:{Node.IconColor}";
 
     private string TitleDivStyle => TitlePosition switch
     {

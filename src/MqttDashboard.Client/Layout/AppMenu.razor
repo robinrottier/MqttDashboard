@@ -56,16 +56,18 @@
         <MudMenuItem Label="Paste" OnClick="MenuPasteSelected" Disabled="@(!AppState.HasClipboard || !IsEditMode)" />
         <MudDivider />
         <MudMenu Label="Add Port"    Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight" Disabled="@(!AppState.HasSingleSelectedNode)">
-            <MudMenuItem Label="Top"    OnClick="() => MenuAddPort(PortAlignment.Top)" />
-            <MudMenuItem Label="Left"   OnClick="() => MenuAddPort(PortAlignment.Left)" />
-            <MudMenuItem Label="Bottom" OnClick="() => MenuAddPort(PortAlignment.Bottom)" />
-            <MudMenuItem Label="Right"  OnClick="() => MenuAddPort(PortAlignment.Right)" />
+            <MudMenuItem Label="Top"    OnClick="() => MenuAddPort(PortAlignment.Top)"    Disabled="@(AppState.SelectedNodePorts?.Contains(PortAlignment.Top) == true)" />
+            <MudMenuItem Label="Left"   OnClick="() => MenuAddPort(PortAlignment.Left)"   Disabled="@(AppState.SelectedNodePorts?.Contains(PortAlignment.Left) == true)" />
+            <MudMenuItem Label="Bottom" OnClick="() => MenuAddPort(PortAlignment.Bottom)" Disabled="@(AppState.SelectedNodePorts?.Contains(PortAlignment.Bottom) == true)" />
+            <MudMenuItem Label="Right"  OnClick="() => MenuAddPort(PortAlignment.Right)"  Disabled="@(AppState.SelectedNodePorts?.Contains(PortAlignment.Right) == true)" />
+            <MudDivider />
+            <MudMenuItem Label="All"    OnClick="MenuAddAllPorts" Disabled="@(AppState.SelectedNodePorts?.Count == 4)" />
         </MudMenu>
         <MudMenu Label="Delete Port" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight" Disabled="@(!AppState.HasSingleSelectedNode)">
-            <MudMenuItem Label="Top"    OnClick="() => MenuDeletePort(PortAlignment.Top)" />
-            <MudMenuItem Label="Left"   OnClick="() => MenuDeletePort(PortAlignment.Left)" />
-            <MudMenuItem Label="Bottom" OnClick="() => MenuDeletePort(PortAlignment.Bottom)" />
-            <MudMenuItem Label="Right"  OnClick="() => MenuDeletePort(PortAlignment.Right)" />
+            <MudMenuItem Label="Top"    OnClick="() => MenuDeletePort(PortAlignment.Top)"    Disabled="@(AppState.SelectedNodePorts?.Contains(PortAlignment.Top) != true)" />
+            <MudMenuItem Label="Left"   OnClick="() => MenuDeletePort(PortAlignment.Left)"   Disabled="@(AppState.SelectedNodePorts?.Contains(PortAlignment.Left) != true)" />
+            <MudMenuItem Label="Bottom" OnClick="() => MenuDeletePort(PortAlignment.Bottom)" Disabled="@(AppState.SelectedNodePorts?.Contains(PortAlignment.Bottom) != true)" />
+            <MudMenuItem Label="Right"  OnClick="() => MenuDeletePort(PortAlignment.Right)"  Disabled="@(AppState.SelectedNodePorts?.Contains(PortAlignment.Right) != true)" />
         </MudMenu>
         <MudDivider />
         <MudMenuItem Label="Properties" OnClick="MenuEditProperties" Disabled="@(!AppState.HasSingleSelectedNode)" />
@@ -111,32 +113,6 @@
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                         <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.ShowDiagramName ? "" : "visibility:hidden")" />
                         <MudText>Dashboard Name</MudText>
-                    </MudStack>
-                </MudMenuItem>
-            </MudMenu>
-            <MudMenu Label="Grid" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
-                <MudMenuItem OnClick="() => SetGrid(0)">
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.GridSize == 0 ? "" : "visibility:hidden")" />
-                        <MudText>None</MudText>
-                    </MudStack>
-                </MudMenuItem>
-                <MudMenuItem OnClick="() => SetGrid(5)">
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.GridSize == 5 ? "" : "visibility:hidden")" />
-                        <MudText>Small (5 px)</MudText>
-                    </MudStack>
-                </MudMenuItem>
-                <MudMenuItem OnClick="() => SetGrid(10)">
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.GridSize == 10 ? "" : "visibility:hidden")" />
-                        <MudText>Medium (10 px)</MudText>
-                    </MudStack>
-                </MudMenuItem>
-                <MudMenuItem OnClick="() => SetGrid(20)">
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.GridSize == 20 ? "" : "visibility:hidden")" />
-                        <MudText>Large (20 px)</MudText>
                     </MudStack>
                 </MudMenuItem>
             </MudMenu>
@@ -197,6 +173,7 @@
     private void MenuCopySelected()   => AppState.TriggerCopySelected();
     private void MenuPasteSelected()  => AppState.TriggerPasteSelected();
     private void MenuEditProperties() => AppState.TriggerEditProperties();
+    private void MenuAddAllPorts()              => AppState.TriggerAddAllPorts();
     private void MenuAddPort(PortAlignment a)    => AppState.TriggerAddPort(a);
     private void MenuDeletePort(PortAlignment a) => AppState.TriggerDeletePort(a);
     private void SetTheme(ThemeMode m)  => AppState.SetTheme(m);

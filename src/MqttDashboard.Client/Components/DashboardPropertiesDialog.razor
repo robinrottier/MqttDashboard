@@ -8,19 +8,9 @@
         <MudStack Spacing="3">
             <MudTextField @bind-Value="_name" Label="Dashboard Name" Variant="Variant.Outlined" />
 
-            <MudText Typo="Typo.subtitle2">Title Bar</MudText>
             <MudCheckBox @bind-Value="_showDiagramName" Label="Show dashboard name in title bar" />
 
-            <MudText Typo="Typo.subtitle2">Canvas Background</MudText>
-            <ColorPicker @bind-Value="_backgroundColor" />
-
-            <MudText Typo="Typo.subtitle2">Grid</MudText>
-            <MudSelect T="int" @bind-Value="_gridSize" Label="Grid Size" Variant="Variant.Outlined" Dense="true">
-                <MudSelectItem T="int" Value="0">None</MudSelectItem>
-                <MudSelectItem T="int" Value="5">Small (5px)</MudSelectItem>
-                <MudSelectItem T="int" Value="10">Medium (10px)</MudSelectItem>
-                <MudSelectItem T="int" Value="20">Large (20px)</MudSelectItem>
-            </MudSelect>
+            <ColorInputRow @bind-Value="_backgroundColor" Label="Canvas Background" ShowClear="true" />
 
             <MudDivider />
             <MudText Typo="Typo.subtitle2">Data Topics</MudText>
@@ -67,7 +57,6 @@
     private string _name = "";
     private bool _showDiagramName;
     private string _backgroundColor = "";
-    private int _gridSize = 20;
     private List<string> _topics = new();
     private string _newTopic = "";
 
@@ -76,7 +65,6 @@
         _name = AppState.DiagramDisplayName;
         _showDiagramName = AppState.ShowDiagramName;
         _backgroundColor = AppState.CanvasBackgroundColor;
-        _gridSize = AppState.GridSize;
         _topics = AppState.SubscribedTopics.OrderBy(t => t).ToList();
     }
 
@@ -100,7 +88,6 @@
         AppState.SetDisplayName(_name);
         AppState.SetShowDiagramName(_showDiagramName);
         AppState.SetCanvasBackground(_backgroundColor);
-        AppState.SetGridSize(_gridSize);
 
         // Sync SignalR subscriptions: subscribe added, unsubscribe removed
         if (AppState.SignalRService != null)

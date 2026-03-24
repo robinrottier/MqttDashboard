@@ -20,33 +20,47 @@ public class PageState
     public string BackgroundColor { get; set; } = string.Empty;
 }
 
+/// <summary>Metadata written into each dashboard file for traceability.</summary>
+public class DiagramFileInfo
+{
+    public string WrittenAt { get; set; } = string.Empty;
+    public string? Filename  { get; set; }
+}
+
 public class DiagramState
 {
-    public string Name { get; set; } = string.Empty;
-    public bool ShowDiagramName { get; set; } = false;
-
-    /// <summary>
-    /// User-managed list of MQTT topic subscriptions for this dashboard.
-    /// Stored here so subscriptions travel with the dashboard file.
-    /// Null means the field was absent (old file); empty means explicitly no subscriptions.
-    /// </summary>
-    public HashSet<string>? MqttSubscriptions { get; set; }
-
-    public List<NodeState> Nodes { get; set; } = new();
-    public List<LinkState> Links { get; set; } = new();
-    public int GridSize { get; set; } = 10; // Default 10px grid; 0 for no grid
-    public string BackgroundColor { get; set; } = string.Empty;
+    [JsonPropertyOrder(0)]  public string Name { get; set; } = string.Empty;
+    [JsonPropertyOrder(1)]  public bool ShowDiagramName { get; set; } = false;
+    [JsonPropertyOrder(2)]  public int GridSize { get; set; } = 10;
+    [JsonPropertyOrder(3)]  public string BackgroundColor { get; set; } = string.Empty;
 
     /// <summary>
     /// Multi-page support. When populated, each page has its own node/link canvas.
     /// When null, this is a legacy single-page file — Nodes/Links/GridSize/BackgroundColor
     /// at the top level represent the single page.
     /// </summary>
-    public List<PageState>? Pages { get; set; }
+    [JsonPropertyOrder(4)]  public List<PageState>? Pages { get; set; }
+
+    /// <summary>
+    /// User-managed list of MQTT topic subscriptions for this dashboard.
+    /// Stored here so subscriptions travel with the dashboard file.
+    /// Null means the field was absent (old file); empty means explicitly no subscriptions.
+    /// </summary>
+    [JsonPropertyOrder(5)]  public HashSet<string>? MqttSubscriptions { get; set; }
+
+    [JsonPropertyOrder(6)]  public List<NodeState> Nodes { get; set; } = new();
+    [JsonPropertyOrder(7)]  public List<LinkState> Links { get; set; } = new();
+
+    /// <summary>Written last so it doesn't clutter the top of the file.</summary>
+    [JsonPropertyOrder(99)] public DiagramFileInfo? FileInfo { get; set; }
 }
 
 public class NodeState
 {
+    // Node type discriminator must always be first for readability
+    [JsonPropertyOrder(0)]
+    public string NodeType { get; set; } = "Text";
+
     public string Id { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
 
@@ -62,32 +76,31 @@ public class NodeState
     [JsonIgnore]
     public double Height { get; set; }
 
-    // Formatted properties for JSON serialization (5 significant digits)
     [JsonPropertyName("X")]
     public double XFormatted
     {
-        get => Math.Round(X, 5);
+        get => Math.Round(X, 2);
         set => X = value;
     }
 
     [JsonPropertyName("Y")]
     public double YFormatted
     {
-        get => Math.Round(Y, 5);
+        get => Math.Round(Y, 2);
         set => Y = value;
     }
 
     [JsonPropertyName("Width")]
     public double WidthFormatted
     {
-        get => Math.Round(Width, 5);
+        get => Math.Round(Width, 2);
         set => Width = value;
     }
 
     [JsonPropertyName("Height")]
     public double HeightFormatted
     {
-        get => Math.Round(Height, 5);
+        get => Math.Round(Height, 2);
         set => Height = value;
     }
 
@@ -99,14 +112,9 @@ public class NodeState
     public Dictionary<string, string> Metadata { get; set; } = new();
 
     // MQTT Data Binding
-    public string? DataTopic { get; set; }
-    public string? DataTopic2 { get; set; }
     public List<string>? DataTopics { get; set; }
     public int? FontSize { get; set; }
     public string? LinkAnimation { get; set; }
-
-    // Node type discriminator (null/"Text" = existing text node, backward-compatible)
-    public string NodeType { get; set; } = "Text";
 
     // Gauge-specific
     public double? MinValue { get; set; }

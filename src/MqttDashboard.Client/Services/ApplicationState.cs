@@ -68,7 +68,7 @@ public class ApplicationState
 
     // Theme & UI preferences
     public ThemeMode ThemeMode { get; private set; } = ThemeMode.Auto;
-    public bool ShowDiagramName { get; private set; } = false;
+    public bool ShowDiagramName { get; private set; } = true;
 
     /// <summary>File name (stem) used for saving/loading. Set by the caller, not from file contents.</summary>
     public string DiagramName { get; private set; } = string.Empty;
@@ -87,7 +87,7 @@ public class ApplicationState
         !string.IsNullOrEmpty(DiagramName) ? DiagramName :
         "Untitled";
 
-    public int GridSize { get; private set; } = 10;
+    public int GridSize { get; private set; } = 20;
     public string CanvasBackgroundColor { get; private set; } = string.Empty;
 
     // Edit mode state (set by Edit page)
@@ -95,6 +95,8 @@ public class ApplicationState
     public bool HasSelectedNode { get; private set; } = false;
     public bool HasSingleSelectedNode { get; private set; } = false;
     public bool IsMultiSelected => HasSelectedNode && !HasSingleSelectedNode;
+    /// <summary>The set of port alignments present on the currently selected node. Null when no single node is selected.</summary>
+    public HashSet<PortAlignment>? SelectedNodePorts { get; private set; }
 
     // Auth state
     public bool IsAdmin { get; private set; } = true; // default true when auth not configured
@@ -187,6 +189,7 @@ public class ApplicationState
     public event Action? MenuCutSelected;
     public event Action? MenuCopySelected;
     public event Action? MenuPasteSelected;
+    public event Action? MenuAddAllPorts;
     public event Action<PortAlignment>? MenuAddPort;
     public event Action<PortAlignment>? MenuDeletePort;
     public event Action? MenuEditProperties;
@@ -221,10 +224,11 @@ public class ApplicationState
         NotifyStateChangedAsync();
     }
 
-    public void UpdateSelectionState(bool hasSelected, bool hasSingleSelected)
+    public void UpdateSelectionState(bool hasSelected, bool hasSingleSelected, HashSet<PortAlignment>? selectedPorts = null)
     {
         HasSelectedNode = hasSelected;
         HasSingleSelectedNode = hasSingleSelected;
+        SelectedNodePorts = selectedPorts;
         NotifyStateChangedAsync();
     }
 
@@ -281,6 +285,7 @@ public class ApplicationState
     public void TriggerCutSelected() => MenuCutSelected?.Invoke();
     public void TriggerCopySelected() => MenuCopySelected?.Invoke();
     public void TriggerPasteSelected() => MenuPasteSelected?.Invoke();
+    public void TriggerAddAllPorts() => MenuAddAllPorts?.Invoke();
     public void TriggerAddPort(PortAlignment alignment) => MenuAddPort?.Invoke(alignment);
     public void TriggerDeletePort(PortAlignment alignment) => MenuDeletePort?.Invoke(alignment);
     public void TriggerEditProperties() => MenuEditProperties?.Invoke();
@@ -321,9 +326,15 @@ public class ApplicationState
             // if grid size is -ve then grid is snaptocenter
             // if grid size is +ve then snap to corner (default)
             if (state == null)
-                options.GridSize = 10; // Default grid size for new diagrams
+            {
+                options.GridSize = 20;
+                GridSize = 20;
+            }
             else
-                options.GridSize = state.GridSize == 0 ? null : int.Abs(state.GridSize); // Use saved grid size or default to 20px
+            {
+                options.GridSize = state.GridSize == 0 ? null : int.Abs(state.GridSize);
+                GridSize = (int)(options.GridSize ?? 20);
+            }
             options.GridSnapToCenter = options.GridSize < 0;
         };
 
@@ -412,16 +423,8 @@ public class ApplicationState
                 node.BackgroundColor = nodeState.BackgroundColor;
                 node.IconColor = nodeState.IconColor;
                 node.Metadata = nodeState.Metadata ?? new Dictionary<string, string>();
-                // Populate DataTopics — new format first, fall back to scalar fields for old files.
                 if (nodeState.DataTopics != null && nodeState.DataTopics.Count > 0)
-                {
                     node.DataTopics = new List<string>(nodeState.DataTopics);
-                }
-                else
-                {
-                    if (!string.IsNullOrEmpty(nodeState.DataTopic))  node.DataTopics.Add(nodeState.DataTopic);
-                    if (!string.IsNullOrEmpty(nodeState.DataTopic2)) node.DataTopics.Add(nodeState.DataTopic2);
-                }
                 node.FontSize = nodeState.FontSize;
                 node.LinkAnimation = nodeState.LinkAnimation;
                 node.NodeType = nodeState.NodeType ?? "Text";
@@ -550,8 +553,6 @@ public class ApplicationState
                 BackgroundColor = node.BackgroundColor,
                 IconColor = node.IconColor,
                 Metadata = node.Metadata ?? new Dictionary<string, string>(),
-                DataTopic  = node.DataTopic,   // computed from DataTopics[0]; kept for old-file compat
-                DataTopic2 = node.DataTopic2,  // computed from DataTopics[1]; kept for old-file compat
                 DataTopics = node.DataTopics.Count > 0 ? new List<string>(node.DataTopics) : null,
                 FontSize = node.FontSize,
                 LinkAnimation = node.LinkAnimation,

@@ -4,28 +4,28 @@
 <MudDialog>
     <DialogContent>
         <MudStack Spacing="2">
-            <MudText Typo="Typo.subtitle2" Class="mb-2">Node Properties</MudText>
 
-            <!-- Node Type (read-only display) -->
-            <MudText Typo="Typo.caption" Color="Color.Secondary">Node Type: @Node.NodeType</MudText>
-
-            <!-- Title -->
-            <MudTextField @bind-Value="@Node.Title"
-                          Label="Title"
-                          Variant="Variant.Outlined"
-                          Margin="Margin.Dense" />
-
-            <!-- Title Position -->
-            <MudSelect @bind-Value="@Node.TitlePosition"
-                       Label="Title Position"
-                       Variant="Variant.Outlined"
-                       Margin="Margin.Dense"
-                       Dense="true">
-                <MudSelectItem Value="@("Above")">Above</MudSelectItem>
-                <MudSelectItem Value="@("Below")">Below</MudSelectItem>
-                <MudSelectItem Value="@("Left")">Left</MudSelectItem>
-                <MudSelectItem Value="@("Right")">Right</MudSelectItem>
-            </MudSelect>
+            <!-- Title + Title Position (one row) -->
+            <MudGrid Spacing="2">
+                <MudItem xs="8">
+                    <MudTextField @bind-Value="@Node.Title"
+                                  Label="Title"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="4">
+                    <MudSelect @bind-Value="@Node.TitlePosition"
+                               Label="Position"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               Dense="true">
+                        <MudSelectItem Value="@("Above")">Above</MudSelectItem>
+                        <MudSelectItem Value="@("Below")">Below</MudSelectItem>
+                        <MudSelectItem Value="@("Left")">Left</MudSelectItem>
+                        <MudSelectItem Value="@("Right")">Right</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
 
             <!-- Icon and Icon Color -->
             <MudGrid Spacing="2">
@@ -53,21 +53,9 @@
                     </MudStack>
                 </MudItem>
                 <MudItem xs="6">
-                    <MudSelect @bind-Value="@Node.IconColor"
-                               Label="Icon Color"
-                               Variant="Variant.Outlined"
-                               Margin="Margin.Dense"
-                               Dense="true"
-                               Clearable="true">
-                        <MudSelectItem Value="@((string?)null)">Default</MudSelectItem>
-                        <MudSelectItem Value="@("Primary")">Primary</MudSelectItem>
-                        <MudSelectItem Value="@("Secondary")">Secondary</MudSelectItem>
-                        <MudSelectItem Value="@("Success")">Success</MudSelectItem>
-                        <MudSelectItem Value="@("Info")">Info</MudSelectItem>
-                        <MudSelectItem Value="@("Warning")">Warning</MudSelectItem>
-                        <MudSelectItem Value="@("Error")">Error</MudSelectItem>
-                        <MudSelectItem Value="@("Dark")">Dark</MudSelectItem>
-                    </MudSelect>
+                    <ColorInputRow @bind-Value="Node.IconColor"
+                                   Label="Icon Color"
+                                   ShowClear="true" />
                 </MudItem>
             </MudGrid>
 
@@ -76,6 +64,28 @@
                            Label="Background Color"
                            Placeholder="None"
                            ShowClear="true" />
+
+            <!-- Background Image (compact: URL + fit on two columns) -->
+            <MudGrid Spacing="2">
+                <MudItem xs="8">
+                    <MudTextField @bind-Value="@Node.BackgroundImageUrl"
+                                  Label="Background Image URL"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Placeholder="https://… or data:image/…" />
+                </MudItem>
+                <MudItem xs="4">
+                    <MudSelect @bind-Value="@Node.BackgroundObjectFit"
+                               Label="Fit"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               Dense="true">
+                        <MudSelectItem Value="@("cover")">Cover</MudSelectItem>
+                        <MudSelectItem Value="@("contain")">Contain</MudSelectItem>
+                        <MudSelectItem Value="@("fill")">Fill</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
 
             <!-- Width, Height, Font Size -->
             <MudGrid Spacing="2">
@@ -104,7 +114,6 @@
             </MudGrid>
 
             <!-- Link Animation -->
-            <MudDivider Class="my-2" />
             <MudSelect @bind-Value="@Node.LinkAnimation"
                        Label="Link Animation"
                        Variant="Variant.Outlined"
@@ -116,10 +125,8 @@
                 <MudSelectItem Value="@("Reverse")">Reverse</MudSelectItem>
             </MudSelect>
 
-            <!-- MQTT Data Binding -->
+            <!-- MQTT Topics -->
             <MudDivider Class="my-2" />
-            <MudText Typo="Typo.caption" Class="mb-1">MQTT Data Binding</MudText>
-
             <MudText Typo="Typo.subtitle2">MQTT Topics</MudText>
             @for (int i = 0; i < Node.DataTopics.Count; i++)
             {
@@ -152,30 +159,6 @@
                 <MudText Typo="Typo.caption" Class="mb-1">@category</MudText>
                 <NodePropertyRenderer Node="Node" Category="@category" />
             }
-
-
-            <!-- Background Image (all node types) -->
-            <MudDivider Class="my-2" />
-            <MudText Typo="Typo.caption" Class="mb-1">Background Image</MudText>
-            <MudTextField @bind-Value="@Node.BackgroundImageUrl"
-                          Label="Image URL"
-                          Variant="Variant.Outlined"
-                          Margin="Margin.Dense"
-                          Placeholder="https://… or data:image/…"
-                          HelperText="Displayed as the node background. Leave blank for none." />
-            <MudGrid Spacing="2" Class="mt-1">
-                <MudItem xs="12">
-                    <MudSelect @bind-Value="@Node.BackgroundObjectFit"
-                               Label="Image Fit"
-                               Variant="Variant.Outlined"
-                               Margin="Margin.Dense"
-                               Dense="true">
-                        <MudSelectItem Value="@("cover")">Cover (fill, crop edges)</MudSelectItem>
-                        <MudSelectItem Value="@("contain")">Contain (fit inside)</MudSelectItem>
-                        <MudSelectItem Value="@("fill")">Fill (stretch)</MudSelectItem>
-                    </MudSelect>
-                </MudItem>
-            </MudGrid>
 
             <!-- Custom Metadata -->
             @if (Node.Metadata.Any())
