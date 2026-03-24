@@ -62,14 +62,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 - [ ] Server-side "lazy cache": if client request is dropped, server should keep data live for a configurable delay (e.g. 30s) before removing references
 - [ ] Property transition
-	- [x] `ColorTopicIndex` and `DataTopicIndex` per node — **done for both Gauge and Battery**
-	- [x] `ColorTransition` class wraps `ColorTopicIndex` + `ColorThresholds` — **done; `GaugeColor` on GaugeNodeModel, `BatteryColor` on BatteryNodeModel**
-	- [ ] The color boxes in the transition/colour editor should have a chooser popup (via a button) to help with selecting the various types and well-known values
-	- [ ] this would be same as "Background color" for main node property, so either 3 small buttons
-	      or a single button goes to a dialog with 3 tabs, one for each of the colour modes
-	- [ ] Color transition "when" needs "else" condition to specify default colour when no conditions met
 	- [ ] Also a means to drag reordering around the conditions to specify which is first match
-- [ ] In future, colour transitions may drive other properties (e.g. intensity, flashing, shading) — bear that in mind for the model
 - [ ] Data item topics per node
 	- [ ] "Link animation" needs a property for index of which data item to animate upon
 - [ ] Page tabs
@@ -79,9 +72,8 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Node properties dialog
 	- [ ] Can this dialog be moveable and have apply button to changes dynamically without closing
 - [ ] Log viewer columns: choices for date (and format), time (and format), topic path, topic name, topic full path&name, value — **Full 6-column boolean options done**; date/time format options still open
-- [ ] Log view needs a "pause" button to stop updates. — **Done** (previous session)
 - [ ] mqtt publishing should have other parameters (e.g. message expiry)
-- [ ] Confirm- mqtt publishing is reusable compoennts (especially configuration of it in node properties)
+- [ ] Confirm- mqtt publishing is a reusable compoennt (especially configuration of it in node properties)
 
 
 ## 🟡 Features
