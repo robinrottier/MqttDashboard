@@ -7,7 +7,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-### Added
+### Fixed
+- **MQTT subscriptions not persisted after restart** — topic add/remove controls on the MqttData page are now hidden in view mode. Topics can only be managed in edit mode (where `MarkEdited()` is called), ensuring they are included in the next dashboard save.
+
 - **Icon rendering in all node types** — StandardNodeLayout now renders Node.Icon alongside Node.Title for all visual node types (Gauge, Battery, Switch, Text). Previously only Text nodes rendered icons.
 - **Node-type-specific properties auto-rendered** — NodePropertyEditor no longer has any `@if (Node is XxxModel)` blocks; properties appear from `[NpXxx]` model attributes automatically. Adding a new node type requires only annotating its model properties.
 - **Battery: value topic index + color topic index** — Battery nodes now have the same DataTopicIndex and ColorTopicIndex controls as Gauge nodes.

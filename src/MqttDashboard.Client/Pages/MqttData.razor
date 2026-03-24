@@ -103,33 +103,39 @@
                                                  @onclick="async () => await CopyTopicToClipboard(topic)">
                                             @topic
                                         </MudText>
-                                        <MudIconButton Size="Size.Small"
-                                                       Icon="@Icons.Material.Filled.Close"
-                                                       Color="Color.Error"
-                                                       title="Unsubscribe"
-                                                       OnClick="async () => await UnsubscribeFromTopic(topic)" />
+                                        @if (AppState.IsEditMode)
+                                        {
+                                            <MudIconButton Size="Size.Small"
+                                                           Icon="@Icons.Material.Filled.Close"
+                                                           Color="Color.Error"
+                                                           title="Unsubscribe"
+                                                           OnClick="async () => await UnsubscribeFromTopic(topic)" />
+                                        }
                                     </div>
                                 </MudListItem>
                             }
-                            <!-- Add new subscription row -->
-                            <MudListItem T="string" Dense="true" Class="px-2 py-1">
-                                <div style="display: flex; align-items: center; gap: 2px; width: 100%;">
-                                    <MudTextField @bind-Value="_topicInput"
-                                                  Placeholder="Topic..."
-                                                  Variant="Variant.Text"
-                                                  Margin="Margin.Dense"
-                                                  OnKeyDown="HandleKeyPress"
-                                                  Style="flex: 1;"
-                                                  Immediate="true"
-                                                  Disabled="@(!AppState.IsMqttConnected)" />
-                                    <MudIconButton Size="Size.Small"
-                                                   Icon="@Icons.Material.Filled.Add"
-                                                   Color="Color.Primary"
-                                                   title="Subscribe"
-                                                   OnClick="async () => await SubscribeToTopic()"
-                                                   Disabled="@(string.IsNullOrWhiteSpace(_topicInput) || !AppState.IsMqttConnected)" />
-                                </div>
-                            </MudListItem>
+                            @if (AppState.IsEditMode)
+                            {
+                                <!-- Add new subscription row -->
+                                <MudListItem T="string" Dense="true" Class="px-2 py-1">
+                                    <div style="display: flex; align-items: center; gap: 2px; width: 100%;">
+                                        <MudTextField @bind-Value="_topicInput"
+                                                      Placeholder="Topic..."
+                                                      Variant="Variant.Text"
+                                                      Margin="Margin.Dense"
+                                                      OnKeyDown="HandleKeyPress"
+                                                      Style="flex: 1;"
+                                                      Immediate="true"
+                                                      Disabled="@(!AppState.IsMqttConnected)" />
+                                        <MudIconButton Size="Size.Small"
+                                                       Icon="@Icons.Material.Filled.Add"
+                                                       Color="Color.Primary"
+                                                       title="Subscribe"
+                                                       OnClick="async () => await SubscribeToTopic()"
+                                                       Disabled="@(string.IsNullOrWhiteSpace(_topicInput) || !AppState.IsMqttConnected)" />
+                                    </div>
+                                </MudListItem>
+                            }
                         </MudList>
                     </MudCardContent>
                 </MudCard>

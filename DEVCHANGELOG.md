@@ -7,6 +7,28 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ---
 
+## 2026-03-24 — Fix: MQTT subscriptions lost on restart
+
+### Investigation
+User reported topics added via the MqttData page were not remembered after a server restart.
+
+Traced the full flow:
+- Startup: `MqttInitializationService` loads `Default.json` → `AppState.SetSubscribedTopics(dashboard.MqttSubscriptions)` → restores SignalR subscriptions.
+- Add topic: `MqttData.razor` → `SignalRService.SubscribeToTopicAsync` → server confirms → `HandleSubscriptionConfirmed` → `AppState.AddSubscriptionAsync` → `if (IsEditMode) MarkEdited()`.
+- Save: triggered by user saving from edit mode → `GetDiagramState()` serializes `SubscribedTopics` into the dashboard JSON.
+
+**Root cause:** The MqttData page displayed add/remove topic controls in view mode. Since `MarkEdited()` is gated on `IsEditMode`, topics added outside edit mode never marked the dashboard dirty. The save prompt/button never appeared, so topics were lost on restart.
+
+### Fix — `src/MqttDashboard.Client/Pages/MqttData.razor`
+- Wrapped the per-topic unsubscribe (×) button in `@if (AppState.IsEditMode)`.
+- Wrapped the entire "add new subscription" row (text field + Add button) in `@if (AppState.IsEditMode)`.
+
+Topics are now read-only in view mode — consistent with the rest of the dashboard. To add/remove topics, enter edit mode, make changes, and save.
+
+The existing `if (IsEditMode) MarkEdited()` guard in `ApplicationState.cs` is correct and unchanged.
+
+⚠️ If existing topics were stored only in the legacy `applicationstate.json` (pre-refactor format), they will need to be re-added once in edit mode and saved.
+
 ## 2026-03-24 — ColorInputRow refactor + color transition ElseColor + battery fix
 
 **Branch:** develop
