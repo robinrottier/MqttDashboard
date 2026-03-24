@@ -18,7 +18,7 @@
                 <strong>Value:</strong> @(SanitizeForDisplay(val?.ToString()) ?? "—")
                 @if (updated.HasValue)
                 {
-                    <><br/><strong>Updated:</strong> @updated.Value.ToString("HH:mm:ss")</>
+                    <br/><strong>Updated:</strong> @updated.Value.ToString("HH:mm:ss")
                 }
             </div>
         }
