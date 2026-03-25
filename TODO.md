@@ -6,7 +6,6 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ## BUGS
 
-- [ ] Tooltip on hover over gauge/battery causes an exception shortly after display when the node has a data topic configured and the dashboard also has topics configured. Happens in view mode. Investigate.
 - [ ] Serialization: node ID GUIDs in file — map to sequential 1-based IDs for file (need port+link ID remapping too; deferred due to complexity)
 - [ ] Serialization: logged-on user not yet written to `FileInfo` (always admin for now — fine to leave)
 
