@@ -3,6 +3,58 @@
 Detailed record of each Copilot-assisted work session — what was investigated, changed, and why.
 For reviewing work item by item and moving anything back to [TODO.md](TODO.md) if needed.
 
+---
+
+## 2026-03-24 — FEAT-M: settings persistence + FEAT-N: restart from web UI
+
+### FEAT-M: `appsettings.user.json` moved to data directory
+
+**Problem:** Both `SettingsController` and `SetupController` wrote `appsettings.user.json` to `IWebHostEnvironment.ContentRootPath` — in Docker that's `/app/`, inside the container image, and is wiped on every container restart. Admin password and startup mode settings were therefore lost on redeploy.
+
+**Fix — `Program.cs` (both hosts):**
+- Replaced `builder.Configuration.AddJsonFile("appsettings.user.json", ...)` with a block that:
+  1. Resolves the data directory early using the same priority logic as `DashboardStorageService` (env var `DIAGRAM_DATA_DIR` → config `DiagramStorage:DataDirectory` → `{ContentRoot}/Data`).
+  2. Creates the data dir if it doesn't exist.
+  3. One-time migration: if `{ContentRoot}/appsettings.user.json` exists and `{dataDir}/appsettings.user.json` does not, copies it across.
+  4. Loads the settings file from data dir using a `PhysicalFileProvider` so the absolute path is unambiguous.
+- ⚠️ Uses `new PhysicalFileProvider(dataDir)` + `AddJsonFile(provider, "appsettings.user.json", ...)` — NOT `AddJsonFile(absolutePath, ...)` because the default file provider base path is `AppContext.BaseDirectory`, not `ContentRootPath`.
+
+**Fix — `SettingsController.cs` and `SetupController.cs`:**
+- Removed `IWebHostEnvironment` injection from both.
+- Injected `DashboardStorageService` instead.
+- Changed `Path.Combine(_env.ContentRootPath, "appsettings.user.json")` → `Path.Combine(_storage.StoragePath, "appsettings.user.json")` in both the `Save()` method (SettingsController) and `SavePasswordHash()` (SetupController).
+
+**Files changed:**
+- `src/MqttDashboard.WebApp/MqttDashboard.WebApp/Program.cs`
+- `src/MqttDashboard.WebApp/MqttDashboard.WebAppServerOnly/Program.cs`
+- `src/MqttDashboard.Server/Controllers/SettingsController.cs`
+- `src/MqttDashboard.Server/Controllers/SetupController.cs`
+
+---
+
+### FEAT-N: Restart from web UI (Docker)
+
+**Problem:** In Docker, when a new image is available (pulled via `docker compose pull` or Watchtower), there was no way to restart the app from the browser — users had to SSH in and run `docker compose up -d`.
+
+**Fix — `UpdateController.cs`:**
+- Added `IHostApplicationLifetime` and `IConfiguration` injection.
+- New `POST /api/update/restart` endpoint:
+  - Checks admin auth if auth is configured.
+  - Schedules `_lifetime.StopApplication()` after a 500ms delay (so the HTTP response is delivered first).
+  - Returns `{ success: true, message: "..." }`.
+  - Docker `restart: always` policy then brings the container back up with the (already-pulled) image.
+
+**Fix — `MainLayout.razor`:**
+- Added `_restarting` state field.
+- Added `RestartAppAsync()` method: calls `POST /api/update/restart` via `Http.PostAsync`, swallows connection-drop exceptions (expected as app shuts down).
+- Docker update banner: replaced plain text with a flex row showing the `docker compose pull` instruction + **"Restart Now"** button (disabled while restarting).
+- Standalone update banner: replaced `MudLink` with a `MudButton` variant for visual consistency.
+
+**Files changed:**
+- `src/MqttDashboard.Server/Controllers/UpdateController.cs`
+- `src/MqttDashboard.Client/Layout/MainLayout.razor`
+
+
 The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries following Keep a Changelog.
 
 ---

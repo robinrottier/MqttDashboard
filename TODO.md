@@ -10,7 +10,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Serialization: logged-on user not yet written to `FileInfo` (always admin for now — fine to leave)
 
 
-## 🟡 Enhancements
+## 🟡 Minor Enhancements
 
 - [ ] Server-side "lazy cache": if client request is dropped, server should keep data live for a configurable delay (e.g. 30s) before removing references
 - [ ] Property transition
@@ -92,18 +92,12 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Read-only runtime mode — view-only, no login/edit UI exposed
 - [ ] Admin interface: runtime monitoring, logs, connected clients, dashboard file management
 
-### FEAT-M: Settings persistence
-- [ ] User set application settings should be in data directory so persist over deployments.:
-	- [ ] Startup behaviour
-	- [ ] Admin password hash
-	- [ ] ...this is probably in the applicationstate file
+### FEAT-M: Settings persistence _(done — settings now in data directory)_
 
 ### FEAT-N: Self-updating deployment
-- [ ] Deployment version / update checking
-	- [ ] Latest version checks checks for tags ... but the actual docker image may not be available for some time later. Can it check actual images in ghcr?
-	- [ ] We want to be able to select beta/non-latest pre-releases as an option i.e follow release only stream or latest beta stream
-	- [ ] Can the image update itself somehow from within the docker container? even if it has to do a restart or exit and allow docker to restart it with a new version pulled.
-	- [ ] How would we revert to a previous version if an update proved bad?
+- [ ] Latest version check checks for tags ... but the actual Docker image may not be available for some time after a tag is pushed. Can it check actual images in ghcr?
+- [ ] Option to follow release-only stream or latest beta stream
+- [ ] How would we revert to a previous version if an update proved bad?
 
 
 ---

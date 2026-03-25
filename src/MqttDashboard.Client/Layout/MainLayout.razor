@@ -92,8 +92,14 @@
             <MudAlert Severity="Severity.Info" Class="ma-2" ShowCloseIcon="true" CloseIconClicked="() => _updateDismissed = true">
                 @if (AppState.DeploymentType == "Docker")
                 {
-                    <MudText>Version <strong>@AppState.UpdateAvailableVersion</strong> is available.
-                        Run <code>docker compose pull &amp;&amp; docker compose up -d</code> to update.</MudText>
+                    <div class="d-flex align-center gap-3 flex-wrap">
+                        <MudText>Version <strong>@AppState.UpdateAvailableVersion</strong> is available.
+                            Pull the new image with <code>docker compose pull</code>, then restart:</MudText>
+                        <MudButton Variant="Variant.Filled" Color="Color.Info" Size="Size.Small"
+                                   Disabled="_restarting" OnClick="RestartAppAsync">
+                            @(_restarting ? "Restarting…" : "Restart Now")
+                        </MudButton>
+                    </div>
                 }
                 else if (AppState.DeploymentType == "HomeAssistant")
                 {
@@ -106,9 +112,11 @@
                 }
                 else
                 {
-                    <MudText>Version <strong>@AppState.UpdateAvailableVersion</strong> is available.
-                        <MudLink Href="@AppState.UpdateReleaseUrl" Target="_blank">View release →</MudLink>
-                    </MudText>
+                    <div class="d-flex align-center gap-3 flex-wrap">
+                        <MudText>Version <strong>@AppState.UpdateAvailableVersion</strong> is available.</MudText>
+                        <MudButton Variant="Variant.Text" Color="Color.Info" Size="Size.Small"
+                                   Href="@AppState.UpdateReleaseUrl" Target="_blank">View release →</MudButton>
+                    </div>
                 }
             </MudAlert>
         }
@@ -127,6 +135,7 @@
     private MudTheme? _theme = null;
     private bool _setupNeeded = false;
     private bool _updateDismissed = false;
+    private bool _restarting = false;
 
     private string AppName => GetType().Assembly
         .GetCustomAttribute<System.Reflection.AssemblyProductAttribute>()?.Product
@@ -219,6 +228,17 @@
     }
 
     private void OnAppStateChanged() => InvokeAsync(StateHasChanged);
+
+    private async Task RestartAppAsync()
+    {
+        _restarting = true;
+        StateHasChanged();
+        try
+        {
+            await Http.PostAsync("/api/update/restart", null);
+        }
+        catch { /* connection will drop as the app shuts down — that's expected */ }
+    }
 
     private void ToggleEditMode() => AppState.RequestToggleEditMode();
 

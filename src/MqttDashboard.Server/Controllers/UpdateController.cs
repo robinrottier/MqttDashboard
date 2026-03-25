@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 using MqttDashboard.Server.Services;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
@@ -13,12 +16,17 @@ public class UpdateController : ControllerBase
     private readonly UpdateCheckService _updateService;
     private readonly DashboardStorageService _diagramStorage;
     private readonly ILogger<UpdateController> _logger;
+    private readonly IHostApplicationLifetime _lifetime;
+    private readonly IConfiguration _configuration;
 
-    public UpdateController(UpdateCheckService updateService, DashboardStorageService diagramStorage, ILogger<UpdateController> logger)
+    public UpdateController(UpdateCheckService updateService, DashboardStorageService diagramStorage,
+        ILogger<UpdateController> logger, IHostApplicationLifetime lifetime, IConfiguration configuration)
     {
         _updateService = updateService;
         _diagramStorage = diagramStorage;
         _logger = logger;
+        _lifetime = lifetime;
+        _configuration = configuration;
     }
 
     [HttpGet("status")]
@@ -46,6 +54,28 @@ public class UpdateController : ControllerBase
     {
         await _updateService.CheckNowAsync();
         return GetStatus();
+    }
+
+    /// <summary>
+    /// Gracefully stops the application. Under Docker with restart:always, the container
+    /// restarts automatically — picking up a newly pulled image if one is available.
+    /// For standalone deployments, use the download endpoint instead.
+    /// </summary>
+    [HttpPost("restart")]
+    public IActionResult RestartApp()
+    {
+        var authEnabled = !string.IsNullOrEmpty(_configuration["Auth:AdminPasswordHash"]);
+        if (authEnabled && User.Identity?.IsAuthenticated != true)
+            return Unauthorized(new { error = "Admin authentication required." });
+
+        _logger.LogInformation("Application restart requested from web UI");
+        // Small delay so the HTTP response can be sent before shutdown begins
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(500);
+            _lifetime.StopApplication();
+        });
+        return Ok(new { success = true, message = "Application is shutting down. It will restart automatically." });
     }
 
     [HttpPost("download")]
