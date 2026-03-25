@@ -9,38 +9,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - **Data topic management in Dashboard Properties** — MQTT topics are now managed via the Dashboard Properties dialog (topic list with add/remove controls). Dashboard is marked dirty when topics change, so topics are always saved with the dashboard.
-- **"No topics" overlay on Display page** — when no data topics are configured, a centered prompt guides users to Dashboard Properties to add topics (edit mode only; view mode shows an info message).
+- **"No data topics" banner on Display page** — when no data topics are configured, a warning banner at the top of the canvas guides users to Dashboard Properties. In edit mode shows a "Configure Topics" action button.
 - **"Add Port → All" option** — new menu item adds all 4 ports (Top, Bottom, Left, Right) to the selected node at once.
 - **Same Width / Same Height alignment** — two new buttons in the multi-select alignment toolbar resize all selected nodes to the widest/tallest node's dimensions.
 - **Dashboard file metadata** — each saved dashboard now includes a `FileInfo` object with `WrittenAt` (ISO timestamp) and `Filename` at the end of the file.
 - **Settings persistence to data directory (FEAT-M)** — `appsettings.user.json` (admin password hash, startup mode) is now written to and loaded from the volume-mounted data directory instead of the container root. Settings survive Docker container restarts and redeployments. Includes one-time migration from old location.
 - **Restart from web UI (FEAT-N)** — Docker deployments now show a "Restart Now" button in the update notification banner. After running `docker compose pull`, clicking the button gracefully stops the app and Docker's restart policy brings it back on the new image.
 
-### Changed
-- **Node property editor dialog title** now reads "Edit {Type} Node Properties" (e.g. "Edit Gauge Node Properties").
-- **Dashboard file format redesigned** — replaced flat `DiagramState`/`NodeState` with a clean nested `DashboardModel` hierarchy. Each node type owns its own serialization (`ToData()`/`FromData()`). Old files are not compatible (new format is explicitly breaking). `MudNodeModel` renamed to `TextNodeModel`; `MudPortModel` renamed to `NodePortModel`.
-- **Title and Title Position** are on one compact row in the node property editor.
-- **Background Image + Image Fit** moved to the top common section of node properties and shown on one compact row.
-- **Icon Color** now uses the same composite ColorPicker widget (CSS/Hex/Theme) as other color properties.
-- **Canvas Background** in Dashboard Properties uses the composite ColorPicker widget on a single line.
-- **Grid** section removed from Dashboard Properties dialog and from the Options menu; edit mode always shows a 20px grid.
-- **New dashboard defaults**: `ShowDiagramName = true`, `GridSize = 20`.
-- **App title** changed to "MQTT Dashboard" (was "Mqtt Dashboard").
-- **Origin/zero-point** label replaces "Arc midpoint" in the numeric range editor.
-- **Serialization improvements**: `NodeType` is always the first field in each node JSON object; top-level fields ordered logically (Name → ShowDiagramName → GridSize → BackgroundColor → Pages → MqttSubscriptions → Nodes → Links → FileInfo); coordinates rounded to 2 decimal places; legacy `DataTopic` / `DataTopic2` scalar fields removed (only `DataTopics` list is written); null and empty node properties omitted from output.
-
 ### Fixed
-- **Grid snapping on load** — diagram grid size is now synced to `AppState.GridSize` when a dashboard loads, so snapping works immediately without toggling the grid menu.
-- **Save As: overwrite prompt** — Save As now always prompts for overwrite confirmation when the chosen filename already exists (previously skipped when saving to the same name).
-- **Port menu disabled states** — Add Port sub-items are greyed when the port already exists; Delete Port sub-items are greyed when the port is absent.
-- **Pasted nodes stay selected** — after a paste, all pasted nodes remain selected so they can be moved as a group immediately.
-- **Selecting a node no longer sets the dirty flag** — deferred clearing of the pending-dirty flag now handles the case where Blazor.Diagrams fires `SelectionChanged` before `node.Changed`.
+- **No-data topics message** is now a slim banner at the top of the canvas instead of a centred overlay card.
+- **`appsettings.user` no longer appears** in the Open Dashboard list.
+- **Grid size defaults to 20 px** in edit mode when no grid has been explicitly configured.
+
+### Changed
+- **Dashboard Properties** dialog now includes Grid Size (px) and Snap-to-Centre controls (were accidentally dropped in the last refactor).
+- **Options > Show > Dashboard Name** menu item removed — setting is now in the Dashboard Properties dialog.
+- **Page > Home** menu removed — no longer relevant.
+- **About dialog** now shows a "Restart App" button for admins on Docker deployments regardless of whether an update is available.
 
 ### Removed
-- **Data page removed** — the separate `/data` page (topic management, data cache explorer, message log) has been removed. Topic management has moved to Dashboard Properties.
-- **"Node Properties" subtitle** and redundant node-type display line removed from the node property editor.
-- **"MQTT Data Binding" section header** and divider after link animation removed from the node property editor.
-- **"Title Bar" section header** removed from Dashboard Properties dialog.
+- **"No topics" centered overlay** — replaced with a top banner (see Fixed above).
+- **Options > Show > Dashboard Name** menu item — setting moved to Dashboard Properties dialog.
+- **Page > Home** menu — no longer relevant.
 
 - **Icon rendering in all node types** — StandardNodeLayout now renders Node.Icon alongside Node.Title for all visual node types (Gauge, Battery, Switch, Text). Previously only Text nodes rendered icons.
 - **Node-type-specific properties auto-rendered** — NodePropertyEditor no longer has any `@if (Node is XxxModel)` blocks; properties appear from `[NpXxx]` model attributes automatically. Adding a new node type requires only annotating its model properties.

@@ -6,10 +6,12 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ## BUGS
 
+- [ ] Treeview looses focus and all nodes seem to colapse
+
+## Pending
+
 - [ ] Serialization: node ID GUIDs in file — map to sequential 1-based IDs for file (need port+link ID remapping too; deferred due to complexity)
 - [ ] Serialization: logged-on user not yet written to `FileInfo` (always admin for now — fine to leave)
-- [ ] THe no data msg: "No data topics configured. Switch to edit mode to add MQTT data topics." shold be more of abanner accross the top not a dialgo in the middle
-- [ ] I added a topic and switched to page 2 ... it had same msg. Data topics are per dashboard, not per page.
 
 
 ## 🟡 Minor Enhancements

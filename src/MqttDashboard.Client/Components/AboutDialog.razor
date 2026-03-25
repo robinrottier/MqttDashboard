@@ -82,6 +82,17 @@
                             </MudAlert>
                         }
                     }
+                    @if (_updateStatus?.DeploymentType == "Docker")
+                    {
+                        <div class="mx-2 mb-2 mt-1" style="display:flex;align-items:center;gap:8px;">
+                            <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Warning"
+                                       StartIcon="@Icons.Material.Filled.RestartAlt"
+                                       OnClick="RestartApp" Disabled="_restarting">
+                                @(_restarting ? "Restarting…" : "Restart App")
+                            </MudButton>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Forces container restart (picks up new image if pulled)</MudText>
+                        </div>
+                    }
                 }
             </MudCardContent>
         </MudCard>
@@ -157,6 +168,7 @@
 
     private UpdateStatusDto? _updateStatus;
     private bool _checkingUpdate = false;
+    private bool _restarting = false;
     private bool _downloadingUpdate = false;
     private string? _updateError;
     private string? _downloadResult;
@@ -278,5 +290,13 @@
             _downloadingUpdate = false;
             StateHasChanged();
         }
+    }
+
+    private async Task RestartApp()
+    {
+        _restarting = true;
+        StateHasChanged();
+        try { await Http.PostAsync("/api/update/restart", null); }
+        catch { /* connection lost as app shuts down — expected */ }
     }
 }

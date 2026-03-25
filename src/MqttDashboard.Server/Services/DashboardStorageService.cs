@@ -57,7 +57,7 @@ public class DashboardStorageService
     /// </summary>
     private void MigrateLegacyDashboardFiles()
     {
-        var excludedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "applicationstate.json" };
+        var excludedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "applicationstate.json", "appsettings.user.json" };
 
         foreach (var file in Directory.GetFiles(_storagePath, "*.json"))
         {
@@ -178,7 +178,7 @@ public class DashboardStorageService
         {
             var files = Directory.GetFiles(_dashboardsPath, "*.json")
                 .Select(f => Path.GetFileNameWithoutExtension(f))
-                .Where(n => !string.IsNullOrEmpty(n))
+                .Where(n => !string.IsNullOrEmpty(n) && !n.Equals("appsettings.user", StringComparison.OrdinalIgnoreCase))
                 .OrderBy(n => n)
                 .ToList();
             return files!;

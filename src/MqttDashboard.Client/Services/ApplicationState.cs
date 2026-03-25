@@ -341,7 +341,7 @@ public class ApplicationState
             }
             else
             {
-                options.GridSize = page.GridSize == 0 ? null : int.Abs(page.GridSize);
+                options.GridSize = page.GridSize == 0 ? 20 : int.Abs(page.GridSize);
                 GridSize = (int)(options.GridSize ?? 20);
             }
             options.GridSnapToCenter = options.GridSize < 0;

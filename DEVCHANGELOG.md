@@ -5,7 +5,39 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
-## 2026-03-25 — REFACTOR-1: Data model redesign (DashboardModel hierarchy)
+## 2026-03-25 — Bug fixes: menu cleanup, no-data banner, grid, restart
+
+### Commit: (see git log)
+
+### Bug fixes
+
+#### No-data message → top banner (`Display.razor`)
+- Changed the "no data topics" notification from a centred floating `MudPaper` card to a `MudAlert` banner anchored at the top of the canvas (`position:absolute;top:0;left:0;right:0`).
+- Edit-mode shows an action button "Configure Topics" that opens Dashboard Properties. View-mode shows a plain info text.
+
+#### Removed stale menu items (`AppMenu.razor`)
+- **Options > Show > Dashboard Name** removed — "Show Dashboard Name" is now a checkbox in the Dashboard Properties dialog.
+- **Page > Home** menu (and the entire `Page` submenu) removed — navigation to "/" was the only item and it isn't needed now. `IsCurrentPage()` helper also removed.
+
+#### `appsettings.user` excluded from dashboard list (`DashboardStorageService.cs`)
+- `ListDiagramNamesAsync()` now filters out `"appsettings.user"` in addition to empty names.
+- `MigrateLegacyDashboardFiles()` excludes `"appsettings.user.json"` from being moved to the `dashboards/` subdirectory.
+
+#### GridSize restored to Dashboard Properties dialog (`DashboardPropertiesDialog.razor`)
+- Added a `MudNumericField` (0–100 px, step 5) for grid size and a "Snap to cell centre" checkbox.
+- Reads and writes `AppState.GridSize` using the existing sign convention (negative = snap-to-centre).
+- `ApplyAsync` calls `AppState.SetGridSize(newGridSize)` so the live diagram updates immediately.
+
+#### New/empty diagrams default to grid-enabled (`ApplicationState.cs`)
+- `CreateDiagramFromPageData`: when `page.GridSize == 0` (no saved grid), now defaults to 20 instead of `null`. This ensures edit-mode always gets a grid for new/unsaved diagrams.
+
+#### Restart button in About dialog (`AboutDialog.razor`)
+- Added a "Restart App" button that is always visible to admin users on Docker deployments (not only when an update is available).
+- Calls `POST /api/update/restart` (existing endpoint). Connection loss after the call is expected and silently swallowed.
+
+---
+
+
 
 ### Commit: 30b6e69 (completes b6005f1)
 
