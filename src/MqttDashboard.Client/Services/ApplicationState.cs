@@ -299,7 +299,7 @@ public class ApplicationState
     public void TriggerOpen() => MenuOpen?.Invoke();
     public void TriggerDiagramProperties() => MenuDiagramProperties?.Invoke();
 
-    public BlazorDiagram GetOrCreateDiagram()
+    public BlazorDiagram GetOrCreateDashboard()
     {
         if (_diagram == null)
             _diagram = CreateDiagramFromPageData(null, false);
@@ -562,9 +562,9 @@ public class ApplicationState
         _ = Task.Run(() => OnStateChanged?.Invoke());
     }
 
-    internal async Task AddTopicToDiagram(string topicPath, string nodeName)
+    internal async Task AddTopicToDashboard(string topicPath, string nodeName)
     {
-        var diagram = GetOrCreateDiagram();
+        var diagram = GetOrCreateDashboard();
 
         var node = new TextNodeModel(
             new Blazor.Diagrams.Core.Geometry.Point(100 + diagram.Nodes.Count * 20, 100))

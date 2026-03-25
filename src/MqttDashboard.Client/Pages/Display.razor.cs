@@ -167,7 +167,7 @@ public partial class Display : IDisposable
                 _pageStates = [new DashboardPageModel { GridSize = AppState.GridSize > 0 ? AppState.GridSize : 10 }];
                 _diagrams = [null];
                 _activePageIndex = 0;
-                _diagrams[0] = AppState.GetOrCreateDiagram();
+                _diagrams[0] = AppState.GetOrCreateDashboard();
                 AppState.SetPageNames(["Page 1"], 0);
             }
         }
@@ -539,7 +539,7 @@ public partial class Display : IDisposable
             _activePageIndex = 0;
             AppState.SetPageNames(["Page 1"], 0);
 
-            _diagrams[0] = AppState.GetOrCreateDiagram();
+            _diagrams[0] = AppState.GetOrCreateDashboard();
             _diagram!.SelectionChanged += OnSelectionChanged;
             _diagram!.Changed += OnDiagramChanged;
             SubscribeEditEvents();
