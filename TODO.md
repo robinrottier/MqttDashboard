@@ -41,7 +41,8 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Option to write calculated values back to the MQTT broker
 
 ### FEAT-C: Additional node types _(Gauge, Switch, Battery, Log, TreeView done — see CHANGELOG)_
-- [ ] **Text node** - different node shapes (circle, diamond, etc.)
+- [ ] **Text node** - different node shapes (circle, diamond, etc.) Perhaps the "shapre" applies to all derived
+      nodes too e.g. a guage inside a triangle or circle. Or maybe shape is just a property of the base node.
 - [ ] **Chart** — in-memory time-series sparkline graph
 - [ ] **Markdown / HTML** — formatted static content, optionally with data substitution
 - [ ] **IFrame** — embed another web page
@@ -50,14 +51,10 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Page tab overflow handling (scrolling/dropdown when many pages)
 - [ ] Swipe left/right gesture on mobile
 - [ ] Page reordering (drag tabs)
-- [ ] Current "Data" could be replaced by an optional page (tree view and log of all live values)
-	- [ ] user would create this is they wanted it manually or its some how a quick add page option when you create a new, empty dashboard
-	- [ ] ...just need a way to specify dashboard set of requests ..so maybe thats in Dashboard properties dialog
 
 ### FEAT-E: Editing improvements
 - [ ] Node-red style palette panel — drag node types from a sidebar onto the canvas
 - [ ] Import/export selected nodes or a whole page as JSON (clipboard)
-- [x] Node alignment and distribution tools (align left/right/top/bottom, distribute evenly) — **alignment done**
 
 ### FEAT-F: Link improvements
 - [ ] Links as proper model objects with a properties editor: color, thickness, dash style
@@ -117,5 +114,11 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] **CHORE-2** — Add XML doc comments to key services and models (especially MQTT handling, SignalR dual-path)
 - [ ] **CHORE-3** — Expand test coverage:
   - Unit: MQTT message handling, SignalR hub, `MqttTopicSubscriptionManager`
-  - Integration/system: full flow with headless browser (Playwright?), both WASM and Server-only modes
+  - Integration/system:
+	- full flow with headless browser (Playwright?),
+	- a console based "client" that connects to the server and validates:
+		- the SignalR messages received for a given dashboard file and set of MQTT messages published?
+		- This would be a more lightweight test than spinning up a full browser instance, and could run as part of the regular test suite.
+		- Or testing functions via some sort of "command interface" simulating menu selections etc
+	- both WASM and Server-only modes
  
