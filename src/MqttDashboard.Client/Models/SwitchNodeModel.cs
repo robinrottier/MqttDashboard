@@ -2,7 +2,7 @@ using Blazor.Diagrams.Core.Geometry;
 
 namespace MqttDashboard.Models;
 
-public class SwitchNodeModel : MudNodeModel
+public class SwitchNodeModel : TextNodeModel
 {
     public SwitchNodeModel(Point? position = null) : base(position)
     {
@@ -39,4 +39,42 @@ public class SwitchNodeModel : MudNodeModel
         Category = "Publish", Order = 9,
         Labels = ["0 — At Most Once (fire and forget)", "1 — At Least Once", "2 — Exactly Once"])]
     public int QosLevel { get; set; } = 0;
+
+    public override NodeData ToData(double panX = 0, double panY = 0)
+    {
+        var data = new SwitchNodeData
+        {
+            Switch = new SwitchSettingsData
+            {
+                PublishTopic = PublishTopic,
+                OnValue = OnValue,
+                OffValue = OffValue,
+                Style = SwitchStyle,
+                OnText = OnText,
+                OffText = OffText,
+                ReadOnly = IsReadOnly,
+                Retain = Retain,
+                Qos = QosLevel,
+            },
+        };
+        FillBaseData(data, panX, panY);
+        return data;
+    }
+
+    public static SwitchNodeModel FromData(SwitchNodeData data)
+    {
+        var node = new SwitchNodeModel(new Point(data.X, data.Y))
+        {
+            PublishTopic = data.Switch?.PublishTopic,
+            OnValue = data.Switch?.OnValue ?? "1",
+            OffValue = data.Switch?.OffValue ?? "0",
+            SwitchStyle = data.Switch?.Style ?? "Full",
+            OnText = data.Switch?.OnText ?? "ON",
+            OffText = data.Switch?.OffText ?? "OFF",
+            IsReadOnly = data.Switch?.ReadOnly ?? false,
+            Retain = data.Switch?.Retain ?? false,
+            QosLevel = data.Switch?.Qos ?? 0,
+        };
+        return ApplyBaseData(node, data);
+    }
 }

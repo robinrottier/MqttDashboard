@@ -49,7 +49,7 @@
 </MudTooltip>
 
 @code {
-    [Parameter] public MudNodeModel Node { get; set; } = null!;
+    [Parameter] public TextNodeModel Node { get; set; } = null!;
 
     /// <summary>Extra CSS classes appended to the node container (e.g. "gauge-node").</summary>
     [Parameter] public string? ExtraCssClass { get; set; }
@@ -94,7 +94,7 @@
     }
 
     private static string PortStyleFor(Blazor.Diagrams.Core.Models.PortModel port) =>
-        port is MudPortModel mp ? $"width:{(int)mp.Size.Width}px; height:{(int)mp.Size.Height}px;" : "";
+        port is NodePortModel mp ? $"width:{(int)mp.Size.Width}px; height:{(int)mp.Size.Height}px;" : "";
 
     private string TitlePosition =>
         string.IsNullOrEmpty(Node.TitlePosition) ? "Above" : Node.TitlePosition;

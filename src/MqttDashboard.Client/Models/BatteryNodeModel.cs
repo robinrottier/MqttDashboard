@@ -3,7 +3,7 @@ using MqttDashboard.Components;
 
 namespace MqttDashboard.Models;
 
-public class BatteryNodeModel : MudNodeModel
+public class BatteryNodeModel : TextNodeModel
 {
     public BatteryNodeModel(Point? position = null) : base(position)
     {
@@ -28,9 +28,44 @@ public class BatteryNodeModel : MudNodeModel
     [NpCustom("Color Transitions", typeof(ColorTransitionGroupEditor), Category = "Battery", Order = 3)]
     public ColorTransition BatteryColor { get; set; } = new();
 
-    // Backward-compatible convenience accessors.
+    // Convenience accessors.
     public double MinValue => Range.Min;
     public double MaxValue => Range.Max;
     public int DataTopicIndex => Range.DataTopicIndex;
+
+    public override NodeData ToData(double panX = 0, double panY = 0)
+    {
+        var data = new BatteryNodeData
+        {
+            ShowPercent = ShowPercent,
+            Range = new NumericRangeData
+            {
+                Min = Range.Min,
+                Max = Range.Max,
+                Origin = Range.Origin,
+                DataTopicIndex = Range.DataTopicIndex,
+            },
+            Color = ColorTransitionHelper.Serialize(BatteryColor),
+        };
+        FillBaseData(data, panX, panY);
+        return data;
+    }
+
+    public static BatteryNodeModel FromData(BatteryNodeData data)
+    {
+        var node = new BatteryNodeModel(new Point(data.X, data.Y))
+        {
+            Range = new NumericRangeSettings
+            {
+                Min = data.Range?.Min ?? 0,
+                Max = data.Range?.Max ?? 100,
+                Origin = data.Range?.Origin,
+                DataTopicIndex = data.Range?.DataTopicIndex ?? 0,
+            },
+            ShowPercent = data.ShowPercent ?? true,
+            BatteryColor = ColorTransitionHelper.Deserialize(data.Color),
+        };
+        return ApplyBaseData(node, data);
+    }
 }
 

@@ -3,6 +3,147 @@
 Detailed record of each Copilot-assisted work session — what was investigated, changed, and why.
 For reviewing work item by item and moving anything back to [TODO.md](TODO.md) if needed.
 
+---
+
+## 2026-03-25 — Bug fixes: menu cleanup, no-data banner, grid, restart
+
+### Commit: (see git log)
+
+### Bug fixes
+
+#### No-data message → top banner (`Display.razor`)
+- Changed the "no data topics" notification from a centred floating `MudPaper` card to a `MudAlert` banner anchored at the top of the canvas (`position:absolute;top:0;left:0;right:0`).
+- Edit-mode shows an action button "Configure Topics" that opens Dashboard Properties. View-mode shows a plain info text.
+
+#### Removed stale menu items (`AppMenu.razor`)
+- **Options > Show > Dashboard Name** removed — "Show Dashboard Name" is now a checkbox in the Dashboard Properties dialog.
+- **Page > Home** menu (and the entire `Page` submenu) removed — navigation to "/" was the only item and it isn't needed now. `IsCurrentPage()` helper also removed.
+
+#### `appsettings.user` excluded from dashboard list (`DashboardStorageService.cs`)
+- `ListDiagramNamesAsync()` now filters out `"appsettings.user"` in addition to empty names.
+- `MigrateLegacyDashboardFiles()` excludes `"appsettings.user.json"` from being moved to the `dashboards/` subdirectory.
+
+#### GridSize restored to Dashboard Properties dialog (`DashboardPropertiesDialog.razor`)
+- Added a `MudNumericField` (0–100 px, step 5) for grid size and a "Snap to cell centre" checkbox.
+- Reads and writes `AppState.GridSize` using the existing sign convention (negative = snap-to-centre).
+- `ApplyAsync` calls `AppState.SetGridSize(newGridSize)` so the live diagram updates immediately.
+
+#### New/empty diagrams default to grid-enabled (`ApplicationState.cs`)
+- `CreateDiagramFromPageData`: when `page.GridSize == 0` (no saved grid), now defaults to 20 instead of `null`. This ensures edit-mode always gets a grid for new/unsaved diagrams.
+
+#### Restart button in About dialog (`AboutDialog.razor`)
+- Added a "Restart App" button that is always visible to admin users on Docker deployments (not only when an update is available).
+- Calls `POST /api/update/restart` (existing endpoint). Connection loss after the call is expected and silently swallowed.
+
+---
+
+
+
+### Commit: 30b6e69 (completes b6005f1)
+
+### Problem
+`NodeState` was a ~50-field flat DTO covering all node types. `ApplicationState.GetDiagramState()` and `CreateDiagramFromState()` had ~100-line manual switch/case blocks duplicating every node property. Adding a new node type required editing 6+ files.
+
+### What changed
+
+#### New `DashboardModel.cs` (`src/MqttDashboard.Client/Models/`)
+- Complete serializable POCO hierarchy: `DashboardModel` → `DashboardPageModel` → `List<NodeData>` (polymorphic, STJ `[JsonPolymorphic]`) → typed subclasses: `TextNodeData`, `GaugeNodeData`, `SwitchNodeData`, `BatteryNodeData`, `LogNodeData`, `TreeViewNodeData`.
+- Nested value types: `NumericRangeData`, `ColorTransitionData`, `ColorThresholdData`, `SwitchSettingsData`, `LogColumnsData`, `NodePortData`, `LinkData`, `DashboardFileInfo`.
+- No manual switch/case needed in serialization path — STJ handles polymorphism via `nodeType` discriminator.
+
+#### Runtime model renames
+- `MudNodeModel` → `TextNodeModel` (in `MudNodeModel.cs`). `MudNodeModel` kept as `[Obsolete]` alias.
+- `MudPortModel` → `NodePortModel` (in `MudPortModel.cs`). `MudPortModel` kept as `[Obsolete]` alias.
+
+#### Per-node serialization (`ToData()` / `FromData()`)
+Each node type now owns its own serialization:
+- `TextNodeModel`, `GaugeNodeModel`, `SwitchNodeModel`, `BatteryNodeModel`, `LogNodeModel`, `TreeViewNodeModel` — all implement `NodeData ToData()` and `static T FromData(XxxNodeData)`.
+- `ColorTransitionHelper` added to `ColorTransition.cs` for round-tripping `ColorTransition` ↔ `ColorTransitionData`.
+
+#### `ApplicationState.cs`
+- `GetDiagramState()` and `CreateDiagramFromState()` deleted.
+- Replaced by `GetPageData()` (returns `DashboardPageModel`) and `CreateDiagramFromPageData(DashboardPageModel, bool)`.
+- `ApplyDashboardModel(DashboardModel)` — applies top-level Name/ShowDiagramName/MqttSubscriptions.
+- Clipboard type: `List<NodeState>` → `List<NodeData>`. Undo stack: `Stack<DiagramState>` → `Stack<DashboardPageModel>`.
+
+#### `Display.razor.cs`
+- `_pageStates: List<DiagramState>` → `List<DashboardPageModel>`.
+- `_editSnapshot: DiagramState?` → `DashboardModel?`.
+- All page-switch, undo/redo, save, cut/copy/paste, add-node methods updated to use new types.
+- `AddNode()` uses `TextNodeModel` instead of `MudNodeModel`.
+- `UpdateSelectionState()` uses `NodePortModel` instead of `MudPortModel`.
+
+#### Widget base classes and Razor components
+- `BaseNodeWidget<TNode>` and `BaseNodeWithDataWidget<TNode>` — type constraint changed from `MudNodeModel` to `TextNodeModel`; `PortStyle` parameter from `MudPortModel` to `NodePortModel`.
+- `NodePropertyEditor.razor.cs` — `[Parameter] Node` type changed to `TextNodeModel`.
+- `StandardNodeLayout.razor`, `MudNodeWidget.razor`, `DataValueTooltipContent.razor`, `LogNodeWidget.razor`, `TreeViewNodeWidget.razor` — updated to `TextNodeModel`/`NodePortModel`.
+- `ColorTransitionGroupEditor.razor`, `NumericRangeEditor.razor`, `NodePropertyRenderer.razor` — `[Parameter] Node` type changed to `TextNodeModel`.
+- `NodePropertyAttributes.cs` — updated `NpCustomAttribute` doc comment.
+
+#### Service/controller/test files
+- `IDashboardService.cs`, `DashboardService.cs`, `ServerDashboardService.cs`, `DashboardStorageService.cs`, `DashboardController.cs` — all `DiagramState` → `DashboardModel` throughout.
+- `DiagramStorageServiceTests.cs` — test updated to build `DashboardModel`+`DashboardPageModel`+`TextNodeData` instead of `DiagramState`+`NodeState`.
+
+#### Deleted
+- `src/MqttDashboard.Client/Models/DiagramState.cs` — replaced by `DashboardModel.cs`.
+
+### Result
+- Build: 0 errors, 0 warnings.
+- Tests: 11/11 pass (5 client, 6 server).
+- New JSON format is nested (not flat), with `nodeType` discriminator per node — no backward compat with old files (by design).
+
+---
+
+
+
+### FEAT-M: `appsettings.user.json` moved to data directory
+
+**Problem:** Both `SettingsController` and `SetupController` wrote `appsettings.user.json` to `IWebHostEnvironment.ContentRootPath` — in Docker that's `/app/`, inside the container image, and is wiped on every container restart. Admin password and startup mode settings were therefore lost on redeploy.
+
+**Fix — `Program.cs` (both hosts):**
+- Replaced `builder.Configuration.AddJsonFile("appsettings.user.json", ...)` with a block that:
+  1. Resolves the data directory early using the same priority logic as `DashboardStorageService` (env var `DIAGRAM_DATA_DIR` → config `DiagramStorage:DataDirectory` → `{ContentRoot}/Data`).
+  2. Creates the data dir if it doesn't exist.
+  3. One-time migration: if `{ContentRoot}/appsettings.user.json` exists and `{dataDir}/appsettings.user.json` does not, copies it across.
+  4. Loads the settings file from data dir using a `PhysicalFileProvider` so the absolute path is unambiguous.
+- ⚠️ Uses `new PhysicalFileProvider(dataDir)` + `AddJsonFile(provider, "appsettings.user.json", ...)` — NOT `AddJsonFile(absolutePath, ...)` because the default file provider base path is `AppContext.BaseDirectory`, not `ContentRootPath`.
+
+**Fix — `SettingsController.cs` and `SetupController.cs`:**
+- Removed `IWebHostEnvironment` injection from both.
+- Injected `DashboardStorageService` instead.
+- Changed `Path.Combine(_env.ContentRootPath, "appsettings.user.json")` → `Path.Combine(_storage.StoragePath, "appsettings.user.json")` in both the `Save()` method (SettingsController) and `SavePasswordHash()` (SetupController).
+
+**Files changed:**
+- `src/MqttDashboard.WebApp/MqttDashboard.WebApp/Program.cs`
+- `src/MqttDashboard.WebApp/MqttDashboard.WebAppServerOnly/Program.cs`
+- `src/MqttDashboard.Server/Controllers/SettingsController.cs`
+- `src/MqttDashboard.Server/Controllers/SetupController.cs`
+
+---
+
+### FEAT-N: Restart from web UI (Docker)
+
+**Problem:** In Docker, when a new image is available (pulled via `docker compose pull` or Watchtower), there was no way to restart the app from the browser — users had to SSH in and run `docker compose up -d`.
+
+**Fix — `UpdateController.cs`:**
+- Added `IHostApplicationLifetime` and `IConfiguration` injection.
+- New `POST /api/update/restart` endpoint:
+  - Checks admin auth if auth is configured.
+  - Schedules `_lifetime.StopApplication()` after a 500ms delay (so the HTTP response is delivered first).
+  - Returns `{ success: true, message: "..." }`.
+  - Docker `restart: always` policy then brings the container back up with the (already-pulled) image.
+
+**Fix — `MainLayout.razor`:**
+- Added `_restarting` state field.
+- Added `RestartAppAsync()` method: calls `POST /api/update/restart` via `Http.PostAsync`, swallows connection-drop exceptions (expected as app shuts down).
+- Docker update banner: replaced plain text with a flex row showing the `docker compose pull` instruction + **"Restart Now"** button (disabled while restarting).
+- Standalone update banner: replaced `MudLink` with a `MudButton` variant for visual consistency.
+
+**Files changed:**
+- `src/MqttDashboard.Server/Controllers/UpdateController.cs`
+- `src/MqttDashboard.Client/Layout/MainLayout.razor`
+
+
 The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries following Keep a Changelog.
 
 ---

@@ -4,11 +4,11 @@ namespace MqttDashboard.Services;
 
 public interface IDashboardService
 {
-    Task<DiagramState?> LoadDashboardAsync();
+    Task<DashboardModel?> LoadDashboardAsync();
     Task<List<string>> ListDashboardsAsync();
-    Task<DiagramState?> LoadDashboardByNameAsync(string name);
-    Task<bool> SaveDashboardAsync(DiagramState diagramState);
-    Task<bool> SaveDashboardByNameAsync(string name, DiagramState diagramState);
+    Task<DashboardModel?> LoadDashboardByNameAsync(string name);
+    Task<bool> SaveDashboardAsync(DashboardModel dashboard);
+    Task<bool> SaveDashboardByNameAsync(string name, DashboardModel dashboard);
     Task<bool> DeleteDashboardByNameAsync(string name);
 }
 

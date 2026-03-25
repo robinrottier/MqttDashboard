@@ -1,7 +1,7 @@
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using MqttDashboard.Server.Services;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -11,15 +11,15 @@ namespace MqttDashboard.Server.Controllers;
 [Route("api/setup")]
 public class SetupController : ControllerBase
 {
-    private readonly IWebHostEnvironment _env;
     private readonly IConfiguration _configuration;
     private readonly ILogger<SetupController> _logger;
+    private readonly DashboardStorageService _storage;
 
-    public SetupController(IWebHostEnvironment env, IConfiguration configuration, ILogger<SetupController> logger)
+    public SetupController(IConfiguration configuration, ILogger<SetupController> logger, DashboardStorageService storage)
     {
-        _env = env;
         _configuration = configuration;
         _logger = logger;
+        _storage = storage;
     }
 
     [HttpGet("needed")]
@@ -88,7 +88,7 @@ public class SetupController : ControllerBase
 
     private void SavePasswordHash(string hash)
     {
-        var userSettingsPath = Path.Combine(_env.ContentRootPath, "appsettings.user.json");
+        var userSettingsPath = Path.Combine(_storage.StoragePath, "appsettings.user.json");
 
         JsonObject root;
         if (System.IO.File.Exists(userSettingsPath))

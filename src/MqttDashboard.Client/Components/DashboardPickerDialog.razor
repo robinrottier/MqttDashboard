@@ -33,12 +33,12 @@
 
 @code {
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
-    [Parameter] public List<string> DiagramNames { get; set; } = [];
+    [Parameter] public List<string> DashboardNames { get; set; } = [];
 
     private string? _selected;
     private List<string> _names = [];
 
-    protected override void OnParametersSet() => _names = [..DiagramNames];
+    protected override void OnParametersSet() => _names = [..DashboardNames];
 
     private async Task DeleteAsync(string name)
     {

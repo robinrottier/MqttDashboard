@@ -50,11 +50,11 @@
         base.OnInitialized();
     }
 
-    protected override void OnData1Updated() => UpdateState();
+    protected override void OnDataUpdated() => UpdateState();
 
     private void UpdateState()
     {
-        var val   = Node.DataValue?.ToString() ?? "";
+        var val   = Node.DataValues?[0]?.ToString() ?? "";
         var onVal = string.IsNullOrEmpty(Node.OnValue) ? "1" : Node.OnValue;
         _isOn = val.Equals(onVal, StringComparison.OrdinalIgnoreCase)
              || val == "true" || val == "on";
@@ -63,7 +63,7 @@
     private async Task Toggle()
     {
         if (Node.IsReadOnly) return;
-        var publishTopic = !string.IsNullOrEmpty(Node.PublishTopic) ? Node.PublishTopic : Node.DataTopic;
+        var publishTopic = !string.IsNullOrEmpty(Node.PublishTopic) ? Node.PublishTopic : Node.DataTopic(0);
         if (string.IsNullOrEmpty(publishTopic)) return;
         var payload = _isOn
             ? (string.IsNullOrEmpty(Node.OffValue) ? "0" : Node.OffValue)

@@ -20,7 +20,7 @@
         {
             <MudMenuItem Label="Reload from Disk" OnClick="ReloadDiagram" />
             <MudDivider />
-            <MudMenuItem Label="Save" Disabled="@string.IsNullOrEmpty(AppState.DiagramName)" OnClick="SaveDashboard" />
+            <MudMenuItem Label="Save" Disabled="@string.IsNullOrEmpty(AppState.DashboardName)" OnClick="SaveDashboard" />
             <MudMenuItem Label="Save As…"             OnClick="SaveAsDiagram"          />
             <MudDivider />
             <MudMenuItem Label="Dashboard Properties…"  OnClick="MenuDiagramProperties"  />
@@ -74,16 +74,6 @@
     </MudMenu>
     }
 
-    <!-- Page -->
-    <MudMenu Label="Page" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
-        <MudMenuItem OnClick='() => Nav.NavigateTo("/")'>
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(IsCurrentPage("/") ? "" : "visibility:hidden")" />
-                <MudText>Home</MudText>
-            </MudStack>
-        </MudMenuItem>
-    </MudMenu>
-
     <!-- Options (before About) -->
     <MudMenu Label="Options" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
         <MudMenu Label="Theme" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
@@ -106,17 +96,6 @@
                 </MudStack>
             </MudMenuItem>
         </MudMenu>
-        @if (IsEditMode)
-        {
-            <MudMenu Label="Show" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
-                <MudMenuItem OnClick="ToggleDiagramName">
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.ShowDiagramName ? "" : "visibility:hidden")" />
-                        <MudText>Dashboard Name</MudText>
-                    </MudStack>
-                </MudMenuItem>
-            </MudMenu>
-        }
         @if (AppState.AuthEnabled && AppState.IsAdmin)
         {
             <MudDivider />
@@ -145,14 +124,6 @@
         AppState.OnStateChanged -= OnAppStateChanged;
     }
 
-    private bool IsCurrentPage(string path)
-    {
-        var uri = new Uri(Nav.Uri);
-        return path == "/"
-            ? (uri.AbsolutePath == "/" || uri.AbsolutePath == "")
-            : uri.AbsolutePath.StartsWith(path, StringComparison.OrdinalIgnoreCase);
-    }
-
     private Task ShowAbout() => DialogService.ShowAsync<AboutDialog>("About Mqtt Dashboard",
         new DialogParameters(),
         new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true });
@@ -177,6 +148,4 @@
     private void MenuAddPort(PortAlignment a)    => AppState.TriggerAddPort(a);
     private void MenuDeletePort(PortAlignment a) => AppState.TriggerDeletePort(a);
     private void SetTheme(ThemeMode m)  => AppState.SetTheme(m);
-    private void ToggleDiagramName()    => AppState.ToggleShowDiagramName();
-    private void SetGrid(int s)         => AppState.SetGridSize(s);
 }

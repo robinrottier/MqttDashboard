@@ -35,8 +35,8 @@
 @code {
     private double _percent = 0;
 
-    private object? ActiveValue => Node.DataTopicIndex == 1 ? Node.DataValue2 : Node.DataValue;
-    private object? ColorValue  => Node.BatteryColor.ColorTopicIndex == 1 ? Node.DataValue2 : Node.DataValue;
+    private object? ActiveValue => Node.DataValue(Node.DataTopicIndex);
+    private object? ColorValue => Node.DataValue(Node.BatteryColor.ColorTopicIndex);
 
     protected override void OnInitialized()
     {
@@ -46,9 +46,8 @@
         base.OnInitialized();
     }
 
-    protected override void OnData1Updated() => UpdatePercent();
-    protected override void OnData2Updated() => UpdatePercent();
-
+    protected override void OnDataUpdated() => UpdatePercent();
+ 
     private void UpdatePercent()
     {
         if (ActiveValue == null) { _percent = 0; return; }

@@ -15,12 +15,12 @@ public class DashboardService : IDashboardService
         _logger = logger;
     }
 
-    public async Task<DiagramState?> LoadDashboardAsync()
+    public async Task<DashboardModel?> LoadDashboardAsync()
     {
         try
         {
             _logger?.LogInformation("Loading dashboard from API: {Url}", "api/dashboard");
-            var result = await _httpClient.GetFromJsonAsync<DiagramState>("api/dashboard");
+            var result = await _httpClient.GetFromJsonAsync<DashboardModel>("api/dashboard");
             _logger?.LogInformation("dashboard loaded successfully");
             return result;
         }
@@ -43,30 +43,30 @@ public class DashboardService : IDashboardService
         catch (Exception ex) { _logger?.LogError(ex, "Error listing dashboards"); return []; }
     }
 
-    public async Task<DiagramState?> LoadDashboardByNameAsync(string name)
+    public async Task<DashboardModel?> LoadDashboardByNameAsync(string name)
     {
-        try { return await _httpClient.GetFromJsonAsync<DiagramState>($"api/dashboard/{Uri.EscapeDataString(name)}"); }
+        try { return await _httpClient.GetFromJsonAsync<DashboardModel>($"api/dashboard/{Uri.EscapeDataString(name)}"); }
         catch (Exception ex) { _logger?.LogError(ex, "Error loading dashboard '{Name}'", name); return null; }
     }
 
-    public async Task<bool> SaveDashboardByNameAsync(string name, DiagramState DiagramState)
+    public async Task<bool> SaveDashboardByNameAsync(string name, DashboardModel dashboard)
     {
         try
         {
-            var response = await _httpClient.PostAsJsonAsync($"api/dashboard/{Uri.EscapeDataString(name)}", DiagramState);
+            var response = await _httpClient.PostAsJsonAsync($"api/dashboard/{Uri.EscapeDataString(name)}", dashboard);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex) { _logger?.LogError(ex, "Error saving dashboard '{Name}'", name); return false; }
     }
 
-    public async Task<bool> SaveDashboardAsync(DiagramState DiagramState)
+    public async Task<bool> SaveDashboardAsync(DashboardModel dashboard)
     {
         try
         {
-            _logger?.LogInformation("Saving dashboard to API: {Url} with {NodeCount} nodes", 
-                "api/dashboard", DiagramState.Nodes.Count);
+            _logger?.LogInformation("Saving dashboard to API: {Url} with {PageCount} pages", 
+                "api/dashboard", dashboard.Pages.Count);
 
-            var response = await _httpClient.PostAsJsonAsync("api/dashboard", DiagramState);
+            var response = await _httpClient.PostAsJsonAsync("api/dashboard", dashboard);
 
             _logger?.LogInformation("POST response: Status={Status}, ReasonPhrase={Reason}", 
                 (int)response.StatusCode, response.ReasonPhrase);

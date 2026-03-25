@@ -6,12 +6,11 @@ using MqttDashboard.Models;
 namespace MqttDashboard.Widgets;
 
 /// <summary>
-/// Extends <see cref="BaseNodeWidget{TNode}"/> with automatic MQTT data watcher
-/// setup for <see cref="MudNodeModel.DataTopic"/> and <see cref="MudNodeModel.DataTopic2"/>.
-/// Override <see cref="OnData1Updated"/> / <see cref="OnData2Updated"/> to react to new values.
+/// Extends <see cref="BaseNodeWidget{TNode}"/> with automatic MQTT data setup
+/// Override <see cref="OnDataUpdated"/> to react to new values.
 /// </summary>
 public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
-    where TNode : MudNodeModel
+    where TNode : TextNodeModel
 {
     private readonly List<IDisposable> _dataWatchers = new();
     private bool _disposed = false;
@@ -73,8 +72,7 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
             {
                 Node.DataValues[idx]       = v;
                 Node.DataUpdatedTimes[idx] = DateTime.Now;
-                if (idx == 0) { OnData1Updated(); TriggerLinkAnimation(); }
-                else if (idx == 1) OnData2Updated();
+                if (idx == 0) { OnDataUpdated(); TriggerLinkAnimation(); }
             }
 
             var watcher = AppState.DataCache.Watch(capturedTopic, (t, value) =>
@@ -89,13 +87,12 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
                     if (_disposed) return;
                     Node.DataValues[idx]       = value;
                     Node.DataUpdatedTimes[idx] = DateTime.Now;
+                    OnDataReceivedCore(idx, t, value);//with values
+                    OnDataUpdated();
                     if (idx == 0)
                     {
-                        OnData1ReceivedCore(t, value);
                         TriggerLinkAnimation();
                     }
-                    else if (idx == 1) OnData2Updated();
-                    OnDataReceivedCore(idx, t, value);
                     StateHasChanged();
                 });
             });
@@ -104,17 +101,7 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
     }
 
     /// <summary>
-    /// Called when DataValue (topic 1) is received. Override to also use the actual
-    /// <paramref name="topic"/> that fired (useful for wildcard subscriptions).
-    /// </summary>
-    protected virtual void OnData1ReceivedCore(string topic, object? rawValue)
-    {
-        OnData1Updated();
-    }
-
-    /// <summary>
-    /// Called for every topic index when a value is received. Override to react to
-    /// any topic by index without replacing <see cref="OnData1ReceivedCore"/>.
+    /// Called for every topic index when a value is received.
     /// </summary>
     protected virtual void OnDataReceivedCore(int index, string topic, object? rawValue) { }
 
@@ -125,7 +112,8 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
     protected void TriggerLinkAnimation()
     {
         if (Node.LinkAnimation == null || Node.LinkAnimation == "None") return;
-        if (Node.DataValue == null || !double.TryParse(Node.DataValue.ToString(), out var d)) return;
+        var val = Node.DataValues?[0]?.ToString();
+        if (val == null || !double.TryParse(val, out var d)) return;
 
         if (Node.LinkAnimation == "Reverse") d = -d;
 
@@ -148,11 +136,8 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
         }
     }
 
-    /// <summary>Called after DataValue (topic 1) is updated. Override to react.</summary>
-    protected virtual void OnData1Updated() { }
-
-    /// <summary>Called after DataValue2 (topic 2) is updated. Override to react.</summary>
-    protected virtual void OnData2Updated() { }
+    /// <summary>Called after any DataValue is updated. Override to react.</summary>
+    protected virtual void OnDataUpdated() { }
 
     // ── Title positioning helpers ─────────────────────────────────────────────────
     // Used by widgets that position a title relative to their visual content.
@@ -178,7 +163,7 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
     };
 
     /// <summary>
-    /// Formats <see cref="MudNodeModel.Text"/> using data values as positional args:
+    /// Formats <see cref="TextNodeModel.Text"/> using data values as positional args:
     /// {0} = DataValues[0], {1} = DataValues[1], etc. Supports C# format specifiers
     /// e.g. "Temp: {0:F1}°C". Returns the raw Text if no format tokens are present or on error.
     /// </summary>
@@ -188,17 +173,19 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
         try
         {
             return string.Format(Node.Text,
-                new FormattableValue(Node.DataValue),
-                new FormattableValue(Node.DataValue2));
+                Node.DataValues.Length > 0 ? new FormattableValue(Node.DataValues[0]) : null,
+                Node.DataValues.Length > 1 ? new FormattableValue(Node.DataValues[1]) : null,
+                Node.DataValues.Length > 2 ? new FormattableValue(Node.DataValues[2]) : null,
+                Node.DataValues.Length > 3 ? new FormattableValue(Node.DataValues[3]) : null,
+                null);
         }
         catch { return Node.Text; }
     }
 
     /// <summary>Wraps an arbitrary MQTT value for use with string.Format numeric format specifiers.</summary>
-    private sealed class FormattableValue : IFormattable
+    private sealed class FormattableValue(object? value) : IFormattable
     {
-        private readonly object? _value;
-        public FormattableValue(object? value) => _value = value;
+        private readonly object? _value = value;
 
         public string ToString(string? format, IFormatProvider? provider)
         {

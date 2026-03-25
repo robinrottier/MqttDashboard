@@ -29,8 +29,32 @@ try
         ? BlazorRenderMode.InteractiveWebAssembly
         : BlazorRenderMode.InteractiveAuto;
 
-    // Load user-specific settings (e.g. admin password hash set via setup page)
-    builder.Configuration.AddJsonFile("appsettings.user.json", optional: true, reloadOnChange: true);
+    // Resolve data directory early (same logic as DashboardStorageService) so user settings
+    // are stored in the volume-mounted data dir rather than the ephemeral container root.
+    static string ResolveDataDir(IConfiguration config, string contentRoot)
+    {
+        var envDir = Environment.GetEnvironmentVariable("DIAGRAM_DATA_DIR");
+        if (!string.IsNullOrWhiteSpace(envDir)) return envDir;
+        var cfgDir = config["DiagramStorage:DataDirectory"];
+        if (!string.IsNullOrWhiteSpace(cfgDir)) return Path.GetFullPath(cfgDir, contentRoot);
+        return Path.Combine(contentRoot, "Data");
+    }
+
+    var dataDir = ResolveDataDir(builder.Configuration, builder.Environment.ContentRootPath);
+    Directory.CreateDirectory(dataDir);
+
+    // One-time migration: move appsettings.user.json from ContentRoot to data dir
+    var oldUserSettings = Path.Combine(builder.Environment.ContentRootPath, "appsettings.user.json");
+    var newUserSettings = Path.Combine(dataDir, "appsettings.user.json");
+    if (File.Exists(oldUserSettings) && !File.Exists(newUserSettings))
+    {
+        File.Copy(oldUserSettings, newUserSettings);
+        Log.Information("Migrated appsettings.user.json to data directory {Dir}", dataDir);
+    }
+
+    // Load user-specific settings (e.g. admin password hash set via setup page) from data dir
+    var settingsFileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(dataDir);
+    builder.Configuration.AddJsonFile(settingsFileProvider, "appsettings.user.json", optional: true, reloadOnChange: true);
 
     // Home Assistant add-on support: /data/options.json is written by the HA supervisor
     // with add-on configuration. Map known keys to our environment variables.

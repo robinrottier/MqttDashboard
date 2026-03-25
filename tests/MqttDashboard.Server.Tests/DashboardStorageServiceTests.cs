@@ -7,12 +7,12 @@ using Moq;
 
 namespace MqttDashboard.Server.Tests;
 
-public class DiagramStorageServiceTests : IDisposable
+public class DashboardStorageServiceTests : IDisposable
 {
     private readonly string _tempDir;
     private readonly DashboardStorageService _service;
 
-    public DiagramStorageServiceTests()
+    public DashboardStorageServiceTests()
     {
         _tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         Directory.CreateDirectory(_tempDir);
@@ -30,8 +30,11 @@ public class DiagramStorageServiceTests : IDisposable
     [Fact]
     public async Task SaveAndLoad_RoundTrip_PreservesData()
     {
-        var state = new DiagramState { Name = "Test Diagram" };
-        state.Nodes.Add(new NodeState { Id = "n1", Title = "Node 1", X = 10, Y = 20, Width = 120, Height = 90 });
+        var state = new DashboardModel { Name = "Test Diagram" };
+        state.Pages.Add(new DashboardPageModel
+        {
+            Nodes = [new TextNodeData { Id = "n1", Title = "Node 1", X = 10, Y = 20, Width = 120, Height = 90 }]
+        });
 
         var saved = await _service.SaveDiagramAsync(state);
         Assert.True(saved);
@@ -39,8 +42,9 @@ public class DiagramStorageServiceTests : IDisposable
         var loaded = await _service.LoadDiagramAsync();
         Assert.NotNull(loaded);
         Assert.Equal("Test Diagram", loaded!.Name);
-        Assert.Single(loaded.Nodes);
-        Assert.Equal("Node 1", loaded.Nodes[0].Title);
+        Assert.Single(loaded.Pages);
+        Assert.Single(loaded.Pages[0].Nodes);
+        Assert.Equal("Node 1", loaded.Pages[0].Nodes[0].Title);
     }
 
     [Fact]
@@ -54,7 +58,7 @@ public class DiagramStorageServiceTests : IDisposable
     public async Task ConcurrentSaves_DoNotCorruptData()
     {
         var tasks = Enumerable.Range(0, 10).Select(i =>
-            _service.SaveDiagramAsync(new DiagramState { Name = $"Diagram {i}" }));
+            _service.SaveDiagramAsync(new DashboardModel { Name = $"Diagram {i}" }));
         var results = await Task.WhenAll(tasks);
         Assert.All(results, r => Assert.True(r));
         // File should be valid JSON — load should succeed

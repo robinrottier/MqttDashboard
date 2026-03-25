@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using MqttDashboard.Server.Services;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -11,13 +12,13 @@ namespace MqttDashboard.Server.Controllers;
 [IgnoreAntiforgeryToken]
 public class SettingsController : ControllerBase
 {
-    private readonly IWebHostEnvironment _env;
     private readonly IConfiguration _configuration;
+    private readonly DashboardStorageService _storage;
 
-    public SettingsController(IWebHostEnvironment env, IConfiguration configuration)
+    public SettingsController(IConfiguration configuration, DashboardStorageService storage)
     {
-        _env = env;
         _configuration = configuration;
+        _storage = storage;
     }
 
     /// <summary>Returns the system-wide startup dashboard configuration.</summary>
@@ -51,7 +52,7 @@ public class SettingsController : ControllerBase
 
     private void Save(string mode, string dashboard)
     {
-        var path = Path.Combine(_env.ContentRootPath, "appsettings.user.json");
+        var path = Path.Combine(_storage.StoragePath, "appsettings.user.json");
         JsonObject root;
         if (System.IO.File.Exists(path))
         {

@@ -6,11 +6,15 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ## BUGS
 
+- [ ] Treeview looses focus and all nodes seem to colapse
+
+## Pending
+
 - [ ] Serialization: node ID GUIDs in file — map to sequential 1-based IDs for file (need port+link ID remapping too; deferred due to complexity)
 - [ ] Serialization: logged-on user not yet written to `FileInfo` (always admin for now — fine to leave)
 
 
-## 🟡 Enhancements
+## 🟡 Minor Enhancements
 
 - [ ] Server-side "lazy cache": if client request is dropped, server should keep data live for a configurable delay (e.g. 30s) before removing references
 - [ ] Property transition
@@ -55,6 +59,9 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ### FEAT-E: Editing improvements
 - [ ] Node-red style palette panel — drag node types from a sidebar onto the canvas
 - [ ] Import/export selected nodes or a whole page as JSON (clipboard)
+- [ ] Keyboard funcionality esp.:
+	- [ ] ctrl c/x/v for copy/cut/paste of nodes and links
+	- [ ] arrows to move selcted nodes
 
 ### FEAT-F: Link improvements
 - [ ] Links as proper model objects with a properties editor: color, thickness, dash style
@@ -66,6 +73,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ### FEAT-G: Grouping / layout containers
 - [ ] "Group" box — labeled background rectangle that visually wraps related nodes
 - [ ] Moving a group moves all contained nodes
+- [ ] Split panel type controls to divide up work area into resizable sections
 
 ### FEAT-H: Alternate data sources / plugin architecture
 - [ ] Plugin architecture for data sources beyond MQTT
@@ -88,22 +96,17 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Optional Git commit/push of dashboard changes to a remote repo
 
 ### FEAT-L: Deployment enhancements
-- [ ] Single Docker image supporting both server-only and WASM modes (different ports, shared data dir)
-- [ ] Read-only runtime mode — view-only, no login/edit UI exposed
+- [ ] Single Docker image supporting both server-only SSR and WASM modes (different ports, shared data dir)
+- [ ] Read-only runtime mode — view-only, no login/edit UI exposed. This would be some sort of setting on the server that hides edit UI and disables login, so anyone accessing the dashboard would see the live view but have no way to change it.
 - [ ] Admin interface: runtime monitoring, logs, connected clients, dashboard file management
+- [ ] More automation to speed relase process e.g. PR with message RC to mean release candiate so auto invokes patch-release auto bump and process
 
-### FEAT-M: Settings persistence
-- [ ] User set application settings should be in data directory so persist over deployments.:
-	- [ ] Startup behaviour
-	- [ ] Admin password hash
-	- [ ] ...this is probably in the applicationstate file
+### FEAT-M: Settings persistence _(done — settings now in data directory)_
 
 ### FEAT-N: Self-updating deployment
-- [ ] Deployment version / update checking
-	- [ ] Latest version checks checks for tags ... but the actual docker image may not be available for some time later. Can it check actual images in ghcr?
-	- [ ] We want to be able to select beta/non-latest pre-releases as an option i.e follow release only stream or latest beta stream
-	- [ ] Can the image update itself somehow from within the docker container? even if it has to do a restart or exit and allow docker to restart it with a new version pulled.
-	- [ ] How would we revert to a previous version if an update proved bad?
+- [ ] Latest version check checks for tags ... but the actual Docker image may not be available for some time after a tag is pushed. Can it check actual images in ghcr?
+- [ ] Option to follow release-only stream or latest beta stream
+- [ ] How would we revert to a previous version if an update proved bad?
 
 
 ---

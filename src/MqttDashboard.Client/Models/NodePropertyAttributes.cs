@@ -54,7 +54,7 @@ public sealed class NpSelectAttribute(string displayName, params string[] option
 /// Delegates rendering to a custom Blazor component <paramref name="componentType"/>.
 /// The component must declare:
 /// <code>
-///   [Parameter] public MudNodeModel Node { get; set; }   // owning node
+///   [Parameter] public TextNodeModel Node { get; set; }   // owning node
 ///   [Parameter] public object? Value { get; set; }        // the group object
 /// </code>
 /// </summary>
