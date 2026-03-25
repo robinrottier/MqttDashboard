@@ -62,8 +62,8 @@
 
     protected override void OnInitialized()
     {
-        _name = AppState.DiagramDisplayName;
-        _showDiagramName = AppState.ShowDiagramName;
+        _name = AppState.DashboardDisplayName;
+        _showDiagramName = AppState.ShowName;
         _backgroundColor = AppState.CanvasBackgroundColor;
         _topics = AppState.SubscribedTopics.OrderBy(t => t).ToList();
     }

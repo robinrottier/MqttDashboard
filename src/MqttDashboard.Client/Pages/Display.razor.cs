@@ -65,7 +65,7 @@ public partial class Display : IDisposable
     private readonly List<(NodeModel Node, Action<Blazor.Diagrams.Core.Models.Base.Model> Handler)> _nodeChangedSubscriptions = new();
     private IDisposable? _locationChangingRegistration;
 
-    private const string LastDiagramKey = "mqttdashboard_lastDiagram";
+    private const string LastDashboardKey = "mqttdashboard_lastDiagram";
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -94,7 +94,7 @@ public partial class Display : IDisposable
             if (savedState != null && savedState.Pages.Count > 0)
             {
                 LoadFullState(savedState, readOnly: true);
-                if (string.IsNullOrEmpty(AppState.DiagramName))
+                if (string.IsNullOrEmpty(AppState.DashboardName))
                     AppState.SetDiagramName("Default");
                 if (runtimeTopics.Count > 0)
                     AppState.SetSubscribedTopics(runtimeTopics);
@@ -107,14 +107,14 @@ public partial class Display : IDisposable
             else
             {
                 LoadFullState(null, readOnly: true);
-                if (string.IsNullOrEmpty(AppState.DiagramName))
+                if (string.IsNullOrEmpty(AppState.DashboardName))
                     AppState.SetDiagramName("Default");
                 AppState.MarkSaved();
                 StateHasChanged();
             }
 
             // Try to auto-open the last named diagram if none was loaded by name
-            if (string.IsNullOrEmpty(AppState.DiagramName))
+            if (string.IsNullOrEmpty(AppState.DashboardName))
             {
                 var lastName = await GetLastDiagramName();
                 if (!string.IsNullOrEmpty(lastName))
@@ -186,13 +186,13 @@ public partial class Display : IDisposable
         var fileInfo = new DashboardFileInfo
         {
             WrittenAt = DateTimeOffset.UtcNow.ToString("o"),
-            Filename  = !string.IsNullOrEmpty(AppState.DiagramName) ? AppState.DiagramName : null,
+            Filename  = !string.IsNullOrEmpty(AppState.DashboardName) ? AppState.DashboardName : null,
         };
 
         return new DashboardModel
         {
-            Name = AppState.DiagramDisplayName,
-            ShowDiagramName = AppState.ShowDiagramName,
+            Name = AppState.DashboardDisplayName,
+            ShowDiagramName = AppState.ShowName,
             MqttSubscriptions = new HashSet<string>(AppState.SubscribedTopics),
             Pages = _pageStates.Select((ps, i) => new DashboardPageModel
             {
@@ -940,7 +940,7 @@ public partial class Display : IDisposable
         {
             { d => d.Title, "Save Dashboard As" },
             { d => d.Label, "Dashboard name" },
-            { d => d.Value, AppState.DiagramName }
+            { d => d.Value, AppState.DashboardName }
         };
         var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseButton = true };
         var dialog = await DialogService.ShowAsync<SimpleInputDialog>("Save As", parameters, options);
@@ -988,7 +988,7 @@ public partial class Display : IDisposable
         }
         var parameters = new DialogParameters<DashboardPickerDialog>
         {
-            { d => d.DiagramNames, names }
+            { d => d.DashboardNames, names }
         };
         var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseButton = true };
         var dialog = await DialogService.ShowAsync<DashboardPickerDialog>("Open Dashboard", parameters, options);
@@ -1034,7 +1034,7 @@ public partial class Display : IDisposable
 
     private async Task<bool> SaveDashboard()
     {
-        if (string.IsNullOrEmpty(AppState.DiagramName))
+        if (string.IsNullOrEmpty(AppState.DashboardName))
         {
             Snackbar.Add("No filename — use Save As to save this dashboard", Severity.Warning);
             return false;
@@ -1042,7 +1042,7 @@ public partial class Display : IDisposable
         try
         {
             var state = BuildFullState();
-            var name = AppState.DiagramName;
+            var name = AppState.DashboardName;
             var success = await DashboardService.SaveDashboardByNameAsync(name, state);
             if (success)
             {
@@ -1179,13 +1179,13 @@ public partial class Display : IDisposable
 
     private async Task SaveLastDiagramName(string name)
     {
-        try { await JSRuntime.InvokeVoidAsync("localStorage.setItem", LastDiagramKey, name); }
+        try { await JSRuntime.InvokeVoidAsync("localStorage.setItem", LastDashboardKey, name); }
         catch { /* ignore */ }
     }
 
     private async Task<string?> GetLastDiagramName()
     {
-        try { return await JSRuntime.InvokeAsync<string?>("localStorage.getItem", LastDiagramKey); }
+        try { return await JSRuntime.InvokeAsync<string?>("localStorage.getItem", LastDashboardKey); }
         catch { return null; }
     }
 

@@ -20,7 +20,7 @@
         {
             <MudMenuItem Label="Reload from Disk" OnClick="ReloadDiagram" />
             <MudDivider />
-            <MudMenuItem Label="Save" Disabled="@string.IsNullOrEmpty(AppState.DiagramName)" OnClick="SaveDashboard" />
+            <MudMenuItem Label="Save" Disabled="@string.IsNullOrEmpty(AppState.DashboardName)" OnClick="SaveDashboard" />
             <MudMenuItem Label="Save As…"             OnClick="SaveAsDiagram"          />
             <MudDivider />
             <MudMenuItem Label="Dashboard Properties…"  OnClick="MenuDiagramProperties"  />
@@ -111,7 +111,7 @@
             <MudMenu Label="Show" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
                 <MudMenuItem OnClick="ToggleDiagramName">
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.ShowDiagramName ? "" : "visibility:hidden")" />
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="@(AppState.ShowName ? "" : "visibility:hidden")" />
                         <MudText>Dashboard Name</MudText>
                     </MudStack>
                 </MudMenuItem>

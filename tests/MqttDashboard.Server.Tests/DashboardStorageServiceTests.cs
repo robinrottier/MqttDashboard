@@ -7,12 +7,12 @@ using Moq;
 
 namespace MqttDashboard.Server.Tests;
 
-public class DiagramStorageServiceTests : IDisposable
+public class DashboardStorageServiceTests : IDisposable
 {
     private readonly string _tempDir;
     private readonly DashboardStorageService _service;
 
-    public DiagramStorageServiceTests()
+    public DashboardStorageServiceTests()
     {
         _tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         Directory.CreateDirectory(_tempDir);

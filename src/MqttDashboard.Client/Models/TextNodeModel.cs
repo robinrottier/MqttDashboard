@@ -123,8 +123,4 @@ namespace MqttDashboard.Models
             return ApplyBaseData(node, data);
         }
     }
-
-    // Backward-compat alias — use TextNodeModel in new code
-    [Obsolete("Use TextNodeModel")]
-    public class MudNodeModel(Blazor.Diagrams.Core.Geometry.Point? position = null) : TextNodeModel(position) { }
 }

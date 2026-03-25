@@ -68,10 +68,10 @@ public class ApplicationState
 
     // Theme & UI preferences
     public ThemeMode ThemeMode { get; private set; } = ThemeMode.Auto;
-    public bool ShowDiagramName { get; private set; } = true;
+    public bool ShowName { get; private set; } = true;
 
     /// <summary>File name (stem) used for saving/loading. Set by the caller, not from file contents.</summary>
-    public string DiagramName { get; private set; } = string.Empty;
+    public string DashboardName { get; private set; } = string.Empty;
 
     /// <summary>
     /// Human-readable display name stored inside the dashboard JSON (DashboardModel.Name).
@@ -79,12 +79,12 @@ public class ApplicationState
     /// May differ from the file name — e.g. after "Save As" the file name changes but the
     /// display name set in Properties stays the same.
     /// </summary>
-    public string DiagramDisplayName { get; private set; } = string.Empty;
+    public string DashboardDisplayName { get; private set; } = string.Empty;
 
     /// <summary>The name to show in the UI: DiagramDisplayName when set, otherwise DiagramName.</summary>
     public string ActiveDashboardLabel =>
-        !string.IsNullOrEmpty(DiagramDisplayName) ? DiagramDisplayName :
-        !string.IsNullOrEmpty(DiagramName) ? DiagramName :
+        !string.IsNullOrEmpty(DashboardDisplayName) ? DashboardDisplayName :
+        !string.IsNullOrEmpty(DashboardName) ? DashboardName :
         "Untitled";
 
     public int GridSize { get; private set; } = 20;
@@ -240,25 +240,25 @@ public class ApplicationState
 
     public void ToggleShowDiagramName()
     {
-        ShowDiagramName = !ShowDiagramName;
+        ShowName = !ShowName;
         NotifyStateChangedAsync();
     }
 
     public void SetShowDiagramName(bool show)
     {
-        ShowDiagramName = show;
+        ShowName = show;
         NotifyStateChangedAsync();
     }
 
     public void SetDiagramName(string name)
     {
-        DiagramName = name;
+        DashboardName = name;
         NotifyStateChangedAsync();
     }
 
     public void SetDisplayName(string name)
     {
-        DiagramDisplayName = name;
+        DashboardDisplayName = name;
         NotifyStateChangedAsync();
     }
 
@@ -312,8 +312,8 @@ public class ApplicationState
     /// </summary>
     public void ApplyDashboardModel(DashboardModel model)
     {
-        DiagramDisplayName = model.Name;
-        ShowDiagramName = model.ShowDiagramName;
+        DashboardDisplayName = model.Name;
+        ShowName = model.ShowDiagramName;
         if (model.MqttSubscriptions != null)
             SubscribedTopics = new HashSet<string>(model.MqttSubscriptions);
         NotifyStateChangedAsync();

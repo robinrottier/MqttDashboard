@@ -23,7 +23,7 @@
         <MudTooltip Text="@TitleTooltip" Placement="Placement.Bottom">
         <MudText Typo="Typo.h6" Class="d-flex align-center gap-2">
             @AppName
-            @if (AppState.IsEditMode || AppState.ShowDiagramName)
+            @if (AppState.IsEditMode || AppState.ShowName)
             {
                 <MudText Typo="Typo.h6" Color="Color.Secondary" Style="display:inline">
                     &mdash; @AppState.ActiveDashboardLabel
@@ -147,10 +147,10 @@
         get
         {
             var parts = new List<string>();
-            if (!string.IsNullOrEmpty(AppState.DiagramName))
-                parts.Add($"File: {AppState.DiagramName}");
-            if (!string.IsNullOrEmpty(AppState.DiagramDisplayName) && AppState.DiagramDisplayName != AppState.DiagramName)
-                parts.Add($"Display: {AppState.DiagramDisplayName}");
+            if (!string.IsNullOrEmpty(AppState.DashboardName))
+                parts.Add($"File: {AppState.DashboardName}");
+            if (!string.IsNullOrEmpty(AppState.DashboardDisplayName) && AppState.DashboardDisplayName != AppState.DashboardName)
+                parts.Add($"Display: {AppState.DashboardDisplayName}");
             if (!AppState.IsEditMode)
                 parts.Add("Status: View mode");
             else if (AppState.IsEdited)
