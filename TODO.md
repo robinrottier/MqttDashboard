@@ -59,6 +59,9 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ### FEAT-E: Editing improvements
 - [ ] Node-red style palette panel — drag node types from a sidebar onto the canvas
 - [ ] Import/export selected nodes or a whole page as JSON (clipboard)
+- [ ] Keyboard funcionality esp.:
+	- [ ] ctrl c/x/v for copy/cut/paste of nodes and links
+	- [ ] arrows to move selcted nodes
 
 ### FEAT-F: Link improvements
 - [ ] Links as proper model objects with a properties editor: color, thickness, dash style
@@ -70,6 +73,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ### FEAT-G: Grouping / layout containers
 - [ ] "Group" box — labeled background rectangle that visually wraps related nodes
 - [ ] Moving a group moves all contained nodes
+- [ ] Split panel type controls to divide up work area into resizable sections
 
 ### FEAT-H: Alternate data sources / plugin architecture
 - [ ] Plugin architecture for data sources beyond MQTT
@@ -93,8 +97,9 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ### FEAT-L: Deployment enhancements
 - [ ] Single Docker image supporting both server-only SSR and WASM modes (different ports, shared data dir)
-- [ ] Read-only runtime mode — view-only, no login/edit UI exposed
+- [ ] Read-only runtime mode — view-only, no login/edit UI exposed. This would be some sort of setting on the server that hides edit UI and disables login, so anyone accessing the dashboard would see the live view but have no way to change it.
 - [ ] Admin interface: runtime monitoring, logs, connected clients, dashboard file management
+- [ ] More automation to speed relase process e.g. PR with message RC to mean release candiate so auto invokes patch-release auto bump and process
 
 ### FEAT-M: Settings persistence _(done — settings now in data directory)_
 
