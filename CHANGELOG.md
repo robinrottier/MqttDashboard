@@ -18,6 +18,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - **Node property editor dialog title** now reads "Edit {Type} Node Properties" (e.g. "Edit Gauge Node Properties").
+- **Dashboard file format redesigned** — replaced flat `DiagramState`/`NodeState` with a clean nested `DashboardModel` hierarchy. Each node type owns its own serialization (`ToData()`/`FromData()`). Old files are not compatible (new format is explicitly breaking). `MudNodeModel` renamed to `TextNodeModel`; `MudPortModel` renamed to `NodePortModel`.
 - **Title and Title Position** are on one compact row in the node property editor.
 - **Background Image + Image Fit** moved to the top common section of node properties and shown on one compact row.
 - **Icon Color** now uses the same composite ColorPicker widget (CSS/Hex/Theme) as other color properties.

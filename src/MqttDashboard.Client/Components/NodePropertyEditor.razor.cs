@@ -8,7 +8,7 @@ namespace MqttDashboard.Components;
 public partial class NodePropertyEditor
 {
     [CascadingParameter] private IMudDialogInstance? MudDialog { get; set; }
-    [Parameter] public MudNodeModel Node { get; set; } = default!;
+    [Parameter] public TextNodeModel Node { get; set; } = default!;
     [Inject] private IDialogService DialogService { get; set; } = default!;
 
     private double Width { get; set; }

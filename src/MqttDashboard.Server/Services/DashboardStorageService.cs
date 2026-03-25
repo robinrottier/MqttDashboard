@@ -103,12 +103,12 @@ public class DashboardStorageService
         }
     }
 
-    public Task<DiagramState?> LoadDashboardAsync() => LoadDiagramAsync();
-    public Task<bool> SaveDashboardAsync(DiagramState state) => SaveDiagramAsync(state);
-    public Task<DiagramState?> LoadDashboardByNameAsync(string name) => LoadDiagramByNameAsync(name);
-    public Task<bool> SaveDashboardByNameAsync(string name, DiagramState state) => SaveDiagramByNameAsync(name, state);
+    public Task<DashboardModel?> LoadDashboardAsync() => LoadDiagramAsync();
+    public Task<bool> SaveDashboardAsync(DashboardModel state) => SaveDiagramAsync(state);
+    public Task<DashboardModel?> LoadDashboardByNameAsync(string name) => LoadDiagramByNameAsync(name);
+    public Task<bool> SaveDashboardByNameAsync(string name, DashboardModel state) => SaveDiagramByNameAsync(name, state);
 
-    public async Task<DiagramState?> LoadDiagramAsync()
+    public async Task<DashboardModel?> LoadDiagramAsync()
     {
         var filePath = Path.Combine(_dashboardsPath, DiagramFileName);
 
@@ -124,9 +124,9 @@ public class DashboardStorageService
             try
             {
                 var json = await File.ReadAllTextAsync(filePath);
-                var diagramState = JsonSerializer.Deserialize<DiagramState>(json);
+                var dashboard = JsonSerializer.Deserialize<DashboardModel>(json);
                 _logger.LogInformation("Loaded diagram from {Path}", filePath);
-                return diagramState;
+                return dashboard;
             }
             catch (Exception ex)
             {
@@ -140,7 +140,7 @@ public class DashboardStorageService
         }
     }
 
-    public async Task<bool> SaveDiagramAsync(DiagramState diagramState)
+    public async Task<bool> SaveDiagramAsync(DashboardModel dashboard)
     {
         var filePath = Path.Combine(_dashboardsPath, DiagramFileName);
 
@@ -154,7 +154,7 @@ public class DashboardStorageService
                     WriteIndented = true,
                     DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
                 };
-                var json = JsonSerializer.Serialize(diagramState, options);
+                var json = JsonSerializer.Serialize(dashboard, options);
                 await File.WriteAllTextAsync(filePath, json);
                 _logger.LogInformation("Saved diagram to {Path}", filePath);
                 return true;
@@ -186,7 +186,7 @@ public class DashboardStorageService
         finally { _lock.Release(); }
     }
 
-    public async Task<DiagramState?> LoadDiagramByNameAsync(string name)
+    public async Task<DashboardModel?> LoadDiagramByNameAsync(string name)
     {
         if (string.IsNullOrWhiteSpace(name)) return null;
         var filePath = Path.Combine(_dashboardsPath, $"{name}.json");
@@ -195,7 +195,7 @@ public class DashboardStorageService
         {
             if (!File.Exists(filePath)) return null;
             var json = await File.ReadAllTextAsync(filePath);
-            return JsonSerializer.Deserialize<DiagramState>(json);
+            return JsonSerializer.Deserialize<DashboardModel>(json);
         }
         catch (Exception ex)
         {
@@ -205,7 +205,7 @@ public class DashboardStorageService
         finally { _lock.Release(); }
     }
 
-    public async Task<bool> SaveDiagramByNameAsync(string name, DiagramState diagramState)
+    public async Task<bool> SaveDiagramByNameAsync(string name, DashboardModel dashboard)
     {
         if (string.IsNullOrWhiteSpace(name)) return false;
         var safeName = new string(name.Where(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == ' ').ToArray()).Trim();
@@ -214,7 +214,7 @@ public class DashboardStorageService
         await _lock.WaitAsync();
         try
         {
-            var json = JsonSerializer.Serialize(diagramState, new JsonSerializerOptions
+            var json = JsonSerializer.Serialize(dashboard, new JsonSerializerOptions
             {
                 WriteIndented = true,
                 DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,

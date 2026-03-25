@@ -10,7 +10,7 @@ namespace MqttDashboard.Widgets;
 /// port sizing, and double-click-to-edit behaviour.
 /// </summary>
 public abstract class BaseNodeWidget<TNode> : ComponentBase, IDisposable
-    where TNode : MudNodeModel
+    where TNode : TextNodeModel
 {
     [Parameter] public TNode Node { get; set; } = null!;
     [Inject] protected ApplicationState AppState { get; set; } = null!;
@@ -31,7 +31,7 @@ public abstract class BaseNodeWidget<TNode> : ComponentBase, IDisposable
         (Node.Group  != null  ? " grouped"  : "") +
         (Node.Selected        ? " selected" : "");
 
-    protected static string PortStyle(MudPortModel? port) =>
+    protected static string PortStyle(NodePortModel? port) =>
         port == null ? string.Empty
                      : $"width:{(int)port.Size.Width}px; height:{(int)port.Size.Height}px;";
 

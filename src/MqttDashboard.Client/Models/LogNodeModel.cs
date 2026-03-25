@@ -2,7 +2,7 @@ using Blazor.Diagrams.Core.Geometry;
 
 namespace MqttDashboard.Models;
 
-public class LogNodeModel : MudNodeModel
+public class LogNodeModel : TextNodeModel
 {
     public LogNodeModel(Point? position = null) : base(position) { NodeType = "Log"; }
 
@@ -26,4 +26,38 @@ public class LogNodeModel : MudNodeModel
 
     [NpCheckbox("Value", Category = "Columns", Order = 7)]
     public bool ShowValue { get; set; } = true;
+
+    public override NodeData ToData(double panX = 0, double panY = 0)
+    {
+        var data = new LogNodeData
+        {
+            MaxEntries = MaxEntries,
+            Columns = new LogColumnsData
+            {
+                ShowDate = ShowDate ? true : null,
+                ShowTime = ShowTime ? null : false,   // default is true; only store when false
+                TopicFull = ShowTopicFull ? true : null,
+                TopicPath = ShowTopicPath ? true : null,
+                TopicName = ShowTopicName ? true : null,
+                Value = ShowValue ? null : false,     // default is true; only store when false
+            },
+        };
+        FillBaseData(data, panX, panY);
+        return data;
+    }
+
+    public static LogNodeModel FromData(LogNodeData data)
+    {
+        var node = new LogNodeModel(new Point(data.X, data.Y))
+        {
+            MaxEntries = data.MaxEntries ?? 20,
+            ShowDate = data.Columns?.ShowDate ?? false,
+            ShowTime = data.Columns?.ShowTime ?? true,
+            ShowTopicFull = data.Columns?.TopicFull ?? false,
+            ShowTopicPath = data.Columns?.TopicPath ?? false,
+            ShowTopicName = data.Columns?.TopicName ?? false,
+            ShowValue = data.Columns?.Value ?? true,
+        };
+        return ApplyBaseData(node, data);
+    }
 }

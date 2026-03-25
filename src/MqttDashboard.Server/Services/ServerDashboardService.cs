@@ -30,25 +30,25 @@ public class ServerDashboardService : IDashboardService
         _logger = logger;
     }
 
-    public Task<DiagramState?> LoadDashboardAsync() =>
+    public Task<DashboardModel?> LoadDashboardAsync() =>
         _storage.LoadDashboardAsync();
 
     public Task<List<string>> ListDashboardsAsync() =>
         _storage.ListDiagramNamesAsync();
 
-    public Task<DiagramState?> LoadDashboardByNameAsync(string name) =>
+    public Task<DashboardModel?> LoadDashboardByNameAsync(string name) =>
         _storage.LoadDashboardByNameAsync(name);
 
-    public async Task<bool> SaveDashboardAsync(DiagramState diagramState)
+    public async Task<bool> SaveDashboardAsync(DashboardModel dashboard)
     {
         if (!IsAdminAuthorized()) return false;
-        return await _storage.SaveDashboardAsync(diagramState);
+        return await _storage.SaveDashboardAsync(dashboard);
     }
 
-    public async Task<bool> SaveDashboardByNameAsync(string name, DiagramState diagramState)
+    public async Task<bool> SaveDashboardByNameAsync(string name, DashboardModel dashboard)
     {
         if (!IsAdminAuthorized()) return false;
-        return await _storage.SaveDashboardByNameAsync(name, diagramState);
+        return await _storage.SaveDashboardByNameAsync(name, dashboard);
     }
 
     public async Task<bool> DeleteDashboardByNameAsync(string name)

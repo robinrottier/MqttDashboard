@@ -74,7 +74,7 @@ public class ApplicationState
     public string DiagramName { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Human-readable display name stored inside the dashboard JSON (DiagramState.Name).
+    /// Human-readable display name stored inside the dashboard JSON (DashboardModel.Name).
     /// Shown in the title bar and editable in Dashboard Properties.
     /// May differ from the file name — e.g. after "Save As" the file name changes but the
     /// display name set in Properties stays the same.
@@ -133,19 +133,19 @@ public class ApplicationState
     public void MarkSaved() { IsEdited = false; NotifyStateChangedAsync(); }
 
     // Clipboard
-    private List<NodeState> _clipboard = new();
+    private List<NodeData> _clipboard = new();
     public bool HasClipboard => _clipboard.Count > 0;
-    public IReadOnlyList<NodeState> Clipboard => _clipboard.AsReadOnly();
-    public void SetClipboard(IEnumerable<NodeState> nodes) { _clipboard = nodes.ToList(); NotifyStateChangedAsync(); }
+    public IReadOnlyList<NodeData> Clipboard => _clipboard.AsReadOnly();
+    public void SetClipboard(IEnumerable<NodeData> nodes) { _clipboard = nodes.ToList(); NotifyStateChangedAsync(); }
 
     // Undo/Redo stacks
-    private readonly Stack<DiagramState> _undoStack = new();
-    private readonly Stack<DiagramState> _redoStack = new();
+    private readonly Stack<DashboardPageModel> _undoStack = new();
+    private readonly Stack<DashboardPageModel> _redoStack = new();
     private int _maxUndoDepth = 20;
     public bool CanUndo => _undoStack.Count > 0;
     public bool CanRedo => _redoStack.Count > 0;
 
-    public void PushUndoSnapshot(DiagramState snapshot)
+    public void PushUndoSnapshot(DashboardPageModel snapshot)
     {
         _undoStack.Push(snapshot);
         while (_undoStack.Count > _maxUndoDepth)
@@ -159,7 +159,7 @@ public class ApplicationState
         NotifyStateChangedAsync();
     }
 
-    public DiagramState? PopUndo(DiagramState currentState)
+    public DashboardPageModel? PopUndo(DashboardPageModel currentState)
     {
         if (!CanUndo) return null;
         _redoStack.Push(currentState);
@@ -168,7 +168,7 @@ public class ApplicationState
         return state;
     }
 
-    public DiagramState? PopRedo(DiagramState currentState)
+    public DashboardPageModel? PopRedo(DashboardPageModel currentState)
     {
         if (!CanRedo) return null;
         _undoStack.Push(currentState);
@@ -302,11 +302,24 @@ public class ApplicationState
     public BlazorDiagram GetOrCreateDiagram()
     {
         if (_diagram == null)
-            _diagram = CreateDiagramFromState(null, false);
+            _diagram = CreateDiagramFromPageData(null, false);
         return _diagram;
     }
 
-    public BlazorDiagram CreateDiagramFromState(DiagramState? state, bool readOnly)
+    /// <summary>
+    /// Apply top-level dashboard properties (name, subscriptions, etc.) from a loaded DashboardModel.
+    /// Call this after loading a new dashboard before building diagrams.
+    /// </summary>
+    public void ApplyDashboardModel(DashboardModel model)
+    {
+        DiagramDisplayName = model.Name;
+        ShowDiagramName = model.ShowDiagramName;
+        if (model.MqttSubscriptions != null)
+            SubscribedTopics = new HashSet<string>(model.MqttSubscriptions);
+        NotifyStateChangedAsync();
+    }
+
+    public BlazorDiagram CreateDiagramFromPageData(DashboardPageModel? page, bool readOnly)
     {
         var options = new BlazorDiagramOptions
         {
@@ -317,166 +330,86 @@ public class ApplicationState
                 DefaultRouter = new NormalRouter(),
                 DefaultPathGenerator = new SmoothPathGenerator()
             },
-            // disable panning (for now) ...seems just to confuse
             AllowPanning = false,
         };
         if (!readOnly)
         {
-            // if grid size is 0 then no grid
-            // if grid size is -ve then grid is snaptocenter
-            // if grid size is +ve then snap to corner (default)
-            if (state == null)
+            if (page == null)
             {
                 options.GridSize = 20;
                 GridSize = 20;
             }
             else
             {
-                options.GridSize = state.GridSize == 0 ? null : int.Abs(state.GridSize);
+                options.GridSize = page.GridSize == 0 ? null : int.Abs(page.GridSize);
                 GridSize = (int)(options.GridSize ?? 20);
             }
             options.GridSnapToCenter = options.GridSize < 0;
-        };
+        }
+
+        // Apply canvas background from page
+        if (page != null)
+            CanvasBackgroundColor = page.BackgroundColor ?? string.Empty;
 
         var diagram = new BlazorDiagram(options);
-        diagram.RegisterComponent<MudNodeModel, MudNodeWidget>();
+        diagram.RegisterComponent<TextNodeModel, MudNodeWidget>();
         diagram.RegisterComponent<GaugeNodeModel, GaugeNodeWidget>();
         diagram.RegisterComponent<SwitchNodeModel, SwitchNodeWidget>();
         diagram.RegisterComponent<BatteryNodeModel, BatteryNodeWidget>();
         diagram.RegisterComponent<LogNodeModel, LogNodeWidget>();
         diagram.RegisterComponent<TreeViewNodeModel, TreeViewNodeWidget>();
 
-        if (state != null)
+        if (page != null)
         {
-            // Create nodes from state
             var nodeMap = new Dictionary<string, NodeModel>();
-            foreach (var nodeState in state.Nodes)
+            foreach (var nodeData in page.Nodes)
             {
-                MudNodeModel node = nodeState.NodeType switch
+                TextNodeModel node = nodeData switch
                 {
-                    "Gauge" => new GaugeNodeModel(position: new Point(nodeState.X, nodeState.Y))
-                    {
-                        Range = new NumericRangeSettings
-                        {
-                            Min = nodeState.MinValue ?? 0,
-                            Max = nodeState.MaxValue ?? 100,
-                            Origin = nodeState.Origin,
-                            DataTopicIndex = nodeState.DataTopicIndex ?? 0,
-                        },
-                        Unit = nodeState.Unit,
-                        TextPosition = nodeState.TextPosition ?? "Below",
-                        GaugeColor = DeserializeColorTransition(nodeState.GaugeColor),
-                    },
-                    "Switch" => new SwitchNodeModel(position: new Point(nodeState.X, nodeState.Y))
-                    {
-                        PublishTopic = nodeState.PublishTopic,
-                        OnValue = nodeState.OnValue ?? "1",
-                        OffValue = nodeState.OffValue ?? "0",
-                        SwitchStyle = nodeState.SwitchStyle ?? "Full",
-                        OnText = nodeState.OnText ?? "ON",
-                        OffText = nodeState.OffText ?? "OFF",
-                        IsReadOnly = nodeState.SwitchIsReadOnly ?? false,
-                        Retain = nodeState.SwitchRetain ?? false,
-                        QosLevel = nodeState.SwitchQosLevel ?? 0,
-                    },
-                    "Battery" => new BatteryNodeModel(position: new Point(nodeState.X, nodeState.Y))
-                    {
-                        Range = new NumericRangeSettings
-                        {
-                            Min = nodeState.MinValue ?? 0,
-                            Max = nodeState.MaxValue ?? 100,
-                            DataTopicIndex = nodeState.DataTopicIndex ?? 0,
-                        },
-                        ShowPercent = nodeState.BatteryShowPercent ?? true,
-                        BatteryColor = DeserializeColorTransition(nodeState.BatteryColor),
-                    },
-                    "Log" => new LogNodeModel(position: new Point(nodeState.X, nodeState.Y))
-                    {
-                        MaxEntries = nodeState.MaxEntries ?? 20,
-                        ShowTime = nodeState.ShowTime ?? true,
-                        ShowDate = nodeState.ShowDate ?? false,
-                        ShowTopicFull = nodeState.ShowTopicFull ?? false,
-                        ShowTopicPath = nodeState.ShowTopicPath ?? false,
-                        ShowTopicName = nodeState.ShowTopicName ?? false,
-                        ShowValue = nodeState.ShowValue ?? true,
-                    },
-                    "TreeView" => new TreeViewNodeModel(position: new Point(nodeState.X, nodeState.Y))
-                    {
-                        RootTopic = nodeState.RootTopic ?? string.Empty,
-                        ShowValues = nodeState.ShowValues ?? true,
-                    },
-                    "Image" => new MudNodeModel(position: new Point(nodeState.X, nodeState.Y))
-                    {
-                        // Legacy Image nodes become plain Text nodes with a background image
-                        BackgroundImageUrl    = nodeState.BackgroundImageUrl ?? nodeState.StaticImageUrl ?? string.Empty,
-                        BackgroundObjectFit   = nodeState.BackgroundObjectFit ?? nodeState.ObjectFit ?? "cover",
-                    },
-                    _ => new MudNodeModel(position: new Point(nodeState.X, nodeState.Y)),
+                    GaugeNodeData d    => GaugeNodeModel.FromData(d),
+                    SwitchNodeData d   => SwitchNodeModel.FromData(d),
+                    BatteryNodeData d  => BatteryNodeModel.FromData(d),
+                    LogNodeData d      => LogNodeModel.FromData(d),
+                    TreeViewNodeData d => TreeViewNodeModel.FromData(d),
+                    _                  => TextNodeModel.FromData(nodeData),
                 };
 
                 node.Locked = readOnly;
-                node.Title = nodeState.Title;
-                node.Size = new Blazor.Diagrams.Core.Geometry.Size(nodeState.Width, nodeState.Height);
-                node.Icon = nodeState.Icon;
-                node.IconName = nodeState.IconName;
-                node.Text = nodeState.Text;
-                node.BackgroundColor = nodeState.BackgroundColor;
-                node.IconColor = nodeState.IconColor;
-                node.Metadata = nodeState.Metadata ?? new Dictionary<string, string>();
-                if (nodeState.DataTopics != null && nodeState.DataTopics.Count > 0)
-                    node.DataTopics = new List<string>(nodeState.DataTopics);
-                node.FontSize = nodeState.FontSize;
-                node.LinkAnimation = nodeState.LinkAnimation;
-                node.NodeType = nodeState.NodeType ?? "Text";
-                node.TitlePosition = nodeState.TitlePosition ?? "Above";
-                // Background image (base — applies to all node types)
-                if (!string.IsNullOrEmpty(nodeState.BackgroundImageUrl))
-                    node.BackgroundImageUrl = nodeState.BackgroundImageUrl;
-                if (nodeState.BackgroundObjectFit != null)
-                    node.BackgroundObjectFit = nodeState.BackgroundObjectFit;
-
                 diagram.Nodes.Add(node);
-                nodeMap[nodeState.Id] = node;
+                nodeMap[nodeData.Id] = node;
 
-                // Add ports
-                foreach (var portState in nodeState.Ports ?? [])
+                foreach (var portData in nodeData.Ports ?? [])
                 {
-                    var alignment = Enum.Parse<PortAlignment>(portState.Alignment);
+                    var alignment = Enum.Parse<PortAlignment>(portData.Alignment);
                     AddPortToNode(node, alignment);
                 }
 
-                // add resize in bottom left
                 if (!readOnly)
-                {
                     diagram.Controls.AddFor(node).Add(new ResizeControl(new BottomRightResizerProvider()));
-                }
             }
 
-            // Create links from state
-            foreach (var linkState in state.Links)
+            foreach (var linkData in page.Links)
             {
-                if (nodeMap.TryGetValue(linkState.SourceNodeId, out var sourceNode) &&
-                    nodeMap.TryGetValue(linkState.TargetNodeId, out var targetNode))
+                if (nodeMap.TryGetValue(linkData.Source, out var sourceNode) &&
+                    nodeMap.TryGetValue(linkData.Target, out var targetNode))
                 {
                     PortModel? sourcePort = null;
                     PortModel? targetPort = null;
 
-                    if (!string.IsNullOrEmpty(linkState.SourcePortAlignment))
+                    if (!string.IsNullOrEmpty(linkData.SourcePort))
                     {
-                        var sourceAlignment = Enum.Parse<PortAlignment>(linkState.SourcePortAlignment);
-                        sourcePort = sourceNode.Ports.FirstOrDefault(p => p.Alignment == sourceAlignment);
+                        var alignment = Enum.Parse<PortAlignment>(linkData.SourcePort);
+                        sourcePort = sourceNode.Ports.FirstOrDefault(p => p.Alignment == alignment);
                     }
-
-                    if (!string.IsNullOrEmpty(linkState.TargetPortAlignment))
+                    if (!string.IsNullOrEmpty(linkData.TargetPort))
                     {
-                        var targetAlignment = Enum.Parse<PortAlignment>(linkState.TargetPortAlignment);
-                        targetPort = targetNode.Ports.FirstOrDefault(p => p.Alignment == targetAlignment);
+                        var alignment = Enum.Parse<PortAlignment>(linkData.TargetPort);
+                        targetPort = targetNode.Ports.FirstOrDefault(p => p.Alignment == alignment);
                     }
 
                     Anchor sourceAnchor = sourcePort != null
                         ? new SinglePortAnchor(sourcePort)
                         : new ShapeIntersectionAnchor(sourceNode);
-
                     Anchor targetAnchor = targetPort != null
                         ? new SinglePortAnchor(targetPort)
                         : new ShapeIntersectionAnchor(targetNode);
@@ -488,181 +421,69 @@ public class ApplicationState
             }
         }
 
-        // Update display name and canvas properties from state; file name (DiagramName) is set
-        // by the calling code after loading a named file — it is never derived from state.
-        if (state != null)
-        {
-            DiagramDisplayName = state.Name;
-            CanvasBackgroundColor = state.BackgroundColor ?? string.Empty;
-            ShowDiagramName = state.ShowDiagramName;
-            // Only replace subscriptions if the field was present in the file.
-            // Null means an old file that predates subscription storage — preserve existing topics.
-            if (state.MqttSubscriptions != null)
-                SubscribedTopics = new HashSet<string>(state.MqttSubscriptions);
-        }
-
         _diagram = diagram;
         return _diagram;
     }
 
-    public DiagramState GetDiagramState()
+    public DashboardPageModel GetPageData()
     {
         if (_diagram == null)
-        {
-            return new DiagramState();
-        }
+            return new DashboardPageModel();
 
-        var state = new DiagramState();
-        state.Name = DiagramDisplayName;
-
-        // map diagram grid and gridsnaptocenter to diagramstate saved value for grid size
-        // if grid size is 0 then no grid
-        // if grid size is -ve then grid is snaptocenter
-        // if grid size is +ve then snap to corner (default)
+        int gridSize;
         if (_diagram.Options.GridSize == null)
-        {
-            state.GridSize = 0;
-        }
+            gridSize = 0;
+        else if (_diagram.Options.GridSnapToCenter)
+            gridSize = -_diagram.Options.GridSize.Value;
         else
-        {
-            if (_diagram.Options.GridSnapToCenter)
-                state.GridSize = -_diagram.Options.GridSize.Value;
-            else
-                state.GridSize = _diagram.Options.GridSize.Value;
-        }
+            gridSize = _diagram.Options.GridSize.Value;
 
-        // Rebase node positions to current view by baking in the pan offset,
-        // then reset pan to zero so the diagram looks identical after save.
         var panX = _diagram.Pan.X;
         var panY = _diagram.Pan.Y;
 
-        // Save nodes
-        foreach (var node in _diagram.Nodes.OfType<MudNodeModel>())
+        var page = new DashboardPageModel
         {
-            var nodeState = new NodeState
-            {
-                Id = node.Id,
-                Title = node.Title ?? string.Empty,
-                X = (node.Position?.X ?? 0) + panX,
-                Y = (node.Position?.Y ?? 0) + panY,
-                Width = node.Size?.Width ?? 120,
-                Height = node.Size?.Height ?? 90,
-                Icon = node.Icon,
-                IconName = node.IconName,
-                Text = node.Text,
-                BackgroundColor = node.BackgroundColor,
-                IconColor = node.IconColor,
-                Metadata = node.Metadata?.Count > 0 ? new Dictionary<string, string>(node.Metadata) : null,
-                DataTopics = node.DataTopics.Count > 0 ? new List<string>(node.DataTopics) : null,
-                FontSize = node.FontSize,
-                LinkAnimation = node.LinkAnimation,
-                NodeType = node.NodeType ?? "Text",
-                TitlePosition = node.TitlePosition,
-            };
+            GridSize = gridSize,
+            BackgroundColor = string.IsNullOrEmpty(CanvasBackgroundColor) ? null : CanvasBackgroundColor,
+        };
 
-            // Type-specific properties
-            if (node is GaugeNodeModel g)
-            {
-                nodeState.MinValue = g.Range.Min;
-                nodeState.MaxValue = g.Range.Max;
-                nodeState.Unit = g.Unit;
-                nodeState.Origin = g.Range.Origin;
-                nodeState.DataTopicIndex = g.Range.DataTopicIndex != 0 ? g.Range.DataTopicIndex : null;
-                nodeState.TextPosition = g.TextPosition != "Below" ? g.TextPosition : null;
-                nodeState.GaugeColor = SerializeColorTransition(g.GaugeColor);
-            }
-            else if (node is SwitchNodeModel s)
-            {
-                nodeState.PublishTopic = s.PublishTopic;
-                nodeState.OnValue = s.OnValue;
-                nodeState.OffValue = s.OffValue;
-                nodeState.SwitchStyle = s.SwitchStyle;
-                nodeState.OnText = s.OnText;
-                nodeState.OffText = s.OffText;
-                nodeState.SwitchIsReadOnly = s.IsReadOnly;
-                nodeState.SwitchRetain = s.Retain;
-                nodeState.SwitchQosLevel = s.QosLevel;
-            }
-            else if (node is BatteryNodeModel b)
-            {
-                nodeState.MinValue = b.Range.Min;
-                nodeState.MaxValue = b.Range.Max;
-                nodeState.BatteryShowPercent = b.ShowPercent;
-                nodeState.DataTopicIndex = b.Range.DataTopicIndex != 0 ? b.Range.DataTopicIndex : null;
-                nodeState.BatteryColor = SerializeColorTransition(b.BatteryColor);
-            }
-            else if (node is LogNodeModel log)
-            {
-                nodeState.MaxEntries = log.MaxEntries;
-                nodeState.ShowTime = log.ShowTime;
-                nodeState.ShowDate = log.ShowDate;
-                nodeState.ShowTopicFull = log.ShowTopicFull ? true : null;
-                nodeState.ShowTopicPath = log.ShowTopicPath ? true : null;
-                nodeState.ShowTopicName = log.ShowTopicName ? true : null;
-                nodeState.ShowValue = !log.ShowValue ? false : null;
-            }
-            else if (node is TreeViewNodeModel tv)
-            {
-                nodeState.RootTopic = tv.RootTopic;
-                nodeState.ShowValues = tv.ShowValues;
-            }
-
-            // Base background image (any node type)
-            if (!string.IsNullOrEmpty(node.BackgroundImageUrl))
-                nodeState.BackgroundImageUrl = node.BackgroundImageUrl;
-            if (node.BackgroundObjectFit != "cover")
-                nodeState.BackgroundObjectFit = node.BackgroundObjectFit;
-
-            // Save ports (only if any exist)
-            if (node.Ports.Any())
-            {
-                nodeState.Ports = node.Ports.Select(p => new PortState { Id = p.Id, Alignment = p.Alignment.ToString() }).ToList();
-            }
-
-            state.Nodes.Add(nodeState);
+        foreach (var node in _diagram.Nodes.OfType<TextNodeModel>())
+        {
+            page.Nodes.Add(node.ToData(panX, panY));
         }
 
-        // Save links
         foreach (var link in _diagram.Links)
         {
-            var linkState = new LinkState();
+            var linkData = new LinkData();
 
-            // Get source node and port
             if (link.Source?.Model is PortModel sourcePort)
             {
-                linkState.SourceNodeId = sourcePort.Parent.Id;
-                linkState.SourcePortAlignment = sourcePort.Alignment.ToString();
+                linkData.Source = sourcePort.Parent.Id;
+                linkData.SourcePort = sourcePort.Alignment.ToString();
             }
             else if (link.Source?.Model is NodeModel sourceNode)
             {
-                linkState.SourceNodeId = sourceNode.Id;
+                linkData.Source = sourceNode.Id;
             }
 
-            // Get target node and port
             if (link.Target?.Model is PortModel targetPort)
             {
-                linkState.TargetNodeId = targetPort.Parent.Id;
-                linkState.TargetPortAlignment = targetPort.Alignment.ToString();
+                linkData.Target = targetPort.Parent.Id;
+                linkData.TargetPort = targetPort.Alignment.ToString();
             }
             else if (link.Target?.Model is NodeModel targetNode)
             {
-                linkState.TargetNodeId = targetNode.Id;
+                linkData.Target = targetNode.Id;
             }
 
-            if (!string.IsNullOrEmpty(linkState.SourceNodeId) && !string.IsNullOrEmpty(linkState.TargetNodeId))
-            {
-                state.Links.Add(linkState);
-            }
+            if (!string.IsNullOrEmpty(linkData.Source) && !string.IsNullOrEmpty(linkData.Target))
+                page.Links.Add(linkData);
         }
 
-        // Reset pan to zero — positions are now in view space
         if (panX != 0 || panY != 0)
             _diagram.SetPan(0, 0);
 
-        state.BackgroundColor = CanvasBackgroundColor;
-        state.ShowDiagramName = ShowDiagramName;
-        state.MqttSubscriptions = new HashSet<string>(SubscribedTopics);
-        return state;
+        return page;
     }
 
     public void ResetDiagram()
@@ -745,7 +566,7 @@ public class ApplicationState
     {
         var diagram = GetOrCreateDiagram();
 
-        var node = new MqttDashboard.Models.MudNodeModel(
+        var node = new TextNodeModel(
             new Blazor.Diagrams.Core.Geometry.Point(100 + diagram.Nodes.Count * 20, 100))
         {
             Title = nodeName,
@@ -773,9 +594,9 @@ public class ApplicationState
 
     public void CheckForLinkAnimation(NodeModel sourceNode, LinkModel link)
     {
-        if (sourceNode is MudNodeModel mudSource
-         && !string.IsNullOrWhiteSpace(mudSource.LinkAnimation)
-         && mudSource.LinkAnimation != "None")
+        if (sourceNode is TextNodeModel textSource
+         && !string.IsNullOrWhiteSpace(textSource.LinkAnimation)
+         && textSource.LinkAnimation != "None")
         {
             link.DashPattern = "5,5";
             link.AddAnimation(new AnimateModel()
@@ -792,42 +613,7 @@ public class ApplicationState
     {
         if (node != null)
         {
-            //node.AddPort(alignment);
-            node.AddPort(new MudPortModel(node, alignment));
+            node.AddPort(new NodePortModel(node, alignment));
         }
     }
-
-    public static ColorTransition DeserializeColorTransitionStatic(ColorTransitionState? state)
-        => DeserializeColorTransition(state);
-
-    public static ColorTransitionState? SerializeColorTransitionStatic(ColorTransition ct)
-        => SerializeColorTransition(ct);
-
-    private static ColorTransition DeserializeColorTransition(ColorTransitionState? state)
-    {
-        if (state == null) return new ColorTransition();
-        return new ColorTransition
-        {
-            ColorTopicIndex = state.ColorTopicIndex ?? 0,
-            ElseColor = state.ElseColor,
-            ColorThresholds = state.ColorThresholds?
-                .Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color, Direction = t.Direction })
-                .ToList() ?? new()
-        };
-    }
-
-    private static ColorTransitionState? SerializeColorTransition(ColorTransition ct)
-    {
-        if (ct.ColorThresholds.Count == 0 && ct.ColorTopicIndex == 0 && ct.ElseColor == null) return null;
-        return new ColorTransitionState
-        {
-            ColorTopicIndex = ct.ColorTopicIndex != 0 ? ct.ColorTopicIndex : null,
-            ElseColor = ct.ElseColor,
-            ColorThresholds = ct.ColorThresholds.Count > 0
-                ? ct.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList()
-                : null
-        };
-    }
-
-
 }

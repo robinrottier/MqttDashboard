@@ -7,11 +7,11 @@ namespace MqttDashboard.Widgets;
 
 /// <summary>
 /// Extends <see cref="BaseNodeWidget{TNode}"/> with automatic MQTT data watcher
-/// setup for <see cref="MudNodeModel.DataTopic"/> and <see cref="MudNodeModel.DataTopic2"/>.
+/// setup for <see cref="TextNodeModel.DataTopic"/> and <see cref="TextNodeModel.DataTopic2"/>.
 /// Override <see cref="OnData1Updated"/> / <see cref="OnData2Updated"/> to react to new values.
 /// </summary>
 public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
-    where TNode : MudNodeModel
+    where TNode : TextNodeModel
 {
     private readonly List<IDisposable> _dataWatchers = new();
     private bool _disposed = false;
@@ -179,7 +179,7 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
     };
 
     /// <summary>
-    /// Formats <see cref="MudNodeModel.Text"/> using data values as positional args:
+    /// Formats <see cref="TextNodeModel.Text"/> using data values as positional args:
     /// {0} = DataValues[0], {1} = DataValues[1], etc. Supports C# format specifiers
     /// e.g. "Temp: {0:F1}°C". Returns the raw Text if no format tokens are present or on error.
     /// </summary>

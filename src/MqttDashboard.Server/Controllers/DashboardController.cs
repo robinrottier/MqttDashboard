@@ -21,21 +21,21 @@ public class DashboardController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<DiagramState>> GetDiagram()
+    public async Task<ActionResult<DashboardModel>> GetDiagram()
     {
         _logger.LogInformation("[DashboardController] GET diagram requested");
         try
         {
-            var diagram = await _storageService.LoadDiagramAsync();
+            var dashboard = await _storageService.LoadDiagramAsync();
 
-            if (diagram == null)
+            if (dashboard == null)
             {
                 _logger.LogWarning("[DashboardController] No diagram found, returning 404");
                 return NotFound();
             }
 
-            _logger.LogInformation("[DashboardController] Returning diagram with {NodeCount} nodes", diagram.Nodes.Count);
-            return Ok(diagram);
+            _logger.LogInformation("[DashboardController] Returning dashboard with {PageCount} pages", dashboard.Pages.Count);
+            return Ok(dashboard);
         }
         catch (Exception ex)
         {
@@ -46,21 +46,21 @@ public class DashboardController : ControllerBase
 
     [HttpPost]
     [ServiceFilter(typeof(RequireAdminFilter))]
-    public async Task<ActionResult> SaveDashboard([FromBody] DiagramState diagramState)
+    public async Task<ActionResult> SaveDashboard([FromBody] DashboardModel dashboard)
     {
-        _logger.LogInformation("[DashboardController] POST diagram requested with {NodeCount} nodes", 
-            diagramState?.Nodes?.Count ?? 0);
+        _logger.LogInformation("[DashboardController] POST diagram requested with {PageCount} pages", 
+            dashboard?.Pages?.Count ?? 0);
 
         try
         {
-            if (diagramState == null)
+            if (dashboard == null)
             {
-                _logger.LogWarning("[DashboardController] DiagramState is null");
-                return BadRequest("DiagramState cannot be null");
+                _logger.LogWarning("[DashboardController] DashboardModel is null");
+                return BadRequest("Dashboard cannot be null");
             }
 
             _logger.LogInformation("[DashboardController] Saving dashboard...");
-            var success = await _storageService.SaveDiagramAsync(diagramState);
+            var success = await _storageService.SaveDiagramAsync(dashboard);
 
             if (!success)
             {
@@ -86,7 +86,7 @@ public class DashboardController : ControllerBase
     }
 
     [HttpGet("{name}")]
-    public async Task<ActionResult<DiagramState>> GetDiagramByName(string name)
+    public async Task<ActionResult<DashboardModel>> GetDiagramByName(string name)
     {
         var diagram = await _storageService.LoadDiagramByNameAsync(name);
         if (diagram == null) return NotFound();
@@ -95,10 +95,10 @@ public class DashboardController : ControllerBase
 
     [HttpPost("{name}")]
     [ServiceFilter(typeof(RequireAdminFilter))]
-    public async Task<ActionResult> SaveDiagramByName(string name, [FromBody] DiagramState diagramState)
+    public async Task<ActionResult> SaveDiagramByName(string name, [FromBody] DashboardModel dashboard)
     {
         if (string.IsNullOrWhiteSpace(name)) return BadRequest("Name required");
-        var success = await _storageService.SaveDiagramByNameAsync(name, diagramState);
+        var success = await _storageService.SaveDiagramByNameAsync(name, dashboard);
         return success ? Ok() : StatusCode(500, "Failed to save");
     }
 

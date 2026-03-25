@@ -28,12 +28,12 @@ public partial class Display : IDisposable
 
     // Multi-page diagram state
     private List<BlazorDiagram?> _diagrams = [null];
-    private List<DiagramState> _pageStates = [new DiagramState()];
+    private List<DashboardPageModel> _pageStates = [new DashboardPageModel()];
     private int _activePageIndex = 0;
     private BlazorDiagram? _diagram => _diagrams.Count > _activePageIndex ? _diagrams[_activePageIndex] : null;
 
     // Pre-edit snapshot for discard revert
-    private DiagramState? _editSnapshot;
+    private DashboardModel? _editSnapshot;
 
     // Suppress dirty tracking during mode switches and diagram loading
     private bool _suppressDirty = false;
@@ -91,7 +91,7 @@ public partial class Display : IDisposable
             // clobbered when LoadFullState/CreateDiagramFromState sets them from the file.
             var runtimeTopics = AppState.SubscribedTopics.ToHashSet();
 
-            if (savedState != null && (savedState.Nodes.Count > 0 || savedState.Pages?.Count > 0))
+            if (savedState != null && savedState.Pages.Count > 0)
             {
                 LoadFullState(savedState, readOnly: true);
                 if (string.IsNullOrEmpty(AppState.DiagramName))
@@ -137,7 +137,7 @@ public partial class Display : IDisposable
 
     // ── Full state loading (replaces all pages) ───────────────────────────────
 
-    private void LoadFullState(DiagramState? state, bool readOnly)
+    private void LoadFullState(DashboardModel? state, bool readOnly)
     {
         // Unsubscribe selection/change from all existing diagrams
         foreach (var d in _diagrams.OfType<BlazorDiagram>())
@@ -150,26 +150,21 @@ public partial class Display : IDisposable
         _suppressDirty = true;
         try
         {
+            if (state != null)
+                AppState.ApplyDashboardModel(state);
+
             if (state?.Pages != null && state.Pages.Count > 0)
             {
                 var pageNames = state.Pages.Select(p => p.Name).ToList();
-                _pageStates = state.Pages.Select(p => FromPageState(p, state)).ToList();
+                _pageStates = new List<DashboardPageModel>(state.Pages);
                 _diagrams = new List<BlazorDiagram?>(Enumerable.Repeat<BlazorDiagram?>(null, _pageStates.Count));
                 _activePageIndex = 0;
-                _diagrams[0] = AppState.CreateDiagramFromState(_pageStates[0], readOnly);
+                _diagrams[0] = AppState.CreateDiagramFromPageData(_pageStates[0], readOnly);
                 AppState.SetPageNames(pageNames, 0);
-            }
-            else if (state != null)
-            {
-                _pageStates = [state];
-                _diagrams = [null];
-                _activePageIndex = 0;
-                _diagrams[0] = AppState.CreateDiagramFromState(state, readOnly);
-                AppState.SetPageNames(["Page 1"], 0);
             }
             else
             {
-                _pageStates = [new DiagramState { GridSize = AppState.GridSize > 0 ? AppState.GridSize : 10 }];
+                _pageStates = [new DashboardPageModel { GridSize = AppState.GridSize > 0 ? AppState.GridSize : 10 }];
                 _diagrams = [null];
                 _activePageIndex = 0;
                 _diagrams[0] = AppState.GetOrCreateDiagram();
@@ -182,54 +177,34 @@ public partial class Display : IDisposable
         }
     }
 
-    private static DiagramState FromPageState(PageState page, DiagramState template) => new DiagramState
-    {
-        Name = template.Name,
-        ShowDiagramName = template.ShowDiagramName,
-        MqttSubscriptions = template.MqttSubscriptions,
-        GridSize = page.GridSize,
-        BackgroundColor = page.BackgroundColor,
-        Nodes = page.Nodes,
-        Links = page.Links,
-    };
-
-    private DiagramState BuildFullState()
+    private DashboardModel BuildFullState()
     {
         // Capture current page state
-        var currentState = AppState.GetDiagramState();
-        _pageStates[_activePageIndex] = currentState;
+        var currentPage = AppState.GetPageData();
+        _pageStates[_activePageIndex] = currentPage;
 
-        var fileInfo = new DiagramFileInfo
+        var fileInfo = new DashboardFileInfo
         {
             WrittenAt = DateTimeOffset.UtcNow.ToString("o"),
             Filename  = !string.IsNullOrEmpty(AppState.DiagramName) ? AppState.DiagramName : null,
         };
 
-        if (_pageStates.Count > 1)
+        return new DashboardModel
         {
-            // Multi-page: serialize as Pages list
-            return new DiagramState
+            Name = AppState.DiagramDisplayName,
+            ShowDiagramName = AppState.ShowDiagramName,
+            MqttSubscriptions = new HashSet<string>(AppState.SubscribedTopics),
+            Pages = _pageStates.Select((ps, i) => new DashboardPageModel
             {
-                Name = AppState.DiagramDisplayName,
-                ShowDiagramName = AppState.ShowDiagramName,
-                MqttSubscriptions = new HashSet<string>(AppState.SubscribedTopics),
-                BackgroundColor = AppState.CanvasBackgroundColor,
-                GridSize = currentState.GridSize,
-                Pages = _pageStates.Select((ps, i) => new PageState
-                {
-                    Name = i < AppState.PageNames.Count ? AppState.PageNames[i] : $"Page {i + 1}",
-                    Nodes = ps.Nodes,
-                    Links = ps.Links,
-                    GridSize = ps.GridSize,
-                    BackgroundColor = ps.BackgroundColor,
-                }).ToList(),
-                FileInfo = fileInfo,
-            };
-        }
-
-        // Single page
-        currentState.FileInfo = fileInfo;
-        return currentState;
+                Id = ps.Id,
+                Name = i < AppState.PageNames.Count ? AppState.PageNames[i] : $"Page {i + 1}",
+                GridSize = ps.GridSize,
+                BackgroundColor = ps.BackgroundColor,
+                Nodes = ps.Nodes,
+                Links = ps.Links,
+            }).ToList(),
+            FileInfo = fileInfo,
+        };
     }
 
     private void RefreshAll()
@@ -487,7 +462,7 @@ public partial class Display : IDisposable
         var selected = _diagram?.GetSelectedModels().OfType<NodeModel>().ToList() ?? [];
         HashSet<PortAlignment>? ports = null;
         if (selected.Count == 1)
-            ports = selected[0].Ports.OfType<MudPortModel>().Select(p => p.Alignment).ToHashSet();
+            ports = selected[0].Ports.OfType<NodePortModel>().Select(p => p.Alignment).ToHashSet();
         AppState.UpdateSelectionState(selected.Count > 0, selected.Count == 1, ports);
     }
 
@@ -507,14 +482,14 @@ public partial class Display : IDisposable
         var rng = new Random();
         _diagram.UnselectAll();
 
-        MudNodeModel node = nodeType switch
+        TextNodeModel node = nodeType switch
         {
             "Gauge"    => new GaugeNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))    { Title = $"Gauge {_nodeCounter++}" },
             "Switch"   => new SwitchNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))   { Title = $"Switch {_nodeCounter++}" },
             "Battery"  => new BatteryNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))  { Title = $"Battery {_nodeCounter++}" },
             "Log"      => new LogNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))      { Title = $"Log {_nodeCounter++}" },
             "TreeView" => new TreeViewNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400))) { Title = $"Tree {_nodeCounter++}" },
-            _          => new MudNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))      { Title = $"Node {_nodeCounter++}" },
+            _          => new TextNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))     { Title = $"Node {_nodeCounter++}" },
         };
 
         _diagram.Nodes.Add(node);
@@ -559,7 +534,7 @@ public partial class Display : IDisposable
             AppState.MarkSaved();
             AppState.ClearUndoRedo();
 
-            _pageStates = [new DiagramState { GridSize = AppState.GridSize > 0 ? AppState.GridSize : 10 }];
+            _pageStates = [new DashboardPageModel { GridSize = AppState.GridSize > 0 ? AppState.GridSize : 10 }];
             _diagrams = [null];
             _activePageIndex = 0;
             AppState.SetPageNames(["Page 1"], 0);
@@ -594,12 +569,12 @@ public partial class Display : IDisposable
         AppState.MarkSaved();
         AppState.ClearUndoRedo();
         var savedState = await DashboardService.LoadDashboardAsync();
-        if (savedState != null && (savedState.Nodes.Count > 0 || savedState.Pages?.Count > 0))
+        if (savedState != null && savedState.Pages.Count > 0)
         {
             var prevTopics = AppState.SubscribedTopics.ToHashSet();
             LoadFullState(savedState, readOnly: true);
             await SyncSubscriptionsAsync(prevTopics, AppState.SubscribedTopics);
-            var nodeCount = savedState.Pages?.Sum(p => p.Nodes.Count) ?? savedState.Nodes.Count;
+            var nodeCount = savedState.Pages.Sum(p => p.Nodes.Count);
             Snackbar.Add($"Dashboard reloaded ({nodeCount} nodes)", Severity.Info);
         }
         else
@@ -619,7 +594,7 @@ public partial class Display : IDisposable
 
         // Save current page state
         if (_diagram != null)
-            _pageStates[_activePageIndex] = AppState.GetDiagramState();
+            _pageStates[_activePageIndex] = AppState.GetPageData();
 
         // Unsubscribe diagram-specific events from current page
         if (AppState.IsEditMode && _diagram != null)
@@ -639,7 +614,7 @@ public partial class Display : IDisposable
 
         // Create diagram for the new page (always fresh to handle mode changes)
         _suppressDirty = true;
-        try { _diagrams[_activePageIndex] = AppState.CreateDiagramFromState(_pageStates[_activePageIndex], !AppState.IsEditMode); }
+        try { _diagrams[_activePageIndex] = AppState.CreateDiagramFromPageData(_pageStates[_activePageIndex], !AppState.IsEditMode); }
         finally { _suppressDirty = false; }
 
         // Re-subscribe diagram events for the new page
@@ -663,7 +638,7 @@ public partial class Display : IDisposable
     private async Task AddPageAsync()
     {
         var newPageName = $"Page {_pageStates.Count + 1}";
-        var newPageState = new DiagramState { GridSize = AppState.GridSize > 0 ? AppState.GridSize : 10 };
+        var newPageState = new DashboardPageModel { GridSize = AppState.GridSize > 0 ? AppState.GridSize : 10 };
         _pageStates.Add(newPageState);
         _diagrams.Add(null);
         var newNames = new List<string>(AppState.PageNames) { newPageName };
@@ -686,7 +661,7 @@ public partial class Display : IDisposable
 
         // Save current page before removing
         if (_diagram != null && index == _activePageIndex)
-            _pageStates[_activePageIndex] = AppState.GetDiagramState();
+            _pageStates[_activePageIndex] = AppState.GetPageData();
 
         // Unsubscribe from the diagram being removed (if in edit mode)
         if (AppState.IsEditMode)
@@ -717,7 +692,7 @@ public partial class Display : IDisposable
 
         // Create diagram for the now-active page if needed
         if (_diagrams[_activePageIndex] == null)
-            _diagrams[_activePageIndex] = AppState.CreateDiagramFromState(_pageStates[_activePageIndex], !AppState.IsEditMode);
+            _diagrams[_activePageIndex] = AppState.CreateDiagramFromPageData(_pageStates[_activePageIndex], !AppState.IsEditMode);
         else
             AppState.SetActiveDiagram(_diagrams[_activePageIndex]);
 
@@ -766,78 +741,22 @@ public partial class Display : IDisposable
     // Clipboard tag written to the OS clipboard so we can recognise our own data on paste.
     private const string ClipboardTag = """{"mqttdashboard":"nodes",""";
 
-    private static List<NodeState> BuildSnapshots(IEnumerable<MudNodeModel> selected)
-    {
-        return selected.Select(n =>
-        {
-            var ns = new NodeState
-            {
-                Id = n.Id,
-                Title = n.Title ?? string.Empty,
-                X = n.Position?.X ?? 0,
-                Y = n.Position?.Y ?? 0,
-                Width = n.Size?.Width ?? 120,
-                Height = n.Size?.Height ?? 90,
-                Icon = n.Icon,
-                IconName = n.IconName,
-                Text = n.Text,
-                BackgroundColor = n.BackgroundColor,
-                IconColor = n.IconColor,
-                Metadata = n.Metadata?.Count > 0 ? new Dictionary<string, string>(n.Metadata) : null,
-                DataTopics = n.DataTopics.Count > 0 ? new List<string>(n.DataTopics) : null,
-                FontSize = n.FontSize,
-                LinkAnimation = n.LinkAnimation,
-                NodeType = n.NodeType ?? "Text",
-                TitlePosition = n.TitlePosition,
-                Ports = n.Ports.Any() ? n.Ports.Select(p => new PortState { Id = p.Id, Alignment = p.Alignment.ToString() }).ToList() : null,
-            };
-            if (n is GaugeNodeModel g)
-            {
-                ns.MinValue = g.MinValue; ns.MaxValue = g.MaxValue; ns.Unit = g.Unit;
-                ns.Origin = g.Origin;
-                ns.DataTopicIndex = g.DataTopicIndex != 0 ? g.DataTopicIndex : null;
-                ns.TextPosition = g.TextPosition != "Below" ? g.TextPosition : null;
-                ns.GaugeColor = ApplicationState.SerializeColorTransitionStatic(g.GaugeColor);
-            }
-            else if (n is SwitchNodeModel s)
-            {
-                ns.PublishTopic = s.PublishTopic; ns.OnValue = s.OnValue; ns.OffValue = s.OffValue;
-            }
-            else if (n is BatteryNodeModel b)
-            {
-                ns.MinValue = b.MinValue; ns.MaxValue = b.MaxValue; ns.BatteryShowPercent = b.ShowPercent;
-                ns.DataTopicIndex = b.DataTopicIndex != 0 ? b.DataTopicIndex : null;
-                ns.BatteryColor = ApplicationState.SerializeColorTransitionStatic(b.BatteryColor);
-            }
-            else if (n is LogNodeModel log)
-            {
-                ns.MaxEntries = log.MaxEntries; ns.ShowTime = log.ShowTime; ns.ShowDate = log.ShowDate;
-            }
-            else if (n is TreeViewNodeModel tv)
-            {
-                ns.RootTopic = tv.RootTopic; ns.ShowValues = tv.ShowValues;
-            }
-            // Base background image
-            if (!string.IsNullOrEmpty(n.BackgroundImageUrl)) ns.BackgroundImageUrl = n.BackgroundImageUrl;
-            if (n.BackgroundObjectFit != "cover") ns.BackgroundObjectFit = n.BackgroundObjectFit;
-            return ns;
-        }).ToList();
-    }
+    private static List<NodeData> BuildSnapshots(IEnumerable<TextNodeModel> selected)
+        => selected.Select(n => n.ToData()).ToList();
 
     private void CopySelectedNodes()
     {
         if (_diagram == null) return;
-        var selected = _diagram.GetSelectedModels().OfType<MudNodeModel>().ToList();
+        var selected = _diagram.GetSelectedModels().OfType<TextNodeModel>().ToList();
         if (selected.Count == 0) return;
         _pasteGeneration = 0;
         var snapshots = BuildSnapshots(selected);
         AppState.SetClipboard(snapshots);
 
         // Also write to the OS clipboard so paste works across browser windows.
-        // Fire-and-forget — failure is benign, in-memory clipboard is the fallback.
         var json = System.Text.Json.JsonSerializer.Serialize(new { mqttdashboard = "nodes", data = snapshots });
         _ = JSRuntime.InvokeAsync<bool>("mqttClipboard.writeText", json).AsTask()
-              .ContinueWith(_ => { });   // swallow errors
+              .ContinueWith(_ => { });
 
         Snackbar.Add($"Copied {snapshots.Count} node(s)", Severity.Info);
     }
@@ -857,8 +776,7 @@ public partial class Display : IDisposable
     {
         if (_diagram == null) return;
 
-        // Try to read nodes from the OS clipboard first (supports cross-window paste).
-        List<NodeState>? toPaste = null;
+        List<NodeData>? toPaste = null;
         try
         {
             var text = await JSRuntime.InvokeAsync<string?>("mqttClipboard.readText");
@@ -867,14 +785,13 @@ public partial class Display : IDisposable
                 using var doc = System.Text.Json.JsonDocument.Parse(text);
                 if (doc.RootElement.TryGetProperty("data", out var dataEl))
                 {
-                    toPaste = System.Text.Json.JsonSerializer.Deserialize<List<NodeState>>(
-                        dataEl.GetRawText());
+                    toPaste = System.Text.Json.JsonSerializer.Deserialize<List<NodeData>>(dataEl.GetRawText());
                     if (toPaste != null)
                         AppState.SetClipboard(toPaste);
                 }
             }
         }
-        catch { /* ignore — fall back to in-memory clipboard */ }
+        catch { /* fall back to in-memory clipboard */ }
 
         if (toPaste == null)
         {
@@ -889,67 +806,28 @@ public partial class Display : IDisposable
         _diagram.UnselectAll();
         double offset = 30 * _pasteGeneration;
 
-        foreach (var ns in toPaste)
+        foreach (var nodeData in toPaste)
         {
-            MudNodeModel node = ns.NodeType switch
+            TextNodeModel node = nodeData switch
             {
-                "Gauge" => new GaugeNodeModel(new Point(ns.X + offset, ns.Y + offset))
-                {
-                    Range = new NumericRangeSettings { Min = ns.MinValue ?? 0, Max = ns.MaxValue ?? 100, Origin = ns.Origin, DataTopicIndex = ns.DataTopicIndex ?? 0 },
-                    Unit = ns.Unit,
-                    TextPosition = ns.TextPosition ?? "Below",
-                    GaugeColor = ApplicationState.DeserializeColorTransitionStatic(ns.GaugeColor),
-                },
-                "Switch" => new SwitchNodeModel(new Point(ns.X + offset, ns.Y + offset))
-                {
-                    PublishTopic = ns.PublishTopic,
-                    OnValue = ns.OnValue ?? "1",
-                    OffValue = ns.OffValue ?? "0",
-                },
-                "Battery" => new BatteryNodeModel(new Point(ns.X + offset, ns.Y + offset))
-                {
-                    Range = new NumericRangeSettings { Min = ns.MinValue ?? 0, Max = ns.MaxValue ?? 100, DataTopicIndex = ns.DataTopicIndex ?? 0 },
-                    ShowPercent = ns.BatteryShowPercent ?? true,
-                    BatteryColor = ApplicationState.DeserializeColorTransitionStatic(ns.BatteryColor),
-                },
-                "Log" => new LogNodeModel(new Point(ns.X + offset, ns.Y + offset))
-                {
-                    MaxEntries = ns.MaxEntries ?? 20,
-                    ShowTime = ns.ShowTime ?? true,
-                    ShowDate = ns.ShowDate ?? false,
-                },
-                "TreeView" => new TreeViewNodeModel(new Point(ns.X + offset, ns.Y + offset))
-                {
-                    RootTopic = ns.RootTopic ?? string.Empty,
-                    ShowValues = ns.ShowValues ?? true,
-                },
-                _ => new MudNodeModel(new Point(ns.X + offset, ns.Y + offset)),
+                GaugeNodeData d    => GaugeNodeModel.FromData(d),
+                SwitchNodeData d   => SwitchNodeModel.FromData(d),
+                BatteryNodeData d  => BatteryNodeModel.FromData(d),
+                LogNodeData d      => LogNodeModel.FromData(d),
+                TreeViewNodeData d => TreeViewNodeModel.FromData(d),
+                _                  => TextNodeModel.FromData(nodeData),
             };
-            node.Title = ns.Title;
-            node.NodeType = ns.NodeType ?? "Text";
-            node.Icon = ns.Icon;
-            node.IconName = ns.IconName;
-            node.Text = ns.Text;
-            node.BackgroundColor = ns.BackgroundColor;
-            node.IconColor = ns.IconColor;
-            node.Metadata = ns.Metadata ?? new Dictionary<string, string>();
-            if (ns.DataTopics != null)
-                node.DataTopics = new List<string>(ns.DataTopics);
-            node.FontSize = ns.FontSize;
-            node.LinkAnimation = ns.LinkAnimation;
-            node.TitlePosition = ns.TitlePosition ?? "Above";
-            // Base background image
-            if (!string.IsNullOrEmpty(ns.BackgroundImageUrl)) node.BackgroundImageUrl = ns.BackgroundImageUrl;
-            if (ns.BackgroundObjectFit != null) node.BackgroundObjectFit = ns.BackgroundObjectFit;
-            node.Size = new Blazor.Diagrams.Core.Geometry.Size(ns.Width, ns.Height);
-            foreach (var ps in ns.Ports ?? [])
+            // Offset paste position
+            node.SetPosition(nodeData.X + offset, nodeData.Y + offset);
+
+            foreach (var ps in nodeData.Ports ?? [])
             {
                 if (Enum.TryParse<Blazor.Diagrams.Core.Models.PortAlignment>(ps.Alignment, out var alignment))
                     AppState.AddPortToNode(node, alignment);
             }
             _diagram.Nodes.Add(node);
             _diagram.Controls.AddFor(node).Add(new Blazor.Diagrams.Core.Controls.Default.ResizeControl(new Blazor.Diagrams.Core.Positions.Resizing.BottomRightResizerProvider()));
-            _diagram.SelectModel(node, false); // false = append to selection, so all pasted nodes stay selected
+            _diagram.SelectModel(node, false);
         }
         UpdateSelectionState();
         Snackbar.Add($"Pasted {toPaste.Count} node(s)", Severity.Info);
@@ -960,13 +838,13 @@ public partial class Display : IDisposable
     private void PushUndoSnapshot()
     {
         if (_diagram == null) return;
-        AppState.PushUndoSnapshot(AppState.GetDiagramState());
+        AppState.PushUndoSnapshot(AppState.GetPageData());
     }
 
     private async Task UndoAction()
     {
         if (_diagram == null || !AppState.CanUndo) return;
-        var current = AppState.GetDiagramState();
+        var current = AppState.GetPageData();
         var previous = AppState.PopUndo(current);
         if (previous == null) return;
         await ApplyDiagramState(previous);
@@ -989,9 +867,7 @@ public partial class Display : IDisposable
         try
         {
             // LoadFullState handles both single-page and multi-page snapshots correctly.
-            // ApplyDiagramState would produce an empty page for multi-page snapshots
-            // because it passes the wrapper DiagramState (with Pages list, no Nodes) to
-            // CreateDiagramFromState which would see an empty node list.
+            // ApplyDiagramState only restores a single page and cannot revert page-count changes.
             LoadFullState(_editSnapshot, readOnly: false);
         }
         finally { _suppressDirty = false; }
@@ -1014,14 +890,14 @@ public partial class Display : IDisposable
     private async Task RedoAction()
     {
         if (_diagram == null || !AppState.CanRedo) return;
-        var current = AppState.GetDiagramState();
+        var current = AppState.GetPageData();
         var next = AppState.PopRedo(current);
         if (next == null) return;
         await ApplyDiagramState(next);
         Snackbar.Add("Redo", Severity.Info);
     }
 
-    private async Task ApplyDiagramState(DiagramState state)
+    private async Task ApplyDiagramState(DashboardPageModel state)
     {
         if (_diagram != null)
         {
@@ -1030,7 +906,7 @@ public partial class Display : IDisposable
         }
         var previousTopics = AppState.SubscribedTopics.ToHashSet();
         AppState.ResetDiagram();
-        var newDiagram = AppState.CreateDiagramFromState(state, readOnly: !AppState.IsEditMode);
+        var newDiagram = AppState.CreateDiagramFromPageData(state, readOnly: !AppState.IsEditMode);
         _diagrams[_activePageIndex] = newDiagram;
         _pageStates[_activePageIndex] = state;
         await SyncSubscriptionsAsync(previousTopics, AppState.SubscribedTopics);
@@ -1142,7 +1018,7 @@ public partial class Display : IDisposable
                 AppState.SetDiagramName(name);
                 AppState.MarkSaved();
                 await SaveLastDiagramName(name);
-                var nodeCount = state.Pages?.Sum(p => p.Nodes.Count) ?? state.Nodes.Count;
+                var nodeCount = state.Pages.Sum(p => p.Nodes.Count);
                 Snackbar.Add($"Opened '{name}' ({nodeCount} nodes)", Severity.Info);
                 StateHasChanged();
                 await Task.Delay(100);
@@ -1172,8 +1048,8 @@ public partial class Display : IDisposable
             {
                 AppState.MarkSaved();
                 await SaveLastDiagramName(name);
-                var nodeCount = state.Pages?.Sum(p => p.Nodes.Count) ?? state.Nodes.Count;
-                var linkCount = state.Pages?.Sum(p => p.Links.Count) ?? state.Links.Count;
+                var nodeCount = state.Pages.Sum(p => p.Nodes.Count);
+                var linkCount = state.Pages.Sum(p => p.Links.Count);
                 Snackbar.Add($"Saved '{name}' ({nodeCount} nodes, {linkCount} links)", Severity.Success);
                 return true;
             }
@@ -1236,7 +1112,7 @@ public partial class Display : IDisposable
     private async Task EditNodeProperties()
     {
         if (_diagram == null) return;
-        var node = _diagram.GetSelectedModels().OfType<MudNodeModel>().FirstOrDefault();
+        var node = _diagram.GetSelectedModels().OfType<TextNodeModel>().FirstOrDefault();
         if (node == null) { Snackbar.Add("No node selected", Severity.Warning); return; }
         var parameters = new DialogParameters { { "Node", node } };
         var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true, BackdropClick = false };

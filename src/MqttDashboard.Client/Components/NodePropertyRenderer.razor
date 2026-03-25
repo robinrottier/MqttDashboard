@@ -39,7 +39,7 @@
 }
 
 @code {
-    [Parameter] public MudNodeModel Node { get; set; } = null!;
+    [Parameter] public TextNodeModel Node { get; set; } = null!;
     [Parameter] public string? Category { get; set; }
 
     private record PropEntry(PropertyInfo Prop, NodePropertyAttribute Attr);

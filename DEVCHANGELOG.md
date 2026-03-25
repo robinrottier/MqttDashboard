@@ -5,7 +5,55 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
-## 2026-03-24 — FEAT-M: settings persistence + FEAT-N: restart from web UI
+## 2026-03-25 — REFACTOR-1: Data model redesign (DashboardModel hierarchy)
+
+### Commit: (see git log)
+
+### Problem
+`NodeState` was a ~50-field flat DTO covering all node types. `ApplicationState.GetDiagramState()` and `CreateDiagramFromState()` had ~100-line manual switch/case blocks duplicating every node property. Adding a new node type required editing 6+ files.
+
+### What changed
+
+#### New `DashboardModel.cs` (`src/MqttDashboard.Client/Models/`)
+- Complete serializable POCO hierarchy: `DashboardModel` → `DashboardPageModel` → `List<NodeData>` (polymorphic, STJ `[JsonPolymorphic]`) → typed subclasses: `TextNodeData`, `GaugeNodeData`, `SwitchNodeData`, `BatteryNodeData`, `LogNodeData`, `TreeViewNodeData`.
+- Nested value types: `NumericRangeData`, `ColorTransitionData`, `ColorThresholdData`, `SwitchSettingsData`, `LogColumnsData`, `NodePortData`, `LinkData`, `DashboardFileInfo`.
+- No manual switch/case needed in serialization path — STJ handles polymorphism via `nodeType` discriminator.
+
+#### Runtime model renames
+- `MudNodeModel` → `TextNodeModel` (in `MudNodeModel.cs`). `MudNodeModel` kept as `[Obsolete]` alias for widgets.
+- `MudPortModel` → `NodePortModel` (in `MudPortModel.cs`). `MudPortModel` kept as `[Obsolete]` alias.
+
+#### Per-node serialization (`ToData()` / `FromData()`)
+Each node type now owns its own serialization:
+- `TextNodeModel`, `GaugeNodeModel`, `SwitchNodeModel`, `BatteryNodeModel`, `LogNodeModel`, `TreeViewNodeModel` — all implement `NodeData ToData()` and `static T FromData(XxxNodeData)`.
+- `ColorTransitionHelper` added to `ColorTransition.cs` for round-tripping `ColorTransition` ↔ `ColorTransitionData`.
+
+#### `ApplicationState.cs`
+- `GetDiagramState()` and `CreateDiagramFromState()` deleted.
+- Replaced by `GetPageData()` (returns `DashboardPageModel`) and `CreateDiagramFromPageData(DashboardPageModel, bool)`.
+- `ApplyDashboardModel(DashboardModel)` — applies top-level Name/ShowDiagramName/MqttSubscriptions.
+- Clipboard type: `List<NodeState>` → `List<NodeData>`. Undo stack: `Stack<DiagramState>` → `Stack<DashboardPageModel>`.
+
+#### `Display.razor.cs`
+- `_pageStates: List<DiagramState>` → `List<DashboardPageModel>`.
+- `_editSnapshot: DiagramState?` → `DashboardModel?`.
+- All page-switch, undo/redo, save, cut/copy/paste, add-node methods updated to use new types.
+
+#### Service/controller/test files
+- `IDashboardService.cs`, `DashboardService.cs`, `ServerDashboardService.cs`, `DashboardStorageService.cs`, `DashboardController.cs` — all `DiagramState` → `DashboardModel` throughout.
+- `DiagramStorageServiceTests.cs` — test updated to build `DashboardModel`+`DashboardPageModel`+`TextNodeData` instead of `DiagramState`+`NodeState`.
+
+#### Deleted
+- `src/MqttDashboard.Client/Models/DiagramState.cs` — replaced by `DashboardModel.cs`.
+
+### Result
+- Build: 0 errors, 0 warnings.
+- Tests: 11/11 pass.
+- New JSON format is nested (not flat), with `nodeType` discriminator per node — no backward compat with old files (by design).
+
+---
+
+
 
 ### FEAT-M: `appsettings.user.json` moved to data directory
 
