@@ -6,9 +6,8 @@ using MqttDashboard.Models;
 namespace MqttDashboard.Widgets;
 
 /// <summary>
-/// Extends <see cref="BaseNodeWidget{TNode}"/> with automatic MQTT data watcher
-/// setup for <see cref="TextNodeModel.DataTopic"/> and <see cref="TextNodeModel.DataTopic2"/>.
-/// Override <see cref="OnData1Updated"/> / <see cref="OnData2Updated"/> to react to new values.
+/// Extends <see cref="BaseNodeWidget{TNode}"/> with automatic MQTT data setup
+/// Override <see cref="OnDataUpdated"/> to react to new values.
 /// </summary>
 public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
     where TNode : TextNodeModel
@@ -73,8 +72,7 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
             {
                 Node.DataValues[idx]       = v;
                 Node.DataUpdatedTimes[idx] = DateTime.Now;
-                if (idx == 0) { OnData1Updated(); TriggerLinkAnimation(); }
-                else if (idx == 1) OnData2Updated();
+                if (idx == 0) { OnDataUpdated(); TriggerLinkAnimation(); }
             }
 
             var watcher = AppState.DataCache.Watch(capturedTopic, (t, value) =>
@@ -89,13 +87,12 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
                     if (_disposed) return;
                     Node.DataValues[idx]       = value;
                     Node.DataUpdatedTimes[idx] = DateTime.Now;
+                    OnDataReceivedCore(idx, t, value);//with values
+                    OnDataUpdated();
                     if (idx == 0)
                     {
-                        OnData1ReceivedCore(t, value);
                         TriggerLinkAnimation();
                     }
-                    else if (idx == 1) OnData2Updated();
-                    OnDataReceivedCore(idx, t, value);
                     StateHasChanged();
                 });
             });
@@ -104,17 +101,7 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
     }
 
     /// <summary>
-    /// Called when DataValue (topic 1) is received. Override to also use the actual
-    /// <paramref name="topic"/> that fired (useful for wildcard subscriptions).
-    /// </summary>
-    protected virtual void OnData1ReceivedCore(string topic, object? rawValue)
-    {
-        OnData1Updated();
-    }
-
-    /// <summary>
-    /// Called for every topic index when a value is received. Override to react to
-    /// any topic by index without replacing <see cref="OnData1ReceivedCore"/>.
+    /// Called for every topic index when a value is received.
     /// </summary>
     protected virtual void OnDataReceivedCore(int index, string topic, object? rawValue) { }
 
@@ -149,11 +136,8 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
         }
     }
 
-    /// <summary>Called after DataValue (topic 1) is updated. Override to react.</summary>
-    protected virtual void OnData1Updated() { }
-
-    /// <summary>Called after DataValue2 (topic 2) is updated. Override to react.</summary>
-    protected virtual void OnData2Updated() { }
+    /// <summary>Called after any DataValue is updated. Override to react.</summary>
+    protected virtual void OnDataUpdated() { }
 
     // ── Title positioning helpers ─────────────────────────────────────────────────
     // Used by widgets that position a title relative to their visual content.

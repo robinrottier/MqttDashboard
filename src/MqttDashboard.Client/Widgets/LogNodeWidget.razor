@@ -61,10 +61,10 @@
                 </tbody>
             </MudSimpleTable>
         </div>
-        @if (!string.IsNullOrEmpty(Node.DataTopic))
+        @if (!string.IsNullOrEmpty(Node.DataTopic(0)))
         {
             <div style="font-size:0.65rem;opacity:0.4;padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                @Node.DataTopic
+                @Node.DataTopic(0)
             </div>
         }
     </div>
@@ -87,7 +87,7 @@
         base.OnInitialized();
     }
 
-    protected override void OnData1ReceivedCore(string topic, object? rawValue)
+    protected override void OnDataReceivedCore(int idx, string topic, object? rawValue)
     {
         if (_paused) return;
         var value = rawValue?.ToString() ?? "";

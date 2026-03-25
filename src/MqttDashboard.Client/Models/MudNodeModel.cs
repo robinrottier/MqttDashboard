@@ -45,15 +45,15 @@ namespace MqttDashboard.Models
 
         /// <summary>List of MQTT topics for data binding</summary>
         public List<string> DataTopics { get; set; } = new();
-
-        // Computed convenience accessors — these are read-only; set via DataTopics list.
-        public string? DataTopic  => DataTopics.Count > 0 ? DataTopics[0] : null;
-        public string? DataTopic2 => DataTopics.Count > 1 ? DataTopics[1] : null;
-
+        
         // Runtime-only arrays: populated by MQTT watchers, never serialised.
         // Length is set by BaseNodeWithDataWidget to match DataTopics.Count.
         public object?[]   DataValues      { get; set; } = Array.Empty<object?>();
         public DateTime?[] DataUpdatedTimes { get; set; } = Array.Empty<DateTime?>();
+
+        // Computed convenience accessors — these are read-only; set via DataTopics list.
+        public string? DataTopic(int n) => DataTopics.Count > n ? DataTopics[n] : null;
+        public object? DataValue(int n) => DataValues.Length > n ? DataValues[n] : null;
 
         /// <summary>Optional font size in pixels for data values</summary>
         public int? FontSize { get; set; }

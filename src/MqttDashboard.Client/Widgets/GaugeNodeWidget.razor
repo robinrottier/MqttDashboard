@@ -37,7 +37,7 @@
 @code {
     private double _percent = 0;
 
-    private object? ActiveValue =>  Node.DataValues[Node.DataTopicIndex];
+    private object? ActiveValue =>  Node.DataValue(Node.DataTopicIndex);
 
     protected override void OnInitialized()
     {
@@ -47,8 +47,7 @@
         base.OnInitialized();
     }
 
-    protected override void OnData1Updated() => UpdatePercent();
-    protected override void OnData2Updated() => UpdatePercent();
+    protected override void OnDataUpdated() => UpdatePercent();
 
     private void UpdatePercent()
     {
@@ -97,7 +96,8 @@
 
     private string GetArcColor()
     {
-        if (Node.GaugeColor.ColorThresholds.Count > 0)
+        if (Node.GaugeColor.ColorThresholds.Count > 0
+         && Node.GaugeColor.ColorTopicIndex < Node.DataValues.Count())
         {
             var colorVal = Node.DataValues[Node.GaugeColor.ColorTopicIndex];
             if (colorVal != null && double.TryParse(colorVal.ToString(), out var dThresh))
@@ -108,15 +108,13 @@
                     if (t.Direction == "<=" && dThresh <= t.Value) return t.Color;
                 }
             }
-            // No threshold matched — use ElseColor if set
-            if (!string.IsNullOrEmpty(Node.GaugeColor.ElseColor)) return Node.GaugeColor.ElseColor;
         }
-        return _percent switch
-        {
-            >= 0.8 => "var(--mud-palette-error)",
-            >= 0.6 => "var(--mud-palette-warning)",
-            _      => "var(--mud-palette-primary)"
-        };
+        // No threshold matched — use ElseColor if set
+        if (!string.IsNullOrEmpty(Node.GaugeColor.ElseColor))
+            return Node.GaugeColor.ElseColor;
+
+        // else something...
+        return "var(--mud-palette-primary)";
     }
 
     private MarkupString RenderSvgLabels()
