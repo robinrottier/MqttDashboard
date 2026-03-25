@@ -313,7 +313,7 @@ public class ApplicationState
     public void ApplyDashboardModel(DashboardModel model)
     {
         DashboardDisplayName = model.Name;
-        ShowName = model.ShowDiagramName;
+        ShowName = model.ShowName;
         if (model.MqttSubscriptions != null)
             SubscribedTopics = new HashSet<string>(model.MqttSubscriptions);
         NotifyStateChangedAsync();

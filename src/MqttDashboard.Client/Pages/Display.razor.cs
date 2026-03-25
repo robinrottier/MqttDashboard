@@ -192,7 +192,7 @@ public partial class Display : IDisposable
         return new DashboardModel
         {
             Name = AppState.DashboardDisplayName,
-            ShowDiagramName = AppState.ShowName,
+            ShowName = AppState.ShowName,
             MqttSubscriptions = new HashSet<string>(AppState.SubscribedTopics),
             Pages = _pageStates.Select((ps, i) => new DashboardPageModel
             {

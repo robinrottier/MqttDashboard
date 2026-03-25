@@ -7,7 +7,7 @@ namespace MqttDashboard.Models;
 public class DashboardModel
 {
     public string Name { get; set; } = string.Empty;
-    public bool ShowDiagramName { get; set; } = false;
+    public bool ShowName { get; set; } = false;
     public HashSet<string>? MqttSubscriptions { get; set; }
     public List<DashboardPageModel> Pages { get; set; } = new();
     [JsonPropertyOrder(99)] public DashboardFileInfo? FileInfo { get; set; }
