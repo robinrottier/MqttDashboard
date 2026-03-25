@@ -7,7 +7,7 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ## 2026-03-25 — REFACTOR-1: Data model redesign (DashboardModel hierarchy)
 
-### Commit: (pending — this session)
+### Commit: 30b6e69 (completes b6005f1)
 
 ### Problem
 `NodeState` was a ~50-field flat DTO covering all node types. `ApplicationState.GetDiagramState()` and `CreateDiagramFromState()` had ~100-line manual switch/case blocks duplicating every node property. Adding a new node type required editing 6+ files.
