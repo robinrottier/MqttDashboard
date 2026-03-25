@@ -131,7 +131,7 @@ public class MqttClientService : BackgroundService
             _mqttClient.ApplicationMessageReceivedAsync += async e =>
             {
                 var topic = e.ApplicationMessage.Topic;
-                var payload = e.ApplicationMessage.ConvertPayloadToString() ?? string.Empty;
+                var payload = SanitizePayload(e.ApplicationMessage.ConvertPayloadToString());
                 var timestamp = DateTime.UtcNow;
 
                 _logger.LogTrace("Received MQTT message on topic {Topic}: {Payload}", topic, payload);
@@ -314,5 +314,25 @@ public class MqttClientService : BackgroundService
             _logger.LogError(ex, "Failed to publish MQTT message to {Topic}", topic);
             throw;
         }
+    }
+
+    /// <summary>
+    /// Strips characters that are invalid in XML/HTML text nodes (null bytes, lone surrogates,
+    /// and other C0/C1 control chars except tab, LF, CR) so payloads are safe to render in the DOM.
+    /// </summary>
+    private static string SanitizePayload(string? raw)
+    {
+        if (string.IsNullOrEmpty(raw)) return string.Empty;
+        var sb = new System.Text.StringBuilder(raw.Length);
+        foreach (var ch in raw)
+        {
+            // Allow tab (0x09), LF (0x0A), CR (0x0D), and everything >= 0x20 except surrogates/FFFE/FFFF
+            if (ch == '\t' || ch == '\n' || ch == '\r') { sb.Append(ch); continue; }
+            if (ch < 0x20) continue;                // C0 control chars
+            if (ch >= 0xD800 && ch <= 0xDFFF) continue; // lone surrogates (invalid in XML)
+            if (ch == 0xFFFE || ch == 0xFFFF) continue;  // non-characters
+            sb.Append(ch);
+        }
+        return sb.ToString();
     }
 }

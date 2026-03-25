@@ -3,68 +3,14 @@
 @using MqttDashboard.Services
 @inherits BaseNodeWithDataWidget<MudNodeModel>
 
-    <MudTooltip Delay="500" Arrow="true" Placement="Placement.Top">
-        <TooltipContent>
-            @if (Node.DataTopics == null || Node.DataTopics.Count == 0)
-            {
-                <span>No data topic configured</span>
-            }
-            else
-            {
-                foreach (var topic in Node.DataTopics)
-                {
-                    if (!string.IsNullOrEmpty(Node.DataTopic))
-                    {
-                        <div>
-                            <strong>Topic:</strong> @topic<br/>
-                            <strong>Value:</strong> @(Node.DataValue?.ToString() ?? "—")<br/>
-                            <strong>Updated:</strong> @(Node.DataLastUpdated.HasValue ? Node.DataLastUpdated.Value.ToString("HH:mm:ss") : "—")
-                        </div>
-                    }
-                }
-            }
-        </TooltipContent>
-        <ChildContent>
-    <MudCard Outlined="false" Elevation="0" 
-            Style="@GenerateStyle()" 
-            Class=@("pa-1 default-node"+(Node.Group != null ? " grouped" : "")+(Node.Selected ? " selected" : ""))
-            @ondblclick="OnDoubleClick">
-        @if (!string.IsNullOrEmpty(Node.Icon) || !string.IsNullOrEmpty(Node.Title))
-        {
-            <MudCardHeader Class="pa-0">
-                <CardHeaderContent>
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="0" Class="pa-1">
-                        @if (!string.IsNullOrEmpty(Node.Icon))
-                        {
-                            <MudIcon Icon="@Node.Icon"
-                            Color="@GetIconColor()"
-                            Size="MudBlazor.Size.Small" />
-                        }
-                        @if (!string.IsNullOrEmpty(Node.Title))
-                        {
-                            <MudText Style="text-align:center" Typo="Typo.body2">@(Node.Title)</MudText>
-                        }
-                    </MudStack>
-                </CardHeaderContent>
-            </MudCardHeader>
-        }
+<StandardNodeLayout Node="Node">
+    <ExtraContent>
         @if (!string.IsNullOrEmpty(Node.Text))
         {
-        <MudCardContent Class="pa-0">
-                <MudText Typo="Typo.body1"
-                         Style="@($"font-size:{GetFontSize()}; white-space:pre-wrap; word-break:break-word;")">
-                    @FormatText()
-                </MudText>
-            </MudCardContent>
+            <div style="@TextStyle">@FormatText()</div>
         }
-
-        @foreach (var port in Node.Ports)
-        {
-            <PortRenderer @key="port" Port="port" Style="@GeneratePortStyle(port as MudPortModel)" />
-        }
-    </MudCard>
-        </ChildContent>
-    </MudTooltip>
+    </ExtraContent>
+</StandardNodeLayout>
 
 @code {
     protected override void OnInitialized()
@@ -77,35 +23,8 @@
         base.OnInitialized();
     }
 
-
-    private string GetFontSize() =>
-        Node.FontSize.HasValue ? $"{Node.FontSize.Value}px" : "inherit";
-
-    private string GenerateStyle()
-    {
-        if (Node.Size is not null)
-            return $"width:{Node.Size.Width}px; height:{Node.Size.Height}px; {GetCardStyle()}";
-        else
-            return GetCardStyle();
-    }
-
-    private string GetCardStyle() =>
-        !string.IsNullOrEmpty(Node.BackgroundColor)
-            ? $"background-color:{Node.BackgroundColor};"
-            : string.Empty;
-
-    private MudBlazor.Color GetIconColor() =>
-        Node.IconColor?.ToLower() switch
-        {
-            "primary"   => MudBlazor.Color.Primary,
-            "secondary" => MudBlazor.Color.Secondary,
-            "success"   => MudBlazor.Color.Success,
-            "info"      => MudBlazor.Color.Info,
-            "warning"   => MudBlazor.Color.Warning,
-            "error"     => MudBlazor.Color.Error,
-            "dark"      => MudBlazor.Color.Dark,
-            _           => MudBlazor.Color.Default
-        };
-
-    private static string GeneratePortStyle(MudPortModel? port) => PortStyle(port);
+    private string TextStyle =>
+        "flex:1;overflow:auto;padding:2px 6px;" +
+        $"font-size:{(Node.FontSize.HasValue ? $"{Node.FontSize.Value}px" : "inherit")};" +
+        "white-space:pre-wrap;word-break:break-word;";
 }

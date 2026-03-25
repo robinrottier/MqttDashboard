@@ -151,7 +151,8 @@ public class DashboardStorageService
             {
                 var options = new JsonSerializerOptions
                 {
-                    WriteIndented = true
+                    WriteIndented = true,
+                    DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
                 };
                 var json = JsonSerializer.Serialize(diagramState, options);
                 await File.WriteAllTextAsync(filePath, json);
@@ -213,7 +214,11 @@ public class DashboardStorageService
         await _lock.WaitAsync();
         try
         {
-            var json = JsonSerializer.Serialize(diagramState, new JsonSerializerOptions { WriteIndented = true });
+            var json = JsonSerializer.Serialize(diagramState, new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+            });
             await File.WriteAllTextAsync(filePath, json);
             _logger.LogInformation("Saved diagram '{Name}' to {Path}", safeName, filePath);
             return true;

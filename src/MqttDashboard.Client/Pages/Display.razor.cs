@@ -86,9 +86,18 @@ public partial class Display : IDisposable
             AppState.MenuSetActivePage += _onMenuSetActivePage;
 
             var savedState = await DashboardService.LoadDashboardAsync();
+            // Preserve runtime subscriptions — the in-memory set may already include
+            // topics added this session (e.g. from the Data page). These must not be
+            // clobbered when LoadFullState/CreateDiagramFromState sets them from the file.
+            var runtimeTopics = AppState.SubscribedTopics.ToHashSet();
+
             if (savedState != null && (savedState.Nodes.Count > 0 || savedState.Pages?.Count > 0))
             {
                 LoadFullState(savedState, readOnly: true);
+                if (string.IsNullOrEmpty(AppState.DiagramName))
+                    AppState.SetDiagramName("Default");
+                if (runtimeTopics.Count > 0)
+                    AppState.SetSubscribedTopics(runtimeTopics);
                 AppState.MarkSaved();
                 StateHasChanged();
                 await Task.Delay(100);
@@ -98,6 +107,8 @@ public partial class Display : IDisposable
             else
             {
                 LoadFullState(null, readOnly: true);
+                if (string.IsNullOrEmpty(AppState.DiagramName))
+                    AppState.SetDiagramName("Default");
                 AppState.MarkSaved();
                 StateHasChanged();
             }
@@ -112,6 +123,9 @@ public partial class Display : IDisposable
                     if (lastState != null)
                     {
                         LoadFullState(lastState, readOnly: true);
+                        AppState.SetDiagramName(lastName);
+                        if (runtimeTopics.Count > 0)
+                            AppState.SetSubscribedTopics(runtimeTopics);
                         AppState.MarkSaved();
                         StateHasChanged();
                     }
@@ -185,6 +199,12 @@ public partial class Display : IDisposable
         var currentState = AppState.GetDiagramState();
         _pageStates[_activePageIndex] = currentState;
 
+        var fileInfo = new DiagramFileInfo
+        {
+            WrittenAt = DateTimeOffset.UtcNow.ToString("o"),
+            Filename  = !string.IsNullOrEmpty(AppState.DiagramName) ? AppState.DiagramName : null,
+        };
+
         if (_pageStates.Count > 1)
         {
             // Multi-page: serialize as Pages list
@@ -203,10 +223,12 @@ public partial class Display : IDisposable
                     GridSize = ps.GridSize,
                     BackgroundColor = ps.BackgroundColor,
                 }).ToList(),
+                FileInfo = fileInfo,
             };
         }
 
-        // Single page: return flat format for backward compat
+        // Single page
+        currentState.FileInfo = fileInfo;
         return currentState;
     }
 
@@ -360,6 +382,7 @@ public partial class Display : IDisposable
         _onMenuPaste = () => InvokeAsync(PasteNodesAsync);
         AppState.MenuPasteSelected += _onMenuPaste;
         AppState.MenuAddPort       += AddPortToSelectedNode;
+        AppState.MenuAddAllPorts   += AddAllPortsToSelectedNode;
         AppState.MenuDeletePort    += DeletePortFromSelectedNode;
         AppState.MenuNewDiagram    += NewDiagram;
 
@@ -402,6 +425,7 @@ public partial class Display : IDisposable
         AppState.MenuCopySelected  -= CopySelectedNodes;
         if (_onMenuPaste != null) AppState.MenuPasteSelected -= _onMenuPaste;
         AppState.MenuAddPort       -= AddPortToSelectedNode;
+        AppState.MenuAddAllPorts   -= AddAllPortsToSelectedNode;
         AppState.MenuDeletePort    -= DeletePortFromSelectedNode;
         AppState.MenuNewDiagram    -= NewDiagram;
 
@@ -429,7 +453,11 @@ public partial class Display : IDisposable
 
     private void OnSelectionChanged(object model)
     {
-        _pendingDirtyMark = false; // Selection alone doesn't dirty the diagram
+        // Clear both immediately and deferred: if SelectionChanged fires before node.Changed
+        // (Blazor.Diagrams may fire selection first), the deferred clear ensures the flag
+        // set by the subsequent node.Changed callback is still nullified.
+        _pendingDirtyMark = false;
+        _ = InvokeAsync(() => _pendingDirtyMark = false);
         UpdateSelectionState();
         InvokeAsync(StateHasChanged);
     }
@@ -457,7 +485,10 @@ public partial class Display : IDisposable
     private void UpdateSelectionState()
     {
         var selected = _diagram?.GetSelectedModels().OfType<NodeModel>().ToList() ?? [];
-        AppState.UpdateSelectionState(selected.Count > 0, selected.Count == 1);
+        HashSet<PortAlignment>? ports = null;
+        if (selected.Count == 1)
+            ports = selected[0].Ports.OfType<MudPortModel>().Select(p => p.Alignment).ToHashSet();
+        AppState.UpdateSelectionState(selected.Count > 0, selected.Count == 1, ports);
     }
 
     // ── Node operations ───────────────────────────────────────────────────────
@@ -483,8 +514,6 @@ public partial class Display : IDisposable
             "Battery"  => new BatteryNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))  { Title = $"Battery {_nodeCounter++}" },
             "Log"      => new LogNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))      { Title = $"Log {_nodeCounter++}" },
             "TreeView" => new TreeViewNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400))) { Title = $"Tree {_nodeCounter++}" },
-            "Image"    => new ImageNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))    { Title = $"Image {_nodeCounter++}" },
-            "Grid"     => new GridNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))     { Title = $"Grid {_nodeCounter++}" },
             _          => new MudNodeModel(new Point(rng.Next(50, 500), rng.Next(50, 400)))      { Title = $"Node {_nodeCounter++}" },
         };
 
@@ -754,19 +783,18 @@ public partial class Display : IDisposable
                 Text = n.Text,
                 BackgroundColor = n.BackgroundColor,
                 IconColor = n.IconColor,
-                Metadata = n.Metadata ?? new Dictionary<string, string>(),
-                DataTopic = n.DataTopic,
-                DataTopic2 = n.DataTopic2,
+                Metadata = n.Metadata?.Count > 0 ? new Dictionary<string, string>(n.Metadata) : null,
+                DataTopics = n.DataTopics.Count > 0 ? new List<string>(n.DataTopics) : null,
                 FontSize = n.FontSize,
                 LinkAnimation = n.LinkAnimation,
                 NodeType = n.NodeType ?? "Text",
                 TitlePosition = n.TitlePosition,
-                Ports = n.Ports.Select(p => new PortState { Id = p.Id, Alignment = p.Alignment.ToString() }).ToList()
+                Ports = n.Ports.Any() ? n.Ports.Select(p => new PortState { Id = p.Id, Alignment = p.Alignment.ToString() }).ToList() : null,
             };
             if (n is GaugeNodeModel g)
             {
                 ns.MinValue = g.MinValue; ns.MaxValue = g.MaxValue; ns.Unit = g.Unit;
-                ns.ArcOrigin = g.ArcOrigin;
+                ns.Origin = g.Origin;
                 ns.DataTopicIndex = g.DataTopicIndex != 0 ? g.DataTopicIndex : null;
                 ns.TextPosition = g.TextPosition != "Below" ? g.TextPosition : null;
                 ns.GaugeColor = ApplicationState.SerializeColorTransitionStatic(g.GaugeColor);
@@ -789,10 +817,9 @@ public partial class Display : IDisposable
             {
                 ns.RootTopic = tv.RootTopic; ns.ShowValues = tv.ShowValues;
             }
-            else if (n is ImageNodeModel img)
-            {
-                ns.StaticImageUrl = img.StaticImageUrl; ns.ObjectFit = img.ObjectFit;
-            }
+            // Base background image
+            if (!string.IsNullOrEmpty(n.BackgroundImageUrl)) ns.BackgroundImageUrl = n.BackgroundImageUrl;
+            if (n.BackgroundObjectFit != "cover") ns.BackgroundObjectFit = n.BackgroundObjectFit;
             return ns;
         }).ToList();
     }
@@ -868,11 +895,8 @@ public partial class Display : IDisposable
             {
                 "Gauge" => new GaugeNodeModel(new Point(ns.X + offset, ns.Y + offset))
                 {
-                    MinValue = ns.MinValue ?? 0,
-                    MaxValue = ns.MaxValue ?? 100,
+                    Range = new NumericRangeSettings { Min = ns.MinValue ?? 0, Max = ns.MaxValue ?? 100, Origin = ns.Origin, DataTopicIndex = ns.DataTopicIndex ?? 0 },
                     Unit = ns.Unit,
-                    ArcOrigin = ns.ArcOrigin,
-                    DataTopicIndex = ns.DataTopicIndex ?? 0,
                     TextPosition = ns.TextPosition ?? "Below",
                     GaugeColor = ApplicationState.DeserializeColorTransitionStatic(ns.GaugeColor),
                 },
@@ -884,10 +908,8 @@ public partial class Display : IDisposable
                 },
                 "Battery" => new BatteryNodeModel(new Point(ns.X + offset, ns.Y + offset))
                 {
-                    MinValue = ns.MinValue ?? 0,
-                    MaxValue = ns.MaxValue ?? 100,
+                    Range = new NumericRangeSettings { Min = ns.MinValue ?? 0, Max = ns.MaxValue ?? 100, DataTopicIndex = ns.DataTopicIndex ?? 0 },
                     ShowPercent = ns.BatteryShowPercent ?? true,
-                    DataTopicIndex = ns.DataTopicIndex ?? 0,
                     BatteryColor = ApplicationState.DeserializeColorTransitionStatic(ns.BatteryColor),
                 },
                 "Log" => new LogNodeModel(new Point(ns.X + offset, ns.Y + offset))
@@ -901,11 +923,6 @@ public partial class Display : IDisposable
                     RootTopic = ns.RootTopic ?? string.Empty,
                     ShowValues = ns.ShowValues ?? true,
                 },
-                "Image" => new ImageNodeModel(new Point(ns.X + offset, ns.Y + offset))
-                {
-                    StaticImageUrl = ns.StaticImageUrl ?? string.Empty,
-                    ObjectFit = ns.ObjectFit ?? "contain",
-                },
                 _ => new MudNodeModel(new Point(ns.X + offset, ns.Y + offset)),
             };
             node.Title = ns.Title;
@@ -916,20 +933,23 @@ public partial class Display : IDisposable
             node.BackgroundColor = ns.BackgroundColor;
             node.IconColor = ns.IconColor;
             node.Metadata = ns.Metadata ?? new Dictionary<string, string>();
-            if (!string.IsNullOrEmpty(ns.DataTopic)) node.DataTopics.Add(ns.DataTopic);
-            if (!string.IsNullOrEmpty(ns.DataTopic2) && ns.DataTopic2 != ns.DataTopic) node.DataTopics.Add(ns.DataTopic2);
+            if (ns.DataTopics != null)
+                node.DataTopics = new List<string>(ns.DataTopics);
             node.FontSize = ns.FontSize;
             node.LinkAnimation = ns.LinkAnimation;
             node.TitlePosition = ns.TitlePosition ?? "Above";
+            // Base background image
+            if (!string.IsNullOrEmpty(ns.BackgroundImageUrl)) node.BackgroundImageUrl = ns.BackgroundImageUrl;
+            if (ns.BackgroundObjectFit != null) node.BackgroundObjectFit = ns.BackgroundObjectFit;
             node.Size = new Blazor.Diagrams.Core.Geometry.Size(ns.Width, ns.Height);
-            foreach (var ps in ns.Ports)
+            foreach (var ps in ns.Ports ?? [])
             {
                 if (Enum.TryParse<Blazor.Diagrams.Core.Models.PortAlignment>(ps.Alignment, out var alignment))
                     AppState.AddPortToNode(node, alignment);
             }
             _diagram.Nodes.Add(node);
             _diagram.Controls.AddFor(node).Add(new Blazor.Diagrams.Core.Controls.Default.ResizeControl(new Blazor.Diagrams.Core.Positions.Resizing.BottomRightResizerProvider()));
-            _diagram.SelectModel(node, true);
+            _diagram.SelectModel(node, false); // false = append to selection, so all pasted nodes stay selected
         }
         UpdateSelectionState();
         Snackbar.Add($"Pasted {toPaste.Count} node(s)", Severity.Info);
@@ -1051,6 +1071,16 @@ public partial class Display : IDisposable
         var result = await dialog.Result;
         if (result is { Canceled: false, Data: string name } && !string.IsNullOrWhiteSpace(name))
         {
+            // Check for existing file and confirm overwrite
+            var existing = await DashboardService.ListDashboardsAsync();
+            if (existing.Any(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase)))
+            {
+                var overwrite = await DialogService.ShowMessageBoxAsync(
+                    "Overwrite?",
+                    $"A dashboard named '{name}' already exists. Overwrite it?",
+                    yesText: "Overwrite", cancelText: "Cancel");
+                if (overwrite != true) return;
+            }
             var state = BuildFullState();
             var success = await DashboardService.SaveDashboardByNameAsync(name, state);
             if (success)
@@ -1128,12 +1158,15 @@ public partial class Display : IDisposable
 
     private async Task<bool> SaveDashboard()
     {
+        if (string.IsNullOrEmpty(AppState.DiagramName))
+        {
+            Snackbar.Add("No filename — use Save As to save this dashboard", Severity.Warning);
+            return false;
+        }
         try
         {
             var state = BuildFullState();
-            var name = string.IsNullOrEmpty(AppState.DiagramName) ? "Default" : AppState.DiagramName;
-            if (string.IsNullOrEmpty(AppState.DiagramName))
-                AppState.SetDiagramName("Default");
+            var name = AppState.DiagramName;
             var success = await DashboardService.SaveDashboardByNameAsync(name, state);
             if (success)
             {
@@ -1171,6 +1204,20 @@ public partial class Display : IDisposable
         }
     }
 
+    private void AddAllPortsToSelectedNode()
+    {
+        if (_diagram == null) return;
+        var node = _diagram.GetSelectedModels().OfType<NodeModel>().FirstOrDefault();
+        if (node == null) return;
+        foreach (var alignment in new[] { PortAlignment.Top, PortAlignment.Right, PortAlignment.Bottom, PortAlignment.Left })
+        {
+            if (!node.Ports.Any(p => p.Alignment == alignment))
+                AppState.AddPortToNode(node, alignment);
+        }
+        node.Refresh();
+        StateHasChanged();
+    }
+
     private void DeletePortFromSelectedNode(PortAlignment alignment)
     {
         if (_diagram == null) return;
@@ -1193,7 +1240,7 @@ public partial class Display : IDisposable
         if (node == null) { Snackbar.Add("No node selected", Severity.Warning); return; }
         var parameters = new DialogParameters { { "Node", node } };
         var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true, BackdropClick = false };
-        var dialog = await DialogService.ShowAsync<NodePropertyEditor>("Edit Node Properties", parameters, options);
+        var dialog = await DialogService.ShowAsync<NodePropertyEditor>($"Edit {node.NodeType} Node Properties", parameters, options);
         var result = await dialog.Result;
         if (result is { Canceled: false })
         {
@@ -1204,8 +1251,8 @@ public partial class Display : IDisposable
 
     private string CanvasStyle =>
         string.IsNullOrEmpty(AppState.CanvasBackgroundColor)
-            ? "width: 100%; height: calc(100vh - 100px); overflow: hidden;"
-            : $"width: 100%; height: calc(100vh - 100px); overflow: hidden; background-color: {AppState.CanvasBackgroundColor};";
+            ? "position:relative;width: 100%; height: calc(100vh - 100px); overflow: hidden;"
+            : $"position:relative;width: 100%; height: calc(100vh - 100px); overflow: hidden; background-color: {AppState.CanvasBackgroundColor};";
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -1251,6 +1298,9 @@ public partial class Display : IDisposable
         await DialogService.ShowAsync<DashboardPropertiesDialog>("Dashboard Properties", options);
     }
 
+    // Called from the "no topics" overlay on Display.razor
+    private Task OpenDashboardProperties() => ShowDiagramPropertiesAsync();
+
     private async Task SaveLastDiagramName(string name)
     {
         try { await JSRuntime.InvokeVoidAsync("localStorage.setItem", LastDiagramKey, name); }
@@ -1289,6 +1339,34 @@ public partial class Display : IDisposable
             case "centerH": var cx = nodes.Average(n => n.Position.X + (n.Size?.Width ?? 100) / 2.0);        foreach (var n in nodes) n.SetPosition(cx - (n.Size?.Width ?? 100) / 2.0, n.Position.Y); break;
             case "centerV": var cy = nodes.Average(n => n.Position.Y + (n.Size?.Height ?? 50) / 2.0);        foreach (var n in nodes) n.SetPosition(n.Position.X, cy - (n.Size?.Height ?? 50) / 2.0); break;
         }
+        foreach (var n in nodes) n.Refresh();
+        _diagram.Refresh();
+        StateHasChanged();
+    }
+
+    private void SameWidth()
+    {
+        if (_diagram == null) return;
+        var nodes = _diagram.GetSelectedModels().OfType<NodeModel>().ToList();
+        if (nodes.Count < 2) { Snackbar.Add("Select 2+ nodes to resize", Severity.Info); return; }
+        PushUndoSnapshot();
+        var maxWidth = nodes.Max(n => n.Size?.Width ?? 100);
+        foreach (var n in nodes)
+            n.Size = new Blazor.Diagrams.Core.Geometry.Size(maxWidth, n.Size?.Height ?? 50);
+        foreach (var n in nodes) n.Refresh();
+        _diagram.Refresh();
+        StateHasChanged();
+    }
+
+    private void SameHeight()
+    {
+        if (_diagram == null) return;
+        var nodes = _diagram.GetSelectedModels().OfType<NodeModel>().ToList();
+        if (nodes.Count < 2) { Snackbar.Add("Select 2+ nodes to resize", Severity.Info); return; }
+        PushUndoSnapshot();
+        var maxHeight = nodes.Max(n => n.Size?.Height ?? 50);
+        foreach (var n in nodes)
+            n.Size = new Blazor.Diagrams.Core.Geometry.Size(n.Size?.Width ?? 100, maxHeight);
         foreach (var n in nodes) n.Refresh();
         _diagram.Refresh();
         StateHasChanged();

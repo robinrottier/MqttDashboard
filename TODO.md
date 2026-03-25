@@ -5,35 +5,27 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ---
 
 ## BUGS
-- [ ] No known bugs at this time — see enhancements and features below.
+
+- [ ] Serialization: node ID GUIDs in file — map to sequential 1-based IDs for file (need port+link ID remapping too; deferred due to complexity)
+- [ ] Serialization: logged-on user not yet written to `FileInfo` (always admin for now — fine to leave)
+
 
 ## 🟡 Enhancements
 
 - [ ] Server-side "lazy cache": if client request is dropped, server should keep data live for a configurable delay (e.g. 30s) before removing references
 - [ ] Property transition
-	- [x] `ColorTopicIndex` and `DataTopicIndex` per node — **done for both Gauge and Battery**
-	- [x] `ColorTransition` class wraps `ColorTopicIndex` + `ColorThresholds` — **done; `GaugeColor` on GaugeNodeModel, `BatteryColor` on BatteryNodeModel**
-	- [ ] The color boxes in the transition/colour editor should have a chooser popup (via a button) to help with selecting the various types and well-known values
-	- [ ] this would be same as "Background color" for main node property, so either 3 small buttons
-	      or a single button goes to a dialog with 3 tabs, one for each of the colour modes
-	- [ ] Color transition "when" needs "else" condition to specify default colour when no conditions met
 	- [ ] Also a means to drag reordering around the conditions to specify which is first match
-- [ ] In future, colour transitions may drive other properties (e.g. intensity, flashing, shading) — bear that in mind for the model
 - [ ] Data item topics per node
-	- [ ] "Link animation" has property for index of which data item to animate upon
+	- [ ] "Link animation" needs a property for index of which data item to animate upon
 - [ ] Page tabs
 	- [ ] Use MudTabs and related controls for displaying. MudTabs has a different model...every page is rendered inside tab component BUT maybe there's a way to use index of selected tab to render it outside MudTabs component?
 	- [ ] Position option for tabs: top/left/right/bottom in dashboard properties
 	- [ ] Drag to reorder pages when in edit mode. MudTabs would support this but need setting noticed and saved.
 - [ ] Node properties dialog
 	- [ ] Can this dialog be moveable and have apply button to changes dynamically without closing
-- [ ] IMage:
-	- [ ] also needs option to upload a bitmap and stored locally as content  or should it be byte values in dashboard file?)
-	- [ ] option to go "behind" or "ontop" other nodes.. maybe z-order roperty for all nodes? HOw does this fit in with blazor.diagrams, maybe it has it already
 - [ ] Log viewer columns: choices for date (and format), time (and format), topic path, topic name, topic full path&name, value — **Full 6-column boolean options done**; date/time format options still open
-- [ ] Log view needs a "pause" button to stop updates. — **Done** (previous session)
 - [ ] mqtt publishing should have other parameters (e.g. message expiry)
-- [ ] Confirm- mqtt publishing is reusable compoennts (especially configuration of it in node properties)
+- [ ] Confirm- mqtt publishing is a reusable compoennt (especially configuration of it in node properties)
 
 
 ## 🟡 Features
@@ -48,13 +40,9 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Option: "virtual topics" defined at dashboard level, computed from raw MQTT values, reusable across nodes
 - [ ] Option to write calculated values back to the MQTT broker
 
-### FEAT-C: Additional node types _(Gauge, Switch, Battery, Log, TreeView, Image done — see CHANGELOG)_
-- [ ] **Text node** - different node shapes (circle, diamond, etc.)
-- [ ] **Grid** — table with rows/columns mapped to MQTT values
-	- [ ] Data topic like path/blah/+/+ ...row is from first "+" and column from second +
-	- [ ] So could also have "path/blah/+/value/+"
-	- [ ] and "path/blah/+/+/value" would mean row from first match againt + , column name in 2nd + match BUT actual value taken form value field there
-	- [ ] This could be a whole load of test cases
+### FEAT-C: Additional node types _(Gauge, Switch, Battery, Log, TreeView done — see CHANGELOG)_
+- [ ] **Text node** - different node shapes (circle, diamond, etc.) Perhaps the "shapre" applies to all derived
+      nodes too e.g. a guage inside a triangle or circle. Or maybe shape is just a property of the base node.
 - [ ] **Chart** — in-memory time-series sparkline graph
 - [ ] **Markdown / HTML** — formatted static content, optionally with data substitution
 - [ ] **IFrame** — embed another web page
@@ -63,14 +51,10 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Page tab overflow handling (scrolling/dropdown when many pages)
 - [ ] Swipe left/right gesture on mobile
 - [ ] Page reordering (drag tabs)
-- [ ] Current "Data" could be replaced by an optional page (tree view and log of all live values)
-	- [ ] user would create this is they wanted it manually or its some how a quick add page option when you create a new, empty dashboard
-	- [ ] ...just need a way to specify dashboard set of requests ..so maybe thats in Dashboard properties dialog
 
 ### FEAT-E: Editing improvements
 - [ ] Node-red style palette panel — drag node types from a sidebar onto the canvas
 - [ ] Import/export selected nodes or a whole page as JSON (clipboard)
-- [x] Node alignment and distribution tools (align left/right/top/bottom, distribute evenly) — **alignment done**
 
 ### FEAT-F: Link improvements
 - [ ] Links as proper model objects with a properties editor: color, thickness, dash style
@@ -130,5 +114,11 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] **CHORE-2** — Add XML doc comments to key services and models (especially MQTT handling, SignalR dual-path)
 - [ ] **CHORE-3** — Expand test coverage:
   - Unit: MQTT message handling, SignalR hub, `MqttTopicSubscriptionManager`
-  - Integration/system: full flow with headless browser (Playwright?), both WASM and Server-only modes
+  - Integration/system:
+	- full flow with headless browser (Playwright?),
+	- a console based "client" that connects to the server and validates:
+		- the SignalR messages received for a given dashboard file and set of MQTT messages published?
+		- This would be a more lightweight test than spinning up a full browser instance, and could run as part of the regular test suite.
+		- Or testing functions via some sort of "command interface" simulating menu selections etc
+	- both WASM and Server-only modes
  

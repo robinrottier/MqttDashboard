@@ -5,8 +5,12 @@ namespace MqttDashboard.Models;
 public class TreeViewNodeModel : MudNodeModel
 {
     public TreeViewNodeModel(Point? position = null) : base(position) { NodeType = "TreeView"; }
-    /// <summary>Root MQTT topic prefix to display. e.g. "home/sensors". Shows all subtopics.</summary>
+
+    [NpText("Root Topic", Category = "Tree View", Order = 1,
+        Placeholder = "e.g. home/sensors",
+        HelperText = "Displays all subtopics under this prefix.")]
     public string RootTopic { get; set; } = string.Empty;
-    /// <summary>Show current value next to each leaf topic.</summary>
+
+    [NpCheckbox("Show Values", Category = "Tree View", Order = 2)]
     public bool ShowValues { get; set; } = true;
 }

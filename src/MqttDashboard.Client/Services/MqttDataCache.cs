@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using MqttDashboard.Helpers;
 
 namespace MqttDashboard.Services;
 
@@ -14,10 +15,14 @@ public class MqttDataCache
     private readonly object _watcherLock = new();
 
     /// <summary>
-    /// Update a value in the cache and notify watchers
+    /// Update a value in the cache and notify watchers.
+    /// String values are sanitized to strip invalid XML characters, preventing
+    /// InvalidCharacterError when values are rendered into SVG or DOM text nodes.
     /// </summary>
     public void UpdateValue(string topic, object value)
     {
+        if (value is string s)
+            value = XmlStringHelper.StripInvalidXmlChars(s);
         _cache[topic] = value;
         NotifyWatchers(topic, value);
     }

@@ -7,7 +7,385 @@ The standard [CHANGELOG.md](CHANGELOG.md) contains release-level summaries follo
 
 ---
 
-## 2026-03-22 — Undo state fixes, log columns, color transition per-node, UndoAll
+## 2026-03-24 — Bulk TODO bug fixes: UI cleanup, port menu, alignment, paste, undo, serialization
+
+### Commit: 18e3ca7 (develop)
+
+### Batches completed
+
+#### Batch 1 — Small UI/UX fixes
+- **`MainLayout.razor`**: App title fallback changed from `"Mqtt Dashboard"` → `"MQTT Dashboard"`.
+- **`ApplicationState.cs`**: `ShowDiagramName` default `true`; `GridSize` default `20`; `CreateDiagramFromState` syncs both `_diagram.Options.GridSize` and `AppState.GridSize` from loaded state (previously GridSize property stayed at default, causing snapping to be wrong on first load).
+- **`Display.razor.cs`** `SaveAsDiagram()`: removed `&& !string.Equals(name, AppState.DiagramName, ...)` overwrite guard — Save As now always prompts when file exists.
+- **`DashboardPropertiesDialog.razor`**: removed "Title Bar" section heading; removed Grid section (MudText + MudSelect); replaced `ColorPicker` with `ColorInputRow` for canvas background.
+- **`NodePropertyEditor.razor`**: dialog title now `"Edit {NodeType} Node Properties"`; removed subtitle + node type display lines; Title + TitlePosition on one compact MudGrid row; Background Image + Fit on one compact row, moved to top section; IconColor uses `ColorInputRow` (was MudSelect of enum names); removed "MQTT Data Binding" section header; removed `MudDivider` after link animation.
+- **`StandardNodeLayout.razor`**: `<MudIcon>` now uses `Style="@IconStyle"` (CSS `color:` property) instead of `Color="@IconColor"` (MudBlazor enum). Removed old `IconColor` switch property; added `IconStyle` string property. ⚠️ Old save files with MudBlazor enum names (e.g. `"Primary"`) won't render icon color correctly — backward compat not a concern per user.
+- **`NumericRangeEditor.razor`**: "Arc midpoint / zero-point" helper text changed to "Origin / zero-point".
+
+#### Batch 2 — Grid startup + Options menu
+- **`AppMenu.razor`**: removed entire `<MudMenu Label="Grid">` submenu from Options menu.
+- **`ApplicationState.cs`** `CreateDiagramFromState`: sets `GridSize = X` (public property) in addition to `options.GridSize = X` so snapping is immediately correct on load.
+
+#### Batch 3 — Port menu per-item greying
+- **`ApplicationState.cs`**: added `SelectedNodePorts` (`HashSet<PortAlignment>?`); extended `UpdateSelectionState()` to accept `selectedPorts` parameter; added `MenuAddAllPorts` event and `TriggerAddAllPorts()`.
+- **`Display.razor.cs`**: `UpdateSelectionState()` passes port HashSet from selected node; added `AddAllPortsToSelectedNode()` method; subscribed/unsubscribed `MenuAddAllPorts`.
+- **`AppMenu.razor`**: Add Port items disabled when port exists; Delete Port items disabled when absent; added "All" item to Add Port submenu; added `MenuAddAllPorts()` method.
+
+#### Batch 4 — Paste keeps selection + dirty flag fix
+- **`Display.razor.cs`** paste loop: changed `_diagram.SelectModel(node, true)` → `SelectModel(node, false)` — `true` means "unselect others", so only the last pasted node was ever selected. `false` appends to selection.
+- **`Display.razor.cs`** `OnSelectionChanged`: added `_ = InvokeAsync(() => _pendingDirtyMark = false)` deferred clear alongside the immediate clear. This handles the case where Blazor.Diagrams fires `SelectionChanged` BEFORE `node.Changed` (in that ordering, the immediate clear has no effect since the flag isn't set yet; the deferred clear runs after `node.Changed` has set the flag).
+
+#### Batch 5 — Same Width / Same Height alignment
+- **`Display.razor`**: added two new `<MudIconButton>` items ("Make Same Width" + "Make Same Height") after the existing bottom-align button, separated by a `MudDivider`.
+- **`Display.razor.cs`**: added `SameWidth()` and `SameHeight()` methods — push undo snapshot, find max width/height among selected nodes, resize all to match, refresh.
+
+#### Batch 6 — Serialization cleanup
+- **`DiagramState.cs`**:
+  - Added `DiagramFileInfo` class (`WrittenAt` ISO timestamp, `Filename` string).
+  - `DiagramState`: added `[JsonPropertyOrder(n)]` to all properties (order: Name, ShowDiagramName, GridSize, BackgroundColor, Pages, MqttSubscriptions, Nodes, Links, FileInfo=99).
+  - `NodeState`: moved `NodeType` to top of class with `[JsonPropertyOrder(0)]`; changed coordinate precision from 5dp to 2dp; removed `DataTopic` and `DataTopic2` scalar properties; made `Metadata` and `Ports` nullable (omitted when null by `WhenWritingNull` serializer option).
+- **`ApplicationState.cs`** `GetDiagramState()`: removed `DataTopic`/`DataTopic2` from written output; Metadata written only when non-empty; Ports written only when non-empty; fallback loading of old `DataTopic`/`DataTopic2` scalar fields removed.
+- **`Display.razor.cs`** `BuildFullState()`: populates `FileInfo` with `DateTimeOffset.UtcNow.ToString("o")` and `DiagramName`; sets it on both multi-page and single-page paths.
+- **`DashboardStorageService.cs`**: both `SaveDiagramAsync` and `SaveDiagramByNameAsync` now use `DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull` — null optional properties are omitted from the JSON file entirely.
+
+### Known caveats
+- ⚠️ Icon colors saved with old MudBlazor enum names (e.g. `"Primary"`) will not render correctly — old files are not supported per user decision.
+- ⚠️ Node IDs are still GUIDs in the file; sequential ID mapping was deferred (requires port/link ID remapping).
+- ⚠️ Empty `Metadata: {}` and `Ports: []` are now fully omitted; old files with those empty fields load cleanly.
+
+---
+
+## 2026-03-24 — Refactor: Remove Data page; move topic management to Dashboard Properties
+
+### Summary
+Removed the `/data` page entirely and moved MQTT topic management into the Dashboard Properties dialog. A "no topics" overlay on the Display page prompts users to configure topics when none are set.
+
+### `src/MqttDashboard.Client/Components/DashboardPropertiesDialog.razor`
+- Added a **Data Topics** section: lists current topics with remove (×) buttons and an add-topic input field (Enter or + button to add).
+- `Apply()` made async (`ApplyAsync`): diffs previous vs new topic set, calls `SignalRService.SubscribeToTopicAsync` / `UnsubscribeFromTopicAsync` for each change, then calls `AppState.SetSubscribedTopics()` + `AppState.MarkEdited()`.
+- Opening this dialog from edit mode is the **only** way to manage topics going forward.
+
+### `src/MqttDashboard.Client/Pages/Display.razor`
+- Added a centered overlay card shown when `AppState.SubscribedTopics.Count == 0`.
+  - **Edit mode**: shows "No data topics configured" + "Configure Topics →" button that opens Dashboard Properties.
+  - **View mode**: shows an info message to switch to edit mode.
+
+### `src/MqttDashboard.Client/Pages/Display.razor.cs`
+- Added `OpenDashboardProperties()` helper (delegates to `ShowDiagramPropertiesAsync()`).
+
+### `src/MqttDashboard.Client/Pages/MqttData.razor` — **DELETED**
+- The entire Data page (topic management, data cache explorer, message log) has been removed.
+- `MqttDataCache` and related services are **not** removed — they're still used by widgets.
+
+### `src/MqttDashboard.Client/Layout/AppMenu.razor`
+- Removed the "Data" menu item that navigated to `/data`.
+
+### `src/MqttDashboard.Client/Layout/NavMenu.razor`
+- Removed the `/data` nav link.
+
+⚠️ Users with dashboards that had no topics will see the overlay on first load and need to open Dashboard Properties to add topics. Backward compat is not a concern per user instruction.
+
+
+
+### Investigation
+User reported topics added via the MqttData page were not remembered after a server restart.
+
+Traced the full flow:
+- Startup: `MqttInitializationService` loads `Default.json` → `AppState.SetSubscribedTopics(dashboard.MqttSubscriptions)` → restores SignalR subscriptions.
+- Add topic: `MqttData.razor` → `SignalRService.SubscribeToTopicAsync` → server confirms → `HandleSubscriptionConfirmed` → `AppState.AddSubscriptionAsync` → `if (IsEditMode) MarkEdited()`.
+- Save: triggered by user saving from edit mode → `GetDiagramState()` serializes `SubscribedTopics` into the dashboard JSON.
+
+**Root cause:** The MqttData page displayed add/remove topic controls in view mode. Since `MarkEdited()` is gated on `IsEditMode`, topics added outside edit mode never marked the dashboard dirty. The save prompt/button never appeared, so topics were lost on restart.
+
+### Fix — `src/MqttDashboard.Client/Pages/MqttData.razor`
+- Wrapped the per-topic unsubscribe (×) button in `@if (AppState.IsEditMode)`.
+- Wrapped the entire "add new subscription" row (text field + Add button) in `@if (AppState.IsEditMode)`.
+
+Topics are now read-only in view mode — consistent with the rest of the dashboard. To add/remove topics, enter edit mode, make changes, and save.
+
+The existing `if (IsEditMode) MarkEdited()` guard in `ApplicationState.cs` is correct and unchanged.
+
+⚠️ If existing topics were stored only in the legacy `applicationstate.json` (pre-refactor format), they will need to be re-added once in edit mode and saved.
+
+## 2026-03-24 — ColorInputRow refactor + color transition ElseColor + battery fix
+
+**Branch:** develop
+
+### New: `ColorInputRow.razor` — reusable color input component
+
+**`src/MqttDashboard.Client/Components/ColorInputRow.razor`** (new file)
+- Parameters: `Value/ValueChanged` (string?), `Label`, `Placeholder`, `ShowClear`
+- Renders: color swatch preview + editable `MudTextField` + three icon buttons (Theme/Named/Custom) + optional clear
+- Internally opens `ColorPickerDialog` using injected `IDialogService`
+- Replaces duplicated color-picker markup in both `NodePropertyEditor` and `ColorTransitionEditor`
+
+### Refactored: `NodePropertyEditor.razor` — Background Color uses `ColorInputRow`
+
+**`src/MqttDashboard.Client/Components/NodePropertyEditor.razor`**
+- Background Color section (was ~35 lines with inline swatch + read-only text + 3 buttons + conditional clear) replaced with a single `<ColorInputRow ... ShowClear="true">` tag
+- Now editable text field (was read-only) — user can type a color directly or use picker buttons
+
+**`src/MqttDashboard.Client/Components/NodePropertyEditor.razor.cs`**
+- Removed `OpenColorPicker(ColorPickerMode mode)` and `ClearColor()` methods (now handled inside `ColorInputRow`)
+
+### Refactored: `ColorTransitionEditor.razor` — threshold rows use `ColorInputRow`
+
+**`src/MqttDashboard.Client/Components/ColorTransitionEditor.razor`**
+- Per-row color (was: inline swatch + editable text + click-to-expand quick-color panel with 15 swatches) replaced with `<ColorInputRow>` — gives full Theme/Named/Custom dialog access on each row
+- Removed `_editingThreshold` state, `_commonColors` static array, and quick-color panel markup
+
+### Added: `ElseColor` fallback for color transitions
+
+**`src/MqttDashboard.Client/Models/ColorTransition.cs`**
+- Added `ElseColor` property (`string?`, default null) — applied when no threshold rule matches
+
+**`src/MqttDashboard.Client/Models/DiagramState.cs`**
+- `ColorTransitionState` — added `ElseColor` property for JSON persistence
+
+**`src/MqttDashboard.Client/Services/ApplicationState.cs`**
+- `DeserializeColorTransition` maps `state.ElseColor`
+- `SerializeColorTransition` saves `ElseColor`; null check extended to include `ElseColor`
+
+**`src/MqttDashboard.Client/Widgets/GaugeNodeWidget.razor`**
+- `GetArcColor()` now returns `Node.GaugeColor.ElseColor` when thresholds are configured but none match (instead of always falling through to the percent-based default)
+
+**`src/MqttDashboard.Client/Widgets/BatteryNodeWidget.razor`**
+- `GetFillColor()` now returns first-matching rule (was accidentally returning last-matching — logic bug fixed)
+- Returns `Node.BatteryColor.ElseColor` when thresholds are configured but none match (was `var(--mud-palette-primary)`)
+
+**`src/MqttDashboard.Client/Components/ColorTransitionGroupEditor.razor`**
+- Added "Else (no rule matched)" section below the transition list using `ColorInputRow` with `ShowClear="true"`
+
+### Fixed: MUD0002 analyzer warning in `LogNodeWidget.razor`
+
+**`src/MqttDashboard.Client/Widgets/LogNodeWidget.razor`**
+- Pause/Play button: `Title="..."` attribute replaced with `<MudTooltip>` wrapper (MudBlazor MUD0002 — `Title` not valid on `MudIconButton`)
+
+---
+
+
+
+**Commit:** 14f0abc  **Branch:** develop
+
+### Root cause analysis
+
+`InvalidCharacterError: String contains an invalid character` was thrown by the browser DOM when rendering SVG `MarkupString` content (gauge/battery widgets). The core issue:
+
+1. `HtmlEncode` (used in both widgets) does **not** strip null bytes (`\0`) — it only encodes `<>&"'`. SVG is parsed as XML which strictly rejects null bytes.
+2. The server-side `SanitizePayload` (from previous session) only applies to data arriving after the server rebuild. MQTT values already in the server's in-memory cache — replayed to clients on reconnect/load — bypassed server sanitization entirely.
+3. On hover, MudTooltip triggers a full component re-render including the SVG `MarkupString`. If `DataValue` contained a null byte, the SVG injection crashed the circuit.
+
+### Fix: `MqttDataCache.UpdateValue` — client-side gateway sanitization
+
+**`src/MqttDashboard.Client/Services/MqttDataCache.cs`**
+- Added `using MqttDashboard.Helpers`
+- `UpdateValue()` now calls `XmlStringHelper.StripInvalidXmlChars(s)` when the incoming value is a string
+- This is the single entry point for ALL MQTT data on the client side — covers both live data and server-replayed cached values
+
+### Fix: new `XmlStringHelper` utility
+
+**`src/MqttDashboard.Client/Helpers/XmlStringHelper.cs`** (new file)
+- `StripInvalidXmlChars(string?)` — strips chars illegal in XML 1.0 (null bytes, lone surrogates, C0/C1 control chars except tab/LF/CR)
+- `XmlSafeEncode(string?)` — strips invalid chars then HTML-encodes; use for any MarkupString SVG injection
+
+### Fix: `GaugeNodeWidget` and `BatteryNodeWidget` SVG encoding
+
+**`src/MqttDashboard.Client/Widgets/GaugeNodeWidget.razor`**
+- `@using MqttDashboard.Helpers` added
+- `RenderSvgLabels()` now calls `XmlStringHelper.XmlSafeEncode()` for the gauge value text and unit text (was `System.Net.WebUtility.HtmlEncode`)
+
+**`src/MqttDashboard.Client/Widgets/BatteryNodeWidget.razor`**
+- `@using MqttDashboard.Helpers` added
+- SVG `<text>` content now uses `XmlStringHelper.XmlSafeEncode(FormatPercent())` (was `HtmlEncode`)
+
+⚠️ The `DataValueTooltipContent.razor` tooltip already had its own `SanitizeForDisplay()` from a previous session — that path was protected. The crash path was the SVG MarkupString re-render on tooltip hover, not the tooltip content itself.
+
+---
+
+
+
+**Branch:** develop
+
+### Widget refactor: MudNodeWidget uses StandardNodeLayout
+
+**`StandardNodeLayout.razor`** updated to support icon rendering alongside the title:
+- Added `HasTitleContent` computed property — title area renders when either `Node.Icon` or `Node.Title` is non-empty (was only checking title)
+- Added `IconColor` computed property (same enum mapping as MudNodeWidget previously had inline)
+- Updated `TitleDivStyle`: Left/Right positions use column-flex with centred icon above text; Above/Below use row-flex with icon+text side by side
+- Removed duplicated icon-color logic from `MudNodeWidget`
+
+**`MudNodeWidget.razor`** fully replaced with `StandardNodeLayout` wrapper:
+- Removed ~90 lines of custom MudCard/MudCardHeader/MudCardContent/tooltip/port rendering — all now inherited from `StandardNodeLayout`
+- Text content passed as `ExtraContent` RenderFragment
+- Now benefits from: proper `DataValueTooltipContent` (multi-topic aware, sanitised), background image support, correct port rendering, double-click via `AppState.TriggerEditProperties()`
+- Fixed latent bug: old widget checked `Node.DataTopic` (legacy singular field) as the loop condition inside a loop over `Node.DataTopics`
+
+### Property editor refactor: reflection-driven, no more @if blocks
+
+**`NodePropertyEditor.razor`** — removed 5 `@if (Node is XxxModel)` blocks (~135 lines):
+- Replaced with a 4-line `@foreach (var category in GetNodeSpecificCategories())` loop that renders `<NodePropertyRenderer Node="Node" Category="@category" />`
+- Each node-type-specific category gets a `<MudDivider>` + caption heading + the renderer
+- `NodePropertyRenderer.razor` (already existed) reads `[NpXxx]` attributes via reflection and renders the appropriate MudBlazor control (MudTextField, MudNumericField, MudCheckBox, MudSelect, DynamicComponent for custom group editors)
+
+**`NodePropertyEditor.razor.cs`** — added `GetNodeSpecificCategories()`:
+- Reflects over the current node's type, collects distinct `Category` values from all `[NpXxx]`-annotated properties, returns them in declaration order
+- Added `using System.Reflection`
+
+**Effect of this change:**
+- Adding a new node type no longer requires editing `NodePropertyEditor.razor` — just annotate the model properties with `[NpCustom]`/`[NpText]`/`[NpNumeric]`/`[NpCheckbox]`/`[NpSelect]` attributes and they appear automatically
+- ⚠️ Minor visual change: node-specific fields are now stacked vertically rather than in compact MudGrid rows (e.g. Gauge: Min/Max/Origin/Unit now stack instead of appearing in one row). Functionally identical.
+
+### Removed Grid/Image editor extractor todos
+- `refactor-editor-grid` and `refactor-editor-image` marked done (those node types no longer exist)
+
+---
+
+## 2026-03-23 — Fix InvalidCharacterError from invalid chars in MQTT payloads
+
+**Branch:** develop
+
+### Root cause
+MQTT brokers can send payloads containing null bytes (`\0`, U+0000) or other characters that are illegal in XML 1.0 / HTML DOM text nodes (lone surrogates U+D800–U+DFFF, C0/C1 control chars). When Blazor Server applied a render batch containing these characters in a text node, the browser's DOM API threw `DOMException: InvalidCharacterError`, which Blazor reported as an `InvalidOperationException` and killed the SignalR circuit.
+
+The symptom was intermittent crashes that correlated with MQTT data arriving; the user observed it as a crash when opening the Battery node property editor (the timing coincided with a data update).
+
+### Fix
+Three-layer defence:
+
+1. **`MqttClientService.SanitizePayload()`** (`src/MqttDashboard.Server/Services/MqttClientService.cs`)
+   - New private static helper strips characters outside the valid XML 1.0 character set: keeps `\t`, `\n`, `\r`, U+0020–U+D7FF, U+E000–U+FFFD; discards everything else.
+   - Called at the single point where MQTT payloads are decoded: `var value = SanitizePayload(ConvertPayloadToString(...));`
+
+2. **`BatteryNodeWidget.razor`** — SVG `<text>` rendered via `MarkupString`
+   - `FormatPercent()` output is now wrapped with `System.Net.WebUtility.HtmlEncode()` before being interpolated into the raw HTML string.
+   - `HtmlEncode` also encodes `<`, `>`, `&` so the SVG is always valid markup.
+
+3. **`DataValueTooltipContent.razor`** — displays raw MQTT value in tooltip
+   - Added `SanitizeForDisplay(string?)` local method (same stripping logic) applied to `val?.ToString()` before it's rendered in a text node.
+
+### Cleanup
+- `MudNodeModel.cs` — removed orphaned XML doc comment block that was left dangling after the `BackgroundImageFromData` property was deleted in the previous session.
+
+---
+
+## 2026-03-23 — Remove Grid/Image node types; add background image to base node
+
+**Commit:** `2074325`
+**Branch:** develop
+
+### Removed
+- `GridNodeModel.cs` + `GridNodeWidget.razor` — Grid node removed entirely. Was an outlier: its per-cell MQTT topic model didn't fit the base `StandardNodeLayout` pattern, and the wildcard-topic routing design (path/+/+ → row/column) needed for a useful Grid is a larger feature best deferred.
+- `ImageNodeModel.cs` + `ImageNodeWidget.razor` — Image node removed as a separate type.
+
+### Changed
+- `MudNodeModel` — added three new base properties available on **all** node types:
+  - `BackgroundImageUrl` (string?) — static CSS background image URL
+  - `BackgroundObjectFit` (string, default "cover") — background-size: "cover", "contain", or "fill" (→ `100% 100%`)
+  - `BackgroundImageFromData` (bool) — when true, uses the node's first MQTT data value as the background image URL (dynamic image from broker)
+- `StandardNodeLayout.razor` — `ContainerStyle` now computes `background-image` + `background-size` + `background-position` from the new base properties.
+- `NodePropertyEditor.razor` — replaced Image-specific and Grid-specific sections with a universal "Background Image" section (URL, Image Fit dropdown, "Use data value as URL" checkbox) shown for every node type.
+- `ApplicationState.cs` — removed Image/Grid component registrations, removed type-specific deserialise/serialise blocks for Image and Grid, added base background image round-trip for all node types. Legacy `Image` NodeType entries in saved files load cleanly as plain Text nodes with the `BackgroundImageUrl` set from the old `StaticImageUrl` field.
+- `DiagramState.cs` / `NodeState` — added `BackgroundImageUrl`, `BackgroundObjectFit`, `BackgroundImageFromData` as base fields; removed `GridColumnHeaders`/`GridRows`/`GridRowState`; kept `StaticImageUrl`/`ObjectFit` as nullable read-only legacy fields for old-file compat.
+- `Display.razor.cs` — removed Image/Grid from `AddNode()` and paste/copy snapshots; added background image to base paste restore.
+- `NodeTypePickerDialog.razor` — removed Image and Grid entries.
+- `NodePropertyEditor.razor.cs` — removed `AddGridColumn`, `RemoveGridColumn`, `EnsureGridTopicSlots` helpers.
+
+### Caveats
+⚠️ Old saved files with `"NodeType": "Grid"` nodes will load as plain text nodes and their row/column data will be lost. This is intentional — backward compat for format is deprioritised per project notes.
+⚠️ Old `"NodeType": "Image"` nodes load as plain text nodes with `BackgroundImageUrl` set from the old `StaticImageUrl` field, so images are preserved.
+
+---
+
+: shared layout, attributes, property groups
+
+**Commit:** `dde31e9`
+**Branch:** develop
+
+### New files
+
+| File | Purpose |
+|---|---|
+| `Models/NodePropertyAttributes.cs` | `[NpText]`, `[NpNumeric]`, `[NpCheckbox]`, `[NpSelect]`, `[NpCustom]` attributes for model properties. `NpNumericAttribute.Min/Max` use `double.NaN` as "no limit" sentinel (attribute parameters can't be nullable types). |
+| `Models/NumericRangeSettings.cs` | Shared POCO: `Min`, `Max`, `Origin?`, `DataTopicIndex`. Used by both `GaugeNodeModel` and `BatteryNodeModel`. |
+| `Widgets/DataValueTooltipContent.razor` | Shared tooltip content component accepting `MudNodeModel`. Shows all topics with values + timestamps; single "No data topic configured" fallback. Replaces 5 near-identical inline tooltip blocks. |
+| `Widgets/StandardNodeLayout.razor` | Shared outer shell for visual nodes (Gauge, Battery, Switch, Image). Injects `AppState`; handles tooltip, container div + CSS class + background colour, title positioning (Above/Below/Left/Right), double-click → edit, port rendering. Accepts `ExtraContent` RenderFragment + optional `ShowTitle` bool. Correctly suppresses both title positions when `ShowTitle=false` (fixes a bug in the old `ImageNodeWidget` where the title would still appear below even when `ShowTitle=false` with `TitlePos=Above`). |
+| `Components/NumericRangeEditor.razor` | MudGrid editor for `NumericRangeSettings`: Min, Max, Origin (nullable), DataTopicIndex. Accepts `[Parameter] object? Value` (cast to `NumericRangeSettings` internally). |
+| `Components/ColorTransitionGroupEditor.razor` | Wraps existing `ColorTransitionEditor`. Accepts `[Parameter] object? Value` (cast to `ColorTransition`). Shows `ColorTopicIndex` numeric field + delegates threshold list to `ColorTransitionEditor`. |
+| `Components/NodePropertyRenderer.razor` | Reflection-driven control renderer. Loops over `[NpXxx]` attributes on the node type filtered by `Category`; renders matching MudBlazor controls. Uses `RenderTreeBuilder` delegate pattern for generic `MudNumericField<T>` and `MudSelect<T>`. `NpCustom` → `DynamicComponent` with `Node` + `Value` params. |
+
+### Modified files
+
+**Models:**
+- `GaugeNodeModel.cs` — `MinValue/MaxValue/ArcOrigin/DataTopicIndex` replaced by `NumericRangeSettings Range`. Read-only convenience accessors (`MinValue => Range.Min` etc.) kept for backward compat in widget render code. Added `[NpCustom]`, `[NpText]`, `[NpSelect]` attributes.
+- `BatteryNodeModel.cs` — same pattern as Gauge with `NumericRangeSettings Range`. Added `[NpCustom]`, `[NpCheckbox]` attributes.
+- `SwitchNodeModel.cs` — added `[NpText]`/`[NpSelect]`/`[NpCheckbox]` to all properties.
+- `ImageNodeModel.cs` — added `[NpText]`/`[NpSelect]`/`[NpCheckbox]` to all properties.
+- `LogNodeModel.cs` — added `[NpNumeric]`/`[NpCheckbox]` to all properties.
+- `TreeViewNodeModel.cs` — added `[NpText]`/`[NpCheckbox]` to all properties.
+
+**Widgets:**
+- `BaseNodeWithDataWidget.cs` — added `protected` title positioning methods: `TitlePos`, `ShowTitleFirst()`, `OuterFlexStyle()`, `TitleDivStyle()`. These are now in one place; previously copied identically into 4 widget files.
+- `GaugeNodeWidget.razor` — fully refactored to use `<StandardNodeLayout>`. Removed title methods, tooltip, container div, port loop (~35 lines of boilerplate). Only SVG arc + text remain as `<ExtraContent>`.
+- `BatteryNodeWidget.razor` — same refactor as Gauge.
+- `SwitchNodeWidget.razor` — same refactor (removed `@using Blazor.Diagrams.Components.Renderers`).
+- `ImageNodeWidget.razor` — same refactor; passes `ShowTitle="@Node.ShowTitle"` to `StandardNodeLayout`.
+
+**Services/Pages:**
+- `ApplicationState.cs` — Gauge/Battery deserialization uses `Range = new NumericRangeSettings { Min=..., Max=..., Origin=..., DataTopicIndex=... }`. Serialization uses `g.Range.Min` etc.
+- `Display.razor.cs` — paste-cloning code updated to use `Range = new NumericRangeSettings { ... }` instead of assigning flat read-only accessors.
+- `NodePropertyEditor.razor` — Gauge/Battery property sections updated to use `gaugeNode.Range.Min` etc. (direct two-way binding to the POCO properties). Node property renderer (`NodePropertyRenderer`) infrastructure created but NodePropertyEditor still uses hand-crafted sections for all node types — the full migration from `@if (Node is XxxModel)` to `NodePropertyRenderer` is deferred; the infrastructure is now in place.
+
+### Caveats / remaining work
+⚠️ `NodePropertyRenderer` is created and compiles, but `NodePropertyEditor.razor` still uses manual type-dispatch for all node types. The renderer infrastructure can be adopted incrementally — annotate a model property with `[NpXxx]`, add a Category, and `NodePropertyRenderer` will render it automatically.
+⚠️ `NpCustom` attributes on model properties reference `typeof(NumericRangeEditor)` which is in `MqttDashboard.Components` — a slight model→UI namespace dependency. Acceptable for now; could be removed by using string-based component lookup in future.
+
+---
+
+## 2026-03-23 — Bug fixes: node resize loop, port visibility, alignment toolbar, save/save-as
+
+**Commit:** `492a2cc`
+**Timestamp:** 2026-03-23 ~18:15 UTC
+**Branch:** FEAT-C
+
+### bug-node-grow — Node grows indefinitely when Title is cleared
+**Files:** `src/MqttDashboard.Client/Widgets/MudNodeWidget.razor`
+
+`<MudCardHeader>` was conditionally removed from the DOM when both `Node.Title` and `Node.Icon` were empty. Blazor.Diagrams re-measures node content height after each render; losing the header element caused a size change, which triggered another render, which re-measured again → infinite loop. Fix: always render the `MudCardHeader` but apply `style="display:none"` when both fields are empty. The DOM structure stays stable; Blazor.Diagrams sees no size change.
+
+---
+
+### bug-port-invisible — Ports invisible on all non-Text nodes; blank border visible
+**Files:** `src/MqttDashboard.Client/Widgets/BaseNodeWidget.cs`, `GaugeNodeWidget.razor`, `SwitchNodeWidget.razor`, `BatteryNodeWidget.razor`, `GridNodeWidget.razor`, `ImageNodeWidget.razor`, `LogNodeWidget.razor`, `TreeViewNodeWidget.razor`
+
+Two root causes:
+1. `ContainerStyle()` in `BaseNodeWidget` added `overflow:hidden` whenever `Node.Size` was set. Ports (rendered inside that container) were clipped at the node boundary. Removed `overflow:hidden` from the style string.
+2. All affected widgets applied `pa-1` (4 px MudBlazor padding) on the outer container div, creating a visible blank gap between the node's outer border and its content. Removed `pa-1` from the outer div in all 7 widgets. Inner content retains its own spacing as needed.
+
+`MudNodeWidget` was unaffected because it renders ports outside the `<MudCard>` element.
+
+---
+
+### bug-align-toolbar — Alignment toolbar buttons unclickable
+**Files:** `src/MqttDashboard.Client/Pages/Display.razor`, `Display.razor.cs`
+
+The alignment toolbar overlay (`position:absolute;z-index:10`) was inside a `<MudPaper>` that lacked `position:relative`. The `<DiagramCanvas>` SVG was rendered on top and intercepting pointer events. Two fixes:
+1. Added `position:relative` to `CanvasStyle` so the absolute-positioned toolbar is scoped to the canvas container.
+2. Raised toolbar `z-index` from `10` → `1000` to ensure it sits above all diagram canvas elements.
+
+---
+
+### bug-new-save-state — Save enabled after New; Save As overwrites silently
+**Files:** `src/MqttDashboard.Client/Layout/AppMenu.razor`, `src/MqttDashboard.Client/Pages/Display.razor.cs`
+
+Two problems:
+1. After File → New, `DiagramName` is empty but the Save menu item was enabled. `SaveDashboard()` had a silent fallback: `var name = string.IsNullOrEmpty(...) ? "Default" : ...`. Fixed: Save menu item now has `Disabled="@string.IsNullOrEmpty(AppState.DiagramName)"`. The silent fallback removed; `SaveDashboard()` returns early with a warning snackbar if no filename is set.
+2. Save As did not check for an existing file before overwriting. Fixed: after the user enters a name, `ListDashboardsAsync()` is called; if a match exists (case-insensitive) and it differs from the current filename, a MudBlazor "Overwrite?" confirm dialog is shown before proceeding.
+
+Note: `DiagramName` (filename on disk, no extension) and `DiagramDisplayName` (human label in JSON, shown in title bar) are distinct — Save/Save As operate on the filename only.
+
+---
+
+
 
 **Commit:** `dbb63cb`
 **Timestamp:** 2026-03-22 ~18:15 UTC

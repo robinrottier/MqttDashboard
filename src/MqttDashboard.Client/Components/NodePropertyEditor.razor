@@ -4,28 +4,28 @@
 <MudDialog>
     <DialogContent>
         <MudStack Spacing="2">
-            <MudText Typo="Typo.subtitle2" Class="mb-2">Node Properties</MudText>
 
-            <!-- Node Type (read-only display) -->
-            <MudText Typo="Typo.caption" Color="Color.Secondary">Node Type: @Node.NodeType</MudText>
-
-            <!-- Title -->
-            <MudTextField @bind-Value="@Node.Title"
-                          Label="Title"
-                          Variant="Variant.Outlined"
-                          Margin="Margin.Dense" />
-
-            <!-- Title Position -->
-            <MudSelect @bind-Value="@Node.TitlePosition"
-                       Label="Title Position"
-                       Variant="Variant.Outlined"
-                       Margin="Margin.Dense"
-                       Dense="true">
-                <MudSelectItem Value="@("Above")">Above</MudSelectItem>
-                <MudSelectItem Value="@("Below")">Below</MudSelectItem>
-                <MudSelectItem Value="@("Left")">Left</MudSelectItem>
-                <MudSelectItem Value="@("Right")">Right</MudSelectItem>
-            </MudSelect>
+            <!-- Title + Title Position (one row) -->
+            <MudGrid Spacing="2">
+                <MudItem xs="8">
+                    <MudTextField @bind-Value="@Node.Title"
+                                  Label="Title"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="4">
+                    <MudSelect @bind-Value="@Node.TitlePosition"
+                               Label="Position"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               Dense="true">
+                        <MudSelectItem Value="@("Above")">Above</MudSelectItem>
+                        <MudSelectItem Value="@("Below")">Below</MudSelectItem>
+                        <MudSelectItem Value="@("Left")">Left</MudSelectItem>
+                        <MudSelectItem Value="@("Right")">Right</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
 
             <!-- Icon and Icon Color -->
             <MudGrid Spacing="2">
@@ -53,59 +53,39 @@
                     </MudStack>
                 </MudItem>
                 <MudItem xs="6">
-                    <MudSelect @bind-Value="@Node.IconColor"
-                               Label="Icon Color"
-                               Variant="Variant.Outlined"
-                               Margin="Margin.Dense"
-                               Dense="true"
-                               Clearable="true">
-                        <MudSelectItem Value="@((string?)null)">Default</MudSelectItem>
-                        <MudSelectItem Value="@("Primary")">Primary</MudSelectItem>
-                        <MudSelectItem Value="@("Secondary")">Secondary</MudSelectItem>
-                        <MudSelectItem Value="@("Success")">Success</MudSelectItem>
-                        <MudSelectItem Value="@("Info")">Info</MudSelectItem>
-                        <MudSelectItem Value="@("Warning")">Warning</MudSelectItem>
-                        <MudSelectItem Value="@("Error")">Error</MudSelectItem>
-                        <MudSelectItem Value="@("Dark")">Dark</MudSelectItem>
-                    </MudSelect>
+                    <ColorInputRow @bind-Value="Node.IconColor"
+                                   Label="Icon Color"
+                                   ShowClear="true" />
                 </MudItem>
             </MudGrid>
 
             <!-- Background Color -->
-            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
-                <div style="@($"width:30px;height:30px;background-color:{Node.BackgroundColor ?? "transparent"};border:2px solid var(--mud-palette-divider);border-radius:4px;")"></div>
-                <MudTextField Value="@(Node.BackgroundColor ?? "No color")"
-                              Label="Background Color"
-                              Variant="Variant.Outlined"
-                              Margin="Margin.Dense"
-                              ReadOnly="true"
-                              Style="flex-grow:1;" />
-                <MudTooltip Text="Theme Colors">
-                    <MudIconButton Icon="@Icons.Material.Filled.Palette"
-                                   Size="MudBlazor.Size.Small"
-                                   OnClick="@(() => OpenColorPicker(ColorPickerMode.Theme))"
-                                   Class="mt-2" />
-                </MudTooltip>
-                <MudTooltip Text="Named Colors">
-                    <MudIconButton Icon="@Icons.Material.Filled.FormatColorFill"
-                                   Size="MudBlazor.Size.Small"
-                                   OnClick="@(() => OpenColorPicker(ColorPickerMode.Named))"
-                                   Class="mt-2" />
-                </MudTooltip>
-                <MudTooltip Text="Custom Color">
-                    <MudIconButton Icon="@Icons.Material.Filled.Colorize"
-                                   Size="MudBlazor.Size.Small"
-                                   OnClick="@(() => OpenColorPicker(ColorPickerMode.Custom))"
-                                   Class="mt-2" />
-                </MudTooltip>
-                @if (!string.IsNullOrEmpty(Node.BackgroundColor))
-                {
-                    <MudIconButton Icon="@Icons.Material.Filled.Clear"
-                                   Size="MudBlazor.Size.Small"
-                                   OnClick="ClearColor"
-                                   Class="mt-2" />
-                }
-            </MudStack>
+            <ColorInputRow @bind-Value="Node.BackgroundColor"
+                           Label="Background Color"
+                           Placeholder="None"
+                           ShowClear="true" />
+
+            <!-- Background Image (compact: URL + fit on two columns) -->
+            <MudGrid Spacing="2">
+                <MudItem xs="8">
+                    <MudTextField @bind-Value="@Node.BackgroundImageUrl"
+                                  Label="Background Image URL"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Placeholder="https://… or data:image/…" />
+                </MudItem>
+                <MudItem xs="4">
+                    <MudSelect @bind-Value="@Node.BackgroundObjectFit"
+                               Label="Fit"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               Dense="true">
+                        <MudSelectItem Value="@("cover")">Cover</MudSelectItem>
+                        <MudSelectItem Value="@("contain")">Contain</MudSelectItem>
+                        <MudSelectItem Value="@("fill")">Fill</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
 
             <!-- Width, Height, Font Size -->
             <MudGrid Spacing="2">
@@ -134,7 +114,6 @@
             </MudGrid>
 
             <!-- Link Animation -->
-            <MudDivider Class="my-2" />
             <MudSelect @bind-Value="@Node.LinkAnimation"
                        Label="Link Animation"
                        Variant="Variant.Outlined"
@@ -146,10 +125,8 @@
                 <MudSelectItem Value="@("Reverse")">Reverse</MudSelectItem>
             </MudSelect>
 
-            <!-- MQTT Data Binding -->
+            <!-- MQTT Topics -->
             <MudDivider Class="my-2" />
-            <MudText Typo="Typo.caption" Class="mb-1">MQTT Data Binding</MudText>
-
             <MudText Typo="Typo.subtitle2">MQTT Topics</MudText>
             @for (int i = 0; i < Node.DataTopics.Count; i++)
             {
@@ -175,219 +152,12 @@
                           Placeholder="e.g. Temp: {0:F2}°C&#10;Humidity: {1:F1}%"
                           HelperText="Use {0} for topic 1 value, {1} for topic 2. Supports C# format specs, e.g. {0:F2}." />
 
-            <!-- Gauge-specific settings -->
-            @if (Node is GaugeNodeModel gaugeNode)
+            <!-- Node-type-specific settings (driven by [NpXxx] attributes on the model) -->
+            @foreach (var category in GetNodeSpecificCategories())
             {
                 <MudDivider Class="my-2" />
-                <MudText Typo="Typo.caption" Class="mb-1">Gauge Settings</MudText>
-                <MudGrid Spacing="2">
-                    <MudItem xs="3">
-                        <MudNumericField @bind-Value="gaugeNode.MinValue" Label="Min" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                    </MudItem>
-                    <MudItem xs="3">
-                        <MudNumericField @bind-Value="gaugeNode.MaxValue" Label="Max" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                    </MudItem>
-                    <MudItem xs="3">
-                        <MudNumericField @bind-Value="gaugeNode.ArcOrigin" Label="Origin" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="(min)" />
-                    </MudItem>
-                    <MudItem xs="3">
-                        <MudTextField @bind-Value="gaugeNode.Unit" Label="Unit" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="°C, W…" />
-                    </MudItem>
-                </MudGrid>
-                <MudGrid Spacing="2" Class="mt-1">
-                    <MudItem xs="4">
-                        <MudSelect @bind-Value="gaugeNode.TextPosition" Label="Text Position" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true">
-                            <MudSelectItem Value="@("Below")">Below arc</MudSelectItem>
-                            <MudSelectItem Value="@("Above")">Above arc</MudSelectItem>
-                        </MudSelect>
-                    </MudItem>
-                    <MudItem xs="4">
-                        <MudNumericField @bind-Value="gaugeNode.DataTopicIndex" Label="Value Topic (0-based)" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" HelperText="Which data topic drives the gauge (0=first)" />
-                    </MudItem>
-                    <MudItem xs="4">
-                        <MudNumericField @bind-Value="gaugeNode.GaugeColor.ColorTopicIndex" Label="Color Topic (0-based)" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" HelperText="Which data topic is used for color rules" />
-                    </MudItem>
-                </MudGrid>
-                <MudDivider Class="my-1" />
-                <MudText Typo="Typo.caption" Class="mb-1">Color Transitions (by value). First matching rule wins.</MudText>
-                <ColorTransitionEditor Thresholds="gaugeNode.GaugeColor.ColorThresholds" ValueLabel="Value" />
-            }
-
-            <!-- Battery-specific settings -->
-            @if (Node is BatteryNodeModel batteryNode)
-            {
-                <MudDivider Class="my-2" />
-                <MudText Typo="Typo.caption" Class="mb-1">Battery Settings</MudText>
-                <MudGrid Spacing="2">
-                    <MudItem xs="6">
-                        <MudNumericField @bind-Value="batteryNode.MinValue" Label="Min Value" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                    </MudItem>
-                    <MudItem xs="6">
-                        <MudNumericField @bind-Value="batteryNode.MaxValue" Label="Max Value" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                    </MudItem>
-                </MudGrid>
-                <MudCheckBox T="bool" @bind-Value="batteryNode.ShowPercent" Label="Show Percentage" Dense="true" Class="mt-1" />
-                <MudGrid Spacing="2" Class="mt-1">
-                    <MudItem xs="6">
-                        <MudNumericField @bind-Value="batteryNode.DataTopicIndex" Label="Value Topic (0-based)" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" HelperText="Which topic drives fill level" />
-                    </MudItem>
-                    <MudItem xs="6">
-                        <MudNumericField @bind-Value="batteryNode.BatteryColor.ColorTopicIndex" Label="Color Topic (0-based)" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" HelperText="Which topic drives color rules" />
-                    </MudItem>
-                </MudGrid>
-                <MudText Typo="Typo.caption" Class="mt-2 mb-1">Color Transitions (by percentage 0-100). Last matching rule wins.</MudText>
-                <ColorTransitionEditor Thresholds="batteryNode.BatteryColor.ColorThresholds" ValueLabel="Percent (0-100)" />
-                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1">
-                    Example: add ≥ 0 → red, ≥ 20 → orange, ≥ 50 → green.
-                </MudText>
-            }
-
-            <!-- Log-specific settings -->
-            @if (Node is LogNodeModel logNode)
-            {
-                <MudDivider Class="my-2" />
-                <MudText Typo="Typo.caption" Class="mb-1">Log Settings</MudText>
-                <MudNumericField @bind-Value="logNode.MaxEntries" Label="Max Entries" Variant="Variant.Outlined" Margin="Margin.Dense" Min="1" Max="500" />
-                <MudText Typo="Typo.caption" Class="mt-2 mb-1">Columns</MudText>
-                <MudGrid Spacing="0">
-                    <MudItem xs="6"><MudCheckBox T="bool" @bind-Value="logNode.ShowDate"      Label="Date"             Dense="true" /></MudItem>
-                    <MudItem xs="6"><MudCheckBox T="bool" @bind-Value="logNode.ShowTime"      Label="Time"             Dense="true" /></MudItem>
-                    <MudItem xs="6"><MudCheckBox T="bool" @bind-Value="logNode.ShowTopicFull" Label="Full topic"       Dense="true" /></MudItem>
-                    <MudItem xs="6"><MudCheckBox T="bool" @bind-Value="logNode.ShowTopicPath" Label="Topic path"       Dense="true" /></MudItem>
-                    <MudItem xs="6"><MudCheckBox T="bool" @bind-Value="logNode.ShowTopicName" Label="Topic name"       Dense="true" /></MudItem>
-                    <MudItem xs="6"><MudCheckBox T="bool" @bind-Value="logNode.ShowValue"     Label="Value"            Dense="true" /></MudItem>
-                </MudGrid>
-            }
-
-            <!-- TreeView-specific settings -->
-            @if (Node is TreeViewNodeModel treeNode)
-            {
-                <MudDivider Class="my-2" />
-                <MudText Typo="Typo.caption" Class="mb-1">Tree View Settings</MudText>
-                <MudTextField @bind-Value="treeNode.RootTopic" Label="Root Topic" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="e.g. home/sensors" HelperText="Displays all subtopics under this prefix." />
-                <MudCheckBox T="bool" @bind-Value="treeNode.ShowValues" Label="Show Values" Dense="true" />
-            }
-
-            <!-- Switch-specific settings -->
-            @if (Node is SwitchNodeModel switchNode)
-            {
-                <MudDivider Class="my-2" />
-                <MudText Typo="Typo.caption" Class="mb-1">Switch Settings</MudText>
-                <MudTextField @bind-Value="switchNode.PublishTopic" Label="Publish Topic" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="Defaults to Data Topic if empty" />
-                <MudGrid Spacing="2" Class="mt-1">
-                    <MudItem xs="6">
-                        <MudTextField @bind-Value="switchNode.OnValue" Label="ON Value" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="1" />
-                    </MudItem>
-                    <MudItem xs="6">
-                        <MudTextField @bind-Value="switchNode.OffValue" Label="OFF Value" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="0" />
-                    </MudItem>
-                </MudGrid>
-                <MudSelect @bind-Value="switchNode.SwitchStyle"
-                           Label="Switch Style"
-                           Variant="Variant.Outlined"
-                           Margin="Margin.Dense"
-                           Dense="true"
-                           Class="mt-1">
-                    <MudSelectItem Value="@("Full")">Full (chip + icon)</MudSelectItem>
-                    <MudSelectItem Value="@("Compact")">Compact (text + icon)</MudSelectItem>
-                    <MudSelectItem Value="@("IconOnly")">Icon Only</MudSelectItem>
-                </MudSelect>
-                <MudGrid Spacing="2" Class="mt-1">
-                    <MudItem xs="6">
-                        <MudTextField @bind-Value="switchNode.OnText" Label="ON Text" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="ON" />
-                    </MudItem>
-                    <MudItem xs="6">
-                        <MudTextField @bind-Value="switchNode.OffText" Label="OFF Text" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="OFF" />
-                    </MudItem>
-                </MudGrid>
-                <MudCheckBox T="bool" @bind-Value="switchNode.IsReadOnly" Label="Read Only (display only, no toggle)" Dense="true" Class="mt-1" />
-                <MudDivider Class="my-1" />
-                <MudText Typo="Typo.caption" Class="mb-1">Publish Options</MudText>
-                <MudCheckBox T="bool" @bind-Value="switchNode.Retain" Label="Retain message (broker stores last value)" Dense="true" />
-                <MudSelect T="int" @bind-Value="switchNode.QosLevel" Label="QoS Level" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Class="mt-1">
-                    <MudSelectItem Value="0">0 — At Most Once (fire and forget)</MudSelectItem>
-                    <MudSelectItem Value="1">1 — At Least Once</MudSelectItem>
-                    <MudSelectItem Value="2">2 — Exactly Once</MudSelectItem>
-                </MudSelect>
-            }
-
-            <!-- Image-specific settings -->
-            @if (Node is ImageNodeModel imageNode)
-            {
-                <MudDivider Class="my-2" />
-                <MudText Typo="Typo.caption" Class="mb-1">Image Settings</MudText>
-                <MudTextField @bind-Value="imageNode.StaticImageUrl"
-                              Label="Static Image URL"
-                              Variant="Variant.Outlined"
-                              Margin="Margin.Dense"
-                              HelperText="Used when no data topic. Supports http/https/data URLs" />
-                <MudSelect @bind-Value="imageNode.ObjectFit"
-                           Label="Object Fit"
-                           Variant="Variant.Outlined"
-                           Margin="Margin.Dense"
-                           Dense="true"
-                           Class="mt-1">
-                    <MudSelectItem Value="@("contain")">Contain (fit inside)</MudSelectItem>
-                    <MudSelectItem Value="@("cover")">Cover (fill, crop edges)</MudSelectItem>
-                    <MudSelectItem Value="@("fill")">Fill (stretch)</MudSelectItem>
-                    <MudSelectItem Value="@("scale-down")">Scale Down</MudSelectItem>
-                </MudSelect>
-                <MudCheckBox T="bool" @bind-Value="imageNode.ShowTitle" Label="Show Title" Dense="true" Class="mt-1" />
-            }
-
-            <!-- Grid-specific settings -->
-            @if (Node is GridNodeModel gridNode)
-            {
-                <MudDivider Class="my-2" />
-                <MudText Typo="Typo.caption" Class="mb-1">Grid Settings</MudText>
-                <MudText Typo="Typo.subtitle2">Columns</MudText>
-                @for (int ci = 0; ci < gridNode.ColumnHeaders.Count; ci++)
-                {
-                    var colIdx = ci;
-                    <div style="display:flex;align-items:center;gap:4px;">
-                        <MudTextField Label="@($"Column {colIdx + 1} Header")"
-                                      Value="@gridNode.ColumnHeaders[colIdx]"
-                                      ValueChanged="@((string v) => { gridNode.ColumnHeaders[colIdx] = v; EnsureGridTopicSlots(gridNode); })"
-                                      Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Clear"
-                                      OnAdornmentClick="@(() => RemoveGridColumn(gridNode, colIdx))"
-                                      Variant="Variant.Outlined" Margin="Margin.Dense" />
-                    </div>
-                }
-                <MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small"
-                           OnClick="@(() => AddGridColumn(gridNode))">Add Column</MudButton>
-
-                <MudDivider Class="my-1" />
-                <MudText Typo="Typo.subtitle2" Class="mt-1">Rows</MudText>
-                @for (int ri = 0; ri < gridNode.Rows.Count; ri++)
-                {
-                    var rowIdx = ri;
-                    var row = gridNode.Rows[rowIdx];
-                    <MudPaper Outlined="true" Class="pa-2 mb-1">
-                        <MudTextField Label="Row Label"
-                                      @bind-Value="row.Label"
-                                      Variant="Variant.Outlined"
-                                      Margin="Margin.Dense" />
-                        @for (int ci2 = 0; ci2 < gridNode.ColumnHeaders.Count; ci2++)
-                        {
-                            var colIdx2 = ci2;
-                            while (row.Topics.Count <= colIdx2) row.Topics.Add(string.Empty);
-                            <MudTextField Label="@($"Topic → {gridNode.ColumnHeaders[colIdx2]}")"
-                                          Value="@row.Topics[colIdx2]"
-                                          ValueChanged="@((string v) => row.Topics[colIdx2] = v)"
-                                          Variant="Variant.Outlined"
-                                          Margin="Margin.Dense"
-                                          Class="mt-1"
-                                          Placeholder="MQTT topic" />
-                        }
-                        <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
-                                       Size="Size.Small" Color="Color.Error"
-                                       OnClick="@(() => gridNode.Rows.RemoveAt(rowIdx))" />
-                    </MudPaper>
-                }
-                <MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small"
-                           OnClick="@(() => gridNode.Rows.Add(new GridRowDefinition { Label = $"Row {gridNode.Rows.Count + 1}", Topics = Enumerable.Repeat(string.Empty, gridNode.ColumnHeaders.Count).ToList() }))">
-                    Add Row
-                </MudButton>
+                <MudText Typo="Typo.caption" Class="mb-1">@category</MudText>
+                <NodePropertyRenderer Node="Node" Category="@category" />
             }
 
             <!-- Custom Metadata -->

@@ -1,4 +1,5 @@
 using Blazor.Diagrams.Core.Geometry;
+using MqttDashboard.Components;
 
 namespace MqttDashboard.Models;
 
@@ -18,16 +19,18 @@ public class BatteryNodeModel : MudNodeModel
         };
     }
 
-    public double MinValue { get; set; } = 0;
-    public double MaxValue { get; set; } = 100;
+    [NpCustom("Range", typeof(NumericRangeEditor), Category = "Battery", Order = 1)]
+    public NumericRangeSettings Range { get; set; } = new();
 
-    /// <summary>0-based index into DataTopics that drives the fill level.</summary>
-    public int DataTopicIndex { get; set; } = 0;
+    [NpCheckbox("Show Percentage", Category = "Battery", Order = 2)]
+    public bool ShowPercent { get; set; } = true;
 
-    /// <summary>Colour transition settings (topic index + threshold rules) for this battery.</summary>
+    [NpCustom("Color Transitions", typeof(ColorTransitionGroupEditor), Category = "Battery", Order = 3)]
     public ColorTransition BatteryColor { get; set; } = new();
 
-    /// <summary>Show percentage text inside the battery icon.</summary>
-    public bool ShowPercent { get; set; } = true;
+    // Backward-compatible convenience accessors.
+    public double MinValue => Range.Min;
+    public double MaxValue => Range.Max;
+    public int DataTopicIndex => Range.DataTopicIndex;
 }
 

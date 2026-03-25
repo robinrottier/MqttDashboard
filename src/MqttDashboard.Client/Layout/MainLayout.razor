@@ -130,7 +130,7 @@
 
     private string AppName => GetType().Assembly
         .GetCustomAttribute<System.Reflection.AssemblyProductAttribute>()?.Product
-        ?? "Mqtt Dashboard";
+        ?? "MQTT Dashboard";
     private bool _isEditMode => AppState.IsEditMode;
 
     private string TitleTooltip

@@ -1,6 +1,7 @@
 using MqttDashboard.Models;
 using MudBlazor;
 using Microsoft.AspNetCore.Components;
+using System.Reflection;
 
 namespace MqttDashboard.Components;
 
@@ -59,44 +60,7 @@ public partial class NodePropertyEditor
         }
     }
 
-    private async Task OpenColorPicker(ColorPickerMode mode)
-    {
-        var parameters = new DialogParameters
-        {
-            { "Mode", mode },
-            { "CurrentColor", Node.BackgroundColor }
-        };
 
-        var options = new DialogOptions
-        {
-            MaxWidth = mode == ColorPickerMode.Named ? MaxWidth.Medium : MaxWidth.Small,
-            FullWidth = true,
-            CloseButton = true
-        };
-
-        string title = mode switch
-        {
-            ColorPickerMode.Theme => "Select Theme Color",
-            ColorPickerMode.Named => "Select Named Color",
-            ColorPickerMode.Custom => "Custom Color",
-            _ => "Select Color"
-        };
-
-        var dialog = await DialogService.ShowAsync<ColorPickerDialog>(title, parameters, options);
-        var result = await dialog.Result;
-
-        if (result != null && !result.Canceled && result.Data is string selectedColor)
-        {
-            Node.BackgroundColor = selectedColor;
-            StateHasChanged();
-        }
-    }
-
-    private void ClearColor()
-    {
-        Node.BackgroundColor = null;
-        StateHasChanged();
-    }
 
     private void ClearIcon()
     {
@@ -147,31 +111,18 @@ public partial class NodePropertyEditor
         MudDialog?.Close(DialogResult.Ok(true));
     }
 
-    private void AddGridColumn(GridNodeModel grid)
-    {
-        grid.ColumnHeaders.Add($"Col {grid.ColumnHeaders.Count + 1}");
-        EnsureGridTopicSlots(grid);
-        StateHasChanged();
-    }
-
-    private void RemoveGridColumn(GridNodeModel grid, int colIdx)
-    {
-        if (grid.ColumnHeaders.Count <= 1) return;
-        grid.ColumnHeaders.RemoveAt(colIdx);
-        foreach (var row in grid.Rows)
-            if (row.Topics.Count > colIdx) row.Topics.RemoveAt(colIdx);
-        StateHasChanged();
-    }
-
-    private static void EnsureGridTopicSlots(GridNodeModel grid)
-    {
-        foreach (var row in grid.Rows)
-            while (row.Topics.Count < grid.ColumnHeaders.Count)
-                row.Topics.Add(string.Empty);
-    }
-
     private void Cancel()
     {
         MudDialog?.Cancel();
     }
+
+    /// <summary>
+    /// Returns the distinct [NpXxx]-annotated categories on this node type, in declaration order.
+    /// These are the node-type-specific categories rendered by NodePropertyRenderer.
+    /// </summary>
+    private IEnumerable<string> GetNodeSpecificCategories() =>
+        Node.GetType().GetProperties()
+            .Select(p => p.GetCustomAttribute<NodePropertyAttribute>()?.Category)
+            .Where(c => !string.IsNullOrEmpty(c))
+            .Distinct()!;
 }

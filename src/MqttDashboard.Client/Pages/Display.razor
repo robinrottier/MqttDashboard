@@ -78,7 +78,7 @@ else
     <MudPaper @key="_diagram" Elevation="2" Style="@CanvasStyle">
         @if (AppState.IsEditMode && AppState.IsMultiSelected)
         {
-            <MudPaper Elevation="1" Style="position:absolute;z-index:10;top:4px;left:50%;transform:translateX(-50%);display:flex;gap:2px;padding:2px 4px;border-radius:8px;">
+            <MudPaper Elevation="1" Style="position:absolute;z-index:1000;top:4px;left:50%;transform:translateX(-50%);display:flex;gap:2px;padding:2px 4px;border-radius:8px;">
                 <MudTooltip Text="Align Left Edges">
                     <MudIconButton Icon="@Icons.Material.Filled.AlignHorizontalLeft" Size="Size.Small" Color="Color.Primary" OnClick='() => AlignNodes("left")' />
                 </MudTooltip>
@@ -98,6 +98,13 @@ else
                 <MudTooltip Text="Align Bottom Edges">
                     <MudIconButton Icon="@Icons.Material.Filled.AlignVerticalBottom" Size="Size.Small" Color="Color.Primary" OnClick='() => AlignNodes("bottom")' />
                 </MudTooltip>
+                <MudDivider Vertical="true" FlexItem="true" Style="margin:4px 2px;" />
+                <MudTooltip Text="Make Same Width">
+                    <MudIconButton Icon="@Icons.Material.Filled.SwapHoriz" Size="Size.Small" Color="Color.Primary" OnClick="SameWidth" />
+                </MudTooltip>
+                <MudTooltip Text="Make Same Height">
+                    <MudIconButton Icon="@Icons.Material.Filled.SwapVert" Size="Size.Small" Color="Color.Primary" OnClick="SameHeight" />
+                </MudTooltip>
             </MudPaper>
         }
         <CascadingValue Value="_diagram" IsFixed="true">
@@ -112,5 +119,25 @@ else
                 </Widgets>
             </DiagramCanvas>
         </CascadingValue>
+        @if (AppState.SubscribedTopics.Count == 0)
+        {
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:500;pointer-events:auto;">
+                <MudPaper Elevation="4" Class="pa-6 d-flex flex-column align-center" Style="gap:12px;border-radius:12px;opacity:0.92;">
+                    <MudIcon Icon="@Icons.Material.Filled.WifiOff" Size="Size.Large" Color="Color.Default" />
+                    <MudText Typo="Typo.h6">No data topics configured</MudText>
+                    @if (AppState.IsEditMode)
+                    {
+                        <MudText Typo="Typo.body2" Align="Align.Center">Add MQTT topics in Dashboard Properties to start receiving data.</MudText>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenDashboardProperties">
+                            Configure Topics →
+                        </MudButton>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Align="Align.Center">Switch to edit mode to add MQTT data topics.</MudText>
+                    }
+                </MudPaper>
+            </div>
+        }
     </MudPaper>
 }

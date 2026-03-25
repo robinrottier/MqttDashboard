@@ -68,7 +68,7 @@ public class ApplicationState
 
     // Theme & UI preferences
     public ThemeMode ThemeMode { get; private set; } = ThemeMode.Auto;
-    public bool ShowDiagramName { get; private set; } = false;
+    public bool ShowDiagramName { get; private set; } = true;
 
     /// <summary>File name (stem) used for saving/loading. Set by the caller, not from file contents.</summary>
     public string DiagramName { get; private set; } = string.Empty;
@@ -87,7 +87,7 @@ public class ApplicationState
         !string.IsNullOrEmpty(DiagramName) ? DiagramName :
         "Untitled";
 
-    public int GridSize { get; private set; } = 10;
+    public int GridSize { get; private set; } = 20;
     public string CanvasBackgroundColor { get; private set; } = string.Empty;
 
     // Edit mode state (set by Edit page)
@@ -95,6 +95,8 @@ public class ApplicationState
     public bool HasSelectedNode { get; private set; } = false;
     public bool HasSingleSelectedNode { get; private set; } = false;
     public bool IsMultiSelected => HasSelectedNode && !HasSingleSelectedNode;
+    /// <summary>The set of port alignments present on the currently selected node. Null when no single node is selected.</summary>
+    public HashSet<PortAlignment>? SelectedNodePorts { get; private set; }
 
     // Auth state
     public bool IsAdmin { get; private set; } = true; // default true when auth not configured
@@ -187,6 +189,7 @@ public class ApplicationState
     public event Action? MenuCutSelected;
     public event Action? MenuCopySelected;
     public event Action? MenuPasteSelected;
+    public event Action? MenuAddAllPorts;
     public event Action<PortAlignment>? MenuAddPort;
     public event Action<PortAlignment>? MenuDeletePort;
     public event Action? MenuEditProperties;
@@ -221,10 +224,11 @@ public class ApplicationState
         NotifyStateChangedAsync();
     }
 
-    public void UpdateSelectionState(bool hasSelected, bool hasSingleSelected)
+    public void UpdateSelectionState(bool hasSelected, bool hasSingleSelected, HashSet<PortAlignment>? selectedPorts = null)
     {
         HasSelectedNode = hasSelected;
         HasSingleSelectedNode = hasSingleSelected;
+        SelectedNodePorts = selectedPorts;
         NotifyStateChangedAsync();
     }
 
@@ -281,6 +285,7 @@ public class ApplicationState
     public void TriggerCutSelected() => MenuCutSelected?.Invoke();
     public void TriggerCopySelected() => MenuCopySelected?.Invoke();
     public void TriggerPasteSelected() => MenuPasteSelected?.Invoke();
+    public void TriggerAddAllPorts() => MenuAddAllPorts?.Invoke();
     public void TriggerAddPort(PortAlignment alignment) => MenuAddPort?.Invoke(alignment);
     public void TriggerDeletePort(PortAlignment alignment) => MenuDeletePort?.Invoke(alignment);
     public void TriggerEditProperties() => MenuEditProperties?.Invoke();
@@ -321,9 +326,15 @@ public class ApplicationState
             // if grid size is -ve then grid is snaptocenter
             // if grid size is +ve then snap to corner (default)
             if (state == null)
-                options.GridSize = 10; // Default grid size for new diagrams
+            {
+                options.GridSize = 20;
+                GridSize = 20;
+            }
             else
-                options.GridSize = state.GridSize == 0 ? null : int.Abs(state.GridSize); // Use saved grid size or default to 20px
+            {
+                options.GridSize = state.GridSize == 0 ? null : int.Abs(state.GridSize);
+                GridSize = (int)(options.GridSize ?? 20);
+            }
             options.GridSnapToCenter = options.GridSize < 0;
         };
 
@@ -334,8 +345,6 @@ public class ApplicationState
         diagram.RegisterComponent<BatteryNodeModel, BatteryNodeWidget>();
         diagram.RegisterComponent<LogNodeModel, LogNodeWidget>();
         diagram.RegisterComponent<TreeViewNodeModel, TreeViewNodeWidget>();
-        diagram.RegisterComponent<ImageNodeModel, ImageNodeWidget>();
-        diagram.RegisterComponent<GridNodeModel, GridNodeWidget>();
 
         if (state != null)
         {
@@ -347,11 +356,14 @@ public class ApplicationState
                 {
                     "Gauge" => new GaugeNodeModel(position: new Point(nodeState.X, nodeState.Y))
                     {
-                        MinValue = nodeState.MinValue ?? 0,
-                        MaxValue = nodeState.MaxValue ?? 100,
+                        Range = new NumericRangeSettings
+                        {
+                            Min = nodeState.MinValue ?? 0,
+                            Max = nodeState.MaxValue ?? 100,
+                            Origin = nodeState.Origin,
+                            DataTopicIndex = nodeState.DataTopicIndex ?? 0,
+                        },
                         Unit = nodeState.Unit,
-                        ArcOrigin = nodeState.ArcOrigin,
-                        DataTopicIndex = nodeState.DataTopicIndex ?? 0,
                         TextPosition = nodeState.TextPosition ?? "Below",
                         GaugeColor = DeserializeColorTransition(nodeState.GaugeColor),
                     },
@@ -369,10 +381,13 @@ public class ApplicationState
                     },
                     "Battery" => new BatteryNodeModel(position: new Point(nodeState.X, nodeState.Y))
                     {
-                        MinValue = nodeState.MinValue ?? 0,
-                        MaxValue = nodeState.MaxValue ?? 100,
+                        Range = new NumericRangeSettings
+                        {
+                            Min = nodeState.MinValue ?? 0,
+                            Max = nodeState.MaxValue ?? 100,
+                            DataTopicIndex = nodeState.DataTopicIndex ?? 0,
+                        },
                         ShowPercent = nodeState.BatteryShowPercent ?? true,
-                        DataTopicIndex = nodeState.DataTopicIndex ?? 0,
                         BatteryColor = DeserializeColorTransition(nodeState.BatteryColor),
                     },
                     "Log" => new LogNodeModel(position: new Point(nodeState.X, nodeState.Y))
@@ -390,21 +405,11 @@ public class ApplicationState
                         RootTopic = nodeState.RootTopic ?? string.Empty,
                         ShowValues = nodeState.ShowValues ?? true,
                     },
-                    "Image" => new ImageNodeModel(position: new Point(nodeState.X, nodeState.Y))
+                    "Image" => new MudNodeModel(position: new Point(nodeState.X, nodeState.Y))
                     {
-                        StaticImageUrl = nodeState.StaticImageUrl ?? string.Empty,
-                        ObjectFit = nodeState.ObjectFit ?? "contain",
-                    },
-                    "Grid" => new GridNodeModel(position: new Point(nodeState.X, nodeState.Y))
-                    {
-                        ColumnHeaders = nodeState.GridColumnHeaders?.Count > 0
-                            ? nodeState.GridColumnHeaders
-                            : ["Value"],
-                        Rows = nodeState.GridRows?.Select(rs => new GridRowDefinition
-                        {
-                            Label = rs.Label,
-                            Topics = new List<string>(rs.Topics),
-                        }).ToList() ?? [new GridRowDefinition { Label = "Row 1", Topics = [""] }],
+                        // Legacy Image nodes become plain Text nodes with a background image
+                        BackgroundImageUrl    = nodeState.BackgroundImageUrl ?? nodeState.StaticImageUrl ?? string.Empty,
+                        BackgroundObjectFit   = nodeState.BackgroundObjectFit ?? nodeState.ObjectFit ?? "cover",
                     },
                     _ => new MudNodeModel(position: new Point(nodeState.X, nodeState.Y)),
                 };
@@ -418,26 +423,23 @@ public class ApplicationState
                 node.BackgroundColor = nodeState.BackgroundColor;
                 node.IconColor = nodeState.IconColor;
                 node.Metadata = nodeState.Metadata ?? new Dictionary<string, string>();
-                // Populate DataTopics — new format first, fall back to scalar fields for old files.
                 if (nodeState.DataTopics != null && nodeState.DataTopics.Count > 0)
-                {
                     node.DataTopics = new List<string>(nodeState.DataTopics);
-                }
-                else
-                {
-                    if (!string.IsNullOrEmpty(nodeState.DataTopic))  node.DataTopics.Add(nodeState.DataTopic);
-                    if (!string.IsNullOrEmpty(nodeState.DataTopic2)) node.DataTopics.Add(nodeState.DataTopic2);
-                }
                 node.FontSize = nodeState.FontSize;
                 node.LinkAnimation = nodeState.LinkAnimation;
                 node.NodeType = nodeState.NodeType ?? "Text";
                 node.TitlePosition = nodeState.TitlePosition ?? "Above";
+                // Background image (base — applies to all node types)
+                if (!string.IsNullOrEmpty(nodeState.BackgroundImageUrl))
+                    node.BackgroundImageUrl = nodeState.BackgroundImageUrl;
+                if (nodeState.BackgroundObjectFit != null)
+                    node.BackgroundObjectFit = nodeState.BackgroundObjectFit;
 
                 diagram.Nodes.Add(node);
                 nodeMap[nodeState.Id] = node;
 
                 // Add ports
-                foreach (var portState in nodeState.Ports)
+                foreach (var portState in nodeState.Ports ?? [])
                 {
                     var alignment = Enum.Parse<PortAlignment>(portState.Alignment);
                     AddPortToNode(node, alignment);
@@ -550,9 +552,7 @@ public class ApplicationState
                 Text = node.Text,
                 BackgroundColor = node.BackgroundColor,
                 IconColor = node.IconColor,
-                Metadata = node.Metadata ?? new Dictionary<string, string>(),
-                DataTopic  = node.DataTopic,   // computed from DataTopics[0]; kept for old-file compat
-                DataTopic2 = node.DataTopic2,  // computed from DataTopics[1]; kept for old-file compat
+                Metadata = node.Metadata?.Count > 0 ? new Dictionary<string, string>(node.Metadata) : null,
                 DataTopics = node.DataTopics.Count > 0 ? new List<string>(node.DataTopics) : null,
                 FontSize = node.FontSize,
                 LinkAnimation = node.LinkAnimation,
@@ -563,11 +563,11 @@ public class ApplicationState
             // Type-specific properties
             if (node is GaugeNodeModel g)
             {
-                nodeState.MinValue = g.MinValue;
-                nodeState.MaxValue = g.MaxValue;
+                nodeState.MinValue = g.Range.Min;
+                nodeState.MaxValue = g.Range.Max;
                 nodeState.Unit = g.Unit;
-                nodeState.ArcOrigin = g.ArcOrigin;
-                nodeState.DataTopicIndex = g.DataTopicIndex != 0 ? g.DataTopicIndex : null;
+                nodeState.Origin = g.Range.Origin;
+                nodeState.DataTopicIndex = g.Range.DataTopicIndex != 0 ? g.Range.DataTopicIndex : null;
                 nodeState.TextPosition = g.TextPosition != "Below" ? g.TextPosition : null;
                 nodeState.GaugeColor = SerializeColorTransition(g.GaugeColor);
             }
@@ -585,10 +585,10 @@ public class ApplicationState
             }
             else if (node is BatteryNodeModel b)
             {
-                nodeState.MinValue = b.MinValue;
-                nodeState.MaxValue = b.MaxValue;
+                nodeState.MinValue = b.Range.Min;
+                nodeState.MaxValue = b.Range.Max;
                 nodeState.BatteryShowPercent = b.ShowPercent;
-                nodeState.DataTopicIndex = b.DataTopicIndex != 0 ? b.DataTopicIndex : null;
+                nodeState.DataTopicIndex = b.Range.DataTopicIndex != 0 ? b.Range.DataTopicIndex : null;
                 nodeState.BatteryColor = SerializeColorTransition(b.BatteryColor);
             }
             else if (node is LogNodeModel log)
@@ -606,29 +606,17 @@ public class ApplicationState
                 nodeState.RootTopic = tv.RootTopic;
                 nodeState.ShowValues = tv.ShowValues;
             }
-            else if (node is ImageNodeModel img)
-            {
-                nodeState.StaticImageUrl = img.StaticImageUrl;
-                nodeState.ObjectFit = img.ObjectFit;
-            }
-            else if (node is GridNodeModel grid)
-            {
-                nodeState.GridColumnHeaders = new List<string>(grid.ColumnHeaders);
-                nodeState.GridRows = grid.Rows.Select(r => new GridRowState
-                {
-                    Label = r.Label,
-                    Topics = new List<string>(r.Topics),
-                }).ToList();
-            }
 
-            // Save ports
-            foreach (var port in node.Ports)
+            // Base background image (any node type)
+            if (!string.IsNullOrEmpty(node.BackgroundImageUrl))
+                nodeState.BackgroundImageUrl = node.BackgroundImageUrl;
+            if (node.BackgroundObjectFit != "cover")
+                nodeState.BackgroundObjectFit = node.BackgroundObjectFit;
+
+            // Save ports (only if any exist)
+            if (node.Ports.Any())
             {
-                nodeState.Ports.Add(new PortState
-                {
-                    Id = port.Id,
-                    Alignment = port.Alignment.ToString()
-                });
+                nodeState.Ports = node.Ports.Select(p => new PortState { Id = p.Id, Alignment = p.Alignment.ToString() }).ToList();
             }
 
             state.Nodes.Add(nodeState);
@@ -821,6 +809,7 @@ public class ApplicationState
         return new ColorTransition
         {
             ColorTopicIndex = state.ColorTopicIndex ?? 0,
+            ElseColor = state.ElseColor,
             ColorThresholds = state.ColorThresholds?
                 .Select(t => new GaugeColorThreshold { Value = t.Value, Color = t.Color, Direction = t.Direction })
                 .ToList() ?? new()
@@ -829,10 +818,11 @@ public class ApplicationState
 
     private static ColorTransitionState? SerializeColorTransition(ColorTransition ct)
     {
-        if (ct.ColorThresholds.Count == 0 && ct.ColorTopicIndex == 0) return null;
+        if (ct.ColorThresholds.Count == 0 && ct.ColorTopicIndex == 0 && ct.ElseColor == null) return null;
         return new ColorTransitionState
         {
             ColorTopicIndex = ct.ColorTopicIndex != 0 ? ct.ColorTopicIndex : null,
+            ElseColor = ct.ElseColor,
             ColorThresholds = ct.ColorThresholds.Count > 0
                 ? ct.ColorThresholds.Select(t => new GaugeColorThresholdState { Value = t.Value, Color = t.Color, Direction = t.Direction }).ToList()
                 : null
