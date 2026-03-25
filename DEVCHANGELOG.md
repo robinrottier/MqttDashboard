@@ -7,7 +7,7 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ## 2026-03-25 — REFACTOR-1: Data model redesign (DashboardModel hierarchy)
 
-### Commit: (see git log)
+### Commit: (pending — this session)
 
 ### Problem
 `NodeState` was a ~50-field flat DTO covering all node types. `ApplicationState.GetDiagramState()` and `CreateDiagramFromState()` had ~100-line manual switch/case blocks duplicating every node property. Adding a new node type required editing 6+ files.
@@ -20,7 +20,7 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 - No manual switch/case needed in serialization path — STJ handles polymorphism via `nodeType` discriminator.
 
 #### Runtime model renames
-- `MudNodeModel` → `TextNodeModel` (in `MudNodeModel.cs`). `MudNodeModel` kept as `[Obsolete]` alias for widgets.
+- `MudNodeModel` → `TextNodeModel` (in `MudNodeModel.cs`). `MudNodeModel` kept as `[Obsolete]` alias.
 - `MudPortModel` → `NodePortModel` (in `MudPortModel.cs`). `MudPortModel` kept as `[Obsolete]` alias.
 
 #### Per-node serialization (`ToData()` / `FromData()`)
@@ -38,6 +38,15 @@ Each node type now owns its own serialization:
 - `_pageStates: List<DiagramState>` → `List<DashboardPageModel>`.
 - `_editSnapshot: DiagramState?` → `DashboardModel?`.
 - All page-switch, undo/redo, save, cut/copy/paste, add-node methods updated to use new types.
+- `AddNode()` uses `TextNodeModel` instead of `MudNodeModel`.
+- `UpdateSelectionState()` uses `NodePortModel` instead of `MudPortModel`.
+
+#### Widget base classes and Razor components
+- `BaseNodeWidget<TNode>` and `BaseNodeWithDataWidget<TNode>` — type constraint changed from `MudNodeModel` to `TextNodeModel`; `PortStyle` parameter from `MudPortModel` to `NodePortModel`.
+- `NodePropertyEditor.razor.cs` — `[Parameter] Node` type changed to `TextNodeModel`.
+- `StandardNodeLayout.razor`, `MudNodeWidget.razor`, `DataValueTooltipContent.razor`, `LogNodeWidget.razor`, `TreeViewNodeWidget.razor` — updated to `TextNodeModel`/`NodePortModel`.
+- `ColorTransitionGroupEditor.razor`, `NumericRangeEditor.razor`, `NodePropertyRenderer.razor` — `[Parameter] Node` type changed to `TextNodeModel`.
+- `NodePropertyAttributes.cs` — updated `NpCustomAttribute` doc comment.
 
 #### Service/controller/test files
 - `IDashboardService.cs`, `DashboardService.cs`, `ServerDashboardService.cs`, `DashboardStorageService.cs`, `DashboardController.cs` — all `DiagramState` → `DashboardModel` throughout.
@@ -48,7 +57,7 @@ Each node type now owns its own serialization:
 
 ### Result
 - Build: 0 errors, 0 warnings.
-- Tests: 11/11 pass.
+- Tests: 11/11 pass (5 client, 6 server).
 - New JSON format is nested (not flat), with `nodeType` discriminator per node — no backward compat with old files (by design).
 
 ---
