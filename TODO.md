@@ -8,6 +8,8 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 - [ ] Serialization: node ID GUIDs in file — map to sequential 1-based IDs for file (need port+link ID remapping too; deferred due to complexity)
 - [ ] Serialization: logged-on user not yet written to `FileInfo` (always admin for now — fine to leave)
+- [ ] THe no data msg: "No data topics configured. Switch to edit mode to add MQTT data topics." shold be more of abanner accross the top not a dialgo in the middle
+- [ ] I added a topic and switched to page 2 ... it had same msg. Data topics are per dashboard, not per page.
 
 
 ## 🟡 Minor Enhancements
@@ -88,7 +90,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Optional Git commit/push of dashboard changes to a remote repo
 
 ### FEAT-L: Deployment enhancements
-- [ ] Single Docker image supporting both server-only and WASM modes (different ports, shared data dir)
+- [ ] Single Docker image supporting both server-only SSR and WASM modes (different ports, shared data dir)
 - [ ] Read-only runtime mode — view-only, no login/edit UI exposed
 - [ ] Admin interface: runtime monitoring, logs, connected clients, dashboard file management
 

@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
-    <Product>Mqtt Dashboard</Product>
-    <AssemblyTitle>Mqtt Dashboard</AssemblyTitle>
+    <Product>MQTT Dashboard</Product>
+    <AssemblyTitle>MQTT Dashboard</AssemblyTitle>
     <!-- MinVer: derives Version from git tags (e.g. v1.0.0 → 1.0.0) -->
     <MinVerTagPrefix>v</MinVerTagPrefix>
     <MinVerDefaultPreReleaseIdentifiers>dev</MinVerDefaultPreReleaseIdentifiers>
