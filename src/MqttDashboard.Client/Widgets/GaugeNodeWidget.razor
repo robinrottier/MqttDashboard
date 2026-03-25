@@ -37,7 +37,7 @@
 @code {
     private double _percent = 0;
 
-    private object? ActiveValue => Node.DataTopicIndex == 1 ? Node.DataValue2 : Node.DataValue;
+    private object? ActiveValue =>  Node.DataValues[Node.DataTopicIndex];
 
     protected override void OnInitialized()
     {
@@ -99,7 +99,7 @@
     {
         if (Node.GaugeColor.ColorThresholds.Count > 0)
         {
-            var colorVal = Node.GaugeColor.ColorTopicIndex == 1 ? Node.DataValue2 : Node.DataValue;
+            var colorVal = Node.DataValues[Node.GaugeColor.ColorTopicIndex];
             if (colorVal != null && double.TryParse(colorVal.ToString(), out var dThresh))
             {
                 foreach (var t in Node.GaugeColor.ColorThresholds)

@@ -54,7 +54,7 @@
 
     private void UpdateState()
     {
-        var val   = Node.DataValue?.ToString() ?? "";
+        var val   = Node.DataValues?[0]?.ToString() ?? "";
         var onVal = string.IsNullOrEmpty(Node.OnValue) ? "1" : Node.OnValue;
         _isOn = val.Equals(onVal, StringComparison.OrdinalIgnoreCase)
              || val == "true" || val == "on";

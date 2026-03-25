@@ -125,7 +125,8 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
     protected void TriggerLinkAnimation()
     {
         if (Node.LinkAnimation == null || Node.LinkAnimation == "None") return;
-        if (Node.DataValue == null || !double.TryParse(Node.DataValue.ToString(), out var d)) return;
+        var val = Node.DataValues?[0]?.ToString();
+        if (val == null || !double.TryParse(val, out var d)) return;
 
         if (Node.LinkAnimation == "Reverse") d = -d;
 
@@ -188,17 +189,19 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
         try
         {
             return string.Format(Node.Text,
-                new FormattableValue(Node.DataValue),
-                new FormattableValue(Node.DataValue2));
+                Node.DataValues.Length > 0 ? new FormattableValue(Node.DataValues[0]) : null,
+                Node.DataValues.Length > 1 ? new FormattableValue(Node.DataValues[1]) : null,
+                Node.DataValues.Length > 2 ? new FormattableValue(Node.DataValues[2]) : null,
+                Node.DataValues.Length > 3 ? new FormattableValue(Node.DataValues[3]) : null,
+                null);
         }
         catch { return Node.Text; }
     }
 
     /// <summary>Wraps an arbitrary MQTT value for use with string.Format numeric format specifiers.</summary>
-    private sealed class FormattableValue : IFormattable
+    private sealed class FormattableValue(object? value) : IFormattable
     {
-        private readonly object? _value;
-        public FormattableValue(object? value) => _value = value;
+        private readonly object? _value = value;
 
         public string ToString(string? format, IFormatProvider? provider)
         {

@@ -67,12 +67,6 @@ namespace MqttDashboard.Models
         public object?[]   DataValues      { get; set; } = Array.Empty<object?>();
         public DateTime?[] DataUpdatedTimes { get; set; } = Array.Empty<DateTime?>();
 
-        // Convenience compat getters for the first two slots.
-        public object?   DataValue        => DataValues.Length       > 0 ? DataValues[0]       : null;
-        public object?   DataValue2       => DataValues.Length       > 1 ? DataValues[1]       : null;
-        public DateTime? DataLastUpdated  => DataUpdatedTimes.Length > 0 ? DataUpdatedTimes[0] : null;
-        public DateTime? DataLastUpdated2 => DataUpdatedTimes.Length > 1 ? DataUpdatedTimes[1] : null;
-
         /// <summary>
         /// Optional font size in pixels for data values
         /// </summary>
