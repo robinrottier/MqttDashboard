@@ -63,10 +63,10 @@
 
     private string BuildValueArcPath()
     {
-        var origin = Node.ArcOrigin ?? Node.MinValue;
+        var origin = Node.Origin ?? Node.MinValue;
         var range = Node.MaxValue - Node.MinValue;
 
-        if (Node.ArcOrigin.HasValue && range != 0)
+        if (Node.Origin.HasValue && range != 0)
         {
             var originPercent = Math.Clamp((origin - Node.MinValue) / range, 0.0, 1.0);
             var valuePercent = Math.Clamp(_percent, 0.0, 1.0);
@@ -125,7 +125,7 @@
         var value = XmlStringHelper.XmlSafeEncode(FormatValue());
         var sb = new System.Text.StringBuilder();
 
-        var tickValue = Node.ArcOrigin;
+        var tickValue = Node.Origin;
         if (tickValue.HasValue)
         {
             var range = Node.MaxValue - Node.MinValue;

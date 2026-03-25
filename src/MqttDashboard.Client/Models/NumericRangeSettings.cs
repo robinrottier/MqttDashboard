@@ -11,7 +11,7 @@ public class NumericRangeSettings
     public double Max { get; set; } = 100;
 
     /// <summary>
-    /// Origin/midpoint of the visual scale (e.g. gauge arc zero-point).
+    /// Origin/midpoint of the visual scale (e.g. gauge zero-point).
     /// When null the display starts from <see cref="Min"/>.
     /// </summary>
     public double? Origin { get; set; }

@@ -794,7 +794,7 @@ public partial class Display : IDisposable
             if (n is GaugeNodeModel g)
             {
                 ns.MinValue = g.MinValue; ns.MaxValue = g.MaxValue; ns.Unit = g.Unit;
-                ns.ArcOrigin = g.ArcOrigin;
+                ns.Origin = g.Origin;
                 ns.DataTopicIndex = g.DataTopicIndex != 0 ? g.DataTopicIndex : null;
                 ns.TextPosition = g.TextPosition != "Below" ? g.TextPosition : null;
                 ns.GaugeColor = ApplicationState.SerializeColorTransitionStatic(g.GaugeColor);
@@ -895,7 +895,7 @@ public partial class Display : IDisposable
             {
                 "Gauge" => new GaugeNodeModel(new Point(ns.X + offset, ns.Y + offset))
                 {
-                    Range = new NumericRangeSettings { Min = ns.MinValue ?? 0, Max = ns.MaxValue ?? 100, Origin = ns.ArcOrigin, DataTopicIndex = ns.DataTopicIndex ?? 0 },
+                    Range = new NumericRangeSettings { Min = ns.MinValue ?? 0, Max = ns.MaxValue ?? 100, Origin = ns.Origin, DataTopicIndex = ns.DataTopicIndex ?? 0 },
                     Unit = ns.Unit,
                     TextPosition = ns.TextPosition ?? "Below",
                     GaugeColor = ApplicationState.DeserializeColorTransitionStatic(ns.GaugeColor),

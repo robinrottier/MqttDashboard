@@ -120,7 +120,7 @@ public class NodeState
     public double? MinValue { get; set; }
     public double? MaxValue { get; set; }
     public string? Unit { get; set; }
-    public double? ArcOrigin { get; set; }
+    public double? Origin { get; set; }
     public int? DataTopicIndex { get; set; }
     public string? TextPosition { get; set; }
 

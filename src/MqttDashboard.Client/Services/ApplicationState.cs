@@ -360,7 +360,7 @@ public class ApplicationState
                         {
                             Min = nodeState.MinValue ?? 0,
                             Max = nodeState.MaxValue ?? 100,
-                            Origin = nodeState.ArcOrigin,
+                            Origin = nodeState.Origin,
                             DataTopicIndex = nodeState.DataTopicIndex ?? 0,
                         },
                         Unit = nodeState.Unit,
@@ -566,7 +566,7 @@ public class ApplicationState
                 nodeState.MinValue = g.Range.Min;
                 nodeState.MaxValue = g.Range.Max;
                 nodeState.Unit = g.Unit;
-                nodeState.ArcOrigin = g.Range.Origin;
+                nodeState.Origin = g.Range.Origin;
                 nodeState.DataTopicIndex = g.Range.DataTopicIndex != 0 ? g.Range.DataTopicIndex : null;
                 nodeState.TextPosition = g.TextPosition != "Below" ? g.TextPosition : null;
                 nodeState.GaugeColor = SerializeColorTransition(g.GaugeColor);

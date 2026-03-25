@@ -24,7 +24,7 @@ public class GaugeNodeModel : MudNodeModel
     [NpText("Unit", Category = "Gauge", Order = 2, Placeholder = "°C, W…")]
     public string? Unit { get; set; }
 
-    [NpSelect("Text Position", "Below", "Above", Category = "Gauge", Order = 3, Labels = ["Below arc", "Above arc"])]
+    [NpSelect("Text Position", "Below", "Above", Category = "Gauge", Order = 3, Labels = ["Below", "Above"])]
     public string TextPosition { get; set; } = "Below";
 
     [NpCustom("Color Transitions", typeof(ColorTransitionGroupEditor), Category = "Gauge", Order = 4)]
@@ -33,6 +33,6 @@ public class GaugeNodeModel : MudNodeModel
     // Backward-compatible convenience accessors used by the widget rendering code.
     public double MinValue => Range.Min;
     public double MaxValue => Range.Max;
-    public double? ArcOrigin => Range.Origin;
+    public double? Origin => Range.Origin;
     public int DataTopicIndex => Range.DataTopicIndex;
 }
