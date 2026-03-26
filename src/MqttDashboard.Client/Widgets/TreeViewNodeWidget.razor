@@ -4,21 +4,24 @@
 @inherits BaseNodeWidget<TreeViewNodeModel>
 
 <div style="@ContainerStyle()"
-     class=@("default-node treeview-node"+(Node.Group!=null?" grouped":"")+(Node.Selected?" selected":""))
+     class=@("default-node treeview-node" + (Node.Group != null ? " grouped" : "") + (Node.Selected ? " selected" : ""))
      @ondblclick="OnDoubleClick">
-    <div class="tv-outer">
+    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden;min-width:0;">
         @if (!string.IsNullOrEmpty(Node.Title))
         {
-            <div class="tv-title">@Node.Title</div>
+            <div style="font-size:0.75rem;font-weight:500;padding:2px 4px 0;">@Node.Title</div>
         }
         @if (string.IsNullOrEmpty(RootTopicValue))
         {
-            <div class="tv-empty">Set a Topic in properties.</div>
+            <div style="opacity:0.5;font-size:0.75rem;padding:4px;">Set Root Topic in properties.</div>
         }
         else
         {
-            <div class="tv-scroll">
-                @RenderNode(_tree)
+            <div style="flex:1;overflow-y:auto;font-size:0.75rem;min-height:0;padding:2px 0;">
+                <MudTreeView T="TreeNode" Dense="true" Hover="true"
+                             Style="font-size:0.75rem;font-family:monospace;overflow:auto;width:100%;height:100%;">
+                    @RenderMudTreeItem(_tree)
+                </MudTreeView>
             </div>
         }
     </div>
@@ -179,69 +182,34 @@
         return null;
     }
 
-    private void ToggleExpand(TreeNode node)
+    private RenderFragment RenderMudTreeItem(TreeNode node) => builder =>
     {
-        node.Expanded = !node.Expanded;
-        StateHasChanged();
-    }
+        var isHighlighted = _changedAt.TryGetValue(node.FullTopic, out var changedTime) &&
+                            (DateTime.Now - changedTime).TotalSeconds < 2;
 
-    private RenderFragment RenderNode(TreeNode node) => builder =>
-    {
-        // Root node is invisible — render its children directly
-        if (node == _tree)
+        builder.OpenComponent<MudTreeViewItem<TreeNode>>(0);
+        builder.AddAttribute(1, "Value", node);
+        builder.AddAttribute(2, "Expanded", node.Expanded);
+        builder.AddAttribute(3, "ExpandedChanged", EventCallback.Factory.Create<bool>(this, v => node.Expanded = v));
+
+        var displayText = node.Children.Count > 0
+            ? node.Label
+            : (Node.ShowValues && node.Value != null ? $"{node.Label}: {node.Value}" : node.Label);
+        builder.AddAttribute(4, "Text", displayText);
+
+        if (isHighlighted)
+            builder.AddAttribute(5, "Style", "background:var(--mud-palette-warning-hover);");
+
+        if (node.Children.Count > 0)
         {
-            foreach (var child in node.Children)
-                builder.AddContent(0, RenderNode(child));
-            return;
+            builder.AddAttribute(6, "ChildContent", (RenderFragment)(childBuilder =>
+            {
+                foreach (var child in node.Children)
+                    childBuilder.AddContent(0, RenderMudTreeItem(child));
+            }));
         }
 
-        bool hasChildren = node.Children.Count > 0;
-        bool isHighlighted = _changedAt.TryGetValue(node.FullTopic, out var changedTime) &&
-                             (DateTime.Now - changedTime).TotalSeconds < 2;
-
-        builder.OpenElement(0, "div");
-        builder.AddAttribute(1, "class", isHighlighted ? "tv-node tv-highlighted" : "tv-node");
-
-        // Row: expand/leaf icon + label + optional value
-        builder.OpenElement(2, "div");
-        builder.AddAttribute(3, "class", "tv-row");
-        if (hasChildren)
-            builder.AddAttribute(4, "onclick", EventCallback.Factory.Create(this, () => ToggleExpand(node)));
-
-        // Expand/leaf icon
-        builder.OpenElement(5, "span");
-        builder.AddAttribute(6, "class", hasChildren ? "tv-expand-icon" : "tv-leaf-icon");
-        builder.AddMarkupContent(7, hasChildren ? (node.Expanded ? "&#x25BE;" : "&#x25B8;") : "&#x2022;");
-        builder.CloseElement();
-
-        // Label
-        builder.OpenElement(8, "span");
-        builder.AddAttribute(9, "class", "tv-label");
-        builder.AddContent(10, node.Label);
-        builder.CloseElement();
-
-        // Value (leaf nodes only, when ShowValues is enabled)
-        if (!hasChildren && Node.ShowValues && node.Value != null)
-        {
-            builder.OpenElement(11, "span");
-            builder.AddAttribute(12, "class", "tv-value");
-            builder.AddContent(13, node.Value);
-            builder.CloseElement();
-        }
-
-        builder.CloseElement(); // tv-row
-
-        // Children
-        if (hasChildren && node.Expanded)
-        {
-            builder.OpenElement(14, "div");
-            builder.AddAttribute(15, "class", "tv-children");
-            foreach (var child in node.Children)
-                builder.AddContent(16, RenderNode(child));
-            builder.CloseElement();
-        }
-
-        builder.CloseElement(); // tv-node
+        builder.CloseComponent();
     };
 
     public override void Dispose()
