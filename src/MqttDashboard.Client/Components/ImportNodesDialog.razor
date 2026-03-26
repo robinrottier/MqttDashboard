@@ -3,7 +3,7 @@
 
 <MudDialog>
     <DialogContent>
-        <MudStack Spacing="2">
+        <MudStack Spacing="1">
             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                 <MudText Typo="Typo.body2" Style="flex:1">
                     Paste JSON exported from this dashboard into the box below, then choose where to import it.
@@ -15,16 +15,11 @@
                 </MudTooltip>
             </MudStack>
 
-            <MudTextField T="string"
-                          Label="Paste JSON here"
-                          Lines="14"
-                          Variant="Variant.Outlined"
-                          Style="font-family:monospace;font-size:0.72rem;"
-                          Value="@_json"
-                          ValueChanged="@OnValueChanged" />
+            <MudRadioGroup @bind-Value="_destination" T="string">
+                <MudRadio Value="@("current")">Add to current page</MudRadio>
+                <MudRadio Value="@("new")">Add as new page</MudRadio>
+            </MudRadioGroup>
 
-            @* Reserve fixed height so the dialog doesn't grow when the status alert appears *@
-            <div style="min-height:40px;">
                 @if (_parseError != null)
                 {
                     <MudAlert Severity="Severity.Error" Dense="true">@_parseError</MudAlert>
@@ -36,12 +31,21 @@
                         @_parsed.Nodes.Count node(s)@(_parsed.Links.Count > 0 ? $", {_parsed.Links.Count} link(s)" : "")
                     </MudAlert>
                 }
-            </div>
+                else
+                {
+                    <MudAlert  Severity="Severity.Normal" Dense="true" NoIcon >
+                   
+                    </MudAlert>
+                }
 
-            <MudRadioGroup @bind-Value="_destination" T="string">
-                <MudRadio Value="@("current")">Add to current page</MudRadio>
-                <MudRadio Value="@("new")">Add as new page</MudRadio>
-            </MudRadioGroup>
+            <MudTextField T="string"
+                          Label="Paste JSON here"
+                          Lines="12"
+                          Variant="Variant.Outlined"
+                          Style="font-family:monospace;font-size:0.72rem;"
+                          Value="@_json"
+                          ValueChanged="@OnValueChanged" />
+
         </MudStack>
     </DialogContent>
     <DialogActions>
