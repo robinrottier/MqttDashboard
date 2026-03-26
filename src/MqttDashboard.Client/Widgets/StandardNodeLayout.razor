@@ -12,9 +12,9 @@
              class="@CssClass"
              @ondblclick="HandleDoubleClick">
             <div style="@OuterFlexStyle">
-                @if (ShowTitle && ShowTitleFirst)
+                @if (ShowTitle && ShowTitleFirst && HasTitleContent)
                 {
-                    <div style="@TitleDivFullStyle">
+                    <div style="@TitleDivStyle">
                         @if (!string.IsNullOrEmpty(Node.Icon))
                         {
                             <MudIcon Icon="@Node.Icon" Style="@IconStyle" Size="MudBlazor.Size.Small" />
@@ -26,9 +26,9 @@
                     </div>
                 }
                 @ExtraContent
-                @if (ShowTitle && !ShowTitleFirst)
+                @if (ShowTitle && !ShowTitleFirst && HasTitleContent)
                 {
-                    <div style="@TitleDivFullStyle">
+                    <div style="@TitleDivStyle">
                         @if (!string.IsNullOrEmpty(Node.Icon))
                         {
                             <MudIcon Icon="@Node.Icon" Style="@IconStyle" Size="MudBlazor.Size.Small" />
@@ -124,7 +124,4 @@
             "display:flex;flex-direction:row;align-items:center;justify-content:center;gap:4px;" +
             "font-size:0.75rem;font-weight:500;padding:2px 4px 0;"
     };
-
-    // Always-rendered title container — hidden when no content so DOM stays stable (prevents Blazor.Diagrams height loop)
-    private string TitleDivFullStyle => HasTitleContent ? TitleDivStyle : TitleDivStyle + ";display:none";
 }

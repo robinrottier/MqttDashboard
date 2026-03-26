@@ -7,15 +7,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-### Added
-- **Import / Export via JSON clipboard (FEAT-E)** — new "Export…" and "Import…" items in the Edit menu. Export shows the JSON for selected nodes or the entire current page in a text dialog with a Copy button. Import accepts that JSON in a text area (or pastes it from the clipboard automatically) and lets the user add the nodes to the current page or as a new page. Both nodes-only and full-page (with links) formats are supported, detected automatically.
-
 ### Fixed
-- **Node without a title no longer grows indefinitely** — the title `<div>` in `StandardNodeLayout` is now always present in the DOM and hidden via `display:none` when empty. This prevents Blazor.Diagrams from triggering a remeasure loop when a node has no title or icon.
-- **Grid snap-to-centre setting is now correctly saved and restored** — was previously lost on reload because the negative-sign convention was decoded before `GridSnapToCenter` was set. Grid settings are now stored as a positive `GridSize` integer and a separate `GridSnapToCenter` bool in the file.
+- **Node without a title no longer grows indefinitely** — set `ControlledSize = true` on `TextNodeModel` so Blazor.Diagrams' ResizeObserver is never activated for our nodes. We manage all node sizes explicitly via CSS and the resize handle; the observer was creating a sub-pixel feedback loop.
+- **Grid no longer visible in view mode** — `GridSize` is now cleared to `null` on the diagram options when leaving edit mode.
+- **Import dialog "Import" button now enables correctly** — replaced the conflicting `@bind-Value` + `Immediate` + `@oninput` triple on `MudTextField` with a clean `Value` / `ValueChanged` pattern that reliably triggers JSON parsing on every change.
+- **Grid snap-to-centre setting is now correctly saved and restored** — was previously lost on reload because the negative-sign convention was decoded before `GridSnapToCenter` was set.
 
 ### Changed
-- **Grid size now enforced to 5–100 px (step 5) in edit mode** — the field minimum in Dashboard Properties is raised to 5; setting a grid of 0 is no longer allowed. The old negative-value convention (which encoded snap-to-centre) is replaced by an explicit `gridSnapToCenter` boolean in the dashboard file.
+- **Import / Export moved to File menu** — was in Edit menu; now in File menu (still gated on edit mode).
+- **Grid size enforced to 5–100 px (step 5) in edit mode** — the old negative-value convention replaced by an explicit `gridSnapToCenter` boolean.
+
+### Added
+- **Import / Export via JSON clipboard (FEAT-E)** — Export shows JSON for selected nodes or the current page; Import accepts that JSON (or pastes from clipboard) and adds to the current page or a new page.
 
 
 - **Data topic management in Dashboard Properties** — MQTT topics are now managed via the Dashboard Properties dialog (topic list with add/remove controls). Dashboard is marked dirty when topics change, so topics are always saved with the dashboard.

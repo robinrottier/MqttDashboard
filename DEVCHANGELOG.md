@@ -5,7 +5,55 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
-## 2026-03-26 — Bug fixes + clipboard import/export
+## 2026-03-26 (follow-up) — Bug fix pass on previous session's work
+
+### Commit: (see git log) · UTC 2026-03-26 · branch: develop
+
+---
+
+### Bug fix: node height loop — proper root cause fix (`TextNodeModel.cs`)
+
+**Root cause (confirmed):** `NodeRenderer` in rrSoft.Blazor.Diagrams 0.1.2 attaches a JS `ResizeObserver` on the `.diagram-node` wrapper element whenever `Node.ControlledSize` is `false` (the default). The observer calls `OnResize(getBoundingClientRect())` after every render. Because `getBoundingClientRect()` can include sub-pixel rounding and zoom-division noise, the reported size may differ slightly from the stored `Node.Size`, triggering a re-render → re-measure loop that manifests as slow indefinite height growth — particularly on nodes without a title (where there is no stable text anchor).
+
+**Previous (incorrect) fix:** `StandardNodeLayout` kept the title `<div>` in the DOM with `display:none` to stabilise the DOM structure. This was addressing a symptom rather than the cause and did not stop the observer loop.
+
+**Correct fix:** Convert `TextNodeModel` from primary-constructor syntax to a regular constructor and set `ControlledSize = true` in the body. All our nodes set explicit `Node.Size` in `OnInitialized` and the user can resize via the drag handle (which calls `NodeModel.SetSize()` directly, unaffected by `ControlledSize`). The `init` accessor on `ControlledSize` is accessible from derived-class constructors per the C# spec ("init context" extends to derived constructors).
+
+**Reverted:** The `TitleDivFullStyle`/`display:none` workaround in `StandardNodeLayout` has been removed; the original clean `@if (… && HasTitleContent)` guards are restored.
+
+**Future:** A TODO comment has been left in `rrSoft.Blazor.Diagrams/NodeModel.cs` suggesting `ControlledSize` be changed to `{ get; protected set; }` in a future library version for clarity.
+
+**Files:** `src/MqttDashboard.Client/Models/TextNodeModel.cs`, `src/MqttDashboard.Client/Widgets/StandardNodeLayout.razor`
+
+---
+
+### Bug fix: grid shown in view mode (`Display.razor.cs`)
+
+**Problem:** When switching from edit → view mode, `_diagram.Options.GridSize` was left at the edit-mode value, so the grid dotted background remained visible in view mode.
+
+**Fix:** Added `_diagram.Options.GridSize = null;` to the `else` branch of `SwitchMode` (the path taken when `enterEditMode` is false).
+
+**Files:** `src/MqttDashboard.Client/Pages/Display.razor.cs`
+
+---
+
+### Bug fix: Import dialog "Import" button never enabled (`ImportNodesDialog.razor`)
+
+**Problem:** The `MudTextField` had three conflicting data-binding attributes: `@bind-Value="_json"`, `Immediate="true"`, and `@oninput="OnJsonChanged"`. MudBlazor's `Immediate` mode generates its own internal `oninput` handler; adding a second `@oninput` created a race between the two handlers. In practice `_json` was sometimes not updated before `TryParse()` ran, so `_parsed` stayed null and the Import button remained disabled.
+
+**Fix:** Replaced the triple with `Value="@_json" ValueChanged="@OnValueChanged"` (no `@oninput`, no `Immediate`). `OnValueChanged(string v)` sets `_json = v` and calls `TryParse()` — single, deterministic update path. Also renamed `OnJsonChanged` → `OnValueChanged` to match the MudBlazor pattern.
+
+**Files:** `src/MqttDashboard.Client/Components/ImportNodesDialog.razor`
+
+---
+
+### Change: Import / Export moved to File menu (`AppMenu.razor`)
+
+**Change:** Export… and Import… items moved from the Edit submenu to the File submenu (below Dashboard Properties). Both remain gated on `IsEditMode`.
+
+**Files:** `src/MqttDashboard.Client/Layout/AppMenu.razor`
+
+---
 
 ### Commit: (see git log) · UTC 2026-03-26 · branch: develop
 

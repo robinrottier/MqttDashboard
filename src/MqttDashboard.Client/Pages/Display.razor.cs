@@ -329,6 +329,7 @@ public partial class Display : IDisposable
             }
             else
             {
+                _diagram.Options.GridSize = null; // no grid in view mode
                 _diagram.Options.AllowMultiSelection = false;
                 _diagram.UnselectAll();
             }

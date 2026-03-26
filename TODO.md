@@ -12,11 +12,11 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] TReeview has seperate "Root topic" property ...BUT it shou ldjust be the base node data topics, doesnt need a seperate prop
 - [ ] THe "Version x is avai;able. Restart now" message ontop of the main page in voiew mode is too much. Its enough to have the about box restart
 - [ ] The restart button does a restart...great...but how to we make it do the docker pull "automatically" ...can this be initiaited fro the app also??
-- [ ] A node without a title grows indefintely in height — ✅ fixed (title div always in DOM, hidden via display:none)
+- [x] A node without a title grows indefintely in height — fixed: `ControlledSize = true` in `TextNodeModel` disables Blazor.Diagrams' ResizeObserver (root cause was sub-pixel feedback loop, not a DOM structure issue)
 - [ ] Grid snapping behavoir is still eratic. Lets remove all complicated code and just have a simple start... — ✅ simplified (positive GridSize + separate GridSnapToCenter bool, min 5 enforced in edit mode)
 	- [x] New document (or no setting in loaded file) defaults to 20px grid and snapping in edit mode.
 	- [x] IN edit mode you cannot not have a grid ... it must be a value (multiple 5), cannot be zero and max 100 and alawys snaps
-	- [ ] No grid is shown in view mode.
+	- [x] No grid is shown in view mode.
 	- [x] Setting is always written to file (even if its default 20)
 	- [x] Previsou logic of -ve values removed ...-ve value meant grid size of x but did not snap to it
 - [ ] Tree view and log view have internal margins or padding...controls should be fully inside the outer widget box
@@ -26,6 +26,11 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Edit mode icon not necessary if not space ... it needs to be added as a menu item under options
 - [ ] cloud status least important if no space ... its in about box
 - [ ] title font could get smaller if no space?
+- [x] IMport dialog ... "Import" does not seem to get enabled? — fixed: replaced @bind-Value + Immediate + @oninput conflict with clean Value/ValueChanged pattern
+- [ ] IMport and Export dont seem to be able to sue clipboard ... is there some permissions to enable it? This was on firefox
+- [ ] Is there any continuous validation of the JSON as beng valid json and then a format the import will accept?
+- [x] IMport and export shoul dbe on File menu not Edit menu — moved to File menu, still gated on edit mode
+
 
 ## Pending
 

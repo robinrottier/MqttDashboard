@@ -15,13 +15,13 @@
                 </MudTooltip>
             </MudStack>
 
-            <MudTextField @bind-Value="_json"
+            <MudTextField T="string"
                           Label="Paste JSON here"
                           Lines="14"
                           Variant="Variant.Outlined"
                           Style="font-family:monospace;font-size:0.72rem;"
-                          Immediate="true"
-                          @oninput="OnJsonChanged" />
+                          Value="@_json"
+                          ValueChanged="@OnValueChanged" />
 
             @if (_parseError != null)
             {
@@ -70,9 +70,9 @@
         public List<LinkData> Links { get; init; } = [];
     }
 
-    private void OnJsonChanged(ChangeEventArgs e)
+    private void OnValueChanged(string value)
     {
-        _json = e.Value?.ToString() ?? string.Empty;
+        _json = value;
         TryParse();
     }
 
