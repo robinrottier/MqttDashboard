@@ -48,5 +48,11 @@ public class AuthService : IAuthService
         catch (Exception ex) { _logger?.LogError(ex, "Logout failed"); }
     }
 
+    /// <summary>
+    /// Not needed in WASM — the browser makes the HTTP request directly so
+    /// <see cref="LoginAsync"/> sets the cookie via the normal response flow.
+    /// </summary>
+    public Task<string?> GetLoginRedirectAsync(string password) => Task.FromResult<string?>(null);
+
     private record AuthStatusResponse(bool IsAdmin, bool AuthEnabled);
 }

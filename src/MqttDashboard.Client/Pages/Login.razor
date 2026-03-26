@@ -42,15 +42,41 @@
         _errorMessage = string.Empty;
         StateHasChanged();
 
-        var success = await AuthService.LoginAsync(_password);
-        if (success)
+        try
         {
-            AppState.SetAuthState(true, true);
-            Nav.NavigateTo("/");
-        }
-        else
-        {
+            if (OperatingSystem.IsBrowser())
+            {
+                // WASM: the browser makes the HTTP request directly, so the server can set
+                // the auth cookie on the real browser response via AuthController.Login.
+                var success = await AuthService.LoginAsync(_password);
+                if (success)
+                {
+                    AppState.SetAuthState(true, true);
+                    Nav.NavigateTo("/");
+                    return;
+                }
+            }
+            else
+            {
+                // Blazor Server: the circuit cannot set cookies (the WebSocket response has
+                // already been sent). Validate the password in-process and get a one-use token,
+                // then force a full browser navigation to redeem it via a fresh HTTP response.
+                var redirectUrl = await AuthService.GetLoginRedirectAsync(_password);
+                if (redirectUrl != null)
+                {
+                    Nav.NavigateTo(redirectUrl, forceLoad: true);
+                    return;
+                }
+            }
+
             _errorMessage = "Invalid password";
+        }
+        catch
+        {
+            _errorMessage = "Failed to validate password";
+        }
+        finally
+        {
             _loggingIn = false;
             StateHasChanged();
         }
