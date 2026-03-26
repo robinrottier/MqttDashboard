@@ -5,7 +5,67 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
-## 2026-03-26 (follow-up) — Bug fix pass on previous session's work
+## 2026-03-26 (batch 3) — TreeView overhaul + import dialog + padding
+
+### Commit: (see git log) · UTC 2026-03-26 · branch: develop
+
+---
+
+### Fix: TreeView collapse/focus loss + replace MudTreeView with custom rendering (`TreeViewNodeWidget.razor`)
+
+**Problem:** `MudTreeView`/`MudTreeViewItem` are stateful components. Every call to `StateHasChanged` caused MudBlazor to reconcile the component tree. For rapid MQTT bursts this resulted in constant re-rendering that visually collapsed the tree (MudBlazor's internal expanded state was reset) and lost keyboard focus.
+
+**Fix:** Replaced `MudTreeView`/`MudTreeViewItem` entirely with a custom lightweight div-based recursive renderer (`RenderNode`). Expansion state is stored on the `TreeNode` model objects (`Expanded` bool), not inside any MudBlazor component — so re-renders never lose state.
+
+Added an **80 ms debounce timer** (`_debounceTimer`): `OnTopicChanged` now starts/restarts this timer rather than calling `StateHasChanged` directly. Rapid bursts are coalesced into a single render.
+
+Added a **highlight-clear timer** (`_highlightClearTimer`): 2.2 s after the last update fires, triggers one more `StateHasChanged` to clear the highlight colouring (previously highlights could linger until the next MQTT message arrived).
+
+**Files:** `src/MqttDashboard.Client/Widgets/TreeViewNodeWidget.razor`, `.razor.css`
+
+---
+
+### Change: TreeView root topic merged into base DataTopics (`TreeViewNodeModel.cs`)
+
+**Problem:** `TreeViewNodeModel` had a bespoke `RootTopic` property separate from the standard `DataTopics` list, duplicating the concept and appearing as an extra "Root Topic" field in the property editor (via `[NpText]`) while the standard topic list remained empty and unused.
+
+**Fix:** Removed `RootTopic` from `TreeViewNodeModel`. The widget now reads `Node.DataTopics[0]` via a `RootTopicValue` computed property. Users set the root topic via the standard MQTT Topics section in the property editor (same as all other widgets).
+
+**Backward compat:** `TreeViewNodeData.RootTopic` remains in the data model (read-only for load). `FromData()` migrates: if `data.RootTopic` is non-empty and `DataTopics` is empty, `RootTopic` is added as `DataTopics[0]`. No data loss from existing saved files.
+
+**Files:** `src/MqttDashboard.Client/Models/TreeViewNodeModel.cs`, `TreeViewNodeWidget.razor`
+
+---
+
+### Enhancement: TreeView visual improvements (`TreeViewNodeWidget.razor.css`)
+
+With the custom renderer, full layout control is available:
+- Font reduced to **0.7 rem** (down from 0.75 rem)
+- Each tree row is a flex row: label left (ellipsis on overflow), value **bold + primary colour** right-aligned
+- **2 s highlight** on updated topics via `tv-highlighted` CSS class (background warning color, 0.3 s transition). Cleared automatically by `_highlightClearTimer`
+- Expand/collapse icons (▾ / ▸) and leaf bullet (•) via unicode HTML entities; `tv-children` indented 12 px
+- Hover uses `--mud-palette-action-hover` for consistency with MudBlazor theming
+
+---
+
+### Fix: Import dialog doesn't grow when status alert appears (`ImportNodesDialog.razor`)
+
+**Problem:** When valid JSON was pasted, a `MudAlert` appeared below the textarea, expanding the dialog height and causing layout shifts/scrollbars.
+
+**Fix:** Wrapped the conditional alert in `<div style="min-height:40px;">`. The reserved height matches a Dense MudAlert, so the dialog occupies the same vertical space whether or not an alert is visible.
+
+**Files:** `src/MqttDashboard.Client/Components/ImportNodesDialog.razor`
+
+---
+
+### Fix: TreeView and Log widget internal padding (`*.razor`, `*.razor.css`)
+
+- **Log:** header row padding reduced from `2px 4px 0` → `1px 3px 0`; added CSS rule `::deep .mud-table-root th, td { padding: 2px 4px }` to override MudBlazor's default (typically 12px) cell padding
+- **TreeView:** custom CSS classes use minimal padding (1–2 px per row); no more `padding:2px 0` wrapper div
+
+**Files:** `src/MqttDashboard.Client/Widgets/LogNodeWidget.razor`, `LogNodeWidget.razor.css`, `TreeViewNodeWidget.razor.css`
+
+---
 
 ### Commit: (see git log) · UTC 2026-03-26 · branch: develop
 

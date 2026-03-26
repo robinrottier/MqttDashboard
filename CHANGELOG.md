@@ -12,10 +12,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Grid no longer visible in view mode** — `GridSize` is now cleared to `null` on the diagram options when leaving edit mode.
 - **Import dialog "Import" button now enables correctly** — replaced the conflicting `@bind-Value` + `Immediate` + `@oninput` triple on `MudTextField` with a clean `Value` / `ValueChanged` pattern that reliably triggers JSON parsing on every change.
 - **Grid snap-to-centre setting is now correctly saved and restored** — was previously lost on reload because the negative-sign convention was decoded before `GridSnapToCenter` was set.
+- **TreeView no longer collapses or loses focus on MQTT updates** — replaced MudTreeView/MudTreeViewItem with a lightweight custom div-based renderer; expansion state lives on the model, not inside MudBlazor component state. Added 80 ms debounce to coalesce rapid message bursts into a single render.
+- **Import dialog no longer grows when status message appears** — reserved a fixed-height area for the parse-result alert so the dialog stays the same height whether an alert is visible or not.
+- **Update-available banner removed from main layout** — was too intrusive; the About dialog already provides version info and the Restart button.
 
 ### Changed
 - **Import / Export moved to File menu** — was in Edit menu; now in File menu (still gated on edit mode).
 - **Grid size enforced to 5–100 px (step 5) in edit mode** — the old negative-value convention replaced by an explicit `gridSnapToCenter` boolean.
+- **TreeView root topic now uses standard DataTopics** — the separate "Root Topic" property has been removed; set the topic via the standard MQTT Topics field (same as all other widgets). Existing saved dashboards migrate automatically.
+- **TreeView visual improvements** — font reduced to 0.7 rem; value is now bold and right-aligned on each row; updated topics briefly highlight for 2 seconds.
 
 ### Added
 - **Import / Export via JSON clipboard (FEAT-E)** — Export shows JSON for selected nodes or the current page; Import accepts that JSON (or pastes from clipboard) and adds to the current page or a new page.

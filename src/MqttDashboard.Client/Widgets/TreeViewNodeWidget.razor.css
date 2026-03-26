@@ -1,5 +1,93 @@
-/* Force the MudTreeView to fill the widget width */
-::deep .mud-treeview {
-    width: 100%;
+.tv-outer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
     min-width: 0;
+}
+
+.tv-title {
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 1px 3px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+}
+
+.tv-empty {
+    opacity: 0.5;
+    font-size: 0.7rem;
+    padding: 4px;
+}
+
+.tv-scroll {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+    font-size: 0.7rem;
+    font-family: monospace;
+}
+
+.tv-node {
+    transition: background-color 0.3s;
+}
+
+.tv-highlighted {
+    background: var(--mud-palette-warning-hover);
+}
+
+.tv-row {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 1px 2px;
+    border-radius: 2px;
+    min-width: 0;
+    cursor: default;
+}
+
+.tv-row:hover {
+    background: var(--mud-palette-action-hover);
+}
+
+.tv-expand-icon {
+    flex-shrink: 0;
+    width: 12px;
+    text-align: center;
+    opacity: 0.65;
+    cursor: pointer;
+    user-select: none;
+}
+
+.tv-leaf-icon {
+    flex-shrink: 0;
+    width: 12px;
+    text-align: center;
+    opacity: 0.25;
+}
+
+.tv-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.tv-value {
+    font-weight: 600;
+    flex-shrink: 0;
+    color: var(--mud-palette-primary);
+    padding-left: 4px;
+    max-width: 50%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tv-children {
+    padding-left: 12px;
 }

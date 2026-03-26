@@ -23,17 +23,20 @@
                           Value="@_json"
                           ValueChanged="@OnValueChanged" />
 
-            @if (_parseError != null)
-            {
-                <MudAlert Severity="Severity.Error" Dense="true">@_parseError</MudAlert>
-            }
-            else if (_parsed != null)
-            {
-                <MudAlert Severity="Severity.Info" Dense="true">
-                    Detected: @_detectedFormat —
-                    @_parsed.Nodes.Count node(s)@(_parsed.Links.Count > 0 ? $", {_parsed.Links.Count} link(s)" : "")
-                </MudAlert>
-            }
+            @* Reserve fixed height so the dialog doesn't grow when the status alert appears *@
+            <div style="min-height:40px;">
+                @if (_parseError != null)
+                {
+                    <MudAlert Severity="Severity.Error" Dense="true">@_parseError</MudAlert>
+                }
+                else if (_parsed != null)
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true">
+                        Detected: @_detectedFormat —
+                        @_parsed.Nodes.Count node(s)@(_parsed.Links.Count > 0 ? $", {_parsed.Links.Count} link(s)" : "")
+                    </MudAlert>
+                }
+            </div>
 
             <MudRadioGroup @bind-Value="_destination" T="string">
                 <MudRadio Value="@("current")">Add to current page</MudRadio>

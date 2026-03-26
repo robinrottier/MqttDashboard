@@ -6,44 +6,37 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ## BUGS
 
-- [ ] Treeview looses focus and all nodes seem to colapse
-- [ ] Treeview values need to be more differentitated. Maybe aligned in a column (within each topic) or have more space, or be in bold and th ebe highlighted (for a second or 2) when they update 
-- [ ] Treeview-the font for the treeview could be a bit smaller
-- [ ] TReeview has seperate "Root topic" property ...BUT it shou ldjust be the base node data topics, doesnt need a seperate prop
-- [x] THe "Version x is available. Restart now" message ontop of the main page in view mode is too much — removed banner from MainLayout; restart action remains in the About dialog only
+- [x] Treeview loses focus and nodes collapse — fixed: replaced MudTreeView with custom lightweight div-based rendering + 80ms debounce to coalesce rapid MQTT updates
+- [x] TreeView has separate "Root topic" property — removed; use DataTopics[0] (standard base-class topic) instead; old files migrate automatically on load
+- [x] Import dialog sizing issue when "nodes/links detected" alert appears — fixed: reserved `min-height:40px` for status area so dialog stays constant height
+
+
+## Pending
+
+- [x] Treeview values need to be more differentiated — done: flex row per item, value bold + primary colour, right-aligned; 2s highlight on update
+- [x] Treeview font could be smaller — reduced to 0.7rem
 - [ ] The restart button does a restart...great...but how to we make it do the docker pull "automatically" ...can this be initiaited fro the app also??
-- [x] A node without a title grows indefintely in height — fixed: `ControlledSize = true` in `TextNodeModel` disables Blazor.Diagrams' ResizeObserver (root cause was sub-pixel feedback loop, not a DOM structure issue)
-- [ ] Grid snapping behavoir is still eratic. Lets remove all complicated code and just have a simple start... — ✅ simplified (positive GridSize + separate GridSnapToCenter bool, min 5 enforced in edit mode)
-	- [x] New document (or no setting in loaded file) defaults to 20px grid and snapping in edit mode.
-	- [x] IN edit mode you cannot not have a grid ... it must be a value (multiple 5), cannot be zero and max 100 and alawys snaps
-	- [x] No grid is shown in view mode.
-	- [x] Setting is always written to file (even if its default 20)
-	- [x] Previsou logic of -ve values removed ...-ve value meant grid size of x but did not snap to it
-- [ ] Tree view and log view have internal margins or padding...controls should be fully inside the outer widget box
-	- [ ] Title bar behavoir at low width (e.g. on a phone, portatrait aspect)
+- [x] Tree view and log view have internal margins or padding — reduced: header padding trimmed, log table cell padding reduced via CSS
+- [ ] Title bar behavoir at low width (e.g. on a phone, portatrait aspect)
 	- [ ] The top right menu icon shoul dalways be shows ...items to its left could be lost if not engouh space
 	- [ ] Logout icon not necessary if no space...it needs to be added as a menu item under options
 	- [ ] Edit mode icon not necessary if not space ... it needs to be added as a menu item under options
 	- [ ] cloud status least important if no space ... its in about box
 	- [ ] title font could get smaller if no space?
-- [x] IMport dialog ... "Import" does not seem to get enabled? — fixed: replaced @bind-Value + Immediate + @oninput conflict with clean Value/ValueChanged pattern
 - [ ] IMport and Export dont seem to be able to see Windows clipboard ... is there some permissions to enable it? This was on firefox
 - [ ] Is there any continuous validation of the JSON as beng valid json and then a format the import will accept?
-- [x] IMport and export shoul dbe on File menu not Edit menu — moved to File menu, still gated on edit mode
-
-
-## Pending
-
 - [ ] Serialization: node ID GUIDs in file — map to sequential 1-based IDs for file (need port+link ID remapping too). Needs a json serilaizer class for Dashboard to manage the mapping.
 - [ ] Serialization:
 	- [ ] logged-on user not yet written to `FileInfo` (always admin for now — fine to leave)
 	- [ ] should include version of this app doing the write
-	- [ ] 
 
 
 ## 🟡 Minor Enhancements
 
 - [ ] Server-side "lazy cache": if client request is dropped, server should keep data live for a configurable delay (e.g. 30s) before removing references
+- [ ] Client side lazy cache also: if 2 pages have same dtaa item then only one request going up thru signalr to server and when page changes happen data shoul dbe there immediately as its already in this cache
+	- [ ] MQTT data cache needs seperating out to reusable package with a pub/sub interface and backend to matchin interface either over signal r, or mqtt directly.
+	- [ ] client api to this incude direct and async memory access also
 - [ ] Property transition
 	- [ ] Also a means to drag reordering around the conditions to specify which is first match
 - [ ] Data item topics per node

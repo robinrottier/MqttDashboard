@@ -6,22 +6,19 @@
 <div style="@ContainerStyle()"
      class=@("default-node treeview-node"+(Node.Group!=null?" grouped":"")+(Node.Selected?" selected":""))
      @ondblclick="OnDoubleClick">
-    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden;min-width:0;">
+    <div class="tv-outer">
         @if (!string.IsNullOrEmpty(Node.Title))
         {
-            <div style="font-size:0.75rem;font-weight:500;padding:2px 4px 0;">@Node.Title</div>
+            <div class="tv-title">@Node.Title</div>
         }
-        @if (string.IsNullOrEmpty(Node.RootTopic))
+        @if (string.IsNullOrEmpty(RootTopicValue))
         {
-            <div style="opacity:0.5;font-size:0.75rem;padding:4px;">Set Root Topic in properties.</div>
+            <div class="tv-empty">Set a Topic in properties.</div>
         }
         else
         {
-            <div style="flex:1;overflow-y:auto;font-size:0.75rem;min-height:0;padding:2px 0;">
-                <MudTreeView T="TreeNode" Dense="true" Hover="true"
-                             Style="font-size:0.75rem;font-family:monospace;overflow:auto;width:100%;height:100%;">
-                    @RenderMudTreeItem(_tree)
-                </MudTreeView>
+            <div class="tv-scroll">
+                @RenderNode(_tree)
             </div>
         }
     </div>
@@ -32,12 +29,18 @@
 </div>
 
 @code {
+    // The root MQTT topic is DataTopics[0] (inherited from TextNodeModel).
+    private string RootTopicValue => Node.DataTopics.Count > 0 ? Node.DataTopics[0] : string.Empty;
+
     private TreeNode _tree = new("", "");
     private bool _disposed;
     private IDisposable? _watchSubscription;
     private IDisposable? _rootWatchSubscription;
     private readonly Dictionary<string, bool> _expandedState = new();
     private readonly Dictionary<string, DateTime> _changedAt = new();
+    private bool _pendingRebuild;
+    private System.Threading.Timer? _debounceTimer;
+    private System.Threading.Timer? _highlightClearTimer;
 
     private sealed class TreeNode(string fullTopic, string label)
     {
@@ -54,6 +57,10 @@
         if (Node.Size == null || Node.Size.Width < 120 || Node.Size.Height < 80)
             Node.Size = new(200, 200);
         base.OnInitialized();
+        _debounceTimer = new System.Threading.Timer(OnDebounceElapsed, null,
+            System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
+        _highlightClearTimer = new System.Threading.Timer(OnHighlightClearElapsed, null,
+            System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
         SetupWatchers();
     }
 
@@ -68,13 +75,13 @@
         _watchSubscription?.Dispose(); _watchSubscription = null;
         _rootWatchSubscription?.Dispose(); _rootWatchSubscription = null;
 
-        if (string.IsNullOrEmpty(Node.RootTopic)) { _tree = new("", ""); return; }
+        if (string.IsNullOrEmpty(RootTopicValue)) { _tree = new("", ""); return; }
 
         RebuildTree();
 
-        var wildcardTopic = Node.RootTopic.TrimEnd('/') + "/#";
+        var wildcardTopic = RootTopicValue.TrimEnd('/') + "/#";
         _watchSubscription = AppState.DataCache.Watch(wildcardTopic, OnTopicChanged);
-        _rootWatchSubscription = AppState.DataCache.Watch(Node.RootTopic, OnTopicChanged);
+        _rootWatchSubscription = AppState.DataCache.Watch(RootTopicValue, OnTopicChanged);
     }
 
     private void OnTopicChanged(string topic, object value)
@@ -83,34 +90,51 @@
         _changedAt[topic] = DateTime.Now;
         var node = FindNode(_tree, topic);
         if (node != null)
-        {
             node.Value = value?.ToString();
-        }
         else
+            _pendingRebuild = true;
+
+        // Debounce: coalesce rapid MQTT bursts into one render
+        _debounceTimer?.Change(80, System.Threading.Timeout.Infinite);
+    }
+
+    private void OnDebounceElapsed(object? _)
+    {
+        if (_disposed) return;
+        if (_pendingRebuild)
         {
+            _pendingRebuild = false;
             SaveExpansionState(_tree);
             RebuildTree();
             RestoreExpansionState(_tree);
         }
         try { InvokeAsync(StateHasChanged); } catch { }
+        // Schedule a re-render to clear the 2s highlight window once it expires
+        _highlightClearTimer?.Change(2200, System.Threading.Timeout.Infinite);
+    }
+
+    private void OnHighlightClearElapsed(object? _)
+    {
+        if (_disposed) return;
+        try { InvokeAsync(StateHasChanged); } catch { }
     }
 
     private void RebuildTree()
     {
-        if (string.IsNullOrEmpty(Node.RootTopic)) { _tree = new("", ""); return; }
+        if (string.IsNullOrEmpty(RootTopicValue)) { _tree = new("", ""); return; }
 
-        var root = new TreeNode(Node.RootTopic, Node.RootTopic.Split('/').Last());
-        root.Value = AppState.DataCache.GetValue(Node.RootTopic)?.ToString();
+        var root = new TreeNode(RootTopicValue, RootTopicValue.Split('/').Last());
+        root.Value = AppState.DataCache.GetValue(RootTopicValue)?.ToString();
         root.Expanded = true;
 
-        var pattern = Node.RootTopic.TrimEnd('/') + "/#";
+        var pattern = RootTopicValue.TrimEnd('/') + "/#";
         var matches = AppState.DataCache.GetValuesByPattern(pattern);
 
         foreach (var kvp in matches.OrderBy(x => x.Key))
         {
-            var relativeParts = kvp.Key.Substring(Node.RootTopic.Length).TrimStart('/').Split('/');
+            var relativeParts = kvp.Key.Substring(RootTopicValue.Length).TrimStart('/').Split('/');
             var node = root;
-            var currentPath = Node.RootTopic;
+            var currentPath = RootTopicValue;
             var depth = 0;
             foreach (var part in relativeParts)
             {
@@ -155,39 +179,76 @@
         return null;
     }
 
-    private RenderFragment RenderMudTreeItem(TreeNode node) => builder =>
+    private void ToggleExpand(TreeNode node)
     {
-        var isHighlighted = _changedAt.TryGetValue(node.FullTopic, out var changedTime) &&
-                            (DateTime.Now - changedTime).TotalSeconds < 2;
+        node.Expanded = !node.Expanded;
+        StateHasChanged();
+    }
 
-        builder.OpenComponent<MudTreeViewItem<TreeNode>>(0);
-        builder.AddAttribute(1, "Value", node);
-        builder.AddAttribute(2, "Expanded", node.Expanded);
-        builder.AddAttribute(3, "ExpandedChanged", EventCallback.Factory.Create<bool>(this, v => node.Expanded = v));
-
-        var displayText = node.Children.Count > 0
-            ? node.Label
-            : (Node.ShowValues && node.Value != null ? $"{node.Label}: {node.Value}" : node.Label);
-        builder.AddAttribute(4, "Text", displayText);
-
-        if (isHighlighted)
-            builder.AddAttribute(5, "Style", "background:var(--mud-palette-warning-hover);");
-
-        if (node.Children.Count > 0)
+    private RenderFragment RenderNode(TreeNode node) => builder =>
+    {
+        // Root node is invisible — render its children directly
+        if (node == _tree)
         {
-            builder.AddAttribute(6, "ChildContent", (RenderFragment)(childBuilder =>
-            {
-                foreach (var child in node.Children)
-                    childBuilder.AddContent(0, RenderMudTreeItem(child));
-            }));
+            foreach (var child in node.Children)
+                builder.AddContent(0, RenderNode(child));
+            return;
         }
 
-        builder.CloseComponent();
+        bool hasChildren = node.Children.Count > 0;
+        bool isHighlighted = _changedAt.TryGetValue(node.FullTopic, out var changedTime) &&
+                             (DateTime.Now - changedTime).TotalSeconds < 2;
+
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", isHighlighted ? "tv-node tv-highlighted" : "tv-node");
+
+        // Row: expand/leaf icon + label + optional value
+        builder.OpenElement(2, "div");
+        builder.AddAttribute(3, "class", "tv-row");
+        if (hasChildren)
+            builder.AddAttribute(4, "onclick", EventCallback.Factory.Create(this, () => ToggleExpand(node)));
+
+        // Expand/leaf icon
+        builder.OpenElement(5, "span");
+        builder.AddAttribute(6, "class", hasChildren ? "tv-expand-icon" : "tv-leaf-icon");
+        builder.AddMarkupContent(7, hasChildren ? (node.Expanded ? "&#x25BE;" : "&#x25B8;") : "&#x2022;");
+        builder.CloseElement();
+
+        // Label
+        builder.OpenElement(8, "span");
+        builder.AddAttribute(9, "class", "tv-label");
+        builder.AddContent(10, node.Label);
+        builder.CloseElement();
+
+        // Value (leaf nodes only, when ShowValues is enabled)
+        if (!hasChildren && Node.ShowValues && node.Value != null)
+        {
+            builder.OpenElement(11, "span");
+            builder.AddAttribute(12, "class", "tv-value");
+            builder.AddContent(13, node.Value);
+            builder.CloseElement();
+        }
+
+        builder.CloseElement(); // tv-row
+
+        // Children
+        if (hasChildren && node.Expanded)
+        {
+            builder.OpenElement(14, "div");
+            builder.AddAttribute(15, "class", "tv-children");
+            foreach (var child in node.Children)
+                builder.AddContent(16, RenderNode(child));
+            builder.CloseElement();
+        }
+
+        builder.CloseElement(); // tv-node
     };
 
     public override void Dispose()
     {
         _disposed = true;
+        _debounceTimer?.Dispose();
+        _highlightClearTimer?.Dispose();
         _watchSubscription?.Dispose();
         _rootWatchSubscription?.Dispose();
         base.Dispose();
