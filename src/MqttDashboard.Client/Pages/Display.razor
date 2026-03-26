@@ -124,7 +124,6 @@ else
             <div style="position:absolute;top:0;left:0;right:0;z-index:500;pointer-events:auto;">
                 <MudAlert Severity="Severity.Warning" Dense="true" Square="true"
                           Icon="@Icons.Material.Filled.WifiOff"
-                          Action="@(AppState.IsEditMode ? "Configure Topics" : null)"
                           OnClick="@(AppState.IsEditMode ? EventCallback.Factory.Create(this, OpenDashboardProperties) : default)"
                           Style="border-radius:0;">
                     @if (AppState.IsEditMode)
