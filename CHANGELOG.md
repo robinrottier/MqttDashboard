@@ -8,6 +8,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Import / Export via JSON clipboard (FEAT-E)** — new "Export…" and "Import…" items in the Edit menu. Export shows the JSON for selected nodes or the entire current page in a text dialog with a Copy button. Import accepts that JSON in a text area (or pastes it from the clipboard automatically) and lets the user add the nodes to the current page or as a new page. Both nodes-only and full-page (with links) formats are supported, detected automatically.
+
+### Fixed
+- **Node without a title no longer grows indefinitely** — the title `<div>` in `StandardNodeLayout` is now always present in the DOM and hidden via `display:none` when empty. This prevents Blazor.Diagrams from triggering a remeasure loop when a node has no title or icon.
+- **Grid snap-to-centre setting is now correctly saved and restored** — was previously lost on reload because the negative-sign convention was decoded before `GridSnapToCenter` was set. Grid settings are now stored as a positive `GridSize` integer and a separate `GridSnapToCenter` bool in the file.
+
+### Changed
+- **Grid size now enforced to 5–100 px (step 5) in edit mode** — the field minimum in Dashboard Properties is raised to 5; setting a grid of 0 is no longer allowed. The old negative-value convention (which encoded snap-to-centre) is replaced by an explicit `gridSnapToCenter` boolean in the dashboard file.
+
+
 - **Data topic management in Dashboard Properties** — MQTT topics are now managed via the Dashboard Properties dialog (topic list with add/remove controls). Dashboard is marked dirty when topics change, so topics are always saved with the dashboard.
 - **"No data topics" banner on Display page** — when no data topics are configured, a warning banner at the top of the canvas guides users to Dashboard Properties. In edit mode shows a "Configure Topics" action button.
 - **"Add Port → All" option** — new menu item adds all 4 ports (Top, Bottom, Left, Right) to the selected node at once.

@@ -5,6 +5,69 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
+## 2026-03-26 — Bug fixes + clipboard import/export
+
+### Commit: (see git log) · UTC 2026-03-26 · branch: develop
+
+---
+
+### Bug fix: node without title grows indefinitely (`StandardNodeLayout.razor`)
+
+**Problem:** `StandardNodeLayout` guarded both title `<div>` elements with `@if (… && HasTitleContent)`. When `Title` and `Icon` are both empty, the div was removed from the DOM. Blazor.Diagrams measures node height after each render; the DOM change caused a size change which triggered another render, creating an infinite grow loop.
+
+**Fix:** Changed `@if (ShowTitle && ShowTitleFirst && HasTitleContent)` to `@if (ShowTitle && ShowTitleFirst)` (and equivalent for the bottom position). Added a `TitleDivFullStyle` computed property that appends `;display:none` to `TitleDivStyle` when `!HasTitleContent`. The div is always in the DOM; the browser reserves no space for it when hidden — so the node renders at the correct size with no spurious remeasure events.
+
+**Files:** `src/MqttDashboard.Client/Widgets/StandardNodeLayout.razor`
+
+---
+
+### Bug fix: grid snap-to-centre not saved/restored; negative-value convention removed
+
+**Problem (1):** `CreateDiagramFromPageData` set `options.GridSize = int.Abs(page.GridSize)` (always positive) and then set `options.GridSnapToCenter = options.GridSize < 0` — which was always false. So snap-to-centre was never restored from file.
+
+**Problem (2):** `GetPageData` serialised snap-to-centre as a negative `GridSize` (e.g. `-20`). Reading this back correctly would have required keeping the sign, but it was stripped by `int.Abs` first.
+
+**Fix:**
+- `DashboardPageModel`: added `GridSnapToCenter bool` field (default false). `GridSize` default raised from 10 → 20.
+- `ApplicationState.GridSnapToCenter` property added.
+- `SetGridSize(int)`: in edit mode, clamps to 5–100 and rounds to nearest 5. Also applies `GridSnapToCenter` to the diagram.
+- New `SetGridSnapToCenter(bool)` method.
+- `CreateDiagramFromPageData`: reads `page.GridSnapToCenter` directly; clamps `GridSize` to 5–100.
+- `GetPageData`: writes positive `GridSize` and `GridSnapToCenter` separately.
+- `Display.razor.cs` entering-edit-mode path: uses `page.GridSnapToCenter` instead of `savedGs < 0`.
+- `Display.razor.cs` `BuildFullState`: copies `GridSnapToCenter` from `_pageStates`.
+- `DashboardPropertiesDialog`: `OnInitialized` reads `AppState.GridSnapToCenter`; `ApplyAsync` calls `SetGridSnapToCenter` + `SetGridSize` separately (no negative-value encoding). Min raised from 0 → 5 in the numeric field. Caption updated.
+
+**Files:** `src/MqttDashboard.Client/Models/DashboardModel.cs`, `src/MqttDashboard.Client/Services/ApplicationState.cs`, `src/MqttDashboard.Client/Pages/Display.razor.cs`, `src/MqttDashboard.Client/Components/DashboardPropertiesDialog.razor`
+
+⚠️ Breaking file format change: old files with negative `gridSize` will load as positive (snap-to-centre will default off). Acceptable per dev notes.
+
+---
+
+### Feature FEAT-E: clipboard import/export (Node-Red style)
+
+**Overview:** Users can now export nodes or a whole page as JSON text, and import that JSON back (onto the current page or a new page). The UX mirrors Node-RED's import/export flow.
+
+#### New files
+- `src/MqttDashboard.Client/Models/ImportResult.cs` — `ImportResult` record (`Nodes`, `Links`, `AddAsNewPage`).
+- `src/MqttDashboard.Client/Components/ExportNodesDialog.razor` — shows JSON in a `Lines=18` read-only textarea. Mode selector: "Selected nodes (N)" (disabled if none selected) or "Current page". Copy button writes to OS clipboard via `mqttClipboard.writeText`.
+- `src/MqttDashboard.Client/Components/ImportNodesDialog.razor` — textarea for pasting JSON; "Paste from clipboard" icon button; auto-detects format (`mqttdashboard:"nodes"` or `mqttdashboard:"page"`); shows detected node/link count; destination radio (current page / new page); Import button disabled until valid JSON detected.
+
+#### JSON formats
+- Nodes: `{"mqttdashboard":"nodes","data":[...NodeData...]}` (existing copy/paste format)
+- Page: `{"mqttdashboard":"page","data":{...DashboardPageModel...}}` (new)
+
+#### Modified files
+- `src/MqttDashboard.Client/Services/ApplicationState.cs` — added `MenuExportNodes`, `MenuImportNodes` events; `TriggerExportNodes()`, `TriggerImportNodes()`.
+- `src/MqttDashboard.Client/Layout/AppMenu.razor` — added "Export…" and "Import…" items after Cut/Copy/Paste in the Edit menu; added `MenuExportNodes()` and `MenuImportNodes()` handlers.
+- `src/MqttDashboard.Client/Pages/Display.razor.cs`:
+  - `_onMenuExportNodes` / `_onMenuImportNodes` stored action fields.
+  - `SubscribeEditEvents` / `UnsubscribeEditEvents` updated.
+  - `ExportNodesAsync()` — captures selected nodes + current page data, opens `ExportNodesDialog`.
+  - `ImportNodesAsync()` — opens `ImportNodesDialog`; on result with `AddAsNewPage=true` creates a new `DashboardPageModel` and calls `SwitchToPageAsync`; on `AddAsNewPage=false` pastes nodes into the current diagram (same logic as `PasteNodesAsync`).
+
+---
+
 ## 2026-03-25 — Bug fixes: menu cleanup, no-data banner, grid, restart
 
 ### Commit: (see git log)

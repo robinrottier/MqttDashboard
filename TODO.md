@@ -12,13 +12,13 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] TReeview has seperate "Root topic" property ...BUT it shou ldjust be the base node data topics, doesnt need a seperate prop
 - [ ] THe "Version x is avai;able. Restart now" message ontop of the main page in voiew mode is too much. Its enough to have the about box restart
 - [ ] The restart button does a restart...great...but how to we make it do the docker pull "automatically" ...can this be initiaited fro the app also??
-- [ ] A node without a title grows indefintely in height (this was fixed once before??)
-- [ ] Grid snapping behavoir is still eratic. Lets remove all complicated code and just have a simple start...
-	- [ ] New document (or no setting in loaded file) defaults to 20px grid and snapping in edit mode.
-	- [ ] IN edit mode you cannot not have a grid ... it must be a value (multiple 5), cannot be zero and max 100 and alawys snaps
+- [ ] A node without a title grows indefintely in height — ✅ fixed (title div always in DOM, hidden via display:none)
+- [ ] Grid snapping behavoir is still eratic. Lets remove all complicated code and just have a simple start... — ✅ simplified (positive GridSize + separate GridSnapToCenter bool, min 5 enforced in edit mode)
+	- [x] New document (or no setting in loaded file) defaults to 20px grid and snapping in edit mode.
+	- [x] IN edit mode you cannot not have a grid ... it must be a value (multiple 5), cannot be zero and max 100 and alawys snaps
 	- [ ] No grid is shown in view mode.
-	- [ ] Setting is always written to file (even if its default 20)
-	- [ ] Previsou logic of -ve values removed ...-ve value meant grid size of x but did not snap to it
+	- [x] Setting is always written to file (even if its default 20)
+	- [x] Previsou logic of -ve values removed ...-ve value meant grid size of x but did not snap to it
 - [ ] Tree view and log view have internal margins or padding...controls should be fully inside the outer widget box
 - [ ] Title bar behavoir at low width (e.g. on a phone, portatrait aspect)
 - [ ] The top right menu icon shoul dalways be shows ...items to its left could be lost if not engouh space
@@ -80,7 +80,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ### FEAT-E: Editing improvements
 - [ ] Node-red style palette panel — drag node types from a sidebar onto the canvas
-- [ ] Import/export selected nodes or a whole page as JSON (clipboard)
+- [ ] Import/export selected nodes or a whole page as JSON (clipboard) — ✅ done (Export… and Import… in Edit menu)
 - [ ] Keyboard funcionality esp.:
 	- [ ] ctrl c/x/v for copy/cut/paste of nodes and links
 	- [ ] arrows to move selcted nodes

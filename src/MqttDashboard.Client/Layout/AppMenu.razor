@@ -55,6 +55,9 @@
         <MudMenuItem Label="Copy"  OnClick="MenuCopySelected" Disabled="@(!AppState.HasSelectedNode)" />
         <MudMenuItem Label="Paste" OnClick="MenuPasteSelected" Disabled="@(!AppState.HasClipboard || !IsEditMode)" />
         <MudDivider />
+        <MudMenuItem Label="Export…" OnClick="MenuExportNodes" />
+        <MudMenuItem Label="Import…" OnClick="MenuImportNodes" />
+        <MudDivider />
         <MudMenu Label="Add Port"    Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight" Disabled="@(!AppState.HasSingleSelectedNode)">
             <MudMenuItem Label="Top"    OnClick="() => MenuAddPort(PortAlignment.Top)"    Disabled="@(AppState.SelectedNodePorts?.Contains(PortAlignment.Top) == true)" />
             <MudMenuItem Label="Left"   OnClick="() => MenuAddPort(PortAlignment.Left)"   Disabled="@(AppState.SelectedNodePorts?.Contains(PortAlignment.Left) == true)" />
@@ -143,6 +146,8 @@
     private void MenuCutSelected()    => AppState.TriggerCutSelected();
     private void MenuCopySelected()   => AppState.TriggerCopySelected();
     private void MenuPasteSelected()  => AppState.TriggerPasteSelected();
+    private void MenuExportNodes()    => AppState.TriggerExportNodes();
+    private void MenuImportNodes()    => AppState.TriggerImportNodes();
     private void MenuEditProperties() => AppState.TriggerEditProperties();
     private void MenuAddAllPorts()              => AppState.TriggerAddAllPorts();
     private void MenuAddPort(PortAlignment a)    => AppState.TriggerAddPort(a);

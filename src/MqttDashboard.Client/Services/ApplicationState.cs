@@ -88,6 +88,7 @@ public class ApplicationState
         "Untitled";
 
     public int GridSize { get; private set; } = 20;
+    public bool GridSnapToCenter { get; private set; } = false;
     public string CanvasBackgroundColor { get; private set; } = string.Empty;
 
     // Edit mode state (set by Edit page)
@@ -189,6 +190,8 @@ public class ApplicationState
     public event Action? MenuCutSelected;
     public event Action? MenuCopySelected;
     public event Action? MenuPasteSelected;
+    public event Action? MenuExportNodes;
+    public event Action? MenuImportNodes;
     public event Action? MenuAddAllPorts;
     public event Action<PortAlignment>? MenuAddPort;
     public event Action<PortAlignment>? MenuDeletePort;
@@ -264,10 +267,25 @@ public class ApplicationState
 
     public void SetGridSize(int size)
     {
+        // In edit mode enforce minimum of 5, maximum of 100, rounded to nearest 5
+        if (IsEditMode)
+            size = Math.Clamp((int)Math.Round(size / 5.0) * 5, 5, 100);
         GridSize = size;
         if (_diagram != null)
         {
             _diagram.Options.GridSize = size == 0 ? null : size;
+            _diagram.Options.GridSnapToCenter = GridSnapToCenter;
+            _diagram.Refresh();
+        }
+        NotifyStateChangedAsync();
+    }
+
+    public void SetGridSnapToCenter(bool snapToCenter)
+    {
+        GridSnapToCenter = snapToCenter;
+        if (_diagram != null)
+        {
+            _diagram.Options.GridSnapToCenter = snapToCenter;
             _diagram.Refresh();
         }
         NotifyStateChangedAsync();
@@ -285,6 +303,8 @@ public class ApplicationState
     public void TriggerCutSelected() => MenuCutSelected?.Invoke();
     public void TriggerCopySelected() => MenuCopySelected?.Invoke();
     public void TriggerPasteSelected() => MenuPasteSelected?.Invoke();
+    public void TriggerExportNodes() => MenuExportNodes?.Invoke();
+    public void TriggerImportNodes() => MenuImportNodes?.Invoke();
     public void TriggerAddAllPorts() => MenuAddAllPorts?.Invoke();
     public void TriggerAddPort(PortAlignment alignment) => MenuAddPort?.Invoke(alignment);
     public void TriggerDeletePort(PortAlignment alignment) => MenuDeletePort?.Invoke(alignment);
@@ -338,13 +358,15 @@ public class ApplicationState
             {
                 options.GridSize = 20;
                 GridSize = 20;
+                GridSnapToCenter = false;
             }
             else
             {
-                options.GridSize = page.GridSize == 0 ? 20 : int.Abs(page.GridSize);
-                GridSize = (int)(options.GridSize ?? 20);
+                options.GridSize = Math.Clamp(page.GridSize == 0 ? 20 : Math.Abs(page.GridSize), 5, 100);
+                GridSize = (int)options.GridSize;
+                GridSnapToCenter = page.GridSnapToCenter;
             }
-            options.GridSnapToCenter = options.GridSize < 0;
+            options.GridSnapToCenter = GridSnapToCenter;
         }
 
         // Apply canvas background from page
@@ -430,13 +452,7 @@ public class ApplicationState
         if (_diagram == null)
             return new DashboardPageModel();
 
-        int gridSize;
-        if (_diagram.Options.GridSize == null)
-            gridSize = 0;
-        else if (_diagram.Options.GridSnapToCenter)
-            gridSize = -_diagram.Options.GridSize.Value;
-        else
-            gridSize = _diagram.Options.GridSize.Value;
+        var gridSize = (int)(_diagram.Options.GridSize ?? GridSize);
 
         var panX = _diagram.Pan.X;
         var panY = _diagram.Pan.Y;
@@ -444,6 +460,7 @@ public class ApplicationState
         var page = new DashboardPageModel
         {
             GridSize = gridSize,
+            GridSnapToCenter = _diagram.Options.GridSnapToCenter,
             BackgroundColor = string.IsNullOrEmpty(CanvasBackgroundColor) ? null : CanvasBackgroundColor,
         };
 

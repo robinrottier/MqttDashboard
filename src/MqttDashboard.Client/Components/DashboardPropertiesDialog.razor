@@ -16,10 +16,10 @@
             <MudText Typo="Typo.subtitle2">Grid</MudText>
             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                 <MudNumericField @bind-Value="_gridSize" Label="Grid Size (px)" Variant="Variant.Outlined"
-                                 Min="0" Max="100" Step="5" Style="max-width:140px;" />
+                                 Min="5" Max="100" Step="5" Style="max-width:140px;" />
                 <MudCheckBox @bind-Value="_gridSnapToCenter" Label="Snap to cell centre" />
             </MudStack>
-            <MudText Typo="Typo.caption" Color="Color.Secondary">Set to 0 to disable grid. Snap positions nodes at cell intersections when dragging.</MudText>
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Grid is always visible in edit mode (5–100 px, step 5). Snap positions nodes at cell intersections when dragging.</MudText>
 
             <MudDivider />
             <MudText Typo="Typo.subtitle2">Data Topics</MudText>
@@ -77,11 +77,8 @@
         _showDiagramName = AppState.ShowName;
         _backgroundColor = AppState.CanvasBackgroundColor;
         _topics = AppState.SubscribedTopics.OrderBy(t => t).ToList();
-
-        // Decode GridSize: negative means snap-to-center
-        var gs = AppState.GridSize;
-        _gridSnapToCenter = gs < 0;
-        _gridSize = Math.Abs(gs);
+        _gridSnapToCenter = AppState.GridSnapToCenter;
+        _gridSize = Math.Max(5, AppState.GridSize);
     }
 
     private void AddTopic()
@@ -105,9 +102,8 @@
         AppState.SetShowDiagramName(_showDiagramName);
         AppState.SetCanvasBackground(_backgroundColor);
 
-        // Apply grid: negative = snap-to-center, positive = snap-to-corner, 0 = no grid
-        var newGridSize = _gridSize == 0 ? 0 : (_gridSnapToCenter ? -_gridSize : _gridSize);
-        AppState.SetGridSize(newGridSize);
+        AppState.SetGridSnapToCenter(_gridSnapToCenter);
+        AppState.SetGridSize(_gridSize);
 
         // Sync SignalR subscriptions: subscribe added, unsubscribe removed
         if (AppState.SignalRService != null)
