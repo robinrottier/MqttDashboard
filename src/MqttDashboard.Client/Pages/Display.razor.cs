@@ -59,6 +59,8 @@ public partial class Display : IDisposable
     private Action? _onMenuUndoAll;
     private Action? _onMenuDiagramProperties;
     private Action? _onMenuPaste;
+    private Action? _onMenuExportNodes;
+    private Action? _onMenuImportNodes;
     private Action? _onMenuAddPage;
     private Action<int>? _onMenuSetActivePage;
     private DateTimeOffset _lastUndoPushByMove = DateTimeOffset.MinValue;
@@ -199,6 +201,7 @@ public partial class Display : IDisposable
                 Id = ps.Id,
                 Name = i < AppState.PageNames.Count ? AppState.PageNames[i] : $"Page {i + 1}",
                 GridSize = ps.GridSize,
+                GridSnapToCenter = ps.GridSnapToCenter,
                 BackgroundColor = ps.BackgroundColor,
                 Nodes = ps.Nodes,
                 Links = ps.Links,
@@ -312,10 +315,10 @@ public partial class Display : IDisposable
                 if (_diagram.Options.GridSize == null)
                 {
                     // Diagram was created read-only (GridSize not set in options).
-                    // Restore from the saved page state, not the ApplicationState default.
+                    // Restore from the saved page state.
                     var savedGs = _pageStates[_activePageIndex].GridSize;
-                    _diagram.Options.GridSize = savedGs == 0 ? null : Math.Abs(savedGs);
-                    _diagram.Options.GridSnapToCenter = savedGs < 0;
+                    _diagram.Options.GridSize = Math.Clamp(savedGs == 0 ? 20 : Math.Abs(savedGs), 5, 100);
+                    _diagram.Options.GridSnapToCenter = _pageStates[_activePageIndex].GridSnapToCenter;
                 }
                 AppState.SetGridSize(_diagram.Options.GridSize.HasValue ? (int)_diagram.Options.GridSize.Value : 0);
                 _diagram.Options.AllowMultiSelection = true;
@@ -326,6 +329,7 @@ public partial class Display : IDisposable
             }
             else
             {
+                _diagram.Options.GridSize = null; // no grid in view mode
                 _diagram.Options.AllowMultiSelection = false;
                 _diagram.UnselectAll();
             }
@@ -356,6 +360,10 @@ public partial class Display : IDisposable
         AppState.MenuCopySelected  += CopySelectedNodes;
         _onMenuPaste = () => InvokeAsync(PasteNodesAsync);
         AppState.MenuPasteSelected += _onMenuPaste;
+        _onMenuExportNodes = () => InvokeAsync(ExportNodesAsync);
+        AppState.MenuExportNodes += _onMenuExportNodes;
+        _onMenuImportNodes = () => InvokeAsync(ImportNodesAsync);
+        AppState.MenuImportNodes += _onMenuImportNodes;
         AppState.MenuAddPort       += AddPortToSelectedNode;
         AppState.MenuAddAllPorts   += AddAllPortsToSelectedNode;
         AppState.MenuDeletePort    += DeletePortFromSelectedNode;
@@ -399,6 +407,8 @@ public partial class Display : IDisposable
         AppState.MenuCutSelected   -= CutSelectedNodes;
         AppState.MenuCopySelected  -= CopySelectedNodes;
         if (_onMenuPaste != null) AppState.MenuPasteSelected -= _onMenuPaste;
+        if (_onMenuExportNodes != null) AppState.MenuExportNodes -= _onMenuExportNodes;
+        if (_onMenuImportNodes != null) AppState.MenuImportNodes -= _onMenuImportNodes;
         AppState.MenuAddPort       -= AddPortToSelectedNode;
         AppState.MenuAddAllPorts   -= AddAllPortsToSelectedNode;
         AppState.MenuDeletePort    -= DeletePortFromSelectedNode;
@@ -422,6 +432,7 @@ public partial class Display : IDisposable
 
         _onMenuSaveDiagram = _onMenuReloadDiagram = _onMenuEditProperties = null;
         _onMenuSaveAs = _onMenuUndo = _onMenuRedo = _onMenuUndoAll = _onMenuDiagramProperties = _onMenuAddPage = null;
+        _onMenuExportNodes = _onMenuImportNodes = null;
     }
 
     // ── Diagram event handlers ────────────────────────────────────────────────
@@ -831,6 +842,81 @@ public partial class Display : IDisposable
         }
         UpdateSelectionState();
         Snackbar.Add($"Pasted {toPaste.Count} node(s)", Severity.Info);
+        StateHasChanged();
+    }
+
+    // ── Export / Import ───────────────────────────────────────────────────────
+
+    private async Task ExportNodesAsync()
+    {
+        if (_diagram == null) return;
+        var selected = _diagram.GetSelectedModels().OfType<TextNodeModel>().ToList();
+        var selectedNodes = BuildSnapshots(selected);
+        var currentPage = AppState.GetPageData();
+
+        var parameters = new DialogParameters<ExportNodesDialog>
+        {
+            { d => d.SelectedNodes, selectedNodes },
+            { d => d.PageData, currentPage },
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
+        await DialogService.ShowAsync<ExportNodesDialog>("Export", parameters, options);
+    }
+
+    private async Task ImportNodesAsync()
+    {
+        if (_diagram == null) return;
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<ImportNodesDialog>("Import", new DialogParameters(), options);
+        var result = await dialog.Result;
+        if (result is not { Canceled: false, Data: ImportResult importResult }) return;
+
+        PushUndoSnapshot();
+
+        if (importResult.AddAsNewPage)
+        {
+            var newPageData = new DashboardPageModel
+            {
+                Name = $"Page {_pageStates.Count + 1}",
+                GridSize = Math.Max(5, AppState.GridSize),
+                GridSnapToCenter = AppState.GridSnapToCenter,
+                Nodes = importResult.Nodes,
+                Links = importResult.Links,
+            };
+            _pageStates.Add(newPageData);
+            _diagrams.Add(null);
+            var newNames = new List<string>(AppState.PageNames) { newPageData.Name };
+            AppState.SetPageNames(newNames, _activePageIndex);
+            await SwitchToPageAsync(_pageStates.Count - 1);
+        }
+        else
+        {
+            _diagram.UnselectAll();
+            foreach (var nodeData in importResult.Nodes)
+            {
+                TextNodeModel node = nodeData switch
+                {
+                    GaugeNodeData d    => GaugeNodeModel.FromData(d),
+                    SwitchNodeData d   => SwitchNodeModel.FromData(d),
+                    BatteryNodeData d  => BatteryNodeModel.FromData(d),
+                    LogNodeData d      => LogNodeModel.FromData(d),
+                    TreeViewNodeData d => TreeViewNodeModel.FromData(d),
+                    _                  => TextNodeModel.FromData(nodeData),
+                };
+                foreach (var ps in nodeData.Ports ?? [])
+                {
+                    if (Enum.TryParse<Blazor.Diagrams.Core.Models.PortAlignment>(ps.Alignment, out var alignment))
+                        AppState.AddPortToNode(node, alignment);
+                }
+                _diagram.Nodes.Add(node);
+                _diagram.Controls.AddFor(node).Add(new Blazor.Diagrams.Core.Controls.Default.ResizeControl(new Blazor.Diagrams.Core.Positions.Resizing.BottomRightResizerProvider()));
+                _diagram.SelectModel(node, false);
+            }
+            UpdateSelectionState();
+        }
+
+        AppState.MarkEdited();
+        Snackbar.Add($"Imported {importResult.Nodes.Count} node(s)", Severity.Success);
         StateHasChanged();
     }
 

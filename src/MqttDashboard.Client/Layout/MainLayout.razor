@@ -87,39 +87,7 @@
                 Admin password not configured. <MudLink Href="/setup">Set up now →</MudLink>
             </MudAlert>
         }
-        @if (AppState.UpdateAvailableVersion != null && !_updateDismissed)
-        {
-            <MudAlert Severity="Severity.Info" Class="ma-2" ShowCloseIcon="true" CloseIconClicked="() => _updateDismissed = true">
-                @if (AppState.DeploymentType == "Docker")
-                {
-                    <div class="d-flex align-center gap-3 flex-wrap">
-                        <MudText>Version <strong>@AppState.UpdateAvailableVersion</strong> is available.
-                            Pull the new image with <code>docker compose pull</code>, then restart:</MudText>
-                        <MudButton Variant="Variant.Filled" Color="Color.Info" Size="Size.Small"
-                                   Disabled="_restarting" OnClick="RestartAppAsync">
-                            @(_restarting ? "Restarting…" : "Restart Now")
-                        </MudButton>
-                    </div>
-                }
-                else if (AppState.DeploymentType == "HomeAssistant")
-                {
-                    <MudText>Version <strong>@AppState.UpdateAvailableVersion</strong> is available.
-                        Update via the Home Assistant Add-on Store.</MudText>
-                }
-                else if (AppState.DeploymentType == "Development")
-                {
-                    <MudText>Running development build <strong>@AppState.CurrentVersion</strong>.</MudText>
-                }
-                else
-                {
-                    <div class="d-flex align-center gap-3 flex-wrap">
-                        <MudText>Version <strong>@AppState.UpdateAvailableVersion</strong> is available.</MudText>
-                        <MudButton Variant="Variant.Text" Color="Color.Info" Size="Size.Small"
-                                   Href="@AppState.UpdateReleaseUrl" Target="_blank">View release →</MudButton>
-                    </div>
-                }
-            </MudAlert>
-        }
+
         @Body
     </MudMainContent>
 </MudLayout>
@@ -134,8 +102,7 @@
     private bool _systemDarkMode = false;
     private MudTheme? _theme = null;
     private bool _setupNeeded = false;
-    private bool _updateDismissed = false;
-    private bool _restarting = false;
+
 
     private string AppName => GetType().Assembly
         .GetCustomAttribute<System.Reflection.AssemblyProductAttribute>()?.Product
@@ -229,18 +196,7 @@
 
     private void OnAppStateChanged() => InvokeAsync(StateHasChanged);
 
-    private async Task RestartAppAsync()
-    {
-        _restarting = true;
-        StateHasChanged();
-        try
-        {
-            await Http.PostAsync("/api/update/restart", null);
-        }
-        catch { /* connection will drop as the app shuts down — that's expected */ }
-    }
-
-    private void ToggleEditMode() => AppState.RequestToggleEditMode();
+    private void ToggleEditMode()=> AppState.RequestToggleEditMode();
 
     [Inject] private IAuthService AuthService { get; set; } = default!;
 

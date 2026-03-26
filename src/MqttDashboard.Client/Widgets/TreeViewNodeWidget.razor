@@ -4,14 +4,14 @@
 @inherits BaseNodeWidget<TreeViewNodeModel>
 
 <div style="@ContainerStyle()"
-     class=@("default-node treeview-node"+(Node.Group!=null?" grouped":"")+(Node.Selected?" selected":""))
+     class=@("default-node treeview-node" + (Node.Group != null ? " grouped" : "") + (Node.Selected ? " selected" : ""))
      @ondblclick="OnDoubleClick">
     <div style="display:flex;flex-direction:column;height:100%;overflow:hidden;min-width:0;">
         @if (!string.IsNullOrEmpty(Node.Title))
         {
             <div style="font-size:0.75rem;font-weight:500;padding:2px 4px 0;">@Node.Title</div>
         }
-        @if (string.IsNullOrEmpty(Node.RootTopic))
+        @if (string.IsNullOrEmpty(RootTopicValue))
         {
             <div style="opacity:0.5;font-size:0.75rem;padding:4px;">Set Root Topic in properties.</div>
         }
@@ -32,12 +32,18 @@
 </div>
 
 @code {
+    // The root MQTT topic is DataTopics[0] (inherited from TextNodeModel).
+    private string RootTopicValue => Node.DataTopics.Count > 0 ? Node.DataTopics[0] : string.Empty;
+
     private TreeNode _tree = new("", "");
     private bool _disposed;
     private IDisposable? _watchSubscription;
     private IDisposable? _rootWatchSubscription;
     private readonly Dictionary<string, bool> _expandedState = new();
     private readonly Dictionary<string, DateTime> _changedAt = new();
+    private bool _pendingRebuild;
+    private System.Threading.Timer? _debounceTimer;
+    private System.Threading.Timer? _highlightClearTimer;
 
     private sealed class TreeNode(string fullTopic, string label)
     {
@@ -54,6 +60,10 @@
         if (Node.Size == null || Node.Size.Width < 120 || Node.Size.Height < 80)
             Node.Size = new(200, 200);
         base.OnInitialized();
+        _debounceTimer = new System.Threading.Timer(OnDebounceElapsed, null,
+            System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
+        _highlightClearTimer = new System.Threading.Timer(OnHighlightClearElapsed, null,
+            System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
         SetupWatchers();
     }
 
@@ -68,13 +78,13 @@
         _watchSubscription?.Dispose(); _watchSubscription = null;
         _rootWatchSubscription?.Dispose(); _rootWatchSubscription = null;
 
-        if (string.IsNullOrEmpty(Node.RootTopic)) { _tree = new("", ""); return; }
+        if (string.IsNullOrEmpty(RootTopicValue)) { _tree = new("", ""); return; }
 
         RebuildTree();
 
-        var wildcardTopic = Node.RootTopic.TrimEnd('/') + "/#";
+        var wildcardTopic = RootTopicValue.TrimEnd('/') + "/#";
         _watchSubscription = AppState.DataCache.Watch(wildcardTopic, OnTopicChanged);
-        _rootWatchSubscription = AppState.DataCache.Watch(Node.RootTopic, OnTopicChanged);
+        _rootWatchSubscription = AppState.DataCache.Watch(RootTopicValue, OnTopicChanged);
     }
 
     private void OnTopicChanged(string topic, object value)
@@ -83,34 +93,51 @@
         _changedAt[topic] = DateTime.Now;
         var node = FindNode(_tree, topic);
         if (node != null)
-        {
             node.Value = value?.ToString();
-        }
         else
+            _pendingRebuild = true;
+
+        // Debounce: coalesce rapid MQTT bursts into one render
+        _debounceTimer?.Change(80, System.Threading.Timeout.Infinite);
+    }
+
+    private void OnDebounceElapsed(object? _)
+    {
+        if (_disposed) return;
+        if (_pendingRebuild)
         {
+            _pendingRebuild = false;
             SaveExpansionState(_tree);
             RebuildTree();
             RestoreExpansionState(_tree);
         }
         try { InvokeAsync(StateHasChanged); } catch { }
+        // Schedule a re-render to clear the 2s highlight window once it expires
+        _highlightClearTimer?.Change(2200, System.Threading.Timeout.Infinite);
+    }
+
+    private void OnHighlightClearElapsed(object? _)
+    {
+        if (_disposed) return;
+        try { InvokeAsync(StateHasChanged); } catch { }
     }
 
     private void RebuildTree()
     {
-        if (string.IsNullOrEmpty(Node.RootTopic)) { _tree = new("", ""); return; }
+        if (string.IsNullOrEmpty(RootTopicValue)) { _tree = new("", ""); return; }
 
-        var root = new TreeNode(Node.RootTopic, Node.RootTopic.Split('/').Last());
-        root.Value = AppState.DataCache.GetValue(Node.RootTopic)?.ToString();
+        var root = new TreeNode(RootTopicValue, RootTopicValue.Split('/').Last());
+        root.Value = AppState.DataCache.GetValue(RootTopicValue)?.ToString();
         root.Expanded = true;
 
-        var pattern = Node.RootTopic.TrimEnd('/') + "/#";
+        var pattern = RootTopicValue.TrimEnd('/') + "/#";
         var matches = AppState.DataCache.GetValuesByPattern(pattern);
 
         foreach (var kvp in matches.OrderBy(x => x.Key))
         {
-            var relativeParts = kvp.Key.Substring(Node.RootTopic.Length).TrimStart('/').Split('/');
+            var relativeParts = kvp.Key.Substring(RootTopicValue.Length).TrimStart('/').Split('/');
             var node = root;
-            var currentPath = Node.RootTopic;
+            var currentPath = RootTopicValue;
             var depth = 0;
             foreach (var part in relativeParts)
             {
@@ -188,6 +215,8 @@
     public override void Dispose()
     {
         _disposed = true;
+        _debounceTimer?.Dispose();
+        _highlightClearTimer?.Dispose();
         _watchSubscription?.Dispose();
         _rootWatchSubscription?.Dispose();
         base.Dispose();

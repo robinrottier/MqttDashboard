@@ -17,7 +17,8 @@ public class DashboardPageModel
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N")[..8];
     public string Name { get; set; } = "Page 1";
-    public int GridSize { get; set; } = 10;
+    public int GridSize { get; set; } = 20;
+    public bool GridSnapToCenter { get; set; } = false;
     public string? BackgroundColor { get; set; }
     public List<NodeData> Nodes { get; set; } = new();
     public List<LinkData> Links { get; set; } = new();

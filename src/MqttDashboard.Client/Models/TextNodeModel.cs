@@ -1,8 +1,26 @@
 
 namespace MqttDashboard.Models
 {
-    public class TextNodeModel(Blazor.Diagrams.Core.Geometry.Point? position = null) : Blazor.Diagrams.Core.Models.NodeModel(position)
+    public class TextNodeModel : Blazor.Diagrams.Core.Models.NodeModel
     {
+        public TextNodeModel(Blazor.Diagrams.Core.Geometry.Point? position = null) : base(position)
+        {
+            // Disable the Blazor.Diagrams ResizeObserver for all our nodes.
+            // We set explicit CSS sizes (width/height) on every node and manage them ourselves
+            // via OnInitialized in each widget and via the resize handle drag. Leaving
+            // ControlledSize=false (the default) means NodeRenderer sets up a JS ResizeObserver
+            // that calls OnResize(getBoundingClientRect()) after each render — but getBoundingClientRect
+            // includes any sub-pixel rounding or zoom-division noise, so the reported size can differ
+            // slightly from the stored size, triggering a re-render, which re-fires the observer, causing
+            // the node to grow or shrink indefinitely.
+            //
+            // C# init semantics: ControlledSize is declared as { get; init; } in NodeModel (rrSoft.Blazor.Diagrams
+            // 0.1.2). Setting it here works because the C# spec allows derived-class constructors to call
+            // init accessors of base-class properties (they share the same "init context").
+            // If the library ever changes ControlledSize to { get; protected set; }, this line still
+            // compiles unchanged; if it becomes virtual, we could override it instead.
+            ControlledSize = true;
+        }
         /// <summary>
         /// Position of the title relative to the main content: "Above", "Below", "Left", "Right". Defaults to "Above".
         /// (Title is inherited from base blazor diagram node model)

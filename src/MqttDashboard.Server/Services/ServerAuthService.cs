@@ -17,23 +17,28 @@ namespace MqttDashboard.Server.Services;
 /// During SSR pre-render, HttpContext is available and carries the real user identity.
 /// During Blazor Server circuits, AuthenticationStateProvider is resolved lazily via
 /// IServiceProvider so that missing auth configuration does not break DI resolution.
+/// Login in Blazor Server mode uses a one-time token flow because the circuit's HttpContext
+/// is read-only (the WebSocket upgrade response has already been sent).
 /// </summary>
 public class ServerAuthService : IAuthService
 {
     private readonly IConfiguration _configuration;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IServiceProvider _serviceProvider;
+    private readonly LoginTokenStore _tokenStore;
     private readonly ILogger<ServerAuthService>? _logger;
 
     public ServerAuthService(
         IConfiguration configuration,
         IHttpContextAccessor httpContextAccessor,
         IServiceProvider serviceProvider,
+        LoginTokenStore tokenStore,
         ILogger<ServerAuthService>? logger = null)
     {
         _configuration = configuration;
         _httpContextAccessor = httpContextAccessor;
         _serviceProvider = serviceProvider;
+        _tokenStore = tokenStore;
         _logger = logger;
     }
 
@@ -45,12 +50,11 @@ public class ServerAuthService : IAuthService
 
         // During SSR pre-render: HttpContext is available with the real user identity.
         var httpContext = _httpContextAccessor.HttpContext;
-        if (httpContext != null)
+        if (httpContext != null && !httpContext.Response.HasStarted)
             return (httpContext.User.Identity?.IsAuthenticated == true, true);
 
-        // During Blazor Server interactive circuit: HttpContext is null.
-        // Try to resolve AuthenticationStateProvider lazily — it may not be available
-        // if authentication services were not configured (no Auth:AdminPasswordHash).
+        // During Blazor Server interactive circuit: HttpContext is the WebSocket upgrade
+        // context (read-only). Use AuthenticationStateProvider instead.
         try
         {
             var asp = _serviceProvider.GetService<AuthenticationStateProvider>();
@@ -81,11 +85,15 @@ public class ServerAuthService : IAuthService
         if (!valid) return false;
 
         var httpContext = _httpContextAccessor.HttpContext;
-        if (httpContext == null)
+
+        // In .NET 8+, the Blazor Server circuit exposes the WebSocket upgrade HttpContext
+        // (not null), but its response has already been committed — we cannot set cookies.
+        // Callers should use GetLoginRedirectAsync() for the Blazor Server token flow.
+        if (httpContext == null || httpContext.Response.HasStarted)
         {
-            // Blazor Server circuit mode: cookies cannot be set without an active HTTP response.
-            // Login requires a server-side form POST rather than an interactive component call.
-            _logger?.LogWarning("Login cannot set auth cookie: no active HTTP context (Blazor Server circuit). Use a server-side form endpoint for login.");
+            _logger?.LogDebug(
+                "LoginAsync: cannot set auth cookie ({Reason}). Use GetLoginRedirectAsync for Blazor Server login.",
+                httpContext == null ? "no HTTP context" : "response already started");
             return false;
         }
 
@@ -105,12 +113,40 @@ public class ServerAuthService : IAuthService
         return true;
     }
 
+    /// <summary>
+    /// Validates the password and, if correct, issues a short-lived one-use token.
+    /// Returns a redirect URL the browser should navigate to (with forceLoad) so the server
+    /// can set the auth cookie on a fresh HTTP response. Returns null if the password is wrong.
+    /// </summary>
+    public Task<string?> GetLoginRedirectAsync(string password)
+    {
+        var hash = _configuration["Auth:AdminPasswordHash"];
+        if (string.IsNullOrEmpty(hash))
+        {
+            // Auth not configured — no login needed; callers should check GetStatusAsync first.
+            return Task.FromResult<string?>(null);
+        }
+
+        if (string.IsNullOrEmpty(password))
+            return Task.FromResult<string?>(null);
+
+        bool valid;
+        try { valid = BCrypt.Net.BCrypt.Verify(password, hash); }
+        catch { return Task.FromResult<string?>(null); }
+
+        if (!valid)
+            return Task.FromResult<string?>(null);
+
+        var token = _tokenStore.Issue();
+        return Task.FromResult<string?>($"/api/auth/redeem/{token}");
+    }
+
     public async Task LogoutAsync()
     {
         var httpContext = _httpContextAccessor.HttpContext;
-        if (httpContext != null)
+        if (httpContext != null && !httpContext.Response.HasStarted)
             await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         else
-            _logger?.LogWarning("Logout cannot clear auth cookie: no active HTTP context (Blazor Server circuit).");
+            _logger?.LogWarning("Logout cannot clear auth cookie: no active HTTP context or response already started.");
     }
 }

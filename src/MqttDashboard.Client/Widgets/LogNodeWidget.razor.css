@@ -12,3 +12,9 @@
     width: 100%;
     table-layout: fixed;
 }
+
+/* Compact cell padding to maximise content area */
+::deep .mud-table-root th,
+::deep .mud-table-root td {
+    padding: 2px 4px;
+}

@@ -5,6 +5,177 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
+## 2026-03-26 (batch 3) — TreeView overhaul + import dialog + padding
+
+### Commit: (see git log) · UTC 2026-03-26 · branch: develop
+
+---
+
+### Fix: TreeView collapse/focus loss + replace MudTreeView with custom rendering (`TreeViewNodeWidget.razor`)
+
+**Problem:** `MudTreeView`/`MudTreeViewItem` are stateful components. Every call to `StateHasChanged` caused MudBlazor to reconcile the component tree. For rapid MQTT bursts this resulted in constant re-rendering that visually collapsed the tree (MudBlazor's internal expanded state was reset) and lost keyboard focus.
+
+**Fix:** Replaced `MudTreeView`/`MudTreeViewItem` entirely with a custom lightweight div-based recursive renderer (`RenderNode`). Expansion state is stored on the `TreeNode` model objects (`Expanded` bool), not inside any MudBlazor component — so re-renders never lose state.
+
+Added an **80 ms debounce timer** (`_debounceTimer`): `OnTopicChanged` now starts/restarts this timer rather than calling `StateHasChanged` directly. Rapid bursts are coalesced into a single render.
+
+Added a **highlight-clear timer** (`_highlightClearTimer`): 2.2 s after the last update fires, triggers one more `StateHasChanged` to clear the highlight colouring (previously highlights could linger until the next MQTT message arrived).
+
+**Files:** `src/MqttDashboard.Client/Widgets/TreeViewNodeWidget.razor`, `.razor.css`
+
+---
+
+### Change: TreeView root topic merged into base DataTopics (`TreeViewNodeModel.cs`)
+
+**Problem:** `TreeViewNodeModel` had a bespoke `RootTopic` property separate from the standard `DataTopics` list, duplicating the concept and appearing as an extra "Root Topic" field in the property editor (via `[NpText]`) while the standard topic list remained empty and unused.
+
+**Fix:** Removed `RootTopic` from `TreeViewNodeModel`. The widget now reads `Node.DataTopics[0]` via a `RootTopicValue` computed property. Users set the root topic via the standard MQTT Topics section in the property editor (same as all other widgets).
+
+**Backward compat:** `TreeViewNodeData.RootTopic` remains in the data model (read-only for load). `FromData()` migrates: if `data.RootTopic` is non-empty and `DataTopics` is empty, `RootTopic` is added as `DataTopics[0]`. No data loss from existing saved files.
+
+**Files:** `src/MqttDashboard.Client/Models/TreeViewNodeModel.cs`, `TreeViewNodeWidget.razor`
+
+---
+
+### Enhancement: TreeView visual improvements (`TreeViewNodeWidget.razor.css`)
+
+With the custom renderer, full layout control is available:
+- Font reduced to **0.7 rem** (down from 0.75 rem)
+- Each tree row is a flex row: label left (ellipsis on overflow), value **bold + primary colour** right-aligned
+- **2 s highlight** on updated topics via `tv-highlighted` CSS class (background warning color, 0.3 s transition). Cleared automatically by `_highlightClearTimer`
+- Expand/collapse icons (▾ / ▸) and leaf bullet (•) via unicode HTML entities; `tv-children` indented 12 px
+- Hover uses `--mud-palette-action-hover` for consistency with MudBlazor theming
+
+---
+
+### Fix: Import dialog doesn't grow when status alert appears (`ImportNodesDialog.razor`)
+
+**Problem:** When valid JSON was pasted, a `MudAlert` appeared below the textarea, expanding the dialog height and causing layout shifts/scrollbars.
+
+**Fix:** Wrapped the conditional alert in `<div style="min-height:40px;">`. The reserved height matches a Dense MudAlert, so the dialog occupies the same vertical space whether or not an alert is visible.
+
+**Files:** `src/MqttDashboard.Client/Components/ImportNodesDialog.razor`
+
+---
+
+### Fix: TreeView and Log widget internal padding (`*.razor`, `*.razor.css`)
+
+- **Log:** header row padding reduced from `2px 4px 0` → `1px 3px 0`; added CSS rule `::deep .mud-table-root th, td { padding: 2px 4px }` to override MudBlazor's default (typically 12px) cell padding
+- **TreeView:** custom CSS classes use minimal padding (1–2 px per row); no more `padding:2px 0` wrapper div
+
+**Files:** `src/MqttDashboard.Client/Widgets/LogNodeWidget.razor`, `LogNodeWidget.razor.css`, `TreeViewNodeWidget.razor.css`
+
+---
+
+### Commit: (see git log) · UTC 2026-03-26 · branch: develop
+
+---
+
+### Bug fix: node height loop — proper root cause fix (`TextNodeModel.cs`)
+
+**Root cause (confirmed):** `NodeRenderer` in rrSoft.Blazor.Diagrams 0.1.2 attaches a JS `ResizeObserver` on the `.diagram-node` wrapper element whenever `Node.ControlledSize` is `false` (the default). The observer calls `OnResize(getBoundingClientRect())` after every render. Because `getBoundingClientRect()` can include sub-pixel rounding and zoom-division noise, the reported size may differ slightly from the stored `Node.Size`, triggering a re-render → re-measure loop that manifests as slow indefinite height growth — particularly on nodes without a title (where there is no stable text anchor).
+
+**Previous (incorrect) fix:** `StandardNodeLayout` kept the title `<div>` in the DOM with `display:none` to stabilise the DOM structure. This was addressing a symptom rather than the cause and did not stop the observer loop.
+
+**Correct fix:** Convert `TextNodeModel` from primary-constructor syntax to a regular constructor and set `ControlledSize = true` in the body. All our nodes set explicit `Node.Size` in `OnInitialized` and the user can resize via the drag handle (which calls `NodeModel.SetSize()` directly, unaffected by `ControlledSize`). The `init` accessor on `ControlledSize` is accessible from derived-class constructors per the C# spec ("init context" extends to derived constructors).
+
+**Reverted:** The `TitleDivFullStyle`/`display:none` workaround in `StandardNodeLayout` has been removed; the original clean `@if (… && HasTitleContent)` guards are restored.
+
+**Future:** A TODO comment has been left in `rrSoft.Blazor.Diagrams/NodeModel.cs` suggesting `ControlledSize` be changed to `{ get; protected set; }` in a future library version for clarity.
+
+**Files:** `src/MqttDashboard.Client/Models/TextNodeModel.cs`, `src/MqttDashboard.Client/Widgets/StandardNodeLayout.razor`
+
+---
+
+### Bug fix: grid shown in view mode (`Display.razor.cs`)
+
+**Problem:** When switching from edit → view mode, `_diagram.Options.GridSize` was left at the edit-mode value, so the grid dotted background remained visible in view mode.
+
+**Fix:** Added `_diagram.Options.GridSize = null;` to the `else` branch of `SwitchMode` (the path taken when `enterEditMode` is false).
+
+**Files:** `src/MqttDashboard.Client/Pages/Display.razor.cs`
+
+---
+
+### Bug fix: Import dialog "Import" button never enabled (`ImportNodesDialog.razor`)
+
+**Problem:** The `MudTextField` had three conflicting data-binding attributes: `@bind-Value="_json"`, `Immediate="true"`, and `@oninput="OnJsonChanged"`. MudBlazor's `Immediate` mode generates its own internal `oninput` handler; adding a second `@oninput` created a race between the two handlers. In practice `_json` was sometimes not updated before `TryParse()` ran, so `_parsed` stayed null and the Import button remained disabled.
+
+**Fix:** Replaced the triple with `Value="@_json" ValueChanged="@OnValueChanged"` (no `@oninput`, no `Immediate`). `OnValueChanged(string v)` sets `_json = v` and calls `TryParse()` — single, deterministic update path. Also renamed `OnJsonChanged` → `OnValueChanged` to match the MudBlazor pattern.
+
+**Files:** `src/MqttDashboard.Client/Components/ImportNodesDialog.razor`
+
+---
+
+### Change: Import / Export moved to File menu (`AppMenu.razor`)
+
+**Change:** Export… and Import… items moved from the Edit submenu to the File submenu (below Dashboard Properties). Both remain gated on `IsEditMode`.
+
+**Files:** `src/MqttDashboard.Client/Layout/AppMenu.razor`
+
+---
+
+### Commit: (see git log) · UTC 2026-03-26 · branch: develop
+
+---
+
+### Bug fix: node without title grows indefinitely (`StandardNodeLayout.razor`)
+
+**Problem:** `StandardNodeLayout` guarded both title `<div>` elements with `@if (… && HasTitleContent)`. When `Title` and `Icon` are both empty, the div was removed from the DOM. Blazor.Diagrams measures node height after each render; the DOM change caused a size change which triggered another render, creating an infinite grow loop.
+
+**Fix:** Changed `@if (ShowTitle && ShowTitleFirst && HasTitleContent)` to `@if (ShowTitle && ShowTitleFirst)` (and equivalent for the bottom position). Added a `TitleDivFullStyle` computed property that appends `;display:none` to `TitleDivStyle` when `!HasTitleContent`. The div is always in the DOM; the browser reserves no space for it when hidden — so the node renders at the correct size with no spurious remeasure events.
+
+**Files:** `src/MqttDashboard.Client/Widgets/StandardNodeLayout.razor`
+
+---
+
+### Bug fix: grid snap-to-centre not saved/restored; negative-value convention removed
+
+**Problem (1):** `CreateDiagramFromPageData` set `options.GridSize = int.Abs(page.GridSize)` (always positive) and then set `options.GridSnapToCenter = options.GridSize < 0` — which was always false. So snap-to-centre was never restored from file.
+
+**Problem (2):** `GetPageData` serialised snap-to-centre as a negative `GridSize` (e.g. `-20`). Reading this back correctly would have required keeping the sign, but it was stripped by `int.Abs` first.
+
+**Fix:**
+- `DashboardPageModel`: added `GridSnapToCenter bool` field (default false). `GridSize` default raised from 10 → 20.
+- `ApplicationState.GridSnapToCenter` property added.
+- `SetGridSize(int)`: in edit mode, clamps to 5–100 and rounds to nearest 5. Also applies `GridSnapToCenter` to the diagram.
+- New `SetGridSnapToCenter(bool)` method.
+- `CreateDiagramFromPageData`: reads `page.GridSnapToCenter` directly; clamps `GridSize` to 5–100.
+- `GetPageData`: writes positive `GridSize` and `GridSnapToCenter` separately.
+- `Display.razor.cs` entering-edit-mode path: uses `page.GridSnapToCenter` instead of `savedGs < 0`.
+- `Display.razor.cs` `BuildFullState`: copies `GridSnapToCenter` from `_pageStates`.
+- `DashboardPropertiesDialog`: `OnInitialized` reads `AppState.GridSnapToCenter`; `ApplyAsync` calls `SetGridSnapToCenter` + `SetGridSize` separately (no negative-value encoding). Min raised from 0 → 5 in the numeric field. Caption updated.
+
+**Files:** `src/MqttDashboard.Client/Models/DashboardModel.cs`, `src/MqttDashboard.Client/Services/ApplicationState.cs`, `src/MqttDashboard.Client/Pages/Display.razor.cs`, `src/MqttDashboard.Client/Components/DashboardPropertiesDialog.razor`
+
+⚠️ Breaking file format change: old files with negative `gridSize` will load as positive (snap-to-centre will default off). Acceptable per dev notes.
+
+---
+
+### Feature FEAT-E: clipboard import/export (Node-Red style)
+
+**Overview:** Users can now export nodes or a whole page as JSON text, and import that JSON back (onto the current page or a new page). The UX mirrors Node-RED's import/export flow.
+
+#### New files
+- `src/MqttDashboard.Client/Models/ImportResult.cs` — `ImportResult` record (`Nodes`, `Links`, `AddAsNewPage`).
+- `src/MqttDashboard.Client/Components/ExportNodesDialog.razor` — shows JSON in a `Lines=18` read-only textarea. Mode selector: "Selected nodes (N)" (disabled if none selected) or "Current page". Copy button writes to OS clipboard via `mqttClipboard.writeText`.
+- `src/MqttDashboard.Client/Components/ImportNodesDialog.razor` — textarea for pasting JSON; "Paste from clipboard" icon button; auto-detects format (`mqttdashboard:"nodes"` or `mqttdashboard:"page"`); shows detected node/link count; destination radio (current page / new page); Import button disabled until valid JSON detected.
+
+#### JSON formats
+- Nodes: `{"mqttdashboard":"nodes","data":[...NodeData...]}` (existing copy/paste format)
+- Page: `{"mqttdashboard":"page","data":{...DashboardPageModel...}}` (new)
+
+#### Modified files
+- `src/MqttDashboard.Client/Services/ApplicationState.cs` — added `MenuExportNodes`, `MenuImportNodes` events; `TriggerExportNodes()`, `TriggerImportNodes()`.
+- `src/MqttDashboard.Client/Layout/AppMenu.razor` — added "Export…" and "Import…" items after Cut/Copy/Paste in the Edit menu; added `MenuExportNodes()` and `MenuImportNodes()` handlers.
+- `src/MqttDashboard.Client/Pages/Display.razor.cs`:
+  - `_onMenuExportNodes` / `_onMenuImportNodes` stored action fields.
+  - `SubscribeEditEvents` / `UnsubscribeEditEvents` updated.
+  - `ExportNodesAsync()` — captures selected nodes + current page data, opens `ExportNodesDialog`.
+  - `ImportNodesAsync()` — opens `ImportNodesDialog`; on result with `AddAsNewPage=true` creates a new `DashboardPageModel` and calls `SwitchToPageAsync`; on `AddAsNewPage=false` pastes nodes into the current diagram (same logic as `PasteNodesAsync`).
+
+---
+
 ## 2026-03-25 — Bug fixes: menu cleanup, no-data banner, grid, restart
 
 ### Commit: (see git log)

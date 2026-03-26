@@ -21,12 +21,14 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<MqttConnectionMonitor>();
 
         // Register MqttClientService as both a singleton (injectable) and a hosted service.
-        // The singleton registration allows ServerSignalRService to subscribe to its events in-process.
         services.AddSingleton<MqttClientService>();
         services.AddHostedService(sp => sp.GetRequiredService<MqttClientService>());
 
         // Add Diagram Storage Service
         services.AddSingleton<DashboardStorageService>();
+
+        // Login token store for Blazor Server auth flow (one-time tokens, singleton lifetime)
+        services.AddSingleton<LoginTokenStore>();
 
         // Add HttpContextAccessor for DashboardService
         services.AddHttpContextAccessor();
