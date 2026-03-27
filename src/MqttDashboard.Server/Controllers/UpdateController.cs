@@ -57,21 +57,39 @@ public class UpdateController : ControllerBase
     }
 
     [HttpPost("check")]
-    public IActionResult CheckNow()
+    public async Task<IActionResult> CheckNow()
     {
-        // Start update check in background so the POST returns quickly and
-        // the client can immediately GET the last-known status.
-        _ = Task.Run(async () =>
+        // Start the update check but don't block indefinitely. If the check
+        // completes quickly (e.g. in unit tests with a mocked service) await
+        // it so callers observe the updated status. Otherwise return the
+        // last-known status immediately and let the check finish in the
+        // background.
+        var checkTask = _updateService.CheckNowAsync();
+        try
         {
-            try
+            // Wait briefly for the check to complete; tests that run synchronously
+            // will typically complete immediately.
+            var completed = await Task.WhenAny(checkTask, Task.Delay(500));
+            if (completed == checkTask)
             {
-                await _updateService.CheckNowAsync();
+                // Await again to propagate exceptions if any.
+                await checkTask;
             }
-            catch (Exception ex)
+            else
             {
-                _logger.LogWarning(ex, "Background update check failed");
+                // Fire-and-forget with logging of any exception when it completes.
+                _ = checkTask.ContinueWith(t =>
+                {
+                    if (t.Exception != null)
+                        _logger.LogWarning(t.Exception, "Background update check failed");
+                }, TaskScheduler.Default);
             }
-        });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Update check invocation failed");
+        }
+
         return GetStatus();
     }
 
