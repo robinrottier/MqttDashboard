@@ -57,9 +57,21 @@ public class UpdateController : ControllerBase
     }
 
     [HttpPost("check")]
-    public async Task<IActionResult> CheckNow()
+    public IActionResult CheckNow()
     {
-        await _updateService.CheckNowAsync();
+        // Start update check in background so the POST returns quickly and
+        // the client can immediately GET the last-known status.
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _updateService.CheckNowAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Background update check failed");
+            }
+        });
         return GetStatus();
     }
 
