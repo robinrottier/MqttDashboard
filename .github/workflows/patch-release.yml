@@ -62,7 +62,22 @@ jobs:
           REPO="${{ github.repository }}"
           # Small delay to ensure the tag is visible to the GitHub API
           sleep 5
-          echo "Dispatching Create Release for $TAG"
-          gh workflow run release.yml --ref "$TAG" -R "$REPO"
+
+          # Create a GitHub Release with the tag as the title so the version shows in the UI.
+          # If CHANGELOG.md contains an [Unreleased] section, use its contents as release notes.
+          echo "Creating GitHub Release for $TAG"
+          NOTES="Release $TAG"
+          if [ -f CHANGELOG.md ]; then
+            # Extract the Unreleased section from CHANGELOG.md (lines after '## [Unreleased]' until next '## ')
+            UNRELEASED=$(awk '/^## \[Unreleased\]/{flag=1;next}/^## /{if(flag) exit}flag' CHANGELOG.md || true)
+            if [ -n "$UNRELEASED" ]; then
+              NOTES="$UNRELEASED"
+            fi
+          fi
+
+          # Create or update release via gh CLI. If release already exists, gh will fail — ignore errors to allow idempotency.
+          gh release create "$TAG" --title "Release $TAG" --notes "$NOTES" -R "$REPO" || true
+
+          # Dispatch the Docker build workflow against the new tag
           echo "Dispatching Build and Push Docker Image for $TAG"
-          gh workflow run docker.yml  --ref "$TAG" -R "$REPO"
+          gh workflow run docker.yml --ref "$TAG" -R "$REPO"

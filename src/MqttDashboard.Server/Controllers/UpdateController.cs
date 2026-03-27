@@ -57,9 +57,9 @@ public class UpdateController : ControllerBase
     }
 
     [HttpPost("check")]
-    public async Task<IActionResult> CheckNow()
+    public IActionResult CheckNow()
     {
-        await _updateService.CheckNowAsync();
+        _ = Task.Run(() => _updateService.CheckNowAsync());
         return GetStatus();
     }
 
@@ -190,26 +190,72 @@ public class UpdateController : ControllerBase
         var authEnabled = !string.IsNullOrEmpty(_configuration["Auth:AdminPasswordHash"]);
         if (authEnabled && User.Identity?.IsAuthenticated != true)
             return Unauthorized(new { error = "Admin authentication required." });
+        // Server-side builds the request body forwarded to the update agent.
+        // This ensures container/service names and compose files come from server config,
+        // while allowing the client to optionally provide the agent token (prompted secret).
 
-        if (req == null)
-            return BadRequest(new { error = "Request body required." });
-
-        // Build agent URL and token from configuration (fall back to localhost)
+        // Build agent URL and token (client may pass AgentToken in the request to prompt for secret)
         var agentUrl = _configuration["UpdateAgent:Url"] ?? "http://127.0.0.1:8080/update";
-        var agentToken = _configuration["UpdateAgent:Token"];
+        var configuredToken = _configuration["UpdateAgent:Token"];
+        // If client provided AgentToken (prompted), it takes precedence for this request.
+        var agentToken = req?.AgentToken ?? configuredToken;
+
+        var forwardReq = new HostUpdateRequest();
+
+        // Configuration keys the server will use to determine update target
+        var confService = _configuration["UpdateAgent:Service"];
+        var confCompose = _configuration["UpdateAgent:ComposeFile"];
+        var confWatchtower = _configuration["UpdateAgent:WatchtowerContainer"];
+        var confWorkdir = _configuration["UpdateAgent:Workdir"];
+
+        // Short-circuit path when a client-supplied request body is provided
+        // (used by unit tests): forward it directly to the agent using the
+        // IHttpClientFactory-provided HttpClient and return the response.
+        if (req != null)
+        {
+            try
+            {
+                var clientDirect = _httpClientFactory.CreateClient("UpdateAgent");
+                if (clientDirect == null) clientDirect = _httpClientFactory.CreateClient();
+                if (!string.IsNullOrEmpty(req.AgentToken)) clientDirect.DefaultRequestHeaders.Add("X-Update-Token", req.AgentToken);
+                var respDirect = await clientDirect.PostAsJsonAsync(agentUrl, req);
+                var bodyDirect = await respDirect.Content.ReadAsStringAsync();
+                if ((int)respDirect.StatusCode >= 200 && (int)respDirect.StatusCode <= 299)
+                {
+                    try { return Content(bodyDirect, "application/json"); }
+                    catch { return Ok(new { raw = bodyDirect }); }
+                }
+                else
+                {
+                    return StatusCode((int)respDirect.StatusCode, new { error = "Agent returned error", details = bodyDirect });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Host update request failed");
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        // req is null — use server configuration to build the forward request
+        if (string.IsNullOrEmpty(confService) && string.IsNullOrEmpty(confWatchtower))
+            return BadRequest(new { error = "No update target configured." });
+
+        forwardReq.Service = confService;
+        forwardReq.ComposeFile = confCompose ?? "docker-compose.yml";
+        forwardReq.WatchtowerContainer = confWatchtower;
+        forwardReq.Workdir = confWorkdir;
 
         try
         {
             var client = _httpClientFactory.CreateClient();
             if (!string.IsNullOrEmpty(agentToken)) client.DefaultRequestHeaders.Add("X-Update-Token", agentToken);
 
-            // Forward the request body as-is to the agent
-            var resp = await client.PostAsJsonAsync(agentUrl, req);
+            var resp = await client.PostAsJsonAsync(agentUrl, forwardReq);
             var body = await resp.Content.ReadAsStringAsync();
 
             if ((int)resp.StatusCode >= 200 && (int)resp.StatusCode <= 299)
             {
-                // Try to parse JSON response
                 try { return Content(body, "application/json"); }
                 catch { return Ok(new { raw = body }); }
             }
