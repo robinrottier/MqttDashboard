@@ -37,8 +37,10 @@ public class UpdateCheckService : BackgroundService
     public UpdateCheckService(ILogger<UpdateCheckService> logger, IHttpClientFactory httpClientFactory)
     {
         _logger = logger;
-        _httpClient = httpClientFactory.CreateClient("UpdateCheck");
-        _httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
+        // Be defensive in tests/mocks: IHttpClientFactory.CreateClient may return null when using simple mocks.
+        _httpClient = httpClientFactory?.CreateClient("UpdateCheck") ?? new HttpClient();
+        if (_httpClient.DefaultRequestHeaders != null)
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
         _httpClient.Timeout = TimeSpan.FromSeconds(10);
 
         var currentVersion = GetCurrentVersion();

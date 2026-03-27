@@ -29,11 +29,16 @@ public class UpdateControllerTests
     private UpdateController CreateController(IHttpClientFactory httpFactory, IConfiguration config, ClaimsPrincipal? user = null)
     {
         var mockUpdate = new Mock<UpdateCheckService>(MockBehavior.Loose, new object[] { Mock.Of<ILogger<UpdateCheckService>>(), Mock.Of<IHttpClientFactory>() });
-        var mockStorage = new Mock<DashboardStorageService>();
+        // DashboardStorageService requires IWebHostEnvironment, IConfiguration and ILogger in constructor.
+        // Create a mock environment and pass real IConfiguration and logger to the mocked service proxy.
+        var envMock = new Mock<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>();
+        envMock.Setup(e => e.ContentRootPath).Returns(System.IO.Path.GetTempPath());
+        var storageLogger = Mock.Of<ILogger<MqttDashboard.Server.Services.DashboardStorageService>>();
+        var storageMock = new Mock<MqttDashboard.Server.Services.DashboardStorageService>(MockBehavior.Loose, envMock.Object, config, storageLogger);
         var logger = Mock.Of<ILogger<UpdateController>>();
         var lifetime = Mock.Of<IHostApplicationLifetime>();
 
-        var controller = new UpdateController(mockUpdate.Object, mockStorage.Object, logger, lifetime, config, httpFactory);
+        var controller = new UpdateController(mockUpdate.Object, storageMock.Object, logger, lifetime, config, httpFactory);
         controller.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext { User = user ?? new ClaimsPrincipal(new ClaimsIdentity()) }
