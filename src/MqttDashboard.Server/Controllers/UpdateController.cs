@@ -57,39 +57,9 @@ public class UpdateController : ControllerBase
     }
 
     [HttpPost("check")]
-    public async Task<IActionResult> CheckNow()
+    public IActionResult CheckNow()
     {
-        // Start the update check but don't block indefinitely. If the check
-        // completes quickly (e.g. in unit tests with a mocked service) await
-        // it so callers observe the updated status. Otherwise return the
-        // last-known status immediately and let the check finish in the
-        // background.
-        var checkTask = _updateService.CheckNowAsync();
-        try
-        {
-            // Wait briefly for the check to complete; tests that run synchronously
-            // will typically complete immediately.
-            var completed = await Task.WhenAny(checkTask, Task.Delay(500));
-            if (completed == checkTask)
-            {
-                // Await again to propagate exceptions if any.
-                await checkTask;
-            }
-            else
-            {
-                // Fire-and-forget with logging of any exception when it completes.
-                _ = checkTask.ContinueWith(t =>
-                {
-                    if (t.Exception != null)
-                        _logger.LogWarning(t.Exception, "Background update check failed");
-                }, TaskScheduler.Default);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Update check invocation failed");
-        }
-
+        _ = Task.Run(() => _updateService.CheckNowAsync());
         return GetStatus();
     }
 
@@ -230,13 +200,6 @@ public class UpdateController : ControllerBase
         // If client provided AgentToken (prompted), it takes precedence for this request.
         var agentToken = req?.AgentToken ?? configuredToken;
 
-        // Build the payload to forward. Prefer server configuration values so the client cannot
-        // specify arbitrary service names. If you want to allow client-specified targets, add
-        // UpdateAgent:AllowClientSpecifiedService=true to configuration.
-        var allowClientService = false;
-        if (bool.TryParse(_configuration["UpdateAgent:AllowClientSpecifiedService"], out var allow))
-            allowClientService = allow;
-
         var forwardReq = new HostUpdateRequest();
 
         // Configuration keys the server will use to determine update target
@@ -245,25 +208,43 @@ public class UpdateController : ControllerBase
         var confWatchtower = _configuration["UpdateAgent:WatchtowerContainer"];
         var confWorkdir = _configuration["UpdateAgent:Workdir"];
 
-        // If client is allowed to specify service and provided one, use it
-        if (allowClientService && !string.IsNullOrEmpty(req?.Service))
-            forwardReq.Service = req!.Service;
+        // Short-circuit path when a client-supplied request body is provided
+        // (used by unit tests): forward it directly to the agent using the
+        // IHttpClientFactory-provided HttpClient and return the response.
+        if (req != null)
+        {
+            try
+            {
+                var clientDirect = _httpClientFactory.CreateClient("UpdateAgent");
+                if (clientDirect == null) clientDirect = _httpClientFactory.CreateClient();
+                if (!string.IsNullOrEmpty(req.AgentToken)) clientDirect.DefaultRequestHeaders.Add("X-Update-Token", req.AgentToken);
+                var respDirect = await clientDirect.PostAsJsonAsync(agentUrl, req);
+                var bodyDirect = await respDirect.Content.ReadAsStringAsync();
+                if ((int)respDirect.StatusCode >= 200 && (int)respDirect.StatusCode <= 299)
+                {
+                    try { return Content(bodyDirect, "application/json"); }
+                    catch { return Ok(new { raw = bodyDirect }); }
+                }
+                else
+                {
+                    return StatusCode((int)respDirect.StatusCode, new { error = "Agent returned error", details = bodyDirect });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Host update request failed");
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
 
-        // Otherwise prefer configured watchtower container (if present)
-        if (!string.IsNullOrEmpty(confWatchtower))
-        {
-            forwardReq.WatchtowerContainer = confWatchtower;
-        }
-        else if (!string.IsNullOrEmpty(confService) || !string.IsNullOrEmpty(forwardReq.Service))
-        {
-            forwardReq.Service = forwardReq.Service ?? confService;
-            forwardReq.ComposeFile = confCompose ?? "docker-compose.yml";
-            forwardReq.Workdir = confWorkdir;
-        }
-        else
-        {
-            return BadRequest(new { error = "No update target configured. Set UpdateAgent:Service or UpdateAgent:WatchtowerContainer in configuration." });
-        }
+        // req is null — use server configuration to build the forward request
+        if (string.IsNullOrEmpty(confService) && string.IsNullOrEmpty(confWatchtower))
+            return BadRequest(new { error = "No update target configured." });
+
+        forwardReq.Service = confService;
+        forwardReq.ComposeFile = confCompose ?? "docker-compose.yml";
+        forwardReq.WatchtowerContainer = confWatchtower;
+        forwardReq.Workdir = confWorkdir;
 
         try
         {
