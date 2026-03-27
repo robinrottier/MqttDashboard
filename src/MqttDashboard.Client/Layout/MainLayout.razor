@@ -39,8 +39,8 @@
             <MudIcon Icon="@MqttStatusIcon" Color="@MqttStatusColor" Size="Size.Medium" Class="mr-3" />
         </MudTooltip>
 
-        <!-- Auth: login/logout button when auth is configured -->
-        @if (AppState.AuthEnabled)
+        <!-- Auth: login/logout button when auth is configured and not read-only -->
+        @if (AppState.AuthEnabled && !AppState.IsReadOnly)
         {
             @if (AppState.IsAdmin)
             {
@@ -58,8 +58,8 @@
             }
         }
 
-        <!-- Edit mode toggle switch — hidden when auth is enabled and user is not admin -->
-        @if (!AppState.AuthEnabled || AppState.IsAdmin)
+        <!-- Edit mode toggle switch — hidden when auth is enabled and user is not admin, or in read-only mode -->
+        @if (!AppState.IsReadOnly && (!AppState.AuthEnabled || AppState.IsAdmin))
         {
         <!-- Edit mode toggle switch -->
         <MudTooltip Text="@EditModeTooltip">
@@ -81,7 +81,7 @@
     </MudAppBar>
 
     <MudMainContent Class="pt-16 pa-2">
-        @if (_setupNeeded && !Nav.Uri.Contains("/setup", StringComparison.OrdinalIgnoreCase))
+        @if (_setupNeeded && !AppState.IsReadOnly && !Nav.Uri.Contains("/setup", StringComparison.OrdinalIgnoreCase))
         {
             <MudAlert Severity="Severity.Warning" Class="ma-2">
                 Admin password not configured. <MudLink Href="/setup">Set up now →</MudLink>

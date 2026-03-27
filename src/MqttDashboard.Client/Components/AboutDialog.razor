@@ -1,10 +1,12 @@
 @using MqttDashboard.Services
 @using Blazor.Diagrams
 @using System.Reflection
+@using MudBlazor
 @inject ApplicationState AppState
 @inject NavigationManager NavManager
 @inject ISignalRService SignalRService
 @inject HttpClient Http
+@inject MudBlazor.IDialogService DialogService
 
 <MudDialog>
     <DialogContent>
@@ -84,13 +86,19 @@
                     }
                     @if (_updateStatus?.DeploymentType == "Docker")
                     {
-                        <div class="mx-2 mb-2 mt-1" style="display:flex;align-items:center;gap:8px;">
-                            <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Warning"
-                                       StartIcon="@Icons.Material.Filled.RestartAlt"
-                                       OnClick="RestartApp" Disabled="_restarting">
-                                @(_restarting ? "Restarting…" : "Restart App")
-                            </MudButton>
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">Forces container restart (picks up new image if pulled)</MudText>
+                        <div class="mx-2 mb-2 mt-1" style="display:flex;align-items:center;gap:8px;flex-direction:column;align-items:flex-start;">
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary"
+                                           StartIcon="@Icons.Material.Filled.CloudUpload"
+                                           OnClick="UpgradeNow" Disabled="_updating">
+                                    @(_updating ? "Upgrading…" : "Upgrade Now")
+                                </MudButton>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Pulls new image and restarts the service via host agent</MudText>
+                            </div>
+                            @if (!string.IsNullOrEmpty(_agentResponse))
+                            {
+                                <MudAlert Severity="Severity.Info" Class="mt-1" Dense="true">@_agentResponse</MudAlert>
+                            }
                         </div>
                     }
                 }
@@ -168,10 +176,11 @@
 
     private UpdateStatusDto? _updateStatus;
     private bool _checkingUpdate = false;
-    private bool _restarting = false;
     private bool _downloadingUpdate = false;
     private string? _updateError;
     private string? _downloadResult;
+    private bool _updating = false;
+    private string? _agentResponse;
 
     protected override async Task OnInitializedAsync()
     {
@@ -294,9 +303,46 @@
 
     private async Task RestartApp()
     {
-        _restarting = true;
         StateHasChanged();
         try { await Http.PostAsync("/api/update/restart", null); }
         catch { /* connection lost as app shuts down — expected */ }
+    }
+
+    private async Task UpgradeNow()
+    {
+        // Confirmation dialog before performing upgrade
+        var parameters = new DialogParameters { ["Message"] = "This will pull the new image and restart the service. Continue?" };
+        var options = new MudBlazor.DialogOptions { CloseButton = true };
+        var dialogRef = await DialogService.ShowAsync<ConfirmDialog>("Confirm Upgrade", parameters, options);
+        var result = await dialogRef.Result;
+        if (result.Canceled) return;
+
+        _updating = true;
+        _agentResponse = null;
+        StateHasChanged();
+        try
+        {
+            var payload = new { service = "mqttdashboard_webapp", composeFile = "docker-compose.yml" };
+            var resp = await Http.PostAsJsonAsync("/api/update/host-update", payload);
+            if (resp.IsSuccessStatusCode)
+            {
+                var text = await resp.Content.ReadAsStringAsync();
+                _agentResponse = string.IsNullOrEmpty(text) ? "Update requested" : text;
+            }
+            else
+            {
+                var err = await resp.Content.ReadAsStringAsync();
+                _agentResponse = $"Agent error: {err}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _agentResponse = $"Request failed: {ex.Message}";
+        }
+        finally
+        {
+            _updating = false;
+            StateHasChanged();
+        }
     }
 }

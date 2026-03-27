@@ -14,17 +14,17 @@ public class AuthService : IAuthService
         _logger = logger;
     }
 
-    public async Task<(bool isAdmin, bool authEnabled)> GetStatusAsync()
+    public async Task<(bool isAdmin, bool authEnabled, bool readOnly)> GetStatusAsync()
     {
         try
         {
             var result = await _httpClient.GetFromJsonAsync<AuthStatusResponse>("api/auth/status");
-            return (result?.IsAdmin ?? true, result?.AuthEnabled ?? false);
+            return (result?.IsAdmin ?? true, result?.AuthEnabled ?? false, result?.ReadOnly ?? false);
         }
         catch (Exception ex)
         {
             _logger?.LogWarning(ex, "Failed to get auth status, assuming admin");
-            return (true, false);
+            return (true, false, false);
         }
     }
 
@@ -54,5 +54,5 @@ public class AuthService : IAuthService
     /// </summary>
     public Task<string?> GetLoginRedirectAsync(string password) => Task.FromResult<string?>(null);
 
-    private record AuthStatusResponse(bool IsAdmin, bool AuthEnabled);
+    private record AuthStatusResponse(bool IsAdmin, bool AuthEnabled, bool ReadOnly);
 }

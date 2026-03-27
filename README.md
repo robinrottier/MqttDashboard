@@ -18,10 +18,14 @@ Dashboards are fully editable in the browser. Multiple dashboard files can be sa
 - Live data — MQTT values displayed directly on nodes, updated via SignalR push
 - Edit / view modes — share a read-only view with no edit controls
 - Optional admin authentication — password-protect editing
+- **Read-only deployment mode** — `ReadOnly=true` disables all edit UI and blocks all write APIs; ideal for public or shared displays
+- **Dual-port mode** — single process serving a read-only public port and an editable admin port simultaneously, sharing the MQTT connection and data cache
 - Theme — light, dark, or system default
-- Two deployment flavours:
-  - **WebApp** (default) — Blazor Web App with WebAssembly for the best client-side experience
-  - **WebAppServerOnly** — pure Blazor Server, no WASM download; lower bandwidth and memory, ideal for Raspberry Pi
+- Three render mode flavours:
+  - **Auto** (default) — WASM for capable browsers, Blazor Server fallback
+  - **WebAssembly** — WASM always
+  - **Server** — Blazor Server only (same WebApp image, no WASM download; set `RenderMode=Server`)
+  - **WebAppServerOnly** — dedicated Blazor Server project; smaller Docker image; recommended for Raspberry Pi
 
 ---
 
@@ -212,6 +216,11 @@ All settings can be supplied as environment variables (using `__` as the section
 | Data directory | `DiagramStorage__DataDirectory` | Path where dashboard JSON files are stored | `./data` |
 | Reverse proxy subpath | `AllowedPathBase` | Accepted subpath from `X-Forwarded-Prefix` | *(empty — root)* |
 | Admin password hash | `Auth__AdminPasswordHash` | bcrypt hash of the admin password. Leave empty to disable authentication | — |
+| Read-only mode | `ReadOnly` | `true` — disable all edit UI and block all write APIs | `false` |
+| Read-only ports | `ReadOnlyPorts` | Comma-separated port numbers served as read-only (e.g. `8080`). Use with `ASPNETCORE_URLS` to enable dual-port mode. | *(empty)* |
+| Render mode | `RenderMode` | `Auto` \| `WebAssembly` \| `Server` | `Auto` |
+
+See [Deployment modes](documents/deployment-modes.md) for detailed guidance on all access-control and render-mode options.
 
 ---
 

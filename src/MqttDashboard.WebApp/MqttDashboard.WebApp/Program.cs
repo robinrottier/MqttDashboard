@@ -25,9 +25,12 @@ try
     });
 
     var renderModeConfig = builder.Configuration["RenderMode"] ?? "Auto";
-    var renderMode = renderModeConfig.Equals("WebAssembly", StringComparison.OrdinalIgnoreCase)
-        ? BlazorRenderMode.InteractiveWebAssembly
-        : BlazorRenderMode.InteractiveAuto;
+    var renderMode = renderModeConfig.ToLowerInvariant() switch
+    {
+        "webassembly" => BlazorRenderMode.InteractiveWebAssembly,
+        "server"      => BlazorRenderMode.InteractiveServer,
+        _             => BlazorRenderMode.InteractiveAuto
+    };
 
     // Resolve data directory early (same logic as DashboardStorageService) so user settings
     // are stored in the volume-mounted data dir rather than the ephemeral container root.

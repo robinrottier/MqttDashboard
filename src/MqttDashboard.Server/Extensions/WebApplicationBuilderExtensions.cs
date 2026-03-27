@@ -23,8 +23,24 @@ public static class WebApplicationBuilderExtensions
     {
         // Persist Data Protection keys so antiforgery tokens survive container restarts.
         // Configure DataProtection:KeysDirectory in appsettings/env (e.g. /app/data/keys in Docker).
-        // If not set, keys are stored in the default location (user profile on dev, ephemeral in containers).
+        // If not set, default to the application's data directory (DiagramStorage:DataDirectory or DIAGRAM_DATA_DIR)
         var keysDir = builder.Configuration["DataProtection:KeysDirectory"];
+        if (string.IsNullOrWhiteSpace(keysDir))
+        {
+            // Resolve data directory the same way hosts do so keys live in the persisted data volume
+            var envDir = Environment.GetEnvironmentVariable("DIAGRAM_DATA_DIR");
+            if (!string.IsNullOrWhiteSpace(envDir))
+                keysDir = Path.Combine(envDir, "keys");
+            else
+            {
+                var cfgDir = builder.Configuration["DiagramStorage:DataDirectory"];
+                if (!string.IsNullOrWhiteSpace(cfgDir))
+                    keysDir = Path.GetFullPath(Path.Combine(cfgDir, "keys"), builder.Environment.ContentRootPath);
+                else
+                    keysDir = Path.Combine(builder.Environment.ContentRootPath, "Data", "keys");
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(keysDir))
         {
             var keysDirInfo = new DirectoryInfo(keysDir);

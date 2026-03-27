@@ -5,6 +5,88 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
+## 2026-03-27 (batch 4) — ReadOnlyPorts + deployment documentation
+
+### Commit: (see git log) · UTC 2026-03-27 · branch: develop
+
+### ReadOnlyPorts — per-port read-only in a single process
+
+**Problem:** The `ReadOnly=true` flag makes the entire process read-only. Running two
+processes for a public read-only port and an admin editable port means two MQTT broker
+connections and two data caches.
+
+**Solution:** `ReadOnlyPorts=8080` (comma-separated) — requests arriving on the listed port(s)
+are treated as read-only. Combined with `ASPNETCORE_URLS=http://+:8080;http://+:8081`, a single
+process serves public read-only on 8080 and admin editing on 8081, sharing all singletons.
+
+**Files changed:**
+- `src/MqttDashboard.Server/Services/ReadOnlyHelper.cs` (new) — static `IsReadOnly(IConfiguration, HttpContext?)` checks `ReadOnly` global flag first, then compares `LocalPort` against `ReadOnlyPorts` list
+- `src/MqttDashboard.Server/Controllers/AuthController.cs` — `GetStatus()` uses `ReadOnlyHelper`
+- `src/MqttDashboard.Server/Filters/RequireAdminFilter.cs` — uses `ReadOnlyHelper`; added `using MqttDashboard.Server.Services`
+- `src/MqttDashboard.Server/Controllers/SettingsController.cs` — uses `ReadOnlyHelper`
+- `src/MqttDashboard.Server/Services/ServerAuthService.cs` — uses `ReadOnlyHelper`; removed duplicate `var httpContext` declaration
+- `src/MqttDashboard.WebApp/MqttDashboard.WebApp/appsettings.json` — added `"ReadOnlyPorts": ""`
+- `src/MqttDashboard.WebApp/MqttDashboard.WebAppServerOnly/appsettings.json` — added `"ReadOnlyPorts": ""`
+- `docker-compose.yml` — added `ReadOnlyPorts` env var with detailed comment
+- `docker-compose.production.yml` — added `ReadOnlyPorts` env var comment
+
+### Deployment documentation
+
+**New document:** `documents/deployment-modes.md` — covers all supported deployment patterns:
+1. Default single-port read-write
+2. Single-port with admin auth
+3. Single-port fully read-only (`ReadOnly=true`)
+4. Dual-port single-process (`ReadOnlyPorts`)
+5. Dual-process two containers
+6. Render mode options (Auto, WebAssembly, Server, WebAppServerOnly)
+7. Future compile-time read-only (`.Core` + `.View` project split)
+
+**README.md** — updated Features section to mention read-only and dual-port modes; added
+`ReadOnly`, `ReadOnlyPorts`, and `RenderMode` to configuration reference table with link to
+the new deployment-modes document.
+
+---
+
+
+
+### Commit: (see git log) · UTC 2026-03-26 · branch: develop
+
+### Read-only runtime mode (`ReadOnly=true`)
+
+**Problem:** No way to deploy a public view-only instance without exposing edit controls.
+
+**Files changed:**
+- `src/MqttDashboard.Server/Controllers/AuthController.cs` — `GET /api/auth/status` now includes a `readOnly` field; when `ReadOnly=true` the response always returns `{ isAdmin: false, authEnabled: false, readOnly: true }` regardless of other config
+- `src/MqttDashboard.Server/Filters/RequireAdminFilter.cs` — returns HTTP 403 with error message when `ReadOnly: true`; checked before auth (no one can write in read-only mode)
+- `src/MqttDashboard.Server/Controllers/SettingsController.cs` — `POST /api/settings/startup` returns 403 when read-only (has its own inline auth check, so had to add the read-only guard here too)
+- `src/MqttDashboard.Server/Services/ServerAuthService.cs` — `GetStatusAsync()` returns `(bool isAdmin, bool authEnabled, bool readOnly)` 3-tuple; reads `ReadOnly` from `IConfiguration`
+- `src/MqttDashboard.Client/Services/IAuthService.cs` — `GetStatusAsync()` return type changed to `(bool isAdmin, bool authEnabled, bool readOnly)`
+- `src/MqttDashboard.Client/Services/AuthService.cs` — parses `ReadOnly` from JSON response; `AuthStatusResponse` record extended
+- `src/MqttDashboard.Client/Services/ApplicationState.cs` — added `IsReadOnly` property; `SetAuthState()` gains `readOnly = false` parameter
+- `src/MqttDashboard.Client/Services/MqttInitializationService.cs` — passes `readOnly` from auth status to `SetAuthState()`
+- `src/MqttDashboard.Client/Layout/MainLayout.razor` — login/logout buttons and edit-mode toggle both wrapped in `!AppState.IsReadOnly`; setup alert also hidden in read-only mode
+- `src/MqttDashboard.WebApp/MqttDashboard.WebApp/appsettings.json` — added `"ReadOnly": false`
+- `src/MqttDashboard.WebApp/MqttDashboard.WebAppServerOnly/appsettings.json` — added `"ReadOnly": false`
+
+**How it works:** Set `ReadOnly=true` as environment variable or in `appsettings.user.json`. The server blocks all write API calls (403) and reports read-only to the client. The client hides the edit toggle, login/logout buttons, and admin setup alert. No username/password is needed or shown — anyone accessing the URL gets the live view only.
+
+### RenderMode=Server support
+
+**Problem:** The single WebApp Docker image only supported `Auto` and `WebAssembly` render modes. There was no way to run Blazor Server-only (no WASM download) from the standard image.
+
+**Files changed:**
+- `src/MqttDashboard.WebApp/MqttDashboard.WebApp/Program.cs` — render mode switch changed from binary `WebAssembly`/`Auto` to a proper switch expression supporting `"Auto"` (default), `"WebAssembly"`, and `"Server"` → `BlazorRenderMode.InteractiveServer`
+- `docker-compose.yml` — added commented env var examples for `RenderMode` and `ReadOnly`
+- `docker-compose.production.yml` — same
+
+**How it works:** Set `RenderMode=Server` to run the WebApp image in pure Blazor Server mode (no WASM bundle downloaded by clients). Useful for Raspberry Pi or other low-memory clients. The WASM bundle is still built into the image but never delivered.
+
+### Minor cleanup
+
+- `src/MqttDashboard.Client/Components/AboutDialog.razor` — removed unused `_restarting` field (it was always set but never read after the update banner removal; was causing a CS0414 warning)
+
+---
+
 ## 2026-03-26 (batch 3) — TreeView overhaul + import dialog + padding
 
 ### Commit: (see git log) · UTC 2026-03-26 · branch: develop

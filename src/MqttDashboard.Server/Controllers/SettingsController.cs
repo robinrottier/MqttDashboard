@@ -34,6 +34,9 @@ public class SettingsController : ControllerBase
     [HttpPost("startup")]
     public IActionResult SetStartup([FromBody] SetStartupRequest request)
     {
+        if (ReadOnlyHelper.IsReadOnly(_configuration, HttpContext))
+            return StatusCode(403, new { error = "Dashboard is in read-only mode." });
+
         var authEnabled = !string.IsNullOrEmpty(_configuration["Auth:AdminPasswordHash"]);
         if (authEnabled && User.Identity?.IsAuthenticated != true)
             return Unauthorized(new { error = "Admin authentication required." });
