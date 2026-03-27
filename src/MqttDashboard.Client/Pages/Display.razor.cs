@@ -10,6 +10,7 @@ using MqttDashboard.Services;
 using MqttDashboard.Widgets;
 using MqttDashboard.Components;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.JSInterop;
 using MudBlazor;
@@ -68,6 +69,72 @@ public partial class Display : IDisposable
     private IDisposable? _locationChangingRegistration;
 
     private const string LastDashboardKey = "mqttdashboard_lastDiagram";
+    private ElementReference _canvasRef;
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        // Only handle keyboard shortcuts in edit mode
+        if (!AppState.IsEditMode) return;
+
+        // Common clipboard / edit shortcuts
+        var ctrl = e.CtrlKey || e.MetaKey;
+        if (ctrl)
+        {
+            switch (e.Key)
+            {
+                case "c":
+                case "C":
+                    CopySelectedNodes();
+                    break;
+                case "x":
+                case "X":
+                    CutSelectedNodes();
+                    break;
+                case "v":
+                case "V":
+                    await PasteNodesAsync();
+                    break;
+                case "z":
+                case "Z":
+                    if (e.ShiftKey) await RedoAction(); else await UndoAction();
+                    break;
+                case "y":
+                case "Y":
+                    await RedoAction();
+                    break;
+                case "s":
+                case "S":
+                    // Ctrl+S: save. If there's no filename yet, open Save As dialog.
+                    if (string.IsNullOrEmpty(AppState.DashboardName))
+                        await SaveAsDiagram();
+                    else
+                        await SaveDashboard();
+                    break;
+            }
+        }
+        else
+        {
+            // Non-ctrl shortcuts
+            switch (e.Key)
+            {
+                case "Delete":
+                case "Backspace":
+                    DeleteSelectedNode();
+                    break;
+                case "Escape":
+                    // Cancel inline rename if active
+                    if (_renamingPageIndex != -1) { _renamingPageIndex = -1; StateHasChanged(); }
+                    break;
+                case "F2":
+                    // Start rename for single selected page/tab
+                    if (AppState.IsEditMode && AppState.PageNames.Count > 0)
+                    {
+                        StartRename(_activePageIndex, AppState.PageNames[_activePageIndex]);
+                    }
+                    break;
+            }
+        }
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -348,6 +415,11 @@ public partial class Display : IDisposable
         StateHasChanged();
         // Suppress any spurious Changed events fired during RefreshAll
         if (enterEditMode) AppState.MarkSaved();
+        // Focus the canvas so keyboard shortcuts work immediately when entering edit mode
+        if (enterEditMode)
+        {
+            try { await Task.Delay(50); await _canvasRef.FocusAsync(); } catch { /* ignore */ }
+        }
     }
 
     private void SubscribeEditEvents()
@@ -755,7 +827,9 @@ public partial class Display : IDisposable
     private static List<NodeData> BuildSnapshots(IEnumerable<TextNodeModel> selected)
         => selected.Select(n => n.ToData()).ToList();
 
-    private void CopySelectedNodes()
+    private void CopySelectedNodes() => CopySelectedNodes(true);
+
+    private void CopySelectedNodes(bool showSnackbar)
     {
         if (_diagram == null) return;
         var selected = _diagram.GetSelectedModels().OfType<TextNodeModel>().ToList();
@@ -769,17 +843,26 @@ public partial class Display : IDisposable
         _ = JSRuntime.InvokeAsync<bool>("mqttClipboard.writeText", json).AsTask()
               .ContinueWith(_ => { });
 
-        Snackbar.Add($"Copied {snapshots.Count} node(s)", Severity.Info);
+        if (showSnackbar)
+            Snackbar.Add($"Copied {snapshots.Count} node(s)", Severity.Info);
     }
 
     private void CutSelectedNodes()
     {
+        if (_diagram == null) return;
+        var selected = _diagram.GetSelectedModels().OfType<TextNodeModel>().ToList();
+        if (selected.Count == 0) return;
+        var count = selected.Count;
+
         _pasteGeneration = 0;
-        CopySelectedNodes();
+        // Copy to clipboard but suppress the "Copied" snackbar — we'll show "Cut" instead.
+        CopySelectedNodes(false);
+
         PushUndoSnapshot();
         foreach (var n in _diagram!.GetSelectedModels().OfType<NodeModel>().ToList())
             _diagram.Nodes.Remove(n);
         UpdateSelectionState();
+        Snackbar.Add($"Cut {count} node(s)", Severity.Info);
         StateHasChanged();
     }
 

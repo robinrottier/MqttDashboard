@@ -261,12 +261,35 @@
         StateHasChanged();
         try
         {
-            // Trigger a fresh check on the server
-            await Http.PostAsync("/api/update/check", null);
-            _updateStatus = await Http.GetFromJsonAsync<UpdateStatusDto>("/api/update/status");
+            // Trigger a fresh check on the server. Don't bail out if the POST fails;
+            // we'll still attempt to read the last known status.
+            try
+            {
+                var postResp = await Http.PostAsync("/api/update/check", null);
+                if (!postResp.IsSuccessStatusCode)
+                {
+                    // Log to console for diagnostics and continue to GET status
+                    Console.Error.WriteLine($"Update check POST returned {(int)postResp.StatusCode} {postResp.ReasonPhrase}");
+                }
+            }
+            catch (Exception postEx)
+            {
+                // Swallow POST errors but record to console for diagnostics
+                Console.Error.WriteLine($"Update check POST failed: {postEx}");
+            }
+
+            // Now request the status. Use GetAsync to surface HTTP status codes.
+            var getResp = await Http.GetAsync("/api/update/status");
+            if (!getResp.IsSuccessStatusCode)
+            {
+                _updateError = $"Could not retrieve update status: {(int)getResp.StatusCode} {getResp.ReasonPhrase}";
+                return;
+            }
+            _updateStatus = await getResp.Content.ReadFromJsonAsync<UpdateStatusDto>();
         }
         catch (Exception ex)
         {
+            // Provide the top-level exception message; developers can inspect browser console for the POST diagnostics above.
             _updateError = $"Could not check for updates: {ex.Message}";
         }
         finally
@@ -316,12 +339,12 @@
         var options = new MudBlazor.DialogOptions { CloseButton = true };
         var dialogRef = await DialogService.ShowAsync<ConfirmDialog>("Confirm Upgrade", parameters, options);
         var result = await dialogRef.Result;
-        if (result.Canceled) return;
+        if (result == null || result.Canceled) return;
 
         // Ask the user for the agent token or use configured token
         var tokenDialogRef = await DialogService.ShowAsync<AgentTokenDialog>("Update Token", new DialogParameters(), new MudBlazor.DialogOptions { CloseButton = true });
         var tokenResult = await tokenDialogRef.Result;
-        if (tokenResult.Canceled) return;
+        if (tokenResult == null || tokenResult.Canceled) return;
 
         var enteredToken = tokenResult.Data as string; // null means use configured token on server
 

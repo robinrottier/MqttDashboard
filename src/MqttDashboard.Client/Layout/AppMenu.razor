@@ -13,15 +13,40 @@
     <MudMenu Label="File" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
         @if (IsEditMode)
         {
-            <MudMenuItem Label="New" OnClick="NewDiagram" />
+            <MudMenuItem OnClick="NewDiagram">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Style="width:100%;justify-content:space-between;">
+                    <span>New</span>
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">&nbsp;</MudText>
+                </MudStack>
+            </MudMenuItem>
         }
-        <MudMenuItem Label="Open…" OnClick="OpenDiagram" />
+            <MudMenuItem OnClick="OpenDiagram">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Style="width:100%;justify-content:space-between;">
+                <span>Open…</span>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">&nbsp;</MudText>
+            </MudStack>
+        </MudMenuItem>
         @if (IsEditMode)
         {
-            <MudMenuItem Label="Reload from Disk" OnClick="ReloadDiagram" />
+            <MudMenuItem OnClick="ReloadDiagram">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Style="width:100%;justify-content:space-between;">
+                    <span>Reload from Disk</span>
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">&nbsp;</MudText>
+                </MudStack>
+            </MudMenuItem>
             <MudDivider />
-            <MudMenuItem Label="Save" Disabled="@string.IsNullOrEmpty(AppState.DashboardName)" OnClick="SaveDashboard" />
-            <MudMenuItem Label="Save As…"             OnClick="SaveAsDiagram"          />
+            <MudMenuItem Disabled="@string.IsNullOrEmpty(AppState.DashboardName)" OnClick="SaveDashboard">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Style="width:100%;justify-content:space-between;">
+                    <span>Save</span>
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">Ctrl+S</MudText>
+                </MudStack>
+            </MudMenuItem>
+            <MudMenuItem OnClick="SaveAsDiagram">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Style="width:100%;justify-content:space-between;">
+                    <span>Save As…</span>
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">&nbsp;</MudText>
+                </MudStack>
+            </MudMenuItem>
             <MudDivider />
             <MudMenuItem Label="Dashboard Properties…"  OnClick="MenuDiagramProperties"  />
             @if (AppState.IsEditMode)
@@ -50,16 +75,56 @@
     @if (IsEditMode)
     {
     <MudMenu Label="Edit" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
-        <MudMenuItem Label="Undo"     OnClick="Undo"     Disabled="@(!AppState.CanUndo)" />
-        <MudMenuItem Label="Redo"     OnClick="Redo"     Disabled="@(!AppState.CanRedo)" />
-        <MudMenuItem Label="Undo All" OnClick="UndoAll"  Disabled="@(!AppState.CanUndo)" />
+        <MudMenuItem OnClick="Undo" Disabled="@(!AppState.CanUndo)">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Style="width:100%;justify-content:space-between;">
+                <span>Undo</span>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Ctrl+Z</MudText>
+            </MudStack>
+        </MudMenuItem>
+        <MudMenuItem OnClick="Redo" Disabled="@(!AppState.CanRedo)">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Style="width:100%;justify-content:space-between;">
+                <span>Redo</span>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Ctrl+Y</MudText>
+            </MudStack>
+        </MudMenuItem>
+        <MudMenuItem OnClick="UndoAll" Disabled="@(!AppState.CanUndo)">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Style="width:100%;justify-content:space-between;">
+                <span>Undo All</span>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">&nbsp;</MudText>
+            </MudStack>
+        </MudMenuItem>
         <MudDivider />
-        <MudMenuItem Label="Add Node"    OnClick="MenuAddNode"    Disabled="@(!IsEditMode)" />
-        <MudMenuItem Label="Delete Node" OnClick="MenuDeleteNode" Disabled="@(!AppState.HasSelectedNode)" />
+        <MudMenuItem OnClick="MenuAddNode" Disabled="@(!IsEditMode)">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Style="width:100%;justify-content:space-between;">
+                <span>Add Node</span>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">&nbsp;</MudText>
+            </MudStack>
+        </MudMenuItem>
+        <MudMenuItem OnClick="MenuDeleteNode" Disabled="@(!AppState.HasSelectedNode)">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Style="width:100%;justify-content:space-between;">
+                <span>Delete Node</span>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Del</MudText>
+            </MudStack>
+        </MudMenuItem>
         <MudDivider />
-        <MudMenuItem Label="Cut"   OnClick="MenuCutSelected"  Disabled="@(!AppState.HasSelectedNode)" />
-        <MudMenuItem Label="Copy"  OnClick="MenuCopySelected" Disabled="@(!AppState.HasSelectedNode)" />
-        <MudMenuItem Label="Paste" OnClick="MenuPasteSelected" Disabled="@(!AppState.HasClipboard || !IsEditMode)" />
+        <MudMenuItem OnClick="MenuCutSelected" Disabled="@(!AppState.HasSelectedNode)">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Style="width:100%;justify-content:space-between;">
+                <span>Cut</span>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Ctrl+X</MudText>
+            </MudStack>
+        </MudMenuItem>
+        <MudMenuItem OnClick="MenuCopySelected" Disabled="@(!AppState.HasSelectedNode)">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Style="width:100%;justify-content:space-between;">
+                <span>Copy</span>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Ctrl+C</MudText>
+            </MudStack>
+        </MudMenuItem>
+        <MudMenuItem OnClick="MenuPasteSelected" Disabled="@(!AppState.HasClipboard || !IsEditMode)">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Style="width:100%;justify-content:space-between;">
+                <span>Paste</span>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Ctrl+V</MudText>
+            </MudStack>
+        </MudMenuItem>
         <MudDivider />
         <MudMenu Label="Add Port"    Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight" Disabled="@(!AppState.HasSingleSelectedNode)">
             <MudMenuItem Label="Top"    OnClick="() => MenuAddPort(PortAlignment.Top)"    Disabled="@(AppState.SelectedNodePorts?.Contains(PortAlignment.Top) == true)" />
