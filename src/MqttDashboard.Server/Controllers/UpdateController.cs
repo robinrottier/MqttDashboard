@@ -190,26 +190,61 @@ public class UpdateController : ControllerBase
         var authEnabled = !string.IsNullOrEmpty(_configuration["Auth:AdminPasswordHash"]);
         if (authEnabled && User.Identity?.IsAuthenticated != true)
             return Unauthorized(new { error = "Admin authentication required." });
+        // Server-side builds the request body forwarded to the update agent.
+        // This ensures container/service names and compose files come from server config,
+        // while allowing the client to optionally provide the agent token (prompted secret).
 
-        if (req == null)
-            return BadRequest(new { error = "Request body required." });
-
-        // Build agent URL and token from configuration (fall back to localhost)
+        // Build agent URL and token (client may pass AgentToken in the request to prompt for secret)
         var agentUrl = _configuration["UpdateAgent:Url"] ?? "http://127.0.0.1:8080/update";
-        var agentToken = _configuration["UpdateAgent:Token"];
+        var configuredToken = _configuration["UpdateAgent:Token"];
+        // If client provided AgentToken (prompted), it takes precedence for this request.
+        var agentToken = req?.AgentToken ?? configuredToken;
+
+        // Build the payload to forward. Prefer server configuration values so the client cannot
+        // specify arbitrary service names. If you want to allow client-specified targets, add
+        // UpdateAgent:AllowClientSpecifiedService=true to configuration.
+        var allowClientService = false;
+        if (bool.TryParse(_configuration["UpdateAgent:AllowClientSpecifiedService"], out var allow))
+            allowClientService = allow;
+
+        var forwardReq = new HostUpdateRequest();
+
+        // Configuration keys the server will use to determine update target
+        var confService = _configuration["UpdateAgent:Service"];
+        var confCompose = _configuration["UpdateAgent:ComposeFile"];
+        var confWatchtower = _configuration["UpdateAgent:WatchtowerContainer"];
+        var confWorkdir = _configuration["UpdateAgent:Workdir"];
+
+        // If client is allowed to specify service and provided one, use it
+        if (allowClientService && !string.IsNullOrEmpty(req?.Service))
+            forwardReq.Service = req!.Service;
+
+        // Otherwise prefer configured watchtower container (if present)
+        if (!string.IsNullOrEmpty(confWatchtower))
+        {
+            forwardReq.WatchtowerContainer = confWatchtower;
+        }
+        else if (!string.IsNullOrEmpty(confService) || !string.IsNullOrEmpty(forwardReq.Service))
+        {
+            forwardReq.Service = forwardReq.Service ?? confService;
+            forwardReq.ComposeFile = confCompose ?? "docker-compose.yml";
+            forwardReq.Workdir = confWorkdir;
+        }
+        else
+        {
+            return BadRequest(new { error = "No update target configured. Set UpdateAgent:Service or UpdateAgent:WatchtowerContainer in configuration." });
+        }
 
         try
         {
             var client = _httpClientFactory.CreateClient();
             if (!string.IsNullOrEmpty(agentToken)) client.DefaultRequestHeaders.Add("X-Update-Token", agentToken);
 
-            // Forward the request body as-is to the agent
-            var resp = await client.PostAsJsonAsync(agentUrl, req);
+            var resp = await client.PostAsJsonAsync(agentUrl, forwardReq);
             var body = await resp.Content.ReadAsStringAsync();
 
             if ((int)resp.StatusCode >= 200 && (int)resp.StatusCode <= 299)
             {
-                // Try to parse JSON response
                 try { return Content(body, "application/json"); }
                 catch { return Ok(new { raw = body }); }
             }
