@@ -52,9 +52,9 @@ public class MqttInitializationService
         {
             _logger?.LogInformation("Starting MQTT initialization...");
 
-            var (isAdmin, authEnabled) = await _authService.GetStatusAsync();
-            _appState.SetAuthState(isAdmin, authEnabled);
-            _logger?.LogInformation("Auth state: IsAdmin={IsAdmin}, AuthEnabled={AuthEnabled}", isAdmin, authEnabled);
+            var (isAdmin, authEnabled, readOnly) = await _authService.GetStatusAsync();
+            _appState.SetAuthState(isAdmin, authEnabled, readOnly);
+            _logger?.LogInformation("Auth state: IsAdmin={IsAdmin}, AuthEnabled={AuthEnabled}, ReadOnly={ReadOnly}", isAdmin, authEnabled, readOnly);
 
             // Load subscriptions from the default dashboard file
             var defaultDashboard = await _dashboardService.LoadDashboardAsync();

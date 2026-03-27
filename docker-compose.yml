@@ -20,4 +20,8 @@ services:
       # Leave empty for direct root access. The app only accepts this exact value from
       # the X-Forwarded-Prefix header — arbitrary values from clients are ignored.
       - AllowedPathBase=
+      # Render mode: Auto (default, WASM + server fallback), WebAssembly (WASM only), Server (Blazor Server, no WASM download)
+      - RenderMode=Auto
+      # Read-only mode: true to disable all edit UI and block write APIs (view-only public deployment)
+      - ReadOnly=false
     restart: unless-stopped

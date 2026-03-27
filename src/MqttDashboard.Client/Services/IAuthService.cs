@@ -2,7 +2,7 @@ namespace MqttDashboard.Services;
 
 public interface IAuthService
 {
-    Task<(bool isAdmin, bool authEnabled)> GetStatusAsync();
+    Task<(bool isAdmin, bool authEnabled, bool readOnly)> GetStatusAsync();
     Task<bool> LoginAsync(string password);
     Task LogoutAsync();
 

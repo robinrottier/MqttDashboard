@@ -102,11 +102,13 @@ public class ApplicationState
     // Auth state
     public bool IsAdmin { get; private set; } = true; // default true when auth not configured
     public bool AuthEnabled { get; private set; } = false;
+    public bool IsReadOnly { get; private set; } = false;
 
-    public void SetAuthState(bool isAdmin, bool authEnabled)
+    public void SetAuthState(bool isAdmin, bool authEnabled, bool readOnly = false)
     {
         IsAdmin = isAdmin;
         AuthEnabled = authEnabled;
+        IsReadOnly = readOnly;
         NotifyStateChangedAsync();
     }
 

@@ -116,8 +116,8 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Optional Git commit/push of dashboard changes to a remote repo
 
 ### FEAT-L: Deployment enhancements
-- [ ] Single Docker image supporting both server-only SSR and WASM modes (different ports, shared data dir)
-- [ ] Read-only runtime mode — view-only, no login/edit UI exposed. This would be some sort of setting on the server that hides edit UI and disables login, so anyone accessing the dashboard would see the live view but have no way to change it.
+- [x] Single Docker image supporting both server-only SSR and WASM modes — done: add `RenderMode=Server` env var to use Blazor Server mode in the single WebApp image
+- [x] Read-only runtime mode — done: `ReadOnly=true` env var / config disables all edit UI and blocks all write API endpoints with 403
 - [ ] Admin interface: runtime monitoring, logs, connected clients, dashboard file management
 - [ ] More automation to speed relase process e.g. PR with message RC to mean release candiate so auto invokes patch-release auto bump and process
 

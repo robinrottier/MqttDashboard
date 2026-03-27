@@ -7,6 +7,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **Read-only runtime mode** — set `ReadOnly=true` as an environment variable (or in `appsettings.user.json`) to put the dashboard into view-only mode. Edit controls, login/logout buttons, and setup prompts are hidden; all write API endpoints return 403. Ideal for public or embedded deployments where users should only observe, not edit.
+- **`RenderMode=Server` for single Docker image** — the standard `mqttdashboard` image now supports a third render mode. Set `RenderMode=Server` to use Blazor Server (no WASM download). Existing `Auto` (default) and `WebAssembly` options are unchanged.
+
 ### Fixed
 - **Node without a title no longer grows indefinitely** — set `ControlledSize = true` on `TextNodeModel` so Blazor.Diagrams' ResizeObserver is never activated for our nodes. We manage all node sizes explicitly via CSS and the resize handle; the observer was creating a sub-pixel feedback loop.
 - **Grid no longer visible in view mode** — `GridSize` is now cleared to `null` on the diagram options when leaving edit mode.

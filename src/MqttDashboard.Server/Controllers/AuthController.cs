@@ -24,11 +24,16 @@ public class AuthController : ControllerBase
     [HttpGet("status")]
     public IActionResult GetStatus()
     {
-        var authEnabled = !string.IsNullOrEmpty(_configuration["Auth:AdminPasswordHash"]);
-        if (!authEnabled)
-            return Ok(new { isAdmin = true, authEnabled = false });
+        var readOnly = _configuration.GetValue<bool>("ReadOnly");
+        var authEnabled = !readOnly && !string.IsNullOrEmpty(_configuration["Auth:AdminPasswordHash"]);
 
-        return Ok(new { isAdmin = User.Identity?.IsAuthenticated == true, authEnabled = true });
+        if (readOnly)
+            return Ok(new { isAdmin = false, authEnabled = false, readOnly = true });
+
+        if (!authEnabled)
+            return Ok(new { isAdmin = true, authEnabled = false, readOnly = false });
+
+        return Ok(new { isAdmin = User.Identity?.IsAuthenticated == true, authEnabled = true, readOnly = false });
     }
 
     [HttpPost("login")]

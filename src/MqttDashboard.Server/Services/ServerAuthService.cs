@@ -42,16 +42,20 @@ public class ServerAuthService : IAuthService
         _logger = logger;
     }
 
-    public async Task<(bool isAdmin, bool authEnabled)> GetStatusAsync()
+    public async Task<(bool isAdmin, bool authEnabled, bool readOnly)> GetStatusAsync()
     {
+        var readOnly = _configuration.GetValue<bool>("ReadOnly");
+        if (readOnly)
+            return (false, false, true);
+
         var authEnabled = !string.IsNullOrEmpty(_configuration["Auth:AdminPasswordHash"]);
         if (!authEnabled)
-            return (true, false);
+            return (true, false, false);
 
         // During SSR pre-render: HttpContext is available with the real user identity.
         var httpContext = _httpContextAccessor.HttpContext;
         if (httpContext != null && !httpContext.Response.HasStarted)
-            return (httpContext.User.Identity?.IsAuthenticated == true, true);
+            return (httpContext.User.Identity?.IsAuthenticated == true, true, false);
 
         // During Blazor Server interactive circuit: HttpContext is the WebSocket upgrade
         // context (read-only). Use AuthenticationStateProvider instead.
@@ -61,7 +65,7 @@ public class ServerAuthService : IAuthService
             if (asp != null)
             {
                 var state = await asp.GetAuthenticationStateAsync();
-                return (state.User.Identity?.IsAuthenticated == true, true);
+                return (state.User.Identity?.IsAuthenticated == true, true, false);
             }
         }
         catch (Exception ex)
@@ -69,7 +73,7 @@ public class ServerAuthService : IAuthService
             _logger?.LogDebug(ex, "AuthenticationStateProvider unavailable in circuit; defaulting to unauthenticated");
         }
 
-        return (false, true);
+        return (false, true, false);
     }
 
     public async Task<bool> LoginAsync(string password)

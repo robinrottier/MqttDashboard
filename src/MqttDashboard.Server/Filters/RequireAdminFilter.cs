@@ -5,8 +5,8 @@ using Microsoft.Extensions.Configuration;
 namespace MqttDashboard.Server.Filters;
 
 /// <summary>
-/// Action filter that returns 401 for unauthenticated requests when auth is configured.
-/// When Auth:AdminPasswordHash is not set, all requests are allowed.
+/// Action filter that returns 403 in read-only mode, or 401 for unauthenticated write
+/// requests when auth is configured.
 /// </summary>
 public class RequireAdminFilter : IActionFilter
 {
@@ -19,6 +19,14 @@ public class RequireAdminFilter : IActionFilter
 
     public void OnActionExecuting(ActionExecutingContext context)
     {
+        // Read-only mode: all write operations are blocked for everyone
+        if (_configuration.GetValue<bool>("ReadOnly"))
+        {
+            context.Result = new ObjectResult(new { error = "Dashboard is in read-only mode" })
+                { StatusCode = 403 };
+            return;
+        }
+
         var authEnabled = !string.IsNullOrEmpty(_configuration["Auth:AdminPasswordHash"]);
         if (!authEnabled) return;
 
