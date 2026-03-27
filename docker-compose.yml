@@ -24,4 +24,9 @@ services:
       - RenderMode=Auto
       # Read-only mode: true to disable all edit UI and block write APIs (view-only public deployment)
       - ReadOnly=false
+      # Per-port read-only: comma-separated ports that are served as read-only (requires ASPNETCORE_URLS to list both ports).
+      # Example: ReadOnlyPorts=8080 with ASPNETCORE_URLS=http://+:8080;http://+:8081 serves read-only on 8080, editable on 8081,
+      # sharing the same MQTT connection and data cache within one process.
+      # Leave empty to use a single port with the ReadOnly flag above.
+      - ReadOnlyPorts=
     restart: unless-stopped

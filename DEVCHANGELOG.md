@@ -5,7 +5,49 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
-## 2026-03-26 (batch 4) — Read-only mode + RenderMode=Server
+## 2026-03-27 (batch 4) — ReadOnlyPorts + deployment documentation
+
+### Commit: (see git log) · UTC 2026-03-27 · branch: develop
+
+### ReadOnlyPorts — per-port read-only in a single process
+
+**Problem:** The `ReadOnly=true` flag makes the entire process read-only. Running two
+processes for a public read-only port and an admin editable port means two MQTT broker
+connections and two data caches.
+
+**Solution:** `ReadOnlyPorts=8080` (comma-separated) — requests arriving on the listed port(s)
+are treated as read-only. Combined with `ASPNETCORE_URLS=http://+:8080;http://+:8081`, a single
+process serves public read-only on 8080 and admin editing on 8081, sharing all singletons.
+
+**Files changed:**
+- `src/MqttDashboard.Server/Services/ReadOnlyHelper.cs` (new) — static `IsReadOnly(IConfiguration, HttpContext?)` checks `ReadOnly` global flag first, then compares `LocalPort` against `ReadOnlyPorts` list
+- `src/MqttDashboard.Server/Controllers/AuthController.cs` — `GetStatus()` uses `ReadOnlyHelper`
+- `src/MqttDashboard.Server/Filters/RequireAdminFilter.cs` — uses `ReadOnlyHelper`; added `using MqttDashboard.Server.Services`
+- `src/MqttDashboard.Server/Controllers/SettingsController.cs` — uses `ReadOnlyHelper`
+- `src/MqttDashboard.Server/Services/ServerAuthService.cs` — uses `ReadOnlyHelper`; removed duplicate `var httpContext` declaration
+- `src/MqttDashboard.WebApp/MqttDashboard.WebApp/appsettings.json` — added `"ReadOnlyPorts": ""`
+- `src/MqttDashboard.WebApp/MqttDashboard.WebAppServerOnly/appsettings.json` — added `"ReadOnlyPorts": ""`
+- `docker-compose.yml` — added `ReadOnlyPorts` env var with detailed comment
+- `docker-compose.production.yml` — added `ReadOnlyPorts` env var comment
+
+### Deployment documentation
+
+**New document:** `documents/deployment-modes.md` — covers all supported deployment patterns:
+1. Default single-port read-write
+2. Single-port with admin auth
+3. Single-port fully read-only (`ReadOnly=true`)
+4. Dual-port single-process (`ReadOnlyPorts`)
+5. Dual-process two containers
+6. Render mode options (Auto, WebAssembly, Server, WebAppServerOnly)
+7. Future compile-time read-only (`.Core` + `.View` project split)
+
+**README.md** — updated Features section to mention read-only and dual-port modes; added
+`ReadOnly`, `ReadOnlyPorts`, and `RenderMode` to configuration reference table with link to
+the new deployment-modes document.
+
+---
+
+
 
 ### Commit: (see git log) · UTC 2026-03-26 · branch: develop
 

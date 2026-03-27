@@ -8,8 +8,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- **Read-only runtime mode** — set `ReadOnly=true` as an environment variable (or in `appsettings.user.json`) to put the dashboard into view-only mode. Edit controls, login/logout buttons, and setup prompts are hidden; all write API endpoints return 403. Ideal for public or embedded deployments where users should only observe, not edit.
-- **`RenderMode=Server` for single Docker image** — the standard `mqttdashboard` image now supports a third render mode. Set `RenderMode=Server` to use Blazor Server (no WASM download). Existing `Auto` (default) and `WebAssembly` options are unchanged.
+- **Read-only deployment mode (`ReadOnly=true`)** — set as env var or config to disable all edit UI and block all write APIs. Ideal for public displays.
+- **Dual-port read-only mode (`ReadOnlyPorts`)** — single process listens on two ports; specific ports are read-only while others remain editable. Shares MQTT connection and data cache between both ports. Example: `ReadOnlyPorts=8080` with `ASPNETCORE_URLS=http://+:8080;http://+:8081`.
+- **`RenderMode=Server` for WebApp image** — run the standard Docker image in Blazor Server mode (no WASM download) by setting `RenderMode=Server`.
+- **Deployment modes guide** — new `documents/deployment-modes.md` covering all access-control and render-mode options including future plans.
 
 ### Fixed
 - **Node without a title no longer grows indefinitely** — set `ControlledSize = true` on `TextNodeModel` so Blazor.Diagrams' ResizeObserver is never activated for our nodes. We manage all node sizes explicitly via CSS and the resize handle; the observer was creating a sub-pixel feedback loop.

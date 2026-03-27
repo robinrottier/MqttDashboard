@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Configuration;
+using MqttDashboard.Server.Services;
 
 namespace MqttDashboard.Server.Filters;
 
@@ -19,8 +20,8 @@ public class RequireAdminFilter : IActionFilter
 
     public void OnActionExecuting(ActionExecutingContext context)
     {
-        // Read-only mode: all write operations are blocked for everyone
-        if (_configuration.GetValue<bool>("ReadOnly"))
+        // Read-only mode (global flag or per-port): all write operations are blocked for everyone
+        if (ReadOnlyHelper.IsReadOnly(_configuration, context.HttpContext))
         {
             context.Result = new ObjectResult(new { error = "Dashboard is in read-only mode" })
                 { StatusCode = 403 };

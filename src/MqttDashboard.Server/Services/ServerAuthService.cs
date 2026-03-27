@@ -44,7 +44,8 @@ public class ServerAuthService : IAuthService
 
     public async Task<(bool isAdmin, bool authEnabled, bool readOnly)> GetStatusAsync()
     {
-        var readOnly = _configuration.GetValue<bool>("ReadOnly");
+        var httpContext = _httpContextAccessor.HttpContext;
+        var readOnly = ReadOnlyHelper.IsReadOnly(_configuration, httpContext);
         if (readOnly)
             return (false, false, true);
 
@@ -53,7 +54,6 @@ public class ServerAuthService : IAuthService
             return (true, false, false);
 
         // During SSR pre-render: HttpContext is available with the real user identity.
-        var httpContext = _httpContextAccessor.HttpContext;
         if (httpContext != null && !httpContext.Response.HasStarted)
             return (httpContext.User.Identity?.IsAuthenticated == true, true, false);
 

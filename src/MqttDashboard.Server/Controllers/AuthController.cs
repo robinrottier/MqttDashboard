@@ -24,7 +24,7 @@ public class AuthController : ControllerBase
     [HttpGet("status")]
     public IActionResult GetStatus()
     {
-        var readOnly = _configuration.GetValue<bool>("ReadOnly");
+        var readOnly = ReadOnlyHelper.IsReadOnly(_configuration, HttpContext);
         var authEnabled = !readOnly && !string.IsNullOrEmpty(_configuration["Auth:AdminPasswordHash"]);
 
         if (readOnly)
