@@ -14,6 +14,10 @@ services:
       - MqttSettings__Port=1883
       - MqttSettings__Username=
       - MqttSettings__Password=
+      # Update agent (host) — containers call the host agent URL and include the secret token.
+      # Example: http://host.docker.internal:8080/update (requires host-gateway/extra_hosts or host networking)
+      # - UPDATE_AGENT_URL=http://host.docker.internal:8080/update
+      # - UPDATE_AGENT_TOKEN=${UPDATE_AGENT_TOKEN}
       # Data directory (matches the volume mount above)
       - DiagramStorage__DataDirectory=/app/data
       # Sub-path when accessed behind a reverse proxy (e.g. "rr-dev" for /rr-dev/).

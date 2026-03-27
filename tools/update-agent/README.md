@@ -48,3 +48,40 @@ Systemd
 Notes
 - This approach avoids granting Docker socket access to your application container. The app should call your server-side endpoint which in turn invokes this agent on the host.
 - The update process runs `docker compose pull` followed by `docker compose up -d` for the requested service. Ensure your compose file and service name match what you pass in the request.
+
+Docker Compose (optional)
+-------------------------
+
+You can run the update agent as a container via the project's `docker-compose.override.yml`. This is convenient for local development but has security implications described below.
+
+Summary
+- The compose override adds an `update-agent` service and injects `UPDATE_AGENT_URL`/`UPDATE_AGENT_TOKEN` into the `mqttdashboard` service.
+- From inside containers use: `POST http://update-agent:8080/update`.
+- From the host use: `POST http://127.0.0.1:8080/update`.
+- All requests must include header `X-Update-Token: <token>` where `<token>` equals the `UPDATE_AGENT_TOKEN` environment variable.
+
+How to enable
+1. Add a secret token to a `.env` file at repo root (git-ignored):
+
+   UPDATE_AGENT_TOKEN=super-secret-token
+
+2. Start compose (from repo root):
+
+   docker compose up --build -d
+
+3. The app (or your server-side code) can then trigger an update by POSTing JSON to the update endpoint.
+
+Example request (server-side only)
+
+POST http://update-agent:8080/update
+Headers:
+  X-Update-Token: super-secret-token
+Body (JSON):
+  { "service": "mqttdashboard", "composeFile": "docker-compose.yml" }
+
+Security notes
+- By default the override mounts `/var/run/docker.sock` into the `update-agent` container. This allows the agent to run `docker compose pull` / `docker compose up -d` but grants full Docker control to that container. Use only in trusted environments.
+- If you do NOT want the agent to control Docker, remove the socket mount from `docker-compose.override.yml`. The agent will still expose an endpoint but will be unable to perform Docker operations.
+- Keep `UPDATE_AGENT_TOKEN` secret. Do not commit it to the repository.
+- The compose override binds the agent port to the host loopback (`127.0.0.1:8080`) so it is not publicly reachable. Containers on the same compose network can reach the agent by service name without exposing the port externally.
+- Prefer the host-run agent approach (not in compose) if you want to avoid mounting the Docker socket into a container.
