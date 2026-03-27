@@ -6,6 +6,10 @@ using Microsoft.Extensions.Hosting;
 using MqttDashboard.Server.Services;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Text.Json;
+using MqttDashboard.Server.Models;
 
 namespace MqttDashboard.Server.Controllers;
 
@@ -18,15 +22,18 @@ public class UpdateController : ControllerBase
     private readonly ILogger<UpdateController> _logger;
     private readonly IHostApplicationLifetime _lifetime;
     private readonly IConfiguration _configuration;
+    private readonly IHttpClientFactory _httpClientFactory;
 
     public UpdateController(UpdateCheckService updateService, DashboardStorageService diagramStorage,
-        ILogger<UpdateController> logger, IHostApplicationLifetime lifetime, IConfiguration configuration)
+        ILogger<UpdateController> logger, IHostApplicationLifetime lifetime, IConfiguration configuration,
+        IHttpClientFactory httpClientFactory)
     {
         _updateService = updateService;
         _diagramStorage = diagramStorage;
         _logger = logger;
         _lifetime = lifetime;
         _configuration = configuration;
+        _httpClientFactory = httpClientFactory;
     }
 
     [HttpGet("status")]
@@ -166,6 +173,54 @@ public class UpdateController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Update download failed");
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    // Payload forwarded to the local update agent (agent.py / update-agent.sh)
+    // Note: HostUpdateRequest model moved to Server.Models.HostUpdateRequest
+
+    /// <summary>
+    /// Request the host-local update agent to pull a new image / restart the service.
+    /// The agent is expected to listen on 127.0.0.1 and accept a POST /update JSON body.
+    /// </summary>
+    [HttpPost("host-update")]
+    public async Task<IActionResult> HostUpdate([FromBody] HostUpdateRequest? req)
+    {
+        var authEnabled = !string.IsNullOrEmpty(_configuration["Auth:AdminPasswordHash"]);
+        if (authEnabled && User.Identity?.IsAuthenticated != true)
+            return Unauthorized(new { error = "Admin authentication required." });
+
+        if (req == null)
+            return BadRequest(new { error = "Request body required." });
+
+        // Build agent URL and token from configuration (fall back to localhost)
+        var agentUrl = _configuration["UpdateAgent:Url"] ?? "http://127.0.0.1:8080/update";
+        var agentToken = _configuration["UpdateAgent:Token"];
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            if (!string.IsNullOrEmpty(agentToken)) client.DefaultRequestHeaders.Add("X-Update-Token", agentToken);
+
+            // Forward the request body as-is to the agent
+            var resp = await client.PostAsJsonAsync(agentUrl, req);
+            var body = await resp.Content.ReadAsStringAsync();
+
+            if ((int)resp.StatusCode >= 200 && (int)resp.StatusCode <= 299)
+            {
+                // Try to parse JSON response
+                try { return Content(body, "application/json"); }
+                catch { return Ok(new { raw = body }); }
+            }
+            else
+            {
+                return StatusCode((int)resp.StatusCode, new { error = "Agent returned error", details = body });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Host update request failed");
             return StatusCode(500, new { error = ex.Message });
         }
     }

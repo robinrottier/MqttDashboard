@@ -1,0 +1,14 @@
+[Unit]
+Description=Local Update Agent
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/mqttdashboard/tools/update-agent
+Environment=UPDATE_AGENT_TOKEN=your-secret
+ExecStart=/usr/bin/python3 /opt/mqttdashboard/tools/update-agent/agent.py --host 127.0.0.1 --port 8080
+Restart=on-failure
+User=root
+
+[Install]
+WantedBy=multi-user.target
