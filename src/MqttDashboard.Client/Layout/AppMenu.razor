@@ -5,6 +5,9 @@
 @inject ApplicationState AppState
 @inject NavigationManager Nav
 @inject IDialogService DialogService
+@inject LocalStorageService LocalStorage
+@inject IAuthService AuthService
+@inject HttpClient Http
 @implements IDisposable
 
 <MudMenu Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
@@ -147,6 +150,44 @@
 
     <!-- Options (before About) -->
     <MudMenu Label="Options" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
+
+        <!-- Edit mode toggle — always accessible; on mobile the toolbar toggle is hidden -->
+        @if (!AppState.IsReadOnly && (!AppState.AuthEnabled || AppState.IsAdmin))
+        {
+            <MudMenuItem OnClick="ToggleEditMode">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small"
+                             Style="@(AppState.IsEditMode ? "" : "visibility:hidden")" />
+                    <MudText>Edit Mode</MudText>
+                </MudStack>
+            </MudMenuItem>
+            @if (AppState.IsEditMode)
+            {
+                <MudMenuItem OnClick="ToggleAutoSave">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small"
+                                 Style="@(AppState.AutoSaveOnExitEditMode ? "" : "visibility:hidden")" />
+                        <MudText>Auto-save on Exit</MudText>
+                    </MudStack>
+                </MudMenuItem>
+            }
+            <MudDivider />
+        }
+
+        <!-- Login / Logout — always accessible; on mobile the toolbar buttons are hidden -->
+        @if (AppState.AuthEnabled && !AppState.IsReadOnly)
+        {
+            @if (AppState.IsAdmin)
+            {
+                <MudMenuItem OnClick="MenuLogout">Logout</MudMenuItem>
+            }
+            else
+            {
+                <MudMenuItem OnClick='() => Nav.NavigateTo("/login")'>Login as Admin</MudMenuItem>
+            }
+            <MudDivider />
+        }
+
         <MudMenu Label="Theme" Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.TopRight">
             <MudMenuItem OnClick="() => SetTheme(ThemeMode.Light)">
                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
@@ -220,5 +261,25 @@
     private void MenuAddAllPorts()              => AppState.TriggerAddAllPorts();
     private void MenuAddPort(PortAlignment a)    => AppState.TriggerAddPort(a);
     private void MenuDeletePort(PortAlignment a) => AppState.TriggerDeletePort(a);
-    private void SetTheme(ThemeMode m)  => AppState.SetTheme(m);
+    private void ToggleEditMode()               => AppState.RequestToggleEditMode();
+    private void SetTheme(ThemeMode m)
+    {
+        AppState.SetTheme(m);
+        _ = LocalStorage.SetItemAsync("pref:theme", m);
+    }
+
+    private async Task ToggleAutoSave()
+    {
+        var newValue = !AppState.AutoSaveOnExitEditMode;
+        AppState.SetAutoSaveOnExitEditMode(newValue);
+        try { await Http.PostAsJsonAsync("/api/settings/app", new { autoSaveOnExit = newValue }); }
+        catch { /* non-critical — will reset on next page load */ }
+    }
+
+    private async Task MenuLogout()
+    {
+        await AuthService.LogoutAsync();
+        AppState.SetAuthState(false, true);
+        Nav.NavigateTo("/login");
+    }
 }

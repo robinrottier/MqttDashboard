@@ -6,39 +6,34 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ## BUGS
 
-- [x] Treeview loses focus and nodes collapse — fixed: replaced MudTreeView with custom lightweight div-based rendering + 80ms debounce to coalesce rapid MQTT updates
-- [x] TreeView has separate "Root topic" property — removed; use DataTopics[0] (standard base-class topic) instead; old files migrate automatically on load
-- [x] Import dialog sizing issue when "nodes/links detected" alert appears — fixed: reserved `min-height:40px` for status area so dialog stays constant height
-
-
-## Pending
-
-- [x] Treeview values need to be more differentiated — done: flex row per item, value bold + primary colour, right-aligned; 2s highlight on update
-- [x] Treeview font could be smaller — reduced to 0.7rem
-- [ ] The restart button does a restart...great...but how to we make it do the docker pull "automatically" ...can this be initiaited fro the app also??
-- [x] Tree view and log view have internal margins or padding — reduced: header padding trimmed, log table cell padding reduced via CSS
-- [ ] Title bar behavoir at low width (e.g. on a phone, portatrait aspect)
-	- [ ] The top right menu icon shoul dalways be shows ...items to its left could be lost if not engouh space
-	- [ ] Logout icon not necessary if no space...it needs to be added as a menu item under options
-	- [ ] Edit mode icon not necessary if not space ... it needs to be added as a menu item under options
-	- [ ] cloud status least important if no space ... its in about box
-	- [ ] title font could get smaller if no space?
-- [ ] IMport and Export dont seem to be able to see Windows clipboard ... is there some permissions to enable it? This was on firefox
-- [ ] Is there any continuous validation of the JSON as beng valid json and then a format the import will accept?
-- [ ] Serialization: node ID GUIDs in file — map to sequential 1-based IDs for file (need port+link ID remapping too). Needs a json serilaizer class for Dashboard to manage the mapping.
-- [ ] Serialization:
-	- [ ] logged-on user not yet written to `FileInfo` (always admin for now — fine to leave)
-	- [ ] should include version of this app doing the write
+- [ ] We've now got appsettings.user andf applicatestate file also with system wide settings
+      -- we only need one of those. I prefer ala system wide settings in appsettings.user so they could be set in core files also
+	  -- unless the app specific state file has some advantages?
+	  -- perhaps for upgrade both coul dbe merged and written to deemed master copy?
 
 
 ## 🟡 Minor Enhancements
 
+- [ ] Guage widget could be better presented... there are 2 arc but really the value arc shoul dbe over the grey arc so there's just one arc with colored extent reflecting value
+- [ ] Title bar behavoir at low width (e.g. on a phone, portatrait aspect)
+	- [x] The top right menu icon should always be shown — ✅ always rightmost
+	- [x] Logout/Login accessible on mobile — ✅ added to Options menu
+	- [x] Edit mode toggle accessible on mobile — ✅ added to Options menu
+	- [ ] cloud status least important if no space ... its in about box
+	- [ ] title font could get smaller if no space?
+- [x] Add an option for "Auto-save on edit exit" which means when edit mode is exited via icon the file gets saved without
+      prompting. This would be in options menu (edit mode only) and saved in settings so it's system wide ✅
+- [ ] Property transition
+	- [ ] Also a means to drag reordering around the conditions to specify which is first match
+- [ ] IMport and Export dont seem to be able to see Windows clipboard ... is there some permissions to enable it? This was on firefox
+- [ ] Serialization: node ID GUIDs in file — map to sequential 1-based IDs for file (need port+link ID remapping too). Needs a json serilaizer class for Dashboard to manage the mapping.
+- [ ] Serialization:
+	- [ ] logged-on user not yet written to `FileInfo` (always admin for now — fine to leave)
+	- [ ] should include version of this app doing the write, and server written from
 - [ ] Server-side "lazy cache": if client request is dropped, server should keep data live for a configurable delay (e.g. 30s) before removing references
 - [ ] Client side lazy cache also: if 2 pages have same dtaa item then only one request going up thru signalr to server and when page changes happen data shoul dbe there immediately as its already in this cache
 	- [ ] MQTT data cache needs seperating out to reusable package with a pub/sub interface and backend to matchin interface either over signal r, or mqtt directly.
 	- [ ] client api to this incude direct and async memory access also
-- [ ] Property transition
-	- [ ] Also a means to drag reordering around the conditions to specify which is first match
 - [ ] Data item topics per node
 	- [ ] "Link animation" needs a property for index of which data item to animate upon
 - [ ] Page tabs
@@ -67,6 +62,11 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ### FEAT-C: Additional node types _(Gauge, Switch, Battery, Log, TreeView done — see CHANGELOG)_
 - [ ] **Text node** - different node shapes (circle, diamond, etc.) Perhaps the "shapre" applies to all derived
       nodes too e.g. a guage inside a triangle or circle. Or maybe shape is just a property of the base node.
+- [ ] **Guage**
+	- [ ] needs alternatives such as full circle, 90 or 270 .... aybe thats all the 
+		  option is, how much of a circle is drawn and properties to control orientation
+	- [ ] options to draw "needle" also from some center point to the guage ...
+	  
 - [ ] **Chart** — in-memory time-series sparkline graph
 - [ ] **Markdown / HTML** — formatted static content, optionally with data substitution
 - [ ] **IFrame** — embed another web page
@@ -78,9 +78,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ### FEAT-E: Editing improvements
 - [ ] Node-red style palette panel — drag node types from a sidebar onto the canvas
-- [ ] Import/export selected nodes or a whole page as JSON (clipboard) — ✅ done (Export… and Import… in Edit menu)
 - [ ] Keyboard funcionality esp.:
-	- [ ] ctrl c/x/v for copy/cut/paste of nodes and links
 	- [ ] arrows to move selcted nodes
 
 ### FEAT-F: Link improvements
@@ -109,15 +107,24 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ### FEAT-J: User management & auth
 - [ ] Multi-user with roles: read-only / read-write / admin
 - [ ] Builds on existing `ServerAuthService` / admin password hash mechanism
-- [ ] User registration mechanism (username, email, password) with email verification.
+- [ ] User registration mechanism (username, email, password) with email verification--not sure how as this deployment wont have a mail?
+- [ ] "Admin" is a status now and not an actual user name. Mutliple users could log on and be "admin"
+	- [ ] Admin user can create other users, assign roles, and delete users
+	- [ ] First time setup requires creating an admin user, which is then used to log in and manage the system
+- [ ] COnfirmation of each new user registration from admin user
+	- [ ] - new users stays "pendign" until admin confirms request
+	- [ ] when admin logs on they see pending user registrations and can confirm or reject them
+- [ ] User management UI in admin interface
+- [ ] Usr "database" is nothign complicated -- fine as an encryted file store and password encrypted in that
+- [ ] JWT-based auth for API endpoints, with token issued on login and stored in browser local storage
+	- [ ] I dont know what that means -- does it apply to this type of setup? API calls are all internal frmo client to server
+
 
 ### FEAT-K: Dashboard versioning & Git integration
+- [ ] Optional Git commit/push of dashboard to a remote repo
 - [ ] Snapshot history for dashboards (previous versions, compare/diff)
-- [ ] Optional Git commit/push of dashboard changes to a remote repo
 
 ### FEAT-L: Deployment enhancements
-- [x] Single Docker image supporting both server-only SSR and WASM modes — done: add `RenderMode=Server` env var to use Blazor Server mode in the single WebApp image
-- [x] Read-only runtime mode — done: `ReadOnly=true` env var / config disables all edit UI and blocks all write API endpoints with 403
 - [ ] Admin interface: runtime monitoring, logs, connected clients, dashboard file management
 - [ ] More automation to speed relase process e.g. PR with message RC to mean release candiate so auto invokes patch-release auto bump and process
 
@@ -125,7 +132,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ### FEAT-N: Self-updating deployment
 - [ ] Latest version check checks for tags ... but the actual Docker image may not be available for some time after a tag is pushed. Can it check actual images in ghcr?
-- [ ] Option to follow release-only stream or latest beta stream
+- [ ] Option to follow release-only stream or latest beta stream of pre-releases
 - [ ] How would we revert to a previous version if an update proved bad?
 
 

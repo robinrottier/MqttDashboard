@@ -8,6 +8,7 @@
 @inject IJSRuntime JS
 @inject NavigationManager Nav
 @inject HttpClient Http
+@inject LocalStorageService LocalStorage
 <MudThemeProvider Theme="@_theme" IsDarkMode="@ComputedDarkMode" />
 <MudPopoverProvider />
 <MudDialogProvider />
@@ -35,13 +36,16 @@
         <MudSpacer />
 
         <!-- MQTT connection status indicator -->
-        <MudTooltip Text="@AppState.MqttConnectionStatus">
-            <MudIcon Icon="@MqttStatusIcon" Color="@MqttStatusColor" Size="Size.Medium" Class="mr-3" />
-        </MudTooltip>
+        <div class="toolbar-hide-xs d-flex align-center">
+            <MudTooltip Text="@AppState.MqttConnectionStatus">
+                <MudIcon Icon="@MqttStatusIcon" Color="@MqttStatusColor" Size="Size.Medium" Class="mr-3" />
+            </MudTooltip>
+        </div>
 
         <!-- Auth: login/logout button when auth is configured and not read-only -->
         @if (AppState.AuthEnabled && !AppState.IsReadOnly)
         {
+            <div class="toolbar-hide-xs d-flex align-center">
             @if (AppState.IsAdmin)
             {
                 <MudTooltip Text="Logout admin">
@@ -56,6 +60,7 @@
                                    OnClick='() => Nav.NavigateTo("/login")' Class="mr-1" />
                 </MudTooltip>
             }
+            </div>
         }
 
         <!-- Edit mode toggle switch — hidden when auth is enabled and user is not admin, or in read-only mode -->
@@ -63,7 +68,7 @@
         {
         <!-- Edit mode toggle switch -->
         <MudTooltip Text="@EditModeTooltip">
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mr-2">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mr-2 toolbar-hide-xs">
                 <MudText Typo="Typo.body2"
                          Style="@(_isEditMode ? "font-weight:700; color: var(--mud-palette-primary);" : "color: var(--mud-palette-text-secondary);")">
                     Edit
@@ -167,6 +172,26 @@
             }
             catch { /* ignore — JS not available during prerender */ }
 
+            // Load persisted user preferences (theme from localStorage; app settings from server)
+            try
+            {
+                var savedTheme = await LocalStorage.GetItemAsync<ThemeMode?>("pref:theme");
+                if (savedTheme.HasValue) AppState.SetTheme(savedTheme.Value);
+                if (savedTheme.HasValue) StateHasChanged();
+            }
+            catch { /* ignore — localStorage may not be available */ }
+
+            try
+            {
+                var appSettings = await Http.GetFromJsonAsync<AppSettingsResponse>("/api/settings/app");
+                if (appSettings != null)
+                {
+                    AppState.SetAutoSaveOnExitEditMode(appSettings.AutoSaveOnExit);
+                    StateHasChanged();
+                }
+            }
+            catch { /* ignore — non-critical */ }
+
             try
             {
                 var resp = await Http.GetFromJsonAsync<SetupNeededResponse>("/api/setup/needed");
@@ -227,6 +252,7 @@
     private record SetupNeededResponse(bool Needed);
     private record UpdateStatusResponse(string CurrentVersion, string? LatestVersion, bool UpdateAvailable,
         string DeploymentType, DateTimeOffset? LastChecked, string? ReleaseUrl, string RuntimeIdentifier);
+    private record AppSettingsResponse(bool AutoSaveOnExit);
 
     private readonly PaletteLight _lightPalette = new()
     {

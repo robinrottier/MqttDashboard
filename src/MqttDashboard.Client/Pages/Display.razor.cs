@@ -314,34 +314,42 @@ public partial class Display : IDisposable
 
         if (!enterEditMode && AppState.IsEdited)
         {
-            var confirm = await DialogService.ShowMessageBoxAsync(
-                "Unsaved Changes",
-                "You have unsaved changes. Save before leaving edit mode?",
-                yesText: "Save",
-                noText: "Discard",
-                cancelText: "Cancel");
-            if (confirm == null) return; // Cancel — stay in edit mode
-            if (confirm == true)
+            if (AppState.AutoSaveOnExitEditMode)
             {
                 var saved = await SaveDashboard();
-                if (!saved) return; // Stay in edit mode if save failed
+                if (!saved) return; // Stay in edit mode if save failed (e.g. no filename yet)
             }
             else
             {
-                // Discard — revert to pre-edit snapshot
-                if (_editSnapshot != null)
+                var confirm = await DialogService.ShowMessageBoxAsync(
+                    "Unsaved Changes",
+                    "You have unsaved changes. Save before leaving edit mode?",
+                    yesText: "Save",
+                    noText: "Discard",
+                    cancelText: "Cancel");
+                if (confirm == null) return; // Cancel — stay in edit mode
+                if (confirm == true)
                 {
-                    UnsubscribeEditEvents();
-                    _suppressDirty = true;
-                    try { LoadFullState(_editSnapshot, readOnly: true); }
-                    finally { _suppressDirty = false; }
-                    AppState.SetEditMode(false);
-                    AppState.MarkSaved();
-                    AppState.UpdateSelectionState(false, false);
-                    StateHasChanged();
-                    return;
+                    var saved = await SaveDashboard();
+                    if (!saved) return; // Stay in edit mode if save failed
                 }
-                AppState.MarkSaved();
+                else
+                {
+                    // Discard — revert to pre-edit snapshot
+                    if (_editSnapshot != null)
+                    {
+                        UnsubscribeEditEvents();
+                        _suppressDirty = true;
+                        try { LoadFullState(_editSnapshot, readOnly: true); }
+                        finally { _suppressDirty = false; }
+                        AppState.SetEditMode(false);
+                        AppState.MarkSaved();
+                        AppState.UpdateSelectionState(false, false);
+                        StateHasChanged();
+                        return;
+                    }
+                    AppState.MarkSaved();
+                }
             }
         }
 

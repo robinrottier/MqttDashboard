@@ -5,6 +5,112 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
+## 2026-03-28 (batch 2) — Gauge arc fix, auto-save server-side, appsettings defaults
+
+### Commit: (see git log) · UTC 2026-03-28 · branch: develop
+
+### Gauge: background arc radius mismatch fixed
+
+**Problem:** The gauge had two visually distinct arcs — a grey background arc and a coloured value arc. They appeared as concentric rings instead of one arc with a coloured portion, because the background arc used mathematically incorrect start/end points (`M 10 65 ... 110 65`, span 100px) while the value arc used the correct radius-55 geometry (start `M 5 65`, end `x=115`). SVG auto-scales radii when start/end don't satisfy the arc equation, so the background ended up at a slightly smaller radius.
+
+**Fix:** Background arc changed to `M 5 65 A 55 55 0 0 1 115 65` — exact radius-55 semicircle matching the value arc geometry. Value arc is drawn after (on top in SVG) so the coloured portion fully covers the grey in the value range, and grey is only visible in the empty portion. Opacity slightly raised from 0.25 → 0.30 so the track is more legible.
+
+**Files changed:**
+- `src/MqttDashboard.Client/Widgets/GaugeNodeWidget.razor` — corrected background arc path and opacity
+
+### Auto-save: moved to server-side settings; appsettings.json defaults added
+
+**Problem (follow-up from batch 1):** Auto-save was persisted to browser `localStorage` — that's per-browser, not system-wide. As a server admin setting it belongs in `appsettings.user.json`.
+
+**Additional:** `appsettings.json` had no `App` section, so `App:MaxMessageHistory` and the new `App:AutoSaveOnExit` had no documented defaults. This made the configuration opaque.
+
+**Changes:**
+- `GET /api/settings/app` + `POST /api/settings/app` added to `SettingsController` — reads/writes `App:AutoSaveOnExit` in `appsettings.user.json`
+- `MainLayout.razor` loads `/api/settings/app` on first render instead of `localStorage`
+- `AppMenu.ToggleAutoSave()` POSTs to server (async); `localStorage` no longer used for this setting
+- Both `appsettings.json` files now have an explicit `App` section with `MaxMessageHistory: 500` and `AutoSaveOnExit: false` as documented defaults
+
+**Files changed:**
+- `src/MqttDashboard.Server/Controllers/SettingsController.cs`
+- `src/MqttDashboard.Client/Layout/MainLayout.razor`
+- `src/MqttDashboard.Client/Layout/AppMenu.razor`
+- `src/MqttDashboard.WebApp/MqttDashboard.WebApp/appsettings.json`
+- `src/MqttDashboard.WebApp/MqttDashboard.WebAppServerOnly/appsettings.json`
+
+### Auto-save snackbar — already works
+
+**Note:** TODO item "Auto-save should show popup info 'File saved...'" — confirmed this is already handled. `SwitchMode()` calls `SaveDashboard()` which calls `Snackbar.Add("Saved '...'", Severity.Success)` in all code paths including auto-save. Marked done in TODO.
+
+---
+
+
+
+### Mobile/narrow toolbar: hide non-essential items on xs screens
+
+**Problem:** On a phone in portrait mode (< 600 px wide), the appbar overflows. The hamburger
+menu button could be pushed off-screen, the logout/edit-toggle icons waste space that is better
+used by the app title.
+
+**Solution:** Wrap the MQTT status icon, login/logout button, and edit-mode toggle in `<div
+class="toolbar-hide-xs">` elements. A `@media (max-width: 599px)` rule in `MainLayout.razor.css`
+sets `display:none !important` on those elements. The hamburger menu (`AppMenu`) is always the
+rightmost item and is never hidden.
+
+**Accessibility on mobile:** All hidden functions are now also available in the Options menu (see
+next item) so nothing is lost on narrow screens.
+
+**Files changed:**
+- `src/MqttDashboard.Client/Layout/MainLayout.razor` — wrapped MQTT icon, auth buttons, and edit
+  toggle in `<div class="toolbar-hide-xs">` divs; injected `LocalStorageService`
+- `src/MqttDashboard.Client/Layout/MainLayout.razor.css` — added `@media (max-width:599px)` rule
+  hiding `.toolbar-hide-xs`
+
+### Options menu: edit mode toggle, auto-save, and login/logout
+
+**Problem:** On mobile, users can't access edit mode or logout because the toolbar items are hidden.
+Also, the Options menu had no way to toggle edit mode directly.
+
+**Solution:** Added three new items at the top of the Options menu:
+
+1. **Edit Mode** (with checkmark) — visible when user has permission; calls `RequestToggleEditMode()`.
+2. **Auto-save on Exit** (with checkmark, edit mode only) — see next item.
+3. **Logout / Login as Admin** (auth only, not read-only) — duplicates the toolbar button;
+   calls `AuthService.LogoutAsync()` then navigates to `/login`.
+
+A `MudDivider` separates each group from the Theme submenu below.
+
+**Files changed:**
+- `src/MqttDashboard.Client/Layout/AppMenu.razor` — injected `LocalStorageService` and `IAuthService`;
+  added edit mode toggle, auto-save toggle, and login/logout items to Options menu; added
+  `ToggleEditMode()`, `ToggleAutoSave()`, `MenuLogout()` methods; `SetTheme()` now also persists
+  to localStorage.
+
+### Auto-save on exit — moved to server-side settings
+
+**Correction:** Auto-save on exit is a system-wide setting (applies to all users/browsers on that
+server instance), not a per-browser preference. Moved from `localStorage` to `appsettings.user.json`.
+
+**New endpoints** on `SettingsController`:
+- `GET /api/settings/app` → `{ autoSaveOnExit: bool }` (public read)
+- `POST /api/settings/app` body `{ autoSaveOnExit: bool }` (admin-only write, or unrestricted if auth disabled)
+
+Stored in `appsettings.user.json` under `App.AutoSaveOnExit`. The file is loaded with
+`reloadOnChange: true` so a server restart is not needed.
+
+`MainLayout.razor` loads `/api/settings/app` on first render (alongside the update check) and
+calls `AppState.SetAutoSaveOnExitEditMode()`. `AppMenu.ToggleAutoSave()` now `POST`s to the server
+instead of writing to localStorage. Theme preference remains in localStorage (per-browser/user).
+
+Refactored `SettingsController.cs` to share `ReadUserJson`/`WriteUserJson` helpers between the
+existing `Save()` (startup) and new `SaveApp()` methods.
+
+**Files changed:**
+- `src/MqttDashboard.Server/Controllers/SettingsController.cs` — added `GetApp()`, `SetApp()`, `SaveApp()` methods; extracted `ReadUserJson`/`WriteUserJson` helpers; added `SetAppRequest` record
+- `src/MqttDashboard.Client/Layout/MainLayout.razor` — replaced localStorage auto-save load with `/api/settings/app` fetch; added `AppSettingsResponse` record
+- `src/MqttDashboard.Client/Layout/AppMenu.razor` — `ToggleAutoSave()` now async, POSTs to server; injected `HttpClient`
+
+---
+
 ## 2026-03-27 (batch 4) — ReadOnlyPorts + deployment documentation
 
 ### Commit: (see git log) · UTC 2026-03-27 · branch: develop

@@ -5,3 +5,20 @@
     margin-left: 0 !important;
     margin-right: 8px;
 }
+
+/* Allow the app layout to shrink below component defaults on narrow viewports */
+html, body, .mud-layout, .mud-main-content, main, .page, .sidebar, .mqttdashboard-canvas {
+    min-width: 0 !important;
+}
+
+/* Make dialogs and overlays adapt to narrow viewports */
+.mud-dialog, .mud-dialog-container, .mud-dialog-paper {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: auto !important;
+}
+
+/* Ensure MudDrawer / side panels can shrink */
+.mud-drawer {
+    min-width: 0 !important;
+}

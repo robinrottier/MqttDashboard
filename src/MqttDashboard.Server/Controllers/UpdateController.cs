@@ -208,10 +208,11 @@ public class UpdateController : ControllerBase
         var confWatchtower = _configuration["UpdateAgent:WatchtowerContainer"];
         var confWorkdir = _configuration["UpdateAgent:Workdir"];
 
-        // Short-circuit path when a client-supplied request body is provided
-        // (used by unit tests): forward it directly to the agent using the
+        // When a client-supplied request body is provided with either composefile or container
+        // then use it as is
+        // this is used by unit tests: forward it directly to the agent using the
         // IHttpClientFactory-provided HttpClient and return the response.
-        if (req != null)
+        if (req != null && (req.ComposeFile != null || req.WatchtowerContainer != null))
         {
             try
             {
@@ -237,7 +238,8 @@ public class UpdateController : ControllerBase
             }
         }
 
-        // req is null — use server configuration to build the forward request
+        // Normal client will just send a token entered by caller, so build ongoing reqeust frmo that
+        // and server configuration to build the forward request
         if (string.IsNullOrEmpty(confService) && string.IsNullOrEmpty(confWatchtower))
             return BadRequest(new { error = "No update target configured." });
 

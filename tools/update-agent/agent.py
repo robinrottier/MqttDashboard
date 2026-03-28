@@ -18,12 +18,27 @@ import os
 import subprocess
 import json
 import argparse
+import ipaddress
 from flask import Flask, request, jsonify, abort
 
 app = Flask(__name__)
 
 TOKEN = os.environ.get('UPDATE_AGENT_TOKEN')
 SCRIPT_PATH = os.path.join(os.path.dirname(__file__), 'update-agent.sh')
+# Allow requests from non-localhost (e.g. containers) when explicitly enabled.
+# Set UPDATE_AGENT_ALLOW_REMOTE=true to relax the remote IP check. Use with caution.
+ALLOW_REMOTE = os.environ.get('UPDATE_AGENT_ALLOW_REMOTE', 'false').lower() in ('1', 'true', 'yes')
+
+# Comma-separated list of allowed CIDR ranges for remote access when ALLOW_REMOTE is enabled.
+# Defaults to common private networks (including Docker bridge ranges).
+DEFAULT_ALLOWED_CIDRS = (
+    '127.0.0.1/32,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16'
+)
+ALLOWED_CIDRS = os.environ.get('UPDATE_AGENT_ALLOWED_CIDRS', DEFAULT_ALLOWED_CIDRS)
+try:
+    ALLOWED_NETWORKS = [ipaddress.ip_network(c.strip()) for c in ALLOWED_CIDRS.split(',') if c.strip()]
+except Exception:
+    ALLOWED_NETWORKS = []
 
 
 def fail(msg, code=400):
@@ -34,8 +49,30 @@ def fail(msg, code=400):
 def update():
     # ensure request is from localhost
     remote = request.remote_addr
-    if remote not in ('127.0.0.1', '::1'):
+    # Always allow loopback
+    try:
+        ip = ipaddress.ip_address(remote)
+    except Exception:
         return fail('Forbidden', 403)
+
+    if ip.is_loopback:
+        pass
+    else:
+        # If remote access is not enabled, reject non-loopback
+        if not ALLOW_REMOTE:
+            return fail('Forbidden', 403)
+
+        # ALLOW_REMOTE is enabled — only allow if in configured private/allowed CIDRs
+        allowed = False
+        for net in ALLOWED_NETWORKS:
+            try:
+                if ip in net:
+                    allowed = True
+                    break
+            except Exception:
+                continue
+        if not allowed:
+            return fail('Forbidden', 403)
 
     if TOKEN:
         provided = request.headers.get('X-Update-Token')

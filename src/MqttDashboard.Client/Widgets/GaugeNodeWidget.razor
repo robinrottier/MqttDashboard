@@ -11,9 +11,9 @@
                 <div style="text-align:center;font-size:0.75rem;padding:1px 4px;word-break:break-word;">@FormatText()</div>
             }
             <svg viewBox="0 0 120 75" style="width:100%;height:auto;display:block;">
-                <!-- Background arc (full 180° semicircle) -->
-                <path d="M 10 65 A 55 55 0 0 1 110 65"
-                      stroke="rgba(128,128,128,0.25)" stroke-width="10" fill="none" stroke-linecap="round"/>
+                <!-- Background track arc (full 180° semicircle, radius 55, centred at 60,65) -->
+                <path d="M 5 65 A 55 55 0 0 1 115 65"
+                      stroke="rgba(128,128,128,0.3)" stroke-width="10" fill="none" stroke-linecap="round"/>
                 <!-- Value arc -->
                 @{
                     var arcPath = BuildValueArcPath();

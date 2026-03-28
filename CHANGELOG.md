@@ -8,13 +8,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Auto-save on exit edit mode** — new Options menu item "Auto-save on Exit" (visible while in edit mode). When enabled, exiting edit mode saves automatically without prompting. Setting is system-wide, persisted server-side in `appsettings.user.json` (`App:AutoSaveOnExit`). Loaded from server on every page load.
+- **Edit mode and login/logout in Options menu** — always accessible from the hamburger menu regardless of screen width. "Edit Mode" toggles edit mode with a checkmark indicator; "Logout" / "Login as Admin" appear when auth is configured.
+- **Theme preference persisted** — selected theme (Light/Dark/Auto) is now saved to localStorage and restored on page load.
 - **Read-only deployment mode (`ReadOnly=true`)** — set as env var or config to disable all edit UI and block all write APIs. Ideal for public displays.
 - **Dual-port read-only mode (`ReadOnlyPorts`)** — single process listens on two ports; specific ports are read-only while others remain editable. Shares MQTT connection and data cache between both ports. Example: `ReadOnlyPorts=8080` with `ASPNETCORE_URLS=http://+:8080;http://+:8081`.
 - **`RenderMode=Server` for WebApp image** — run the standard Docker image in Blazor Server mode (no WASM download) by setting `RenderMode=Server`.
 - **Deployment modes guide** — new `documents/deployment-modes.md` covering all access-control and render-mode options including future plans.
 
 ### Fixed
-- **Node without a title no longer grows indefinitely** — set `ControlledSize = true` on `TextNodeModel` so Blazor.Diagrams' ResizeObserver is never activated for our nodes. We manage all node sizes explicitly via CSS and the resize handle; the observer was creating a sub-pixel feedback loop.
+- **Gauge arc alignment** — background track arc used incorrect coordinates, causing it to render at a slightly different radius than the value arc (two visible concentric rings). Both arcs now share exactly radius 55, giving a single-arc appearance with a coloured filled portion over a grey track.
+- **Node without a title no longer grows indefinitely**— set `ControlledSize = true` on `TextNodeModel` so Blazor.Diagrams' ResizeObserver is never activated for our nodes. We manage all node sizes explicitly via CSS and the resize handle; the observer was creating a sub-pixel feedback loop.
 - **Grid no longer visible in view mode** — `GridSize` is now cleared to `null` on the diagram options when leaving edit mode.
 - **Import dialog "Import" button now enables correctly** — replaced the conflicting `@bind-Value` + `Immediate` + `@oninput` triple on `MudTextField` with a clean `Value` / `ValueChanged` pattern that reliably triggers JSON parsing on every change.
 - **Grid snap-to-centre setting is now correctly saved and restored** — was previously lost on reload because the negative-sign convention was decoded before `GridSnapToCenter` was set.
