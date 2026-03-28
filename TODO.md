@@ -6,39 +6,27 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ## BUGS
 
-- [x] Treeview loses focus and nodes collapse — fixed: replaced MudTreeView with custom lightweight div-based rendering + 80ms debounce to coalesce rapid MQTT updates
-- [x] TreeView has separate "Root topic" property — removed; use DataTopics[0] (standard base-class topic) instead; old files migrate automatically on load
-- [x] Import dialog sizing issue when "nodes/links detected" alert appears — fixed: reserved `min-height:40px` for status area so dialog stays constant height
+## 🟡 Minor Enhancements
 
-
-## Pending
-
-- [x] Treeview values need to be more differentiated — done: flex row per item, value bold + primary colour, right-aligned; 2s highlight on update
-- [x] Treeview font could be smaller — reduced to 0.7rem
-- [ ] The restart button does a restart...great...but how to we make it do the docker pull "automatically" ...can this be initiaited fro the app also??
-- [x] Tree view and log view have internal margins or padding — reduced: header padding trimmed, log table cell padding reduced via CSS
 - [ ] Title bar behavoir at low width (e.g. on a phone, portatrait aspect)
 	- [ ] The top right menu icon shoul dalways be shows ...items to its left could be lost if not engouh space
 	- [ ] Logout icon not necessary if no space...it needs to be added as a menu item under options
 	- [ ] Edit mode icon not necessary if not space ... it needs to be added as a menu item under options
 	- [ ] cloud status least important if no space ... its in about box
 	- [ ] title font could get smaller if no space?
+- [ ] Add an option for "Auto-save on edit exit" which means when edit mode is exited via icon the file gets saved without
+      prompting. This would be in options menu (edit mode only) and saved in settings so it's system wide
+- [ ] Property transition
+	- [ ] Also a means to drag reordering around the conditions to specify which is first match
 - [ ] IMport and Export dont seem to be able to see Windows clipboard ... is there some permissions to enable it? This was on firefox
-- [ ] Is there any continuous validation of the JSON as beng valid json and then a format the import will accept?
 - [ ] Serialization: node ID GUIDs in file — map to sequential 1-based IDs for file (need port+link ID remapping too). Needs a json serilaizer class for Dashboard to manage the mapping.
 - [ ] Serialization:
 	- [ ] logged-on user not yet written to `FileInfo` (always admin for now — fine to leave)
-	- [ ] should include version of this app doing the write
-
-
-## 🟡 Minor Enhancements
-
+	- [ ] should include version of this app doing the write, and server written from
 - [ ] Server-side "lazy cache": if client request is dropped, server should keep data live for a configurable delay (e.g. 30s) before removing references
 - [ ] Client side lazy cache also: if 2 pages have same dtaa item then only one request going up thru signalr to server and when page changes happen data shoul dbe there immediately as its already in this cache
 	- [ ] MQTT data cache needs seperating out to reusable package with a pub/sub interface and backend to matchin interface either over signal r, or mqtt directly.
 	- [ ] client api to this incude direct and async memory access also
-- [ ] Property transition
-	- [ ] Also a means to drag reordering around the conditions to specify which is first match
 - [ ] Data item topics per node
 	- [ ] "Link animation" needs a property for index of which data item to animate upon
 - [ ] Page tabs
