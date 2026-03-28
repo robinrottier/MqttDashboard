@@ -353,7 +353,9 @@
         StateHasChanged();
         try
         {
-            var payload = new { Service = "mqttdashboard_webapp", ComposeFile = "docker-compose.yml", AgentToken = enteredToken };
+            // if no token entered then send no body -- will likely fail BUT server might have a token configured there
+            // otherwise just send the token ...server will then decide wether to update docker or whatever based on its config
+            var payload = string.IsNullOrEmpty(enteredToken) ? null : new { AgentToken = enteredToken };
             var resp = await Http.PostAsJsonAsync("/api/update/host-update", payload);
             if (resp.IsSuccessStatusCode)
             {
