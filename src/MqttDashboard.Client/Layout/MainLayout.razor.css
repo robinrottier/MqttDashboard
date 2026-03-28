@@ -2,6 +2,8 @@
     position: relative;
     display: flex;
     flex-direction: column;
+    /* allow the layout to shrink below the sidebar width when needed */
+    min-width: 0;
 }
 
 main {
@@ -52,10 +54,12 @@ main {
     }
 
     .sidebar {
-        width: 250px;
+        width: 140px;
         height: 100vh;
         position: sticky;
         top: 0;
+        /* allow the sidebar to be flex-shrunk on narrow viewports */
+        min-width: 0;
     }
 
     .top-row {
@@ -71,8 +75,8 @@ main {
     }
 
     .top-row, article {
-        padding-left: 2rem !important;
-        padding-right: 1.5rem !important;
+        padding-left: 1rem !important;
+        padding-right: 0.75rem !important;
     }
 }
 
