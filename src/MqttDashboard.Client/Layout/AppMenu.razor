@@ -7,6 +7,7 @@
 @inject IDialogService DialogService
 @inject LocalStorageService LocalStorage
 @inject IAuthService AuthService
+@inject HttpClient Http
 @implements IDisposable
 
 <MudMenu Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
@@ -267,10 +268,12 @@
         _ = LocalStorage.SetItemAsync("pref:theme", m);
     }
 
-    private void ToggleAutoSave()
+    private async Task ToggleAutoSave()
     {
-        AppState.SetAutoSaveOnExitEditMode(!AppState.AutoSaveOnExitEditMode);
-        _ = LocalStorage.SetItemAsync("pref:autoSaveOnExit", AppState.AutoSaveOnExitEditMode);
+        var newValue = !AppState.AutoSaveOnExitEditMode;
+        AppState.SetAutoSaveOnExitEditMode(newValue);
+        try { await Http.PostAsJsonAsync("/api/settings/app", new { autoSaveOnExit = newValue }); }
+        catch { /* non-critical — will reset on next page load */ }
     }
 
     private async Task MenuLogout()

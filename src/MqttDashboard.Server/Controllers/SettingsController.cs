@@ -30,6 +30,33 @@ public class SettingsController : ControllerBase
         return Ok(new { mode, dashboard });
     }
 
+    /// <summary>Returns system-wide app preferences.</summary>
+    [HttpGet("app")]
+    public IActionResult GetApp()
+    {
+        var autoSaveOnExit = _configuration.GetValue<bool>("App:AutoSaveOnExit", false);
+        return Ok(new { autoSaveOnExit });
+    }
+
+    /// <summary>Sets system-wide app preferences. Admin only.</summary>
+    [HttpPost("app")]
+    public IActionResult SetApp([FromBody] SetAppRequest request)
+    {
+        if (ReadOnlyHelper.IsReadOnly(_configuration, HttpContext))
+            return StatusCode(403, new { error = "Dashboard is in read-only mode." });
+
+        var authEnabled = !string.IsNullOrEmpty(_configuration["Auth:AdminPasswordHash"]);
+        if (authEnabled && User.Identity?.IsAuthenticated != true)
+            return Unauthorized(new { error = "Admin authentication required." });
+
+        SaveApp(request.AutoSaveOnExit);
+
+        if (_configuration is IConfigurationRoot configRoot)
+            configRoot.Reload();
+
+        return Ok(new { success = true });
+    }
+
     /// <summary>Sets the system-wide startup configuration. Admin only.</summary>
     [HttpPost("startup")]
     public IActionResult SetStartup([FromBody] SetStartupRequest request)
@@ -56,16 +83,7 @@ public class SettingsController : ControllerBase
     private void Save(string mode, string dashboard)
     {
         var path = Path.Combine(_storage.StoragePath, "appsettings.user.json");
-        JsonObject root;
-        if (System.IO.File.Exists(path))
-        {
-            try { root = JsonNode.Parse(System.IO.File.ReadAllText(path))?.AsObject() ?? new JsonObject(); }
-            catch { root = new JsonObject(); }
-        }
-        else
-        {
-            root = new JsonObject();
-        }
+        var root = ReadUserJson(path);
 
         root["Startup"] = new JsonObject
         {
@@ -73,8 +91,39 @@ public class SettingsController : ControllerBase
             ["Dashboard"] = dashboard
         };
 
+        WriteUserJson(path, root);
+    }
+
+    private void SaveApp(bool autoSaveOnExit)
+    {
+        var path = Path.Combine(_storage.StoragePath, "appsettings.user.json");
+        var root = ReadUserJson(path);
+
+        if (root["App"] is not JsonObject appObj)
+        {
+            appObj = new JsonObject();
+            root["App"] = appObj;
+        }
+        appObj["AutoSaveOnExit"] = autoSaveOnExit;
+
+        WriteUserJson(path, root);
+    }
+
+    private static JsonObject ReadUserJson(string path)
+    {
+        if (System.IO.File.Exists(path))
+        {
+            try { return JsonNode.Parse(System.IO.File.ReadAllText(path))?.AsObject() ?? new JsonObject(); }
+            catch { }
+        }
+        return new JsonObject();
+    }
+
+    private static void WriteUserJson(string path, JsonObject root)
+    {
         System.IO.File.WriteAllText(path, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
     }
 }
 
 public record SetStartupRequest(string Mode, string? Dashboard);
+public record SetAppRequest(bool AutoSaveOnExit);

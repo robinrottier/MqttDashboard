@@ -49,35 +49,29 @@ A `MudDivider` separates each group from the Theme submenu below.
   `ToggleEditMode()`, `ToggleAutoSave()`, `MenuLogout()` methods; `SetTheme()` now also persists
   to localStorage.
 
-### Auto-save on exit edit mode
+### Auto-save on exit — moved to server-side settings
 
-**Problem:** Exiting edit mode always prompted "Save / Discard / Cancel". On devices where you
-save frequently (e.g. during live editing on a tablet), this dialog is friction.
+**Correction:** Auto-save on exit is a system-wide setting (applies to all users/browsers on that
+server instance), not a per-browser preference. Moved from `localStorage` to `appsettings.user.json`.
 
-**Solution:** `AutoSaveOnExitEditMode` boolean in `ApplicationState` (default false). When true,
-`SwitchMode(false)` in Display skips the dialog and calls `SaveDashboard()` directly. If the save
-fails (no filename yet), edit mode is not exited and the existing snackbar warning is shown.
+**New endpoints** on `SettingsController`:
+- `GET /api/settings/app` → `{ autoSaveOnExit: bool }` (public read)
+- `POST /api/settings/app` body `{ autoSaveOnExit: bool }` (admin-only write, or unrestricted if auth disabled)
 
-The setting is accessible via **Options → Auto-save on Exit** (only visible in edit mode).
-It is persisted to `localStorage["pref:autoSaveOnExit"]`.
+Stored in `appsettings.user.json` under `App.AutoSaveOnExit`. The file is loaded with
+`reloadOnChange: true` so a server restart is not needed.
 
-**Files changed:**
-- `src/MqttDashboard.Client/Services/ApplicationState.cs` — added `AutoSaveOnExitEditMode`
-  property and `SetAutoSaveOnExitEditMode(bool)` method
-- `src/MqttDashboard.Client/Pages/Display.razor.cs` — `SwitchMode()` now checks
-  `AppState.AutoSaveOnExitEditMode`; if true, calls `SaveDashboard()` without a dialog
+`MainLayout.razor` loads `/api/settings/app` on first render (alongside the update check) and
+calls `AppState.SetAutoSaveOnExitEditMode()`. `AppMenu.ToggleAutoSave()` now `POST`s to the server
+instead of writing to localStorage. Theme preference remains in localStorage (per-browser/user).
 
-### Theme preference persistence
-
-**Problem:** Theme selection (Light/Dark/Auto) was lost on page reload.
-
-**Solution:** `SetTheme()` in `AppMenu` now calls `LocalStorage.SetItemAsync("pref:theme", m)` in
-addition to updating `AppState`. On first render in `MainLayout.OnAfterRenderAsync`, both
-`pref:theme` and `pref:autoSaveOnExit` are loaded from localStorage and applied.
+Refactored `SettingsController.cs` to share `ReadUserJson`/`WriteUserJson` helpers between the
+existing `Save()` (startup) and new `SaveApp()` methods.
 
 **Files changed:**
-- `src/MqttDashboard.Client/Layout/AppMenu.razor` — `SetTheme()` now persists to localStorage
-- `src/MqttDashboard.Client/Layout/MainLayout.razor` — loads both preferences on first render
+- `src/MqttDashboard.Server/Controllers/SettingsController.cs` — added `GetApp()`, `SetApp()`, `SaveApp()` methods; extracted `ReadUserJson`/`WriteUserJson` helpers; added `SetAppRequest` record
+- `src/MqttDashboard.Client/Layout/MainLayout.razor` — replaced localStorage auto-save load with `/api/settings/app` fetch; added `AppSettingsResponse` record
+- `src/MqttDashboard.Client/Layout/AppMenu.razor` — `ToggleAutoSave()` now async, POSTs to server; injected `HttpClient`
 
 ---
 

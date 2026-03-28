@@ -172,18 +172,25 @@
             }
             catch { /* ignore — JS not available during prerender */ }
 
-            // Load persisted user preferences (theme, auto-save)
+            // Load persisted user preferences (theme from localStorage; app settings from server)
             try
             {
                 var savedTheme = await LocalStorage.GetItemAsync<ThemeMode?>("pref:theme");
                 if (savedTheme.HasValue) AppState.SetTheme(savedTheme.Value);
-
-                var savedAutoSave = await LocalStorage.GetItemAsync<bool?>("pref:autoSaveOnExit");
-                if (savedAutoSave.HasValue) AppState.SetAutoSaveOnExitEditMode(savedAutoSave.Value);
-
-                if (savedTheme.HasValue || savedAutoSave.HasValue) StateHasChanged();
+                if (savedTheme.HasValue) StateHasChanged();
             }
             catch { /* ignore — localStorage may not be available */ }
+
+            try
+            {
+                var appSettings = await Http.GetFromJsonAsync<AppSettingsResponse>("/api/settings/app");
+                if (appSettings != null)
+                {
+                    AppState.SetAutoSaveOnExitEditMode(appSettings.AutoSaveOnExit);
+                    StateHasChanged();
+                }
+            }
+            catch { /* ignore — non-critical */ }
 
             try
             {
@@ -245,6 +252,7 @@
     private record SetupNeededResponse(bool Needed);
     private record UpdateStatusResponse(string CurrentVersion, string? LatestVersion, bool UpdateAvailable,
         string DeploymentType, DateTimeOffset? LastChecked, string? ReleaseUrl, string RuntimeIdentifier);
+    private record AppSettingsResponse(bool AutoSaveOnExit);
 
     private readonly PaletteLight _lightPalette = new()
     {
