@@ -68,6 +68,7 @@ public class ApplicationState
 
     // Theme & UI preferences
     public ThemeMode ThemeMode { get; private set; } = ThemeMode.Auto;
+    public bool AutoSaveOnExitEditMode { get; private set; } = false;
     public bool ShowName { get; private set; } = true;
 
     /// <summary>File name (stem) used for saving/loading. Set by the caller, not from file contents.</summary>
@@ -240,6 +241,12 @@ public class ApplicationState
     public void SetTheme(ThemeMode mode)
     {
         ThemeMode = mode;
+        NotifyStateChangedAsync();
+    }
+
+    public void SetAutoSaveOnExitEditMode(bool value)
+    {
+        AutoSaveOnExitEditMode = value;
         NotifyStateChangedAsync();
     }
 

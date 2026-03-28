@@ -76,6 +76,12 @@ main {
     }
 }
 
+@media (max-width: 599px) {
+    .toolbar-hide-xs {
+        display: none !important;
+    }
+}
+
 #blazor-error-ui {
     color-scheme: light only;
     background: lightyellow;

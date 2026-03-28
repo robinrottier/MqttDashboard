@@ -9,13 +9,13 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ## 🟡 Minor Enhancements
 
 - [ ] Title bar behavoir at low width (e.g. on a phone, portatrait aspect)
-	- [ ] The top right menu icon shoul dalways be shows ...items to its left could be lost if not engouh space
-	- [ ] Logout icon not necessary if no space...it needs to be added as a menu item under options
-	- [ ] Edit mode icon not necessary if not space ... it needs to be added as a menu item under options
+	- [x] The top right menu icon should always be shown — ✅ always rightmost
+	- [x] Logout/Login accessible on mobile — ✅ added to Options menu
+	- [x] Edit mode toggle accessible on mobile — ✅ added to Options menu
 	- [ ] cloud status least important if no space ... its in about box
 	- [ ] title font could get smaller if no space?
-- [ ] Add an option for "Auto-save on edit exit" which means when edit mode is exited via icon the file gets saved without
-      prompting. This would be in options menu (edit mode only) and saved in settings so it's system wide
+- [x] Add an option for "Auto-save on edit exit" which means when edit mode is exited via icon the file gets saved without
+      prompting. This would be in options menu (edit mode only) and saved in settings so it's system wide ✅
 - [ ] Property transition
 	- [ ] Also a means to drag reordering around the conditions to specify which is first match
 - [ ] IMport and Export dont seem to be able to see Windows clipboard ... is there some permissions to enable it? This was on firefox

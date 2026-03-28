@@ -5,6 +5,82 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
+## 2026-03-28 — Mobile toolbar responsiveness + auto-save on exit
+
+### Commit: (see git log) · UTC 2026-03-28 · branch: develop
+
+### Mobile/narrow toolbar: hide non-essential items on xs screens
+
+**Problem:** On a phone in portrait mode (< 600 px wide), the appbar overflows. The hamburger
+menu button could be pushed off-screen, the logout/edit-toggle icons waste space that is better
+used by the app title.
+
+**Solution:** Wrap the MQTT status icon, login/logout button, and edit-mode toggle in `<div
+class="toolbar-hide-xs">` elements. A `@media (max-width: 599px)` rule in `MainLayout.razor.css`
+sets `display:none !important` on those elements. The hamburger menu (`AppMenu`) is always the
+rightmost item and is never hidden.
+
+**Accessibility on mobile:** All hidden functions are now also available in the Options menu (see
+next item) so nothing is lost on narrow screens.
+
+**Files changed:**
+- `src/MqttDashboard.Client/Layout/MainLayout.razor` — wrapped MQTT icon, auth buttons, and edit
+  toggle in `<div class="toolbar-hide-xs">` divs; injected `LocalStorageService`
+- `src/MqttDashboard.Client/Layout/MainLayout.razor.css` — added `@media (max-width:599px)` rule
+  hiding `.toolbar-hide-xs`
+
+### Options menu: edit mode toggle, auto-save, and login/logout
+
+**Problem:** On mobile, users can't access edit mode or logout because the toolbar items are hidden.
+Also, the Options menu had no way to toggle edit mode directly.
+
+**Solution:** Added three new items at the top of the Options menu:
+
+1. **Edit Mode** (with checkmark) — visible when user has permission; calls `RequestToggleEditMode()`.
+2. **Auto-save on Exit** (with checkmark, edit mode only) — see next item.
+3. **Logout / Login as Admin** (auth only, not read-only) — duplicates the toolbar button;
+   calls `AuthService.LogoutAsync()` then navigates to `/login`.
+
+A `MudDivider` separates each group from the Theme submenu below.
+
+**Files changed:**
+- `src/MqttDashboard.Client/Layout/AppMenu.razor` — injected `LocalStorageService` and `IAuthService`;
+  added edit mode toggle, auto-save toggle, and login/logout items to Options menu; added
+  `ToggleEditMode()`, `ToggleAutoSave()`, `MenuLogout()` methods; `SetTheme()` now also persists
+  to localStorage.
+
+### Auto-save on exit edit mode
+
+**Problem:** Exiting edit mode always prompted "Save / Discard / Cancel". On devices where you
+save frequently (e.g. during live editing on a tablet), this dialog is friction.
+
+**Solution:** `AutoSaveOnExitEditMode` boolean in `ApplicationState` (default false). When true,
+`SwitchMode(false)` in Display skips the dialog and calls `SaveDashboard()` directly. If the save
+fails (no filename yet), edit mode is not exited and the existing snackbar warning is shown.
+
+The setting is accessible via **Options → Auto-save on Exit** (only visible in edit mode).
+It is persisted to `localStorage["pref:autoSaveOnExit"]`.
+
+**Files changed:**
+- `src/MqttDashboard.Client/Services/ApplicationState.cs` — added `AutoSaveOnExitEditMode`
+  property and `SetAutoSaveOnExitEditMode(bool)` method
+- `src/MqttDashboard.Client/Pages/Display.razor.cs` — `SwitchMode()` now checks
+  `AppState.AutoSaveOnExitEditMode`; if true, calls `SaveDashboard()` without a dialog
+
+### Theme preference persistence
+
+**Problem:** Theme selection (Light/Dark/Auto) was lost on page reload.
+
+**Solution:** `SetTheme()` in `AppMenu` now calls `LocalStorage.SetItemAsync("pref:theme", m)` in
+addition to updating `AppState`. On first render in `MainLayout.OnAfterRenderAsync`, both
+`pref:theme` and `pref:autoSaveOnExit` are loaded from localStorage and applied.
+
+**Files changed:**
+- `src/MqttDashboard.Client/Layout/AppMenu.razor` — `SetTheme()` now persists to localStorage
+- `src/MqttDashboard.Client/Layout/MainLayout.razor` — loads both preferences on first render
+
+---
+
 ## 2026-03-27 (batch 4) — ReadOnlyPorts + deployment documentation
 
 ### Commit: (see git log) · UTC 2026-03-27 · branch: develop
