@@ -42,7 +42,11 @@
             </div>
             @foreach (var port in Node.Ports)
             {
-                <PortRenderer @key="port" Port="port" Style="@PortStyleFor(port)" />
+                // in view mode, hide ports that have no links
+                if (port.Links.Count > 0 || AppState.IsEditMode)
+                {
+                    <PortRenderer @key="port" Port="port" Style="@PortStyleFor(port)" />
+                }
             }
         </div>
     </ChildContent>
