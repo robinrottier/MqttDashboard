@@ -6,8 +6,15 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ## BUGS
 
+- [ ] We've now got appsettings.user andf applicatestate file also with system wide settings
+      -- we only need one of those. I prefer ala system wide settings in appsettings.user so they could be set in core files also
+	  -- unless the app specific state file has some advantages?
+	  -- perhaps for upgrade both coul dbe merged and written to deemed master copy?
+
+
 ## 🟡 Minor Enhancements
 
+- [ ] Guage widget could be better presented... there are 2 arc but really the value arc shoul dbe over the grey arc so there's just one arc with colored extent reflecting value
 - [ ] Title bar behavoir at low width (e.g. on a phone, portatrait aspect)
 	- [x] The top right menu icon should always be shown — ✅ always rightmost
 	- [x] Logout/Login accessible on mobile — ✅ added to Options menu
@@ -55,6 +62,11 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ### FEAT-C: Additional node types _(Gauge, Switch, Battery, Log, TreeView done — see CHANGELOG)_
 - [ ] **Text node** - different node shapes (circle, diamond, etc.) Perhaps the "shapre" applies to all derived
       nodes too e.g. a guage inside a triangle or circle. Or maybe shape is just a property of the base node.
+- [ ] **Guage**
+	- [ ] needs alternatives such as full circle, 90 or 270 .... aybe thats all the 
+		  option is, how much of a circle is drawn and properties to control orientation
+	- [ ] options to draw "needle" also from some center point to the guage ...
+	  
 - [ ] **Chart** — in-memory time-series sparkline graph
 - [ ] **Markdown / HTML** — formatted static content, optionally with data substitution
 - [ ] **IFrame** — embed another web page
@@ -66,9 +78,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ### FEAT-E: Editing improvements
 - [ ] Node-red style palette panel — drag node types from a sidebar onto the canvas
-- [ ] Import/export selected nodes or a whole page as JSON (clipboard) — ✅ done (Export… and Import… in Edit menu)
 - [ ] Keyboard funcionality esp.:
-	- [ ] ctrl c/x/v for copy/cut/paste of nodes and links
 	- [ ] arrows to move selcted nodes
 
 ### FEAT-F: Link improvements
@@ -97,15 +107,24 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ### FEAT-J: User management & auth
 - [ ] Multi-user with roles: read-only / read-write / admin
 - [ ] Builds on existing `ServerAuthService` / admin password hash mechanism
-- [ ] User registration mechanism (username, email, password) with email verification.
+- [ ] User registration mechanism (username, email, password) with email verification--not sure how as this deployment wont have a mail?
+- [ ] "Admin" is a status now and not an actual user name. Mutliple users could log on and be "admin"
+	- [ ] Admin user can create other users, assign roles, and delete users
+	- [ ] First time setup requires creating an admin user, which is then used to log in and manage the system
+- [ ] COnfirmation of each new user registration from admin user
+	- [ ] - new users stays "pendign" until admin confirms request
+	- [ ] when admin logs on they see pending user registrations and can confirm or reject them
+- [ ] User management UI in admin interface
+- [ ] Usr "database" is nothign complicated -- fine as an encryted file store and password encrypted in that
+- [ ] JWT-based auth for API endpoints, with token issued on login and stored in browser local storage
+	- [ ] I dont know what that means -- does it apply to this type of setup? API calls are all internal frmo client to server
+
 
 ### FEAT-K: Dashboard versioning & Git integration
+- [ ] Optional Git commit/push of dashboard to a remote repo
 - [ ] Snapshot history for dashboards (previous versions, compare/diff)
-- [ ] Optional Git commit/push of dashboard changes to a remote repo
 
 ### FEAT-L: Deployment enhancements
-- [x] Single Docker image supporting both server-only SSR and WASM modes — done: add `RenderMode=Server` env var to use Blazor Server mode in the single WebApp image
-- [x] Read-only runtime mode — done: `ReadOnly=true` env var / config disables all edit UI and blocks all write API endpoints with 403
 - [ ] Admin interface: runtime monitoring, logs, connected clients, dashboard file management
 - [ ] More automation to speed relase process e.g. PR with message RC to mean release candiate so auto invokes patch-release auto bump and process
 
@@ -113,7 +132,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ### FEAT-N: Self-updating deployment
 - [ ] Latest version check checks for tags ... but the actual Docker image may not be available for some time after a tag is pushed. Can it check actual images in ghcr?
-- [ ] Option to follow release-only stream or latest beta stream
+- [ ] Option to follow release-only stream or latest beta stream of pre-releases
 - [ ] How would we revert to a previous version if an update proved bad?
 
 

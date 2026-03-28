@@ -5,9 +5,45 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
-## 2026-03-28 — Mobile toolbar responsiveness + auto-save on exit
+## 2026-03-28 (batch 2) — Gauge arc fix, auto-save server-side, appsettings defaults
 
 ### Commit: (see git log) · UTC 2026-03-28 · branch: develop
+
+### Gauge: background arc radius mismatch fixed
+
+**Problem:** The gauge had two visually distinct arcs — a grey background arc and a coloured value arc. They appeared as concentric rings instead of one arc with a coloured portion, because the background arc used mathematically incorrect start/end points (`M 10 65 ... 110 65`, span 100px) while the value arc used the correct radius-55 geometry (start `M 5 65`, end `x=115`). SVG auto-scales radii when start/end don't satisfy the arc equation, so the background ended up at a slightly smaller radius.
+
+**Fix:** Background arc changed to `M 5 65 A 55 55 0 0 1 115 65` — exact radius-55 semicircle matching the value arc geometry. Value arc is drawn after (on top in SVG) so the coloured portion fully covers the grey in the value range, and grey is only visible in the empty portion. Opacity slightly raised from 0.25 → 0.30 so the track is more legible.
+
+**Files changed:**
+- `src/MqttDashboard.Client/Widgets/GaugeNodeWidget.razor` — corrected background arc path and opacity
+
+### Auto-save: moved to server-side settings; appsettings.json defaults added
+
+**Problem (follow-up from batch 1):** Auto-save was persisted to browser `localStorage` — that's per-browser, not system-wide. As a server admin setting it belongs in `appsettings.user.json`.
+
+**Additional:** `appsettings.json` had no `App` section, so `App:MaxMessageHistory` and the new `App:AutoSaveOnExit` had no documented defaults. This made the configuration opaque.
+
+**Changes:**
+- `GET /api/settings/app` + `POST /api/settings/app` added to `SettingsController` — reads/writes `App:AutoSaveOnExit` in `appsettings.user.json`
+- `MainLayout.razor` loads `/api/settings/app` on first render instead of `localStorage`
+- `AppMenu.ToggleAutoSave()` POSTs to server (async); `localStorage` no longer used for this setting
+- Both `appsettings.json` files now have an explicit `App` section with `MaxMessageHistory: 500` and `AutoSaveOnExit: false` as documented defaults
+
+**Files changed:**
+- `src/MqttDashboard.Server/Controllers/SettingsController.cs`
+- `src/MqttDashboard.Client/Layout/MainLayout.razor`
+- `src/MqttDashboard.Client/Layout/AppMenu.razor`
+- `src/MqttDashboard.WebApp/MqttDashboard.WebApp/appsettings.json`
+- `src/MqttDashboard.WebApp/MqttDashboard.WebAppServerOnly/appsettings.json`
+
+### Auto-save snackbar — already works
+
+**Note:** TODO item "Auto-save should show popup info 'File saved...'" — confirmed this is already handled. `SwitchMode()` calls `SaveDashboard()` which calls `Snackbar.Add("Saved '...'", Severity.Success)` in all code paths including auto-save. Marked done in TODO.
+
+---
+
+
 
 ### Mobile/narrow toolbar: hide non-essential items on xs screens
 
