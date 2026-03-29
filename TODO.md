@@ -6,12 +6,6 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ## BUGS
 
-- [ ] Title bar behavoir at low width (e.g. on a phone, portatrait aspect)
-	- [ ] cloud status least important if no space ... its in about box
-	- [ ] title font could get smaller if no space? Title coul dbe on 2 line (product name/dashboard name with no "-" if on 2 lines)
-	- [ ] menu in top right shuol dlayways be visible
-	- [ ] 
-
 ## 🟡 Minor Enhancements
 
 - [ ] Property transition
