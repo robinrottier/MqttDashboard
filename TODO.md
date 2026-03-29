@@ -6,27 +6,10 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ## BUGS
 
-- [ ] We've now got appsettings.user andf applicatestate file also with system wide settings
-      -- we only need one of those. I prefer ala system wide settings in appsettings.user so they could be set in core files also
-	  -- unless the app specific state file has some advantages?
-	  -- perhaps for upgrade both coul dbe merged and written to deemed master copy?
-
-
 ## 🟡 Minor Enhancements
 
-- [ ] Guage widget could be better presented... there are 2 arc but really the value arc shoul dbe over the grey arc so there's just one arc with colored extent reflecting value
-- [ ] Title bar behavoir at low width (e.g. on a phone, portatrait aspect)
-	- [x] The top right menu icon should always be shown — ✅ always rightmost
-	- [x] Logout/Login accessible on mobile — ✅ added to Options menu
-	- [x] Edit mode toggle accessible on mobile — ✅ added to Options menu
-	- [ ] cloud status least important if no space ... its in about box
-	- [ ] title font could get smaller if no space?
-- [x] Add an option for "Auto-save on edit exit" which means when edit mode is exited via icon the file gets saved without
-      prompting. This would be in options menu (edit mode only) and saved in settings so it's system wide ✅
 - [ ] Property transition
 	- [ ] Also a means to drag reordering around the conditions to specify which is first match
-- [ ] IMport and Export dont seem to be able to see Windows clipboard ... is there some permissions to enable it? This was on firefox
-- [ ] Serialization: node ID GUIDs in file — map to sequential 1-based IDs for file (need port+link ID remapping too). Needs a json serilaizer class for Dashboard to manage the mapping.
 - [ ] Serialization:
 	- [ ] logged-on user not yet written to `FileInfo` (always admin for now — fine to leave)
 	- [ ] should include version of this app doing the write, and server written from
@@ -45,6 +28,8 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Log viewer columns: choices for date (and format), time (and format), topic path, topic name, topic full path&name, value — **Full 6-column boolean options done**; date/time format options still open
 - [ ] mqtt publishing should have other parameters (e.g. message expiry)
 - [ ] Confirm- mqtt publishing is a reusable compoennt (especially configuration of it in node properties)
+- [ ] IMport and Export dont seem to be able to see Windows clipboard ... is there some permissions to enable it? This was on firefox
+- [ ] Serialization: node ID GUIDs in file — map to sequential 1-based IDs for file (need port+link ID remapping too). Needs a json serilaizer class for Dashboard to manage the mapping.
 
 
 ## 🟡 Features

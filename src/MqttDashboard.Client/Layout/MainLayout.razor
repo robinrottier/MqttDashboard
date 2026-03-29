@@ -15,22 +15,23 @@
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="1" Dense="false">
+    <MudAppBar Elevation="0" Dense="false" Gutters="false">
         <!-- Diagram icon -->
-        <MudIconButton Icon="@Icons.Material.Filled.AccountTree" Color="Color.Primary" Size="Size.Large" Class="mr-2"
+        <MudIconButton Icon="@Icons.Material.Filled.AccountTree" Color="Color.Primary" Size="Size.Large" Class="mr-1"
                        OnClick='() => Nav.NavigateTo("/")' />
 
-        <!-- App name + optional diagram name -->
-        <MudTooltip Text="@TitleTooltip" Placement="Placement.Bottom">
-        <MudText Typo="Typo.h6" Class="d-flex align-center gap-2">
-            @AppName
-            @if (AppState.IsEditMode || AppState.ShowName)
-            {
-                <MudText Typo="Typo.h6" Color="Color.Secondary" Style="display:inline">
-                    &mdash; @AppState.ActiveDashboardLabel
-                </MudText>
-            }
-        </MudText>
+        <!-- App name + dashboard name.
+             Wide: single line "App — Name" with ellipsis if overflow.
+             Narrow (<600px): two stacked lines, smaller font, no dash. -->
+        <MudTooltip Text="@TitleTooltip" Placement="Placement.Bottom" Style="overflow:hidden;min-width:0;flex-shrink:1;">
+            <div class="appbar-title-inner">
+                <span class="title-app-name">@AppName</span>
+                @if (AppState.IsEditMode || AppState.ShowName)
+                {
+                    <span class="title-sep">&mdash;</span>
+                    <span class="title-dash-name">@AppState.ActiveDashboardLabel</span>
+                }
+            </div>
         </MudTooltip>
 
         <MudSpacer />
@@ -63,26 +64,31 @@
             </div>
         }
 
-        <!-- Edit mode toggle switch — hidden when auth is enabled and user is not admin, or in read-only mode -->
+        <!-- Edit mode toggle switch — hidden when auth is enabled and user is not admin, or in read-only mode.
+             Wrapped in a plain <div> so the Blazor CSS isolation scope attribute applies directly
+             (only works reliably on HTML elements, not on component Class parameters). -->
         @if (!AppState.IsReadOnly && (!AppState.AuthEnabled || AppState.IsAdmin))
         {
-        <!-- Edit mode toggle switch -->
-        <MudTooltip Text="@EditModeTooltip">
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mr-2 toolbar-hide-xs">
-                <MudText Typo="Typo.body2"
-                         Style="@(_isEditMode ? "font-weight:700; color: var(--mud-palette-primary);" : "color: var(--mud-palette-text-secondary);")">
-                    Edit
-                </MudText>
-                <MudSwitch Value="_isEditMode"
-                           ValueChanged="@((bool v) => ToggleEditMode())"
-                           Color="@(!_isEditMode ? Color.Default : AppState.IsEdited ? Color.Error : Color.Warning)"
-                           T="bool" />
-            </MudStack>
-        </MudTooltip>
+        <div class="toolbar-hide-xs d-flex align-center mr-2">
+            <MudTooltip Text="@EditModeTooltip">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudText Typo="Typo.body2" Style="@EditTextStyle">
+                        Edit
+                    </MudText>
+                    <MudSwitch Value="_isEditMode"
+                               ValueChanged="@((bool v) => ToggleEditMode())"
+                               Color="@(!_isEditMode ? Color.Default : AppState.IsEdited ? Color.Error : Color.Warning)"
+                               T="bool" />
+                </MudStack>
+            </MudTooltip>
+        </div>
         }
 
-        <!-- Hamburger menu button (top-right, 3 bars) -->
-        <AppMenu />
+        <!-- Hamburger menu — always last in flex flow; flex-shrink:0 means it can never be
+             pushed off. Gradient background fades over any compressed title text. -->
+        <div class="appbar-menu-pin">
+            <AppMenu />
+        </div>
     </MudAppBar>
 
     <MudMainContent Class="pt-16 pa-2">
@@ -113,6 +119,10 @@
         .GetCustomAttribute<System.Reflection.AssemblyProductAttribute>()?.Product
         ?? "MQTT Dashboard";
     private bool _isEditMode => AppState.IsEditMode;
+
+    private string EditTextStyle => _isEditMode
+        ? "font-weight:700; color: var(--mud-palette-primary);"
+        : "color: var(--mud-palette-text-secondary);";
 
     private string TitleTooltip
     {
