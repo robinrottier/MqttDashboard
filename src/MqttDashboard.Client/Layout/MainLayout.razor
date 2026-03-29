@@ -15,7 +15,7 @@
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="0" Dense="false" Gutters="false" Style="padding-right:52px;">
+    <MudAppBar Elevation="0" Dense="false" Gutters="false">
         <!-- Diagram icon -->
         <MudIconButton Icon="@Icons.Material.Filled.AccountTree" Color="Color.Primary" Size="Size.Large" Class="mr-1"
                        OnClick='() => Nav.NavigateTo("/")' />
@@ -84,9 +84,8 @@
         </div>
         }
 
-        <!-- Hamburger menu — absolutely pinned to right edge of AppBar.
-             Taken out of flex flow so it always wins regardless of viewport width.
-             Background fades from transparent → appbar colour to cleanly cover title text. -->
+        <!-- Hamburger menu — always last in flex flow; flex-shrink:0 means it can never be
+             pushed off. Gradient background fades over any compressed title text. -->
         <div class="appbar-menu-pin">
             <AppMenu />
         </div>

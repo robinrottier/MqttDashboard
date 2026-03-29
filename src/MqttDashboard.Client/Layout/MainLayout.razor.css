@@ -81,7 +81,7 @@ main {
 }
 
 /* Hide non-essential toolbar items on xs screens */
-@media (max-width: 599px) {
+@media (max-width: 449px) {
     .toolbar-hide-xs {
         display: none !important;
     }
@@ -151,24 +151,24 @@ main {
     color: var(--mud-palette-text-secondary);
 }
 
-/* ── Hamburger menu: always pinned to top-right of AppBar ────────────────────
-   position:absolute removes it from flex flow entirely.
-   The left-side gradient covers any title text that extends under it.
-   .mud-appbar already has position:relative so this anchors there.
+/* ── Hamburger menu: stays in flex flow, always rightmost, never shrinks ─────
+   flex-shrink:0 guarantees it cannot be squeezed out at any viewport width.
+   position:relative + z-index:5 lets it stack on top of adjacent content.
+   padding-left + gradient fades over any compressed title text behind it.
    ──────────────────────────────────────────────────────────────────────────── */
 .appbar-menu-pin {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
+    flex-shrink: 0;
+    position: relative;
     z-index: 5;
-    padding-left: 24px; /* gradient fadeout zone before the icon */
+    padding-left: 20px;
     background: linear-gradient(
         to right,
         transparent 0%,
         var(--mud-palette-appbar-background) 40%
     );
 }
+
+@media (max-width: 599px) {
     .appbar-title-inner {
         flex-direction: column;
         align-items: stretch; /* fill width so text-overflow works per line */
