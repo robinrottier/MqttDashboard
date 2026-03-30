@@ -7,9 +7,7 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ## 2026-03-30 (batch 3) — Roslyn source generator for app icon + PWA consolidation
 
-### Commit: (pending) · UTC 2026-03-30 · branch: develop
-
-#### 1. Consolidated PWA manifest and icons into `MqttDashboard.Client` RCL
+### Commit: cb3c94f · UTC 2026-03-30 · branch: develop
 
 Both hosting projects (`WebApp` and `WebAppServerOnly`) previously had separate copies of
 `manifest.webmanifest` and PNG icons in their `wwwroot/` folders. These were consolidated into
