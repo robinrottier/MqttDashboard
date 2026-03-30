@@ -34,7 +34,7 @@
   -->
   <Target Name="GenerateIconPngs" BeforeTargets="Build"
           Inputs="$(MSBuildThisFileDirectory)wwwroot\mqttdashboard-icon.svg"
-          Outputs="$(MSBuildThisFileDirectory)wwwroot\icon-192.png;$(MSBuildThisFileDirectory)wwwroot\icon-512.png">
+          Outputs="$(MSBuildThisFileDirectory)wwwroot\icon-192.png;$(MSBuildThisFileDirectory)wwwroot\icon-512.png;$(MSBuildThisFileDirectory)App\AppIcons.cs">
     <Message Text="mqttdashboard-icon.svg changed — regenerating PNG icons..." Importance="High" />
     <Exec Command="pwsh -NonInteractive -NoProfile -File &quot;$(MSBuildThisFileDirectory)..\..\scripts\Generate-Icons.ps1&quot;"
           ContinueOnError="true"
