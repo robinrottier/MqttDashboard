@@ -5,7 +5,72 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
-## 2026-03-30 (batch 4 / FEAT-H) — Data layer extraction into MqttDashboard.Data
+## 2026-03-30 (batch 5 / FEAT-H Phase 2) — IDataCache/IDataServer refactor, replace ISignalRService
+
+### Branch: feature/feat-h-data-layer
+
+Phase 2 of the FEAT-H data layer refactor. Renames `ITopicCache`/`Watch()` to `IDataCache`/`Subscribe()`,
+introduces `IDataServer` as a demand-driven upstream provider, and replaces `ISignalRService` with
+concrete implementations of the new interfaces.
+
+### 1. `MqttDashboard.Data` — rename + new interfaces
+
+**Files changed/created:**
+- `ITopicCache.cs` → **deleted**
+- `TopicCache.cs` → **deleted**
+- `IDataCache.cs` (new) — replaces `ITopicCache`; `Watch()` renamed to `Subscribe()`; adds `RegisterServer(IDataServer)` method
+- `IDataServer.cs` (new) — upstream data provider; events: `ValueUpdated`, `Reconnected`, `StatusChanged`; methods: `StartAsync`, `SubscribeAsync`, `UnsubscribeAsync`; NO publish method
+- `DataCache.cs` (new) — replaces `TopicCache`; adds subscriber ref-counting and demand-driven `IDataServer` notification (first subscriber for an uncached topic triggers `SubscribeAsync`; last subscriber triggers `UnsubscribeAsync`; `Reconnected` event re-subscribes all active topics)
+
+**Design notes:**
+- `IDataServer.SubscribeAsync` is called only when the first subscriber registers for a topic that has no cached value. Subsequent `Subscribe()` calls for the same topic just add callbacks and are seeded immediately from cache.
+- `GetValue()` never triggers upstream — only `Subscribe()` does (demand-driven, not pull-on-read).
+- `RegisterServer()` wires `server.ValueUpdated` → `cache.UpdateValue` and `server.Reconnected` → `cache.ResubscribeAll` automatically.
+
+### 2. Client — new interfaces, `SignalRDataServer`, updated services
+
+**Files created:**
+- `Services/IMqttPublisher.cs` — single-method publish contract; separate from data subscription (per user decision, "publish doesn't conceptually fit the pub/sub contract")
+- `Services/IMqttDiagnostics.cs` — thin diagnostics: `GetMqttBrokerInfoAsync`, `GetConnectedClientCountAsync`; used by `AboutDialog` and `MqttInitializationService`
+- `Services/SignalRDataServer.cs` — implements `IDataServer`, `IMqttPublisher`, `IMqttDiagnostics`; replaces `SignalRService`; maps hub events (`ReceiveMqttData`, `MqttConnectionStatus`, reconnected) to `IDataServer` events; `SubscribeAsync`/`UnsubscribeAsync` invoke hub methods
+
+**Files deleted:**
+- `Services/ISignalRService.cs` — interface removed; replaced by `IDataServer` + `IMqttPublisher` + `IMqttDiagnostics`
+- `Services/SignalRService.cs` — implementation removed; replaced by `SignalRDataServer`
+
+**Files updated:**
+- `Services/MqttInitializationService.cs` — injects `IDataServer` + `IMqttDiagnostics` instead of `ISignalRService`; wires `StatusChanged`/`Reconnected`/`ValueUpdated` events; calls `AppState.DataCache.RegisterServer(server)` on startup; `RestoreSubscriptionsAsync` calls `IDataServer.SubscribeAsync` directly (no more `GetCurrentValuesForTopicsAsync` batch call — the server pushes values on subscribe)
+- `Services/ApplicationState.cs` — `ITopicCache DataCache` → `IDataCache DataCache = new DataCache()`; `ISignalRService? SignalRService` → `IDataServer? DataServer`; `SetSignalRService` → `SetDataServer`
+- `Components/AboutDialog.razor` — injects `IMqttDiagnostics` instead of `ISignalRService`
+- `Components/DashboardPropertiesDialog.razor` — uses `AppState.DataServer.SubscribeAsync/UnsubscribeAsync` instead of `AppState.SignalRService.SubscribeToTopicAsync/UnsubscribeFromTopicAsync`
+- `Widgets/SwitchNodeWidget.razor` — injects `IMqttPublisher` instead of `ISignalRService`
+- `Pages/Display.razor.cs` — `SyncSubscriptionsAsync` uses `AppState.DataServer.SubscribeAsync/UnsubscribeAsync`
+- `Widgets/BaseNodeWithDataWidget.cs` — `DataCache.Watch()` → `DataCache.Subscribe()`
+- `Widgets/TreeViewNodeWidget.razor` — `DataCache.Watch()` → `DataCache.Subscribe()`
+
+### 3. Server — `InProcessDataServer` replaces `ServerSignalRService`
+
+**Files created:**
+- `Services/InProcessDataServer.cs` — implements `IDataServer`, `IMqttPublisher`, `IMqttDiagnostics`; direct in-process wiring (no HTTP loopback); hooks `MqttClientService.OnMessagePublished` + `MqttConnectionMonitor.OnStateChanged`; fires `ValueUpdated` for interested clients; fires `Reconnected` on broker reconnect
+
+**Files deleted:**
+- `Services/ServerSignalRService.cs` — replaced by `InProcessDataServer`
+
+**Files updated:**
+- `Extensions/ServiceCollectionExtensions.cs` — registers `InProcessDataServer` as singleton then aliases `IDataServer`, `IMqttPublisher`, `IMqttDiagnostics` to it
+
+### 4. WASM host DI
+
+- `WebApp.Client/Program.cs` — registers `SignalRDataServer` then aliases `IDataServer`, `IMqttPublisher`, `IMqttDiagnostics` to it
+
+### 5. Tests
+
+- `DataCacheTests.cs` — renamed from `TopicCacheTests.cs`; `Watch()` → `Subscribe()` in all test calls and method names; all 25 tests pass
+- All 39 tests passing (Data: 25, Client: 5, Server: 9)
+
+⚠️ `GetCurrentValuesForTopicsAsync` (old hub batch seed call) has been removed. The server now pushes values as part of `SubscribeAsync` confirmation. If widgets appear blank on reconnect in testing, verify `MqttDataHub.SubscribeToTopic` sends a `ReceiveMqttData` message for the current known value.
+
+
 
 ### Branch: feature/feat-h-data-layer
 

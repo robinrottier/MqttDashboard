@@ -1,3 +1,4 @@
+using MqttDashboard.Data;
 using MqttDashboard.Server.Hubs;
 using MqttDashboard.Server.Services;
 using MqttDashboard.Server.Filters;
@@ -38,8 +39,11 @@ public static class ServiceCollectionExtensions
         // Register a scoped HttpClient for use in Blazor components (server-side rendering)
         services.AddScoped<HttpClient>(sp => CreateLoopbackHttpClient(sp));
 
-        // Add SignalR data service for server-side (in-process, no HTTP loopback)
-        services.AddScoped<ISignalRService, ServerSignalRService>();
+        // Add in-process data server for server-side (no HTTP loopback)
+        services.AddScoped<InProcessDataServer>();
+        services.AddScoped<IDataServer>(sp => sp.GetRequiredService<InProcessDataServer>());
+        services.AddScoped<IMqttPublisher>(sp => sp.GetRequiredService<InProcessDataServer>());
+        services.AddScoped<IMqttDiagnostics>(sp => sp.GetRequiredService<InProcessDataServer>());
 
         // Add DashboardService for server-side (in-process, no loopback HTTP)
         services.AddScoped<IDashboardService, ServerDashboardService>();

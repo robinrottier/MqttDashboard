@@ -4,7 +4,7 @@
 @using MudBlazor
 @inject ApplicationState AppState
 @inject NavigationManager NavManager
-@inject ISignalRService SignalRService
+@inject IMqttDiagnostics MqttDiagnostics
 @inject HttpClient Http
 @inject MudBlazor.IDialogService DialogService
 
@@ -184,7 +184,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _clientCount = await SignalRService.GetConnectedClientCountAsync();
+        _clientCount = await MqttDiagnostics.GetConnectedClientCountAsync();
 
         var appAssembly = typeof(AboutDialog).Assembly;
         var appName = AppState.DisplayName;

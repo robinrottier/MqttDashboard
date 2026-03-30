@@ -8,16 +8,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- **`MqttDashboard.Data` project** — new pure-C# library (`net10.0`, no Blazor/ASP.NET/MQTT deps) holding the topic pub/sub infrastructure. Contains `ITopicCache`, `TopicCache`, `TopicMatcher`, and `XmlPayloadHelper`. Enables future non-Blazor hosting (MAUI, Avalonia, etc.) and isolated unit testing.
-- **`MqttDashboard.Data.Tests` project** — 25 unit tests covering `TopicCache` (store/watch/wildcard/dispose) and `TopicMatcher` (MQTT filter matching and regex conversion).
+- **`MqttDashboard.Data` project** — new pure-C# library (`net10.0`, no Blazor/ASP.NET/MQTT deps) holding the topic pub/sub infrastructure. Contains `IDataCache`, `DataCache`, `IDataServer`, `TopicMatcher`, and `XmlPayloadHelper`. Enables future non-Blazor hosting and isolated unit testing.
+- **`IDataServer` interface** — upstream data-provider contract; implementations notify the cache of new values, reconnection, and status changes. Cache calls `SubscribeAsync`/`UnsubscribeAsync` demand-driven (first/last subscriber).
+- **`SignalRDataServer`** (Client) — implements `IDataServer`, `IMqttPublisher`, `IMqttDiagnostics`; replaces the old `SignalRService`.
+- **`InProcessDataServer`** (Server) — implements `IDataServer`, `IMqttPublisher`, `IMqttDiagnostics`; in-process replacement for `ServerSignalRService`.
+- **`IMqttPublisher`** (Client) — publish-only interface; `SwitchNodeWidget` uses this to send commands to the broker.
+- **`IMqttDiagnostics`** (Client) — broker info + connected-client count; used by `AboutDialog`.
+- **`MqttDashboard.Data.Tests` project** — 25 unit tests covering `DataCache` and `TopicMatcher`.
 
 ### Changed
-- **`ApplicationState.DataCache`** — type changed from `MqttDataCache` to `ITopicCache` (backed by `TopicCache` from `MqttDashboard.Data`).
-- **`MqttTopicSubscriptionManager`** — private 40-line `TopicMatches()` method replaced by `TopicMatcher.Matches()` from `MqttDashboard.Data`, eliminating the duplicate implementation.
-- **`XmlStringHelper`** (Client) — now a thin shim forwarding to `XmlPayloadHelper` in `MqttDashboard.Data`.
+- **`ApplicationState.DataCache`** — type `IDataCache` (backed by `DataCache`); `DataServer` property replaces `SignalRService`.
+- **`MqttInitializationService`** — wires `IDataServer` events; calls `DataCache.RegisterServer()` on startup; topic restore calls `IDataServer.SubscribeAsync` directly.
+- **Widgets** — `DataCache.Watch()` renamed to `DataCache.Subscribe()` everywhere; `SwitchNodeWidget` injects `IMqttPublisher`.
 
 ### Removed
-- **`MqttDataCache.cs`** — class deleted; functionality moved to `TopicCache` in `MqttDashboard.Data`.
+- **`ISignalRService`** — interface deleted; functionality split across `IDataServer`, `IMqttPublisher`, `IMqttDiagnostics`.
+- **`SignalRService`** — replaced by `SignalRDataServer`.
+- **`ServerSignalRService`** — replaced by `InProcessDataServer`.
+- **`ITopicCache` / `TopicCache`** — renamed to `IDataCache` / `DataCache`.
 
 ### Fixed
 - **`/healthz` probe in Playwright fixture** — now uses `?ignoreMqtt` so probe returns 200 (not 503) when broker absent; fixture fails immediately on unexpected non-2xx (no 60s timeout).

@@ -2,12 +2,12 @@ using MqttDashboard.Data;
 
 namespace MqttDashboard.Data.Tests;
 
-public class TopicCacheTests
+public class DataCacheTests
 {
     [Fact]
     public void UpdateValue_Then_GetValue_ReturnsValue()
     {
-        var cache = new TopicCache();
+        var cache = new DataCache();
         cache.UpdateValue("sensor/temp", "23.5");
         Assert.Equal("23.5", cache.GetValue("sensor/temp"));
     }
@@ -15,14 +15,14 @@ public class TopicCacheTests
     [Fact]
     public void GetValue_UnknownTopic_ReturnsNull()
     {
-        var cache = new TopicCache();
+        var cache = new DataCache();
         Assert.Null(cache.GetValue("unknown/topic"));
     }
 
     [Fact]
     public void TryGetValue_TypedMatch_ReturnsTrue()
     {
-        var cache = new TopicCache();
+        var cache = new DataCache();
         cache.UpdateValue("t", "hello");
         Assert.True(cache.TryGetValue<string>("t", out var val));
         Assert.Equal("hello", val);
@@ -31,27 +31,27 @@ public class TopicCacheTests
     [Fact]
     public void TryGetValue_WrongType_ReturnsFalse()
     {
-        var cache = new TopicCache();
+        var cache = new DataCache();
         cache.UpdateValue("t", "hello");
         Assert.False(cache.TryGetValue<int>("t", out _));
     }
 
     [Fact]
-    public void Watch_ExactTopic_CallbackFired()
+    public void Subscribe_ExactTopic_CallbackFired()
     {
-        var cache = new TopicCache();
+        var cache = new DataCache();
         string? received = null;
-        using var _ = cache.Watch("sensor/temp", (topic, value) => received = value.ToString());
+        using var _ = cache.Subscribe("sensor/temp", (topic, value) => received = value.ToString());
         cache.UpdateValue("sensor/temp", "42");
         Assert.Equal("42", received);
     }
 
     [Fact]
-    public void Watch_WildcardPlus_MatchesSingleLevel()
+    public void Subscribe_WildcardPlus_MatchesSingleLevel()
     {
-        var cache = new TopicCache();
+        var cache = new DataCache();
         var received = new List<string>();
-        using var _ = cache.Watch("sensor/+/temp", (t, v) => received.Add(t));
+        using var _ = cache.Subscribe("sensor/+/temp", (t, v) => received.Add(t));
         cache.UpdateValue("sensor/room1/temp", "20");
         cache.UpdateValue("sensor/room2/temp", "21");
         cache.UpdateValue("sensor/room1/humidity", "60"); // should NOT match
@@ -61,11 +61,11 @@ public class TopicCacheTests
     }
 
     [Fact]
-    public void Watch_WildcardHash_MatchesMultipleLevels()
+    public void Subscribe_WildcardHash_MatchesMultipleLevels()
     {
-        var cache = new TopicCache();
+        var cache = new DataCache();
         int callCount = 0;
-        using var _ = cache.Watch("sensor/#", (t, v) => callCount++);
+        using var _ = cache.Subscribe("sensor/#", (t, v) => callCount++);
         cache.UpdateValue("sensor/temp", "1");
         cache.UpdateValue("sensor/room/temp", "2");
         cache.UpdateValue("other/topic", "3"); // should NOT match
@@ -75,9 +75,9 @@ public class TopicCacheTests
     [Fact]
     public void Dispose_WatcherHandle_StopsCallbacks()
     {
-        var cache = new TopicCache();
+        var cache = new DataCache();
         int callCount = 0;
-        var handle = cache.Watch("t", (_, _) => callCount++);
+        var handle = cache.Subscribe("t", (_, _) => callCount++);
         cache.UpdateValue("t", "a");
         handle.Dispose();
         cache.UpdateValue("t", "b");
@@ -87,9 +87,9 @@ public class TopicCacheTests
     [Fact]
     public void Dispose_WildcardHandle_StopsCallbacks()
     {
-        var cache = new TopicCache();
+        var cache = new DataCache();
         int callCount = 0;
-        var handle = cache.Watch("sensor/+", (_, _) => callCount++);
+        var handle = cache.Subscribe("sensor/+", (_, _) => callCount++);
         cache.UpdateValue("sensor/temp", "a");
         handle.Dispose();
         cache.UpdateValue("sensor/temp", "b");
@@ -99,7 +99,7 @@ public class TopicCacheTests
     [Fact]
     public void GetAllTopics_ReturnsStoredTopics()
     {
-        var cache = new TopicCache();
+        var cache = new DataCache();
         cache.UpdateValue("a/b", "1");
         cache.UpdateValue("c/d", "2");
         Assert.Contains("a/b", cache.GetAllTopics());
@@ -109,7 +109,7 @@ public class TopicCacheTests
     [Fact]
     public void GetValuesByPattern_FiltersCorrectly()
     {
-        var cache = new TopicCache();
+        var cache = new DataCache();
         cache.UpdateValue("sensor/temp", "20");
         cache.UpdateValue("sensor/humidity", "50");
         cache.UpdateValue("other/value", "99");
@@ -122,7 +122,7 @@ public class TopicCacheTests
     [Fact]
     public void Clear_RemovesAllValues()
     {
-        var cache = new TopicCache();
+        var cache = new DataCache();
         cache.UpdateValue("t", "v");
         cache.Clear();
         Assert.Null(cache.GetValue("t"));
@@ -131,7 +131,7 @@ public class TopicCacheTests
     [Fact]
     public void UpdateValue_StripInvalidXmlChars_FromString()
     {
-        var cache = new TopicCache();
+        var cache = new DataCache();
         // null byte is stripped
         cache.UpdateValue("t", "hello\0world");
         Assert.Equal("helloworld", cache.GetValue("t"));

@@ -1,6 +1,6 @@
 @using MqttDashboard.Models
 @using MqttDashboard.Services
-@inject ISignalRService SignalRService
+@inject IMqttPublisher MqttPublisher
 @inherits BaseNodeWithDataWidget<SwitchNodeModel>
 
 <StandardNodeLayout Node="Node" ExtraCssClass="switch-node">
@@ -68,6 +68,6 @@
         var payload = _isOn
             ? (string.IsNullOrEmpty(Node.OffValue) ? "0" : Node.OffValue)
             : (string.IsNullOrEmpty(Node.OnValue)  ? "1" : Node.OnValue);
-        await SignalRService.PublishMessageAsync(publishTopic, payload, Node.Retain, Node.QosLevel);
+        await MqttPublisher.PublishMessageAsync(publishTopic, payload, Node.Retain, Node.QosLevel);
     }
 }

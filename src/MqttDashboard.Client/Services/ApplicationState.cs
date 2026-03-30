@@ -58,14 +58,14 @@ public class ApplicationState
     }
 
     // MQTT State
-    public ISignalRService? SignalRService { get; private set; }
+    public IDataServer? DataServer { get; private set; }
     public List<MqttDataMessage> Messages { get; private set; } = new();
     public HashSet<string> SubscribedTopics { get; private set; } = new();
     public bool IsMqttConnected { get; set; } = false;
     public string MqttConnectionStatus { get; set; } = "Disconnected";
 
     // MQTT Data Cache
-    public ITopicCache DataCache { get; } = new TopicCache();
+    public IDataCache DataCache { get; } = new DataCache();
 
     // Theme & UI preferences
     public ThemeMode ThemeMode { get; private set; } = ThemeMode.Auto;
@@ -519,9 +519,9 @@ public class ApplicationState
     }
 
     // MQTT Methods
-    public void SetSignalRService(ISignalRService service)
+    public void SetDataServer(IDataServer server)
     {
-        SignalRService = service;
+        DataServer = server;
     }
 
     public void SetSubscribedTopics(IEnumerable<string> topics)
