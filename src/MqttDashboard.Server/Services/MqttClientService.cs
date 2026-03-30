@@ -8,7 +8,7 @@ using System.Collections.Concurrent;
 
 namespace MqttDashboard.Server.Services;
 
-public class MqttClientService : BackgroundService
+public class MqttClientService : BackgroundService, IMqttClientService
 {
     private readonly IHubContext<MqttDataHub> _hubContext;
     private readonly ILogger<MqttClientService> _logger;
@@ -18,7 +18,7 @@ public class MqttClientService : BackgroundService
     private IMqttClient? _mqttClient;
     private MqttClientOptions? _mqttOptions;
     private readonly ConcurrentDictionary<string, bool> _subscribedTopics = new();
-    private readonly ConcurrentDictionary<string, string> _lastKnownValues = new();
+    protected readonly ConcurrentDictionary<string, string> _lastKnownValues = new();
     private CancellationToken _stoppingToken;
     private int _isReconnecting = 0; // 0 = false, 1 = true (Interlocked flag)
 
@@ -136,37 +136,7 @@ public class MqttClientService : BackgroundService
 
                 _logger.LogTrace("Received MQTT message on topic {Topic}: {Payload}", topic, payload);
 
-                // Cache the latest value for each topic so reconnecting clients can replay it.
-                _lastKnownValues[topic] = payload;
-
-                var interestedClients = _subscriptionManager.GetInterestedClients(topic);
-
-                _logger.LogTrace("Found {Count} interested clients for topic {Topic}", interestedClients.Count, topic);
-
-                if (interestedClients.Any())
-                {
-                    try
-                    {
-                        await _hubContext.Clients.Clients(interestedClients.ToList())
-                            .SendAsync("ReceiveMqttData", topic, payload, timestamp, stoppingToken);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error sending MQTT message to clients for topic {Topic}", topic);
-                    }
-                }
-                else
-                {
-                    _logger.LogTrace("No interested clients found for topic {Topic}", topic);
-                }
-
-                // Notify in-process subscribers (e.g. ServerSignalRService) regardless of SignalR clients.
-                var inProcessHandler = OnMessagePublished;
-                if (inProcessHandler != null)
-                {
-                    try { await inProcessHandler.Invoke(topic, payload, timestamp); }
-                    catch (Exception ex) { _logger.LogError(ex, "Error notifying in-process subscriber for topic {Topic}", topic); }
-                }
+                await HandleIncomingMessageAsync(topic, payload, timestamp, stoppingToken);
             };
 
             _logger.LogInformation("Attempting to connect to MQTT broker at {Broker}:{Port}...", mqttBroker, mqttPort);
@@ -279,6 +249,45 @@ public class MqttClientService : BackgroundService
         {
             await _mqttClient.UnsubscribeAsync(topic);
             _logger.LogDebug("Unsubscribed from MQTT topic: {Topic}", topic);
+        }
+    }
+
+    /// <summary>
+    /// Processes an incoming MQTT message: caches the value, dispatches to interested
+    /// SignalR clients, and notifies in-process subscribers. Override in test doubles to
+    /// inject fake messages without a real broker.
+    /// </summary>
+    protected virtual async Task HandleIncomingMessageAsync(
+        string topic, string payload, DateTime timestamp, CancellationToken ct = default)
+    {
+        _lastKnownValues[topic] = payload;
+
+        var interestedClients = _subscriptionManager.GetInterestedClients(topic);
+
+        _logger.LogTrace("Found {Count} interested clients for topic {Topic}", interestedClients.Count, topic);
+
+        if (interestedClients.Any())
+        {
+            try
+            {
+                await _hubContext.Clients.Clients(interestedClients.ToList())
+                    .SendAsync("ReceiveMqttData", topic, payload, timestamp, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending MQTT message to clients for topic {Topic}", topic);
+            }
+        }
+        else
+        {
+            _logger.LogTrace("No interested clients found for topic {Topic}", topic);
+        }
+
+        var inProcessHandler = OnMessagePublished;
+        if (inProcessHandler != null)
+        {
+            try { await inProcessHandler.Invoke(topic, payload, timestamp); }
+            catch (Exception ex) { _logger.LogError(ex, "Error notifying in-process subscriber for topic {Topic}", topic); }
         }
     }
 

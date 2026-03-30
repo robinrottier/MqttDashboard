@@ -5,6 +5,99 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
+## 2026-03-28 (batch 3) — AppBar hamburger fix + integration/Playwright test scaffolding
+
+### Commit: (pending) · UTC 2026-03-28 · branch: develop
+
+---
+
+### 1. AppBar hamburger positioning (final fix)
+
+**Problem:** The hamburger menu icon was ~20px from the right edge instead of flush.
+
+**Root cause:** `.mud-toolbar { position:relative }` in MudBlazor internals makes the toolbar div (not the `<header>`) the containing block for absolutely-positioned children. With `Style="padding-right:52px"` on the AppBar `<header>`, the toolbar was 52px narrower than the header, so `right:0` on the absolute child landed 52px from the right of the header.
+
+**Fix:** Changed `.appbar-menu-pin` from `position:absolute; right:0` to `flex-shrink:0; position:relative; z-index:5; padding-left:20px`. This keeps it in the flex flow, always at the trailing end, never shrunk.
+
+Removed `Style="padding-right:52px;"` from `<MudAppBar>` which was the original workaround.
+
+**Files:** `src/MqttDashboard.Client/Layout/MainLayout.razor`, `MainLayout.razor.css`
+
+---
+
+### 2. Mobile two-line title CSS bug (fixed in same pass)
+
+**Problem:** The two-line title layout at `<600px` had never applied because the `@media (max-width:599px)` opening rule was missing from `MainLayout.razor.css`. The styles were parsed as invalid and ignored.
+
+**Fix:** Added the missing `@media` opening line before the mobile `.appbar-title-inner` overrides.
+
+**File:** `src/MqttDashboard.Client/Layout/MainLayout.razor.css`
+
+---
+
+### 3. `IMqttClientService` interface extraction
+
+**Why:** Required for `WebApplicationFactory` DI override in tests — allows `FakeMqttClientService` to replace `MqttClientService` without modifying the rest of the system.
+
+**Changes:**
+- **CREATED** `src/MqttDashboard.Server/Services/IMqttClientService.cs` — `LastKnownValues`, `PublishMessageAsync`
+- `MqttClientService` now implements `IMqttClientService`; `_lastKnownValues` made `protected`; `HandleIncomingMessageAsync` extracted as `protected virtual Task` (the hook for `FakeMqttClientService`)
+- `MqttDataHub` constructor changed from `MqttClientService` to `IMqttClientService`
+- `ServiceCollectionExtensions` registers `IMqttClientService` singleton pointing at `MqttClientService`
+- `WebAppServerOnly/Program.cs` — added `public partial class Program {}` for `WebApplicationFactory<Program>`
+
+---
+
+### 4. `MqttDashboard.IntegrationTests` project
+
+**Path:** `tests/MqttDashboard.IntegrationTests/`
+
+**Two-tier design:**
+- **Tier A** — `FakeMqttClientService` replaces real service; no broker needed; 9 hub tests + 3 API tests
+- **Tier B** — intended in-process MQTTnet broker; skipped (`[Fact(Skip=...)]`) because MQTTnet v5 removed server from main package
+
+**Key files created:**
+- `FakeMqttClientService.cs` — inherits `MqttClientService`, overrides `ExecuteAsync` to no-op, exposes `TriggerIncomingMessageAsync` + `SeedLastKnownValue`
+- `IntegrationWebApplicationFactory.cs` — `WebApplicationFactory<Program>` override; swaps real→fake service; temp data dir (GUID-named)
+- `MqttBrokerIntegrationFactory.cs` — Tier B factory stub
+- `HubConnectionHelper.cs` — creates LongPolling `HubConnection` against TestServer; `WaitForAsync<T>` helpers
+- `InProcessMqttBrokerFixture.cs` — stub (originally used `MQTTnet.Server` which no longer exists in v5)
+- `MqttDataHubTests.cs` — 9 Tier A tests (subscribe, receive, unsubscribe, isolation, cache, count, broker info)
+- `MqttFlowIntegrationTests.cs` — 3 Tier B tests (all skipped with explanation)
+- `DashboardApiTests.cs` — 3 API tests (health check responds, dashboard list 200, default dashboard 200/404)
+- `xunit.runner.json` — disables parallel collection execution (prevents factory startup race conditions)
+
+**Test results:** 12 pass / 3 skip / 0 fail ✓
+
+⚠️ **Tier B caveat:** MQTTnet v5 no longer ships an embedded MQTT server in the main `MQTTnet` NuGet package. To enable Tier B, add the server package (e.g. `MQTTnet.Extensions.Hosting` or similar) and implement `InProcessMqttBrokerFixture.InitializeAsync`.
+
+---
+
+### 5. `MqttDashboard.PlaywrightTests` project
+
+**Path:** `tests/MqttDashboard.PlaywrightTests/`
+
+**Key files created:**
+- `MqttDashboard.PlaywrightTests.csproj` — `Microsoft.Playwright` 1.49.0, references `WebAppServerOnly`
+- `PlaywrightWebAppFixture.cs` — starts server via `dotnet run --project <path>` on random port; polls `/healthz`; initialises Playwright Chromium; exposes `Browser` + `BaseUrl`
+- `HomePageTests.cs` — 3 smoke tests (AppBar header visible, hamburger visible, MQTT icon visible at 1280px)
+- `AppBarTests.cs` — 4 responsive tests (hamburger at 320px, edit toggle at 1024px, edit toggle hidden at 320px, hamburger opens menu)
+
+**Setup required before running:**
+```
+pwsh tests/MqttDashboard.PlaywrightTests/bin/Debug/net10.0/playwright.ps1 install chromium
+```
+
+⚠️ Playwright tests have NOT been run yet — they depend on the server starting successfully via `dotnet run` and Chromium being installed. CSS selectors (`.appbar-menu-pin`, `.toolbar-hide-xs`, `.mud-menu-list`) are based on current markup and may need adjustment after running.
+
+---
+
+### 6. Solution file updated
+
+`MqttDashboard.slnx` — added both new test projects under `/tests/` folder.
+
+---
+
 ## 2026-03-28 (batch 2) — Gauge arc fix, auto-save server-side, appsettings defaults
 
 ### Commit: (see git log) · UTC 2026-03-28 · branch: develop

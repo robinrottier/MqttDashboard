@@ -8,6 +8,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Integration test project** (`MqttDashboard.IntegrationTests`) — 12 server-side integration tests using `WebApplicationFactory` and a real `SignalR.Client.HubConnection`. Covers the full MQTT→SignalR data path with a `FakeMqttClientService` (no broker needed): hub connect/subscribe/receive/unsubscribe, per-client topic isolation, cached-value query, broker info, client count. Plus REST API smoke tests (health check, dashboard list, default dashboard GET). 3 Tier-B tests (real in-process broker) are scaffolded and skipped pending a MQTTnet server package addition.
+- **Playwright UI test project** (`MqttDashboard.PlaywrightTests`) — headless Chromium E2E tests via `PlaywrightWebAppFixture` (starts server via `dotnet run`). Covers: home page load/title/MQTT icon, hamburger always visible at narrow viewport (320px), edit toggle hidden at narrow width, edit toggle visible at desktop, hamburger menu opens on click.
+- **`IMqttClientService` interface** — extracted from `MqttClientService`; `MqttDataHub` now depends on the interface, not the concrete class. Required for test-double injection.
+
+### Fixed
+- **AppBar hamburger position** — removed `position:absolute` from `.appbar-menu-pin`; now uses `flex-shrink:0` so it stays in-flow and flush to the right edge at all widths.
+- **Mobile two-line title CSS** — missing `@media (max-width:599px)` opening bracket caused mobile title overrides to never apply.
+
+### Added
 - **Auto-save on exit edit mode** — new Options menu item "Auto-save on Exit" (visible while in edit mode). When enabled, exiting edit mode saves automatically without prompting. Setting is system-wide, persisted server-side in `appsettings.user.json` (`App:AutoSaveOnExit`). Loaded from server on every page load.
 - **Edit mode and login/logout in Options menu** — always accessible from the hamburger menu regardless of screen width. "Edit Mode" toggles edit mode with a checkmark indicator; "Logout" / "Login as Admin" appear when auth is configured.
 - **Theme preference persisted** — selected theme (Light/Dark/Auto) is now saved to localStorage and restored on page load.

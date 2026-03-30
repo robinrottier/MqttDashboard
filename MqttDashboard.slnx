@@ -42,6 +42,8 @@
   <Folder Name="/tests/">
     <Project Path="tests/MqttDashboard.Client.Tests/MqttDashboard.Client.Tests.csproj" />
     <Project Path="tests/MqttDashboard.Server.Tests/MqttDashboard.Server.Tests.csproj" />
+    <Project Path="tests/MqttDashboard.IntegrationTests/MqttDashboard.IntegrationTests.csproj" />
+    <Project Path="tests/MqttDashboard.PlaywrightTests/MqttDashboard.PlaywrightTests.csproj" />
   </Folder>
   <Folder Name="/src/">
     <File Path="src/Directory.Build.props" />
