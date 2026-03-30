@@ -13,6 +13,7 @@ public class MqttDataHub : Hub
     private readonly MqttConnectionMonitor _connectionMonitor;
     private readonly ClientConnectionTracker _connectionTracker;
     private readonly IMqttClientService _mqttClientService;
+    private readonly ServerDataCache _serverDataCache;
 
     public MqttDataHub(
         MqttTopicSubscriptionManager subscriptionManager,
@@ -20,7 +21,8 @@ public class MqttDataHub : Hub
         IConfiguration configuration,
         MqttConnectionMonitor connectionMonitor,
         ClientConnectionTracker connectionTracker,
-        IMqttClientService mqttClientService)
+        IMqttClientService mqttClientService,
+        ServerDataCache serverDataCache)
     {
         _subscriptionManager = subscriptionManager;
         _logger = logger;
@@ -28,6 +30,7 @@ public class MqttDataHub : Hub
         _connectionMonitor = connectionMonitor;
         _connectionTracker = connectionTracker;
         _mqttClientService = mqttClientService;
+        _serverDataCache = serverDataCache;
     }
 
     public async Task SubscribeToTopic(string topic)
@@ -81,10 +84,10 @@ public class MqttDataHub : Hub
     public Task<Dictionary<string, string>> GetCurrentValuesForTopics(List<string> requestedFilters)
     {
         var result = new Dictionary<string, string>();
-        foreach (var kvp in _mqttClientService.LastKnownValues)
+        foreach (var filter in requestedFilters)
         {
-            if (requestedFilters.Any(filter => _subscriptionManager.TopicMatchesFilter(filter, kvp.Key)))
-                result[kvp.Key] = kvp.Value;
+            foreach (var kvp in _serverDataCache.GetValuesByPattern(filter))
+                result[kvp.Key] = kvp.Value?.ToString() ?? string.Empty;
         }
         return Task.FromResult(result);
     }

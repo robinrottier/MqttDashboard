@@ -39,11 +39,21 @@ public static class ServiceCollectionExtensions
         // Register a scoped HttpClient for use in Blazor components (server-side rendering)
         services.AddScoped<HttpClient>(sp => CreateLoopbackHttpClient(sp));
 
-        // Add in-process data server for server-side (no HTTP loopback)
-        services.AddScoped<InProcessDataServer>();
-        services.AddScoped<IDataServer>(sp => sp.GetRequiredService<InProcessDataServer>());
-        services.AddScoped<IMqttPublisher>(sp => sp.GetRequiredService<InProcessDataServer>());
-        services.AddScoped<IMqttDiagnostics>(sp => sp.GetRequiredService<InProcessDataServer>());
+        // Singleton MQTT data server — feeds ALL incoming messages into ServerDataCache.
+        // Also implements IMqttPublisher and IMqttDiagnostics for the server.
+        services.AddSingleton<MqttDataServer>();
+        services.AddSingleton<IMqttPublisher>(sp => sp.GetRequiredService<MqttDataServer>());
+        services.AddSingleton<IMqttDiagnostics>(sp => sp.GetRequiredService<MqttDataServer>());
+
+        // Singleton server-side DataCache — accumulates every MQTT value; shared by all circuits.
+        services.AddSingleton<ServerDataCache>();
+
+        // Scoped per-circuit IDataServer: bridges the circuit's local DataCache to ServerDataCache.
+        // Status and reconnect events are forwarded from the singleton MqttDataServer.
+        services.AddScoped<CacheBridgeDataServer>(sp => new CacheBridgeDataServer(
+            sp.GetRequiredService<ServerDataCache>(),
+            sp.GetRequiredService<MqttDataServer>()));
+        services.AddScoped<IDataServer>(sp => sp.GetRequiredService<CacheBridgeDataServer>());
 
         // Add DashboardService for server-side (in-process, no loopback HTTP)
         services.AddScoped<IDashboardService, ServerDashboardService>();

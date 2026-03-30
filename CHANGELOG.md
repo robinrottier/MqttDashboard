@@ -8,6 +8,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **`CacheBridgeDataServer`** (`MqttDashboard.Data`) — pure-C# `IDataServer` bridge that subscribes to an upstream `IDataCache` and forwards data/status events downstream. Enables layered in-process data pipelines without transport dependencies.
+- **`MqttDataServer`** (Server) — singleton `IDataServer` + `IMqttPublisher` + `IMqttDiagnostics`; hooks `MqttClientService` events and feeds all MQTT data into `ServerDataCache`. Replaces `InProcessDataServer`.
+- **`ServerDataCache`** (Server) — singleton `DataCache` that accumulates all MQTT values for the entire server process; shared across all Blazor Server circuits. `MqttDataHub` now reads current values from here.
+- 12 new unit tests for `CacheBridgeDataServer` (added Moq to `Data.Tests` project).
+
+### Changed
+- Blazor Server circuits now receive MQTT data from `ServerDataCache` via `CacheBridgeDataServer` rather than each circuit independently hooking `MqttClientService.OnMessagePublished`. Widgets see cached values immediately on mount without waiting for the next broker message.
+- `MqttDataHub.GetCurrentValuesForTopics` reads from `ServerDataCache` instead of `IMqttClientService.LastKnownValues`.
+
+### Removed
+- **`InProcessDataServer`** — replaced by `MqttDataServer` (singleton) + `CacheBridgeDataServer` (scoped).
+
+### Added
 - **`MqttDashboard.Data` project** — new pure-C# library (`net10.0`, no Blazor/ASP.NET/MQTT deps) holding the topic pub/sub infrastructure. Contains `IDataCache`, `DataCache`, `IDataServer`, `TopicMatcher`, and `XmlPayloadHelper`. Enables future non-Blazor hosting and isolated unit testing.
 - **`IDataServer` interface** — upstream data-provider contract; implementations notify the cache of new values, reconnection, and status changes. Cache calls `SubscribeAsync`/`UnsubscribeAsync` demand-driven (first/last subscriber).
 - **`SignalRDataServer`** (Client) — implements `IDataServer`, `IMqttPublisher`, `IMqttDiagnostics`; replaces the old `SignalRService`.

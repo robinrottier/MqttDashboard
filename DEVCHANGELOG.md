@@ -5,9 +5,109 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
-## 2026-03-30 (batch 5 / FEAT-H Phase 2) — IDataCache/IDataServer refactor, replace ISignalRService
+## 2026-03-30 (batch 6 / FEAT-H Phase 3) — Server-side DataCache + CacheBridgeDataServer
 
 ### Branch: feature/feat-h-data-layer
+### Parent commit: 3639824 (2026-03-30 23:07 UTC)
+
+### Summary
+
+Added a singleton `ServerDataCache` on the server that accumulates ALL MQTT values for the entire server process, and a pure-C# `CacheBridgeDataServer` that lets any per-circuit `DataCache` subscribe to another `IDataCache` as its upstream data source. Each Blazor Server circuit now gets data from the shared cache rather than independently wiring to `MqttClientService.OnMessagePublished`.
+
+---
+
+### 1. `CacheBridgeDataServer` — `src/MqttDashboard.Data/CacheBridgeDataServer.cs` (new)
+
+Implements `IDataServer`. Takes an upstream `IDataCache` and an optional `IDataServer` status source.
+
+- `SubscribeAsync(topic)` → `upstream.Subscribe(topic, callback)`, stores `IDisposable` handle keyed by topic. **Idempotent** — same topic twice is a no-op on the second call.
+- `UnsubscribeAsync(topic)` → disposes the stored handle, removes it from the map.
+- `StartAsync()` → wires `_statusSource.StatusChanged` and `_statusSource.Reconnected` event forwarding, then calls `_statusSource.StartAsync()`. The last call causes the status source to re-fire its current MQTT status — seeding each circuit's connection indicator without a separate query mechanism.
+- `DisposeAsync()` → unregisters event handlers from the status source; disposes all upstream subscription handles.
+
+Lives in `MqttDashboard.Data` (no server-side references). Tested by 12 new unit tests.
+
+---
+
+### 2. `MqttDataServer` — `src/MqttDashboard.Server/Services/MqttDataServer.cs` (new)
+
+Singleton `IDataServer` + `IMqttPublisher` + `IMqttDiagnostics`.
+
+- **Event wiring in constructor** (singleton lifetime = app lifetime, no lifecycle issues).
+  - `MqttClientService.OnMessagePublished` → fires `ValueUpdated` for **all** messages (no per-circuit filtering; `DataCache.NotifyWatchers` does topic matching).
+  - `MqttConnectionMonitor.OnStateChanged` → fires `StatusChanged` / `Reconnected`.
+- `StartAsync()` → re-fires current MQTT status to all current `StatusChanged` handlers. Called once per new circuit via `CacheBridgeDataServer.StartAsync()`. Idempotent.
+- `SubscribeAsync(topic)` → calls `MqttTopicSubscriptionManager.SubscribeClientToTopicAsync("server-data-cache", topic)`. Uses the existing subscription manager so broker-level subscribe/unsubscribe ref-counts are shared with hub browser-clients — no double-subscribe at the broker.
+- `UnsubscribeAsync(topic)` → `SubscriptionManager.UnsubscribeClientFromTopicAsync(...)`.
+- `PublishMessageAsync` / diagnostics delegate to `MqttClientService` / `MqttConnectionMonitor`.
+
+Replaces the per-circuit `InProcessDataServer`. No `_connectionId` per circuit — a single stable `"server-data-cache"` ID.
+
+---
+
+### 3. `ServerDataCache` — `src/MqttDashboard.Server/Services/ServerDataCache.cs` (new)
+
+Singleton subclass of `DataCache`. Constructor takes `MqttDataServer` and calls `RegisterServer(mqttDataServer)` — wires `ValueUpdated` and `Reconnected` events automatically.
+
+Acts as the authoritative in-memory value store for all MQTT topics on the server. `MqttDataHub.GetCurrentValuesForTopics` now reads from here instead of `IMqttClientService.LastKnownValues`.
+
+---
+
+### 4. `InProcessDataServer` — deleted
+
+`src/MqttDashboard.Server/Services/InProcessDataServer.cs` removed. Replaced by `CacheBridgeDataServer` (scoped `IDataServer`) + `MqttDataServer` (singleton status/publish/diagnostics).
+
+---
+
+### 5. `ServiceCollectionExtensions.cs` — updated DI
+
+Old scoped `InProcessDataServer` registrations removed. New registrations:
+
+```csharp
+// Singletons
+services.AddSingleton<MqttDataServer>();
+services.AddSingleton<IMqttPublisher>(sp => sp.GetRequiredService<MqttDataServer>());
+services.AddSingleton<IMqttDiagnostics>(sp => sp.GetRequiredService<MqttDataServer>());
+services.AddSingleton<ServerDataCache>();
+
+// Scoped per-circuit
+services.AddScoped<CacheBridgeDataServer>(sp => new CacheBridgeDataServer(
+    sp.GetRequiredService<ServerDataCache>(),
+    sp.GetRequiredService<MqttDataServer>()));
+services.AddScoped<IDataServer>(sp => sp.GetRequiredService<CacheBridgeDataServer>());
+```
+
+---
+
+### 6. `MqttDataHub` — reads from `ServerDataCache`
+
+`GetCurrentValuesForTopics` now iterates over `ServerDataCache.GetValuesByPattern(filter)` for each requested filter, replacing the old `IMqttClientService.LastKnownValues` iteration. Hub still uses `MqttTopicSubscriptionManager` for browser-client topic tracking (full hub migration is a future phase).
+
+---
+
+### 7. `CacheBridgeDataServerTests.cs` — 12 new tests in `MqttDashboard.Data.Tests`
+
+Added Moq package reference to `MqttDashboard.Data.Tests.csproj`. Tests cover:
+- `SubscribeAsync` triggers `ValueUpdated` when upstream updates
+- Idempotency of double-subscribe
+- `UnsubscribeAsync` stops notifications
+- `DisposeAsync` cleans up all handles
+- `StatusChanged` and `Reconnected` forwarding from status source
+- `StartAsync` calls `statusSource.StartAsync`
+- No status source — no throw
+- Integration test: full round-trip with `DataCache.RegisterServer(bridge)`
+
+**Test count: 25 Data + 9 Server + 5 Client = 39 total. All passing.**
+
+---
+
+### ⚠️ Caveats / known remaining issues
+
+- `IMqttClientService.LastKnownValues` is still on the interface and implemented in `MqttClientService`, but `MqttDataHub` no longer reads it. It can be removed in a cleanup phase.
+- `MqttTopicSubscriptionManager` is still used by `MqttDataHub` for WASM browser-client topic tracking. A future phase will migrate the hub to subscribe to `ServerDataCache` directly, removing the need for the subscription manager.
+- Because `MqttDataServer.ValueUpdated` fires for ALL messages (not filtered), the `ServerDataCache.NotifyWatchers` may iterate topics with no subscribers — this is a tiny amount of extra work and is harmless.
+
+
 
 Phase 2 of the FEAT-H data layer refactor. Renames `ITopicCache`/`Watch()` to `IDataCache`/`Subscribe()`,
 introduces `IDataServer` as a demand-driven upstream provider, and replaces `ISignalRService` with
