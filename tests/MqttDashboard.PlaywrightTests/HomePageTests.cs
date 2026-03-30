@@ -4,6 +4,7 @@ namespace MqttDashboard.PlaywrightTests;
 
 /// <summary>
 /// Smoke tests: verifies the home page loads and key toolbar elements are present.
+/// Also verifies the server log is clean (no unexpected errors beyond known MQTT warnings).
 /// </summary>
 public class HomePageTests : IClassFixture<PlaywrightWebAppFixture>
 {
@@ -71,4 +72,37 @@ public class HomePageTests : IClassFixture<PlaywrightWebAppFixture>
         }
         finally { await page.CloseAsync(); }
     }
+
+    /// <summary>
+    /// After loading the page, the server log must not contain any [ERR] lines beyond
+    /// the expected MQTT-connection-refused warnings (there is intentionally no broker).
+    /// This catches unhandled exceptions, middleware errors, and missing static assets.
+    /// </summary>
+    [Fact]
+    public async Task ServerLog_HasNoUnexpectedErrors()
+    {
+        // Trigger a page load so the server handles at least one real request.
+        var page = await NewPageAsync();
+        try
+        {
+            await page.GotoAsync(_fixture.BaseUrl, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
+            await page.Locator("header.mud-appbar").WaitForAsync(new LocatorWaitForOptions { Timeout = 15_000 });
+        }
+        finally { await page.CloseAsync(); }
+
+        var log = _fixture.ServerLog;
+        var errorLines = log
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Where(line => line.Contains("[ERR]", StringComparison.OrdinalIgnoreCase))
+            // Expected: MQTT can't connect to the intentionally-absent broker.
+            .Where(line => !line.Contains("MqttClientService", StringComparison.OrdinalIgnoreCase)
+                        && !line.Contains("MqttCommunicationException", StringComparison.OrdinalIgnoreCase)
+                        && !line.Contains("SocketException", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        Assert.True(
+            errorLines.Count == 0,
+            $"Unexpected [ERR] lines in server log:\n{string.Join('\n', errorLines)}\n\n--- Full server log ---\n{log}");
+    }
 }
+

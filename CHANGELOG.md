@@ -8,10 +8,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
-- **Playwright E2E tests** — all 7 tests now pass. Fixed three root causes: (1) server process stdout/stderr pipe buffer deadlock (Kestrel blocked writing logs, blocking HTTP responses); (2) static web assets (`MudBlazor.min.css`, `blazor.web.js`, etc.) returning 500 in `Test` environment — now explicitly enabled via `UseStaticWebAssets()` for non-Development/non-Production environments; (3) HTTPS redirect middleware running in Test env against an HTTP-only server.
+- **`/healthz` probe in Playwright fixture** — now uses `?ignoreMqtt` so probe returns 200 (not 503) when broker absent; fixture fails immediately on unexpected non-2xx (no 60s timeout).
 
 ### Changed
-- **HTTPS redirect and HSTS** now only applied in `Production` environment (was: all non-Development). This prevents redirect issues when running under `ASPNETCORE_ENVIRONMENT=Test` (used by Playwright and integration tests).
+- **`/healthz` endpoint** — replaced `MapHealthChecks` with a custom minimal API. Adds `?ignoreMqtt` query param that skips the MQTT check and always returns 200. Full check still returns 503 when MQTT is disconnected. Response body now includes per-check JSON details.
+- **Server log capture** — Playwright fixture now captures server stdout/stderr using async `BeginOutputReadLine` (no pipe-buffer risk). `ServerLog` property exposed for assertions.
+
+### Added
+- **`ServerLog_HasNoUnexpectedErrors` Playwright test** — asserts no unexpected `[ERR]` lines after a page load (whitelists known MQTT-connection-refused warnings).
 
 ### Added
 - **Integration test project** (`MqttDashboard.IntegrationTests`) — 12 server-side integration tests using `WebApplicationFactory` and a real `SignalR.Client.HubConnection`. Covers the full MQTT→SignalR data path with a `FakeMqttClientService` (no broker needed): hub connect/subscribe/receive/unsubscribe, per-client topic isolation, cached-value query, broker info, client count. Plus REST API smoke tests (health check, dashboard list, default dashboard GET). 3 Tier-B tests (real in-process broker) are scaffolded and skipped pending a MQTTnet server package addition.

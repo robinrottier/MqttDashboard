@@ -13,19 +13,36 @@ public class DashboardApiTests : IClassFixture<IntegrationWebApplicationFactory>
         _client = factory.CreateClient();
     }
 
+    // ── Health check ──────────────────────────────────────────────────────────
+
     [Fact]
-    public async Task HealthCheck_ReturnsResponse()
+    public async Task HealthCheck_WithMqttDisconnected_Returns503()
     {
-        // Health check returns 200 (healthy) or 503 (degraded/unhealthy due to no MQTT broker in tests).
-        // Either way, the endpoint must respond — not 404.
+        // The fake MQTT service reports "disconnected", so the full health check must be 503.
         var response = await _client.GetAsync("/healthz");
-        Assert.NotEqual(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+
+        // Body should include per-check status
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("mqtt", body, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public async Task HealthCheck_IgnoreMqtt_Returns200()
+    {
+        // ?ignoreMqtt skips the MQTT check — the web server itself is healthy.
+        var response = await _client.GetAsync("/healthz?ignoreMqtt");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("Healthy", body);
+    }
+
+    // ── Dashboard API ─────────────────────────────────────────────────────────
 
     [Fact]
     public async Task GetDashboardList_Returns200()
     {
-        // Route: GET /api/dashboard/list
         var response = await _client.GetAsync("/api/dashboard/list");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -33,7 +50,6 @@ public class DashboardApiTests : IClassFixture<IntegrationWebApplicationFactory>
     [Fact]
     public async Task GetDefaultDashboard_Returns200OrNotFound()
     {
-        // Route: GET /api/dashboard — returns 200 with content, or 404 if no dashboard saved yet.
         var response = await _client.GetAsync("/api/dashboard");
         Assert.True(
             response.StatusCode == HttpStatusCode.OK || response.StatusCode == HttpStatusCode.NotFound,

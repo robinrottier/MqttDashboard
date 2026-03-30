@@ -5,6 +5,62 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
+## 2026-03-30 (batch 2) — /healthz improvements + server log capture
+
+### Commit: (pending) · UTC 2026-03-30 · branch: develop
+
+#### 1. Custom `/healthz` endpoint with `ignoreMqtt` parameter
+
+Replaced `app.MapHealthChecks("/healthz")` (fixed behaviour) with a minimal API endpoint.
+
+- `GET /healthz` — full check; 200 when healthy, 503 when MQTT disconnected. Returns JSON body
+  with `{ status, checks: [{ name, status, description }] }`.
+- `GET /healthz?ignoreMqtt` — filters out the `mqtt` check entirely using
+  `HealthCheckService.CheckHealthAsync(predicate)`. Always 200 as long as the web process is up.
+  Used by the Playwright startup probe and any container liveness check that runs before a broker
+  is configured.
+
+#### 2. `PlaywrightWebAppFixture` — async server log capture
+
+Re-enabled `RedirectStandardOutput/Error = true`, but now uses `BeginOutputReadLine` /
+`BeginErrorReadLine` (async event-based reading). Output is appended to a `StringBuilder` under
+a lock, so the OS pipe buffer never fills and the server never blocks. Exposes `ServerLog`
+property for assertions.
+
+`WaitForServerAsync` updated to use `/healthz?ignoreMqtt` probe URL. Behaviour:
+- `HttpRequestException` (connection refused) → keep polling — server not up yet.
+- `TaskCanceledException` (request timed out) → keep polling.
+- Non-2xx HTTP response → **fail immediately** with status code + body + server log so far.
+  No more waiting 60 s when the server is up but broken.
+- 2xx → server ready, proceed.
+- Process exited → fail with server log.
+
+#### 3. Integration test: precise health check assertions
+
+`DashboardApiTests.HealthCheck_ReturnsResponse()` (vague — accepted 503) replaced with two
+specific tests:
+- `HealthCheck_WithMqttDisconnected_Returns503` — asserts 503 + body contains "mqtt".
+- `HealthCheck_IgnoreMqtt_Returns200` — asserts 200 + body contains "Healthy".
+
+Integration tests: **13 pass / 3 skip** (was 12/3).
+
+#### 4. Playwright test: server log clean-check
+
+`HomePageTests.ServerLog_HasNoUnexpectedErrors` — loads the home page, then scans `ServerLog`
+for `[ERR]` lines. Whitelists known-OK MQTT connection-refused warnings. Fails with the full
+server log if any unexpected errors are found. This catches things like missing static assets,
+unhandled exceptions in middleware, etc.
+
+Playwright tests: **8/8 pass** (was 7/7).
+
+#### Files changed
+- `src/MqttDashboard.Server/Extensions/WebApplicationExtensions.cs` — custom `/healthz` minimal API
+- `tests/MqttDashboard.IntegrationTests/DashboardApiTests.cs` — precise health check tests
+- `tests/MqttDashboard.PlaywrightTests/PlaywrightWebAppFixture.cs` — async log capture, smarter probe
+- `tests/MqttDashboard.PlaywrightTests/HomePageTests.cs` — `ServerLog_HasNoUnexpectedErrors` test
+
+---
+
 ## 2026-03-30 — Playwright E2E tests fixed (all 7 pass)
 
 ### Commit: (pending) · UTC 2026-03-30 · branch: develop
