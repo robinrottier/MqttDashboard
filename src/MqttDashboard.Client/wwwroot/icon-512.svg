@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <rect width="100%" height="100%" fill="#ffffff" opacity="0" />
-  <circle cx="128" cy="128" r="40" fill="#594ae2" />
-  <circle cx="384" cy="128" r="40" fill="#594ae2" />
-  <circle cx="256" cy="384" r="40" fill="#594ae2" />
-  <line x1="208" y1="128" x2="256" y2="384" stroke="#594ae2" stroke-width="12" stroke-linecap="round" />
-  <line x1="256" y1="384" x2="304" y2="128" stroke="#594ae2" stroke-width="12" stroke-linecap="round" />
+  <!-- rotated square flow-chart icon (90deg) -->
+  <rect x="85.3333" y="341.3333" width="85.3333" height="85.3333" fill="#594ae2" />
+  <rect x="341.3333" y="341.3333" width="85.3333" height="85.3333" fill="#594ae2" />
+  <rect x="170.6667" y="21.3333" width="85.3333" height="85.3333" fill="#594ae2" />
+  <line x1="170.6667" y1="384" x2="256" y2="21.3333" stroke="#594ae2" stroke-width="24" stroke-linecap="round" />
+  <line x1="256" y1="21.3333" x2="426.6667" y2="384" stroke="#594ae2" stroke-width="24" stroke-linecap="round" />
 </svg>
