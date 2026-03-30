@@ -6,6 +6,7 @@ namespace MqttDashboard.PlaywrightTests;
 /// Smoke tests: verifies the home page loads and key toolbar elements are present.
 /// Also verifies the server log is clean (no unexpected errors beyond known MQTT warnings).
 /// </summary>
+[Trait("Category","Playwright")]
 public class HomePageTests : IClassFixture<PlaywrightWebAppFixture>
 {
     private readonly PlaywrightWebAppFixture _fixture;

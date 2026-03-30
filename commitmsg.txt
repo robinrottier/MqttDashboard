@@ -1,0 +1,6 @@
+test: mark Playwright tests with Category trait and add runsettings to exclude them by default
+
+- Add [Trait("Category","Playwright")] to Playwright test classes so they can be filtered.
+- Add MqttDashboard.runsettings with TestCaseFilter to exclude Playwright by default in Test Explorer.
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>

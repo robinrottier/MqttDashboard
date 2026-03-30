@@ -6,6 +6,7 @@ namespace MqttDashboard.PlaywrightTests;
 /// Tests the responsive AppBar behaviour at different viewport widths.
 /// Covers hamburger visibility, edit-toggle hide/show, and menu opening.
 /// </summary>
+[Trait("Category","Playwright")]
 public class AppBarTests : IClassFixture<PlaywrightWebAppFixture>
 {
     private readonly PlaywrightWebAppFixture _fixture;
