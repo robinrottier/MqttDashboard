@@ -1,4 +1,11 @@
 
+/* Prevent body-level scrollbar — MudMainContent handles its own internal scrolling.
+   Without this a tiny overflow (~8px from pa-2 bottom padding) shows a spurious scrollbar. */
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
 /* Move nested MudMenu submenu expand arrow to the left of the label */
 .mud-list-item-icon {
     order: -1;
