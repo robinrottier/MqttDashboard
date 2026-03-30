@@ -80,15 +80,17 @@ jobs:
         run: dotnet workload install wasm-tools
 
       - name: Build (Playwright project)
-        run: dotnet build tests/MqttDashboard.PlaywrightTests/MqttDashboard.PlaywrightTests.csproj -c Release
+        # Use default (Debug) configuration — dotnet run --no-build in the fixture
+        # defaults to Debug, so the build and run configuration must match.
+        run: dotnet build tests/MqttDashboard.PlaywrightTests/MqttDashboard.PlaywrightTests.csproj
 
       - name: Install Playwright browsers
-        run: pwsh tests/MqttDashboard.PlaywrightTests/bin/Release/net10.0/playwright.ps1 install chromium --with-deps
+        run: pwsh tests/MqttDashboard.PlaywrightTests/bin/Debug/net10.0/playwright.ps1 install chromium --with-deps
 
       - name: E2E tests
         run: |
           dotnet test tests/MqttDashboard.PlaywrightTests/MqttDashboard.PlaywrightTests.csproj \
-            -c Release --no-build --verbosity normal
+            --no-build --verbosity normal
 
       - name: Upload Playwright traces on failure
         if: failure()
