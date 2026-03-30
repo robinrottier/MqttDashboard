@@ -91,3 +91,6 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+// Expose Program for WebApplicationFactory<Program> in integration/Playwright tests.
+public partial class Program { }

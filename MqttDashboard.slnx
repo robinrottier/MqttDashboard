@@ -29,6 +29,7 @@
     <File Path="scripts/clean_and_build.bat" />
     <File Path="scripts/docker-build.ps1" />
     <File Path="scripts/docker-build.sh" />
+    <File Path="scripts/Generate-Icons.ps1" />
     <File Path="scripts/publish.ps1" />
     <File Path="scripts/publish.sh" />
     <File Path="scripts/test-publish.cmd" />
@@ -41,12 +42,15 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/MqttDashboard.Client.Tests/MqttDashboard.Client.Tests.csproj" />
+    <Project Path="tests/MqttDashboard.IntegrationTests/MqttDashboard.IntegrationTests.csproj" />
+    <Project Path="tests/MqttDashboard.PlaywrightTests/MqttDashboard.PlaywrightTests.csproj" />
     <Project Path="tests/MqttDashboard.Server.Tests/MqttDashboard.Server.Tests.csproj" />
   </Folder>
   <Folder Name="/src/">
     <File Path="src/Directory.Build.props" />
     <Project Path="src/MqttDashboard.Client/MqttDashboard.Client.csproj" />
     <Project Path="src/MqttDashboard.Server/MqttDashboard.Server.csproj" />
+    <Project Path="src/MqttDashboard.SourceGenerators/MqttDashboard.SourceGenerators.csproj" />
   </Folder>
   <Folder Name="/src/WebApp/">
     <Project Path="src/MqttDashboard.WebApp/MqttDashboard.WebApp.Client/MqttDashboard.WebApp.Client.csproj" />

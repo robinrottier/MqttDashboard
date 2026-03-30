@@ -23,6 +23,8 @@ public static class ServiceCollectionExtensions
         // Register MqttClientService as both a singleton (injectable) and a hosted service.
         services.AddSingleton<MqttClientService>();
         services.AddHostedService(sp => sp.GetRequiredService<MqttClientService>());
+        // Also register as the interface so hubs and tests can inject IMqttClientService.
+        services.AddSingleton<IMqttClientService>(sp => sp.GetRequiredService<MqttClientService>());
 
         // Add Diagram Storage Service
         services.AddSingleton<DashboardStorageService>();

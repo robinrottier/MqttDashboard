@@ -7,6 +7,32 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- **`/healthz` probe in Playwright fixture** — now uses `?ignoreMqtt` so probe returns 200 (not 503) when broker absent; fixture fails immediately on unexpected non-2xx (no 60s timeout).
+
+### Changed
+- **`/healthz` endpoint** — replaced `MapHealthChecks` with a custom minimal API. Adds `?ignoreMqtt` query param that skips the MQTT check and always returns 200. Full check still returns 503 when MQTT is disconnected. Response body now includes per-check JSON details.
+- **Server log capture** — Playwright fixture now captures server stdout/stderr using async `BeginOutputReadLine` (no pipe-buffer risk). `ServerLog` property exposed for assertions.
+
+### Added
+- **Custom app icon** — new flow-chart SVG icon (`mqttdashboard-icon.svg`) with three squares connected by lines. Replaces the Material `AccountTree` icon in the AppBar title and the placeholder circles in the PWA manifest.
+- **PWA icons consolidated** — `manifest.webmanifest`, `icon-192.png`, and `icon-512.png` are now in the `MqttDashboard.Client` RCL (`wwwroot/`) rather than duplicated in each host project.
+- **Automatic PNG icon generation** — MSBuild target in `MqttDashboard.Client.csproj` regenerates `icon-192.png` and `icon-512.png` from the SVG source whenever the SVG is modified (incremental; requires `pwsh`).
+- **Roslyn source generator for icon constant** — `AppIcons.MqttDashboard` (inner SVG elements as a C# string for MudBlazor `Icon` parameter) is now generated at compile time from the SVG source via `MqttDashboard.SourceGenerators`. No committed generated file; updating the SVG and rebuilding is all that's needed.
+- **Test category filtering** — Playwright tests are tagged `[Trait("Category","Playwright")]`; `MqttDashboard.runsettings` excludes them by default in VS Test Explorer so fast tests run without waiting for browser startup.
+
+### Added
+- **`ServerLog_HasNoUnexpectedErrors` Playwright test** — asserts no unexpected `[ERR]` lines after a page load (whitelists known MQTT-connection-refused warnings).
+
+### Added
+- **Integration test project** (`MqttDashboard.IntegrationTests`) — 12 server-side integration tests using `WebApplicationFactory` and a real `SignalR.Client.HubConnection`. Covers the full MQTT→SignalR data path with a `FakeMqttClientService` (no broker needed): hub connect/subscribe/receive/unsubscribe, per-client topic isolation, cached-value query, broker info, client count. Plus REST API smoke tests (health check, dashboard list, default dashboard GET). 3 Tier-B tests (real in-process broker) are scaffolded and skipped pending a MQTTnet server package addition.
+- **Playwright UI test project** (`MqttDashboard.PlaywrightTests`) — headless Chromium E2E tests via `PlaywrightWebAppFixture` (starts server via `dotnet run`). Covers: home page load/title/MQTT icon, hamburger always visible at narrow viewport (320px), edit toggle hidden at narrow width, edit toggle visible at desktop, hamburger menu opens on click.
+- **`IMqttClientService` interface** — extracted from `MqttClientService`; `MqttDataHub` now depends on the interface, not the concrete class. Required for test-double injection.
+
+### Fixed
+- **AppBar hamburger position** — removed `position:absolute` from `.appbar-menu-pin`; now uses `flex-shrink:0` so it stays in-flow and flush to the right edge at all widths.
+- **Mobile two-line title CSS** — missing `@media (max-width:599px)` opening bracket caused mobile title overrides to never apply.
+
 ### Added
 - **PWA / Web App Manifest** — added `manifest.webmanifest` to both host projects. Firefox (and Chrome/Edge) will show an "Install as app" prompt; once installed the app opens in standalone mode without browser chrome (no address bar, menus). Includes `favicon.png`, `icon-192.png`, and `icon-512.png` icons.
 - **Favicon on main WebApp host** — the primary `WebApp` project now has a `wwwroot/` folder serving `favicon.png` (was missing; the ServerOnly host already had one).

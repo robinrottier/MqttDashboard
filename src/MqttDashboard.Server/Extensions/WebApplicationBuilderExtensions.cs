@@ -1,6 +1,7 @@
 using MqttDashboard.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MqttDashboard.Server.Extensions;
@@ -102,6 +103,15 @@ public static class WebApplicationBuilderExtensions
         {
             IsWasmCapable = renderMode is BlazorRenderMode.InteractiveAuto or BlazorRenderMode.InteractiveWebAssembly
         });
+
+        // In Development mode, WebApplication.CreateBuilder() calls UseStaticWebAssets()
+        // automatically. For other non-production environments (e.g. "Test"), call it
+        // explicitly so that RCL static assets (MudBlazor CSS/JS, Blazor framework scripts,
+        // etc.) are served from the build manifest rather than requiring a publish.
+        var envName = builder.Environment.EnvironmentName;
+        if (!string.Equals(envName, "Development", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(envName, "Production", StringComparison.OrdinalIgnoreCase))
+            builder.WebHost.UseStaticWebAssets();
 
         // Add core services
         builder.Services.AddMqttDashboardServices();

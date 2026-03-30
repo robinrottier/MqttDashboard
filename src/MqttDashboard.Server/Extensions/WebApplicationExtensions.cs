@@ -1,10 +1,12 @@
 using MqttDashboard.Server.Hubs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 
 namespace MqttDashboard.Server.Extensions;
@@ -84,16 +86,16 @@ public static class WebApplicationExtensions
                 app.UseWebAssemblyDebugging();
             }
         }
-        else
+        else if (app.Environment.IsProduction())
         {
             app.UseExceptionHandler("/Error", createScopeForErrors: true);
             app.UseHsts();
         }
 
-        // Optional: Enable status code pages for not found routes
-        // app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-
-        app.UseHttpsRedirection();
+        // Redirect to HTTPS in production/staging; skip in development and test
+        // to avoid redirect loops when no HTTPS port is configured.
+        if (app.Environment.IsProduction())
+            app.UseHttpsRedirection();
 
         // Add antiforgery middleware (required by Blazor components)
         // API controllers are exempt via the IgnoreAntiforgeryTokenAttribute global filter
@@ -109,7 +111,36 @@ public static class WebApplicationExtensions
         // Map Controllers
         app.MapControllers();
 
-        app.MapHealthChecks("/healthz");
+        // Health check endpoint.
+        // GET /healthz              — full check; 200 healthy, 503 degraded/unhealthy.
+        // GET /healthz?ignoreMqtt  — skip the MQTT check; useful for startup probes and
+        //                            test harnesses where no broker is intentionally present.
+        //                            Always returns 200 as long as the web server is up.
+        app.MapGet("/healthz", async (HttpContext ctx, HealthCheckService healthService) =>
+        {
+            var ignoreMqtt = ctx.Request.Query.ContainsKey("ignoreMqtt");
+
+            Func<HealthCheckRegistration, bool>? predicate = ignoreMqtt
+                ? reg => !string.Equals(reg.Name, "mqtt", StringComparison.OrdinalIgnoreCase)
+                : null;
+
+            var report = await healthService.CheckHealthAsync(predicate, ctx.RequestAborted);
+
+            var body = new
+            {
+                status = report.Status.ToString(),
+                checks = report.Entries.Select(e => new
+                {
+                    name        = e.Key,
+                    status      = e.Value.Status.ToString(),
+                    description = e.Value.Description,
+                })
+            };
+
+            return report.Status == HealthStatus.Healthy
+                ? Results.Ok(body)
+                : Results.Json(body, statusCode: StatusCodes.Status503ServiceUnavailable);
+        });
 
         // Map SignalR Hub — disable antiforgery since SignalR manages its own security
         // (WebSocket same-origin policy protects against CSRF; antiforgery tokens don't apply here)

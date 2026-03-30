@@ -12,7 +12,7 @@ public class MqttDataHub : Hub
     private readonly IConfiguration _configuration;
     private readonly MqttConnectionMonitor _connectionMonitor;
     private readonly ClientConnectionTracker _connectionTracker;
-    private readonly MqttClientService _mqttClientService;
+    private readonly IMqttClientService _mqttClientService;
 
     public MqttDataHub(
         MqttTopicSubscriptionManager subscriptionManager,
@@ -20,7 +20,7 @@ public class MqttDataHub : Hub
         IConfiguration configuration,
         MqttConnectionMonitor connectionMonitor,
         ClientConnectionTracker connectionTracker,
-        MqttClientService mqttClientService)
+        IMqttClientService mqttClientService)
     {
         _subscriptionManager = subscriptionManager;
         _logger = logger;
