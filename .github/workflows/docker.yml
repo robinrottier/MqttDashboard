@@ -25,7 +25,15 @@ jobs:
       - name: Build
         run: dotnet build MqttDashboard.slnx -c Release
       - name: Test
-        run: dotnet test MqttDashboard.slnx -c Release --no-build --verbosity normal
+        # Run each non-Playwright test project explicitly.
+        # Playwright E2E tests require browsers + a running server — not available here.
+        run: |
+          dotnet test tests/MqttDashboard.Client.Tests/MqttDashboard.Client.Tests.csproj \
+            -c Release --no-build --verbosity normal
+          dotnet test tests/MqttDashboard.Server.Tests/MqttDashboard.Server.Tests.csproj \
+            -c Release --no-build --verbosity normal
+          dotnet test tests/MqttDashboard.IntegrationTests/MqttDashboard.IntegrationTests.csproj \
+            -c Release --no-build --verbosity normal
 
   build:
     runs-on: ${{ matrix.runner }}
