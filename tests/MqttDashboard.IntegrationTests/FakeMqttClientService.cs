@@ -34,9 +34,10 @@ public class FakeMqttClientService : MqttClientService
         => HandleIncomingMessageAsync(topic, payload, DateTime.UtcNow);
 
     /// <summary>
-    /// Seeds the last-known values cache without notifying any clients.
-    /// Useful for pre-populating <c>GetCurrentValuesForTopics</c> in tests.
+    /// Seeds a value into the full pipeline (last-known values cache + <c>ServerDataCache</c>
+    /// via <c>OnMessagePublished</c>) without requiring a live MQTT broker.
+    /// Equivalent to a message arriving with no hub clients currently subscribed.
     /// </summary>
-    public void SeedLastKnownValue(string topic, string value)
-        => _lastKnownValues[topic] = value;
+    public Task SeedLastKnownValueAsync(string topic, string value)
+        => HandleIncomingMessageAsync(topic, value, DateTime.UtcNow);
 }

@@ -128,8 +128,8 @@ public class MqttDataHubTests : IClassFixture<IntegrationWebApplicationFactory>,
     [Fact]
     public async Task GetCurrentValuesForTopics_ReturnsCachedValues()
     {
-        _factory.FakeMqttService.SeedLastKnownValue("cached/sensor", "42.0");
-        _factory.FakeMqttService.SeedLastKnownValue("cached/other", "on");
+        await _factory.FakeMqttService.SeedLastKnownValueAsync("cached/sensor", "42.0");
+        await _factory.FakeMqttService.SeedLastKnownValueAsync("cached/other", "on");
 
         await using var conn = CreateConnection();
         await conn.StartAsync();
