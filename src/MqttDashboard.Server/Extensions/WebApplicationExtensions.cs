@@ -84,16 +84,16 @@ public static class WebApplicationExtensions
                 app.UseWebAssemblyDebugging();
             }
         }
-        else
+        else if (app.Environment.IsProduction())
         {
             app.UseExceptionHandler("/Error", createScopeForErrors: true);
             app.UseHsts();
         }
 
-        // Optional: Enable status code pages for not found routes
-        // app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-
-        app.UseHttpsRedirection();
+        // Redirect to HTTPS in production/staging; skip in development and test
+        // to avoid redirect loops when no HTTPS port is configured.
+        if (app.Environment.IsProduction())
+            app.UseHttpsRedirection();
 
         // Add antiforgery middleware (required by Blazor components)
         // API controllers are exempt via the IgnoreAntiforgeryTokenAttribute global filter

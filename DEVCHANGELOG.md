@@ -5,6 +5,65 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
+## 2026-03-30 — Playwright E2E tests fixed (all 7 pass)
+
+### Commit: (pending) · UTC 2026-03-30 · branch: develop
+
+#### 1. Root cause 1: stdout/stderr pipe buffer deadlock (`PlaywrightWebAppFixture`)
+
+`ProcessStartInfo` had `RedirectStandardOutput = true` / `RedirectStandardError = true` but
+nobody read the streams. Once Kestrel logs exceeded the OS pipe buffer (~4 KB on Windows) the
+server process blocked inside `Console.Write`, unable to process any further HTTP requests.
+`HttpClient.GetAsync("/healthz")` happened to succeed before the buffer filled (first request,
+few bytes of output), making `WaitForServerAsync` happy. But Playwright's Chromium then made a
+full page request (HTML + multiple CSS/JS resources) which triggered a flood of log lines —
+deadlock. Fix: removed both `Redirect*` flags; server output goes to the terminal (which is
+what you'd want in test output anyway). Added `--no-build` to `dotnet run` since the
+`WebAppServerOnly` project is already built as a test-project dependency.
+
+#### 2. Root cause 2: static web assets 500 in `Test` environment
+
+`UseStaticWebAssets()` is called automatically only for the `Development` environment inside
+`WebApplication.CreateBuilder`. In `Test` environment, MudBlazor CSS/JS, Blazor framework
+scripts, and RCL content were all returning 500 with `FileNotFoundException`. Added an
+explicit `builder.WebHost.UseStaticWebAssets()` call in `WebApplicationBuilderExtensions.cs`
+for any non-Development, non-Production environment. Also tightened `WebApplicationExtensions`
+so that `UseExceptionHandler`/`UseHsts`/`UseHttpsRedirection` only run in Production (not
+Test), which prevents spurious HTTPS-redirect middleware from running against an HTTP-only
+test server.
+
+#### 3. `GotoAsync` navigation wait strategy
+
+Changed all Playwright `GotoAsync` calls from the default `WaitUntilState.Load` (which never
+fires because Blazor Server keeps a persistent WebSocket) to `WaitUntilState.DOMContentLoaded`.
+SSR renders the full AppBar synchronously, so this is sufficient for all non-interactive
+assertions.
+
+#### 4. Blazor circuit readiness for interactive tests
+
+`AppBar_HamburgerMenu_Opens` needs the Blazor Server circuit before `@onclick` handlers work.
+Used `page.WaitForLoadStateAsync(LoadState.NetworkIdle)` — fires once the WebSocket upgrade
+(the last HTTP request) completes and no further HTTP requests are in flight, which reliably
+indicates the circuit is connected.
+
+#### 5. Wrong CSS selector
+
+`AppBar_HamburgerMenu_Opens` was waiting for `.mud-list-item`; MudBlazor 9 uses `.mud-menu-item`
+for items in an open `<MudMenu>`. Fixed selector.
+
+#### Files changed
+- `src/MqttDashboard.Server/Extensions/WebApplicationBuilderExtensions.cs` — `UseStaticWebAssets()` for Test env
+- `src/MqttDashboard.Server/Extensions/WebApplicationExtensions.cs` — Production-only HSTS/HTTPS redirect
+- `tests/MqttDashboard.PlaywrightTests/PlaywrightWebAppFixture.cs` — no stdout redirect, `--no-build`, env var style
+- `tests/MqttDashboard.PlaywrightTests/HomePageTests.cs` — `DOMContentLoaded`, viewport set before navigate
+- `tests/MqttDashboard.PlaywrightTests/AppBarTests.cs` — `DOMContentLoaded`, `WaitForBlazorCircuitAsync`, `.mud-menu-item`
+
+#### Result
+- Integration tests: 12 pass / 3 skip ✅
+- Playwright E2E tests: **7 / 7 pass** ✅ (was 0/7)
+
+---
+
 ## 2026-03-28 (batch 3) — AppBar hamburger fix + integration/Playwright test scaffolding
 
 ### Commit: (pending) · UTC 2026-03-28 · branch: develop

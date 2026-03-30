@@ -23,10 +23,9 @@ public class HomePageTests : IClassFixture<PlaywrightWebAppFixture>
         var page = await NewPageAsync();
         try
         {
-        await page.GotoAsync(_fixture.BaseUrl);
-
-        // Wait for Blazor Server to establish its circuit and render
-        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        // Use DOMContentLoaded — Blazor Server keeps a WebSocket open which prevents
+        // WaitUntilState.Load from ever completing in a reasonable time.
+        await page.GotoAsync(_fixture.BaseUrl, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
 
         // The AppBar should contain the app name
         var header = page.Locator("header.mud-appbar");
@@ -46,8 +45,7 @@ public class HomePageTests : IClassFixture<PlaywrightWebAppFixture>
         var page = await NewPageAsync();
         try
         {
-        await page.GotoAsync(_fixture.BaseUrl);
-        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        await page.GotoAsync(_fixture.BaseUrl, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
 
         // The hamburger menu icon (the MudMenu activator button inside .appbar-menu-pin)
         var hamburger = page.Locator(".appbar-menu-pin button");
@@ -63,13 +61,10 @@ public class HomePageTests : IClassFixture<PlaywrightWebAppFixture>
         var page = await NewPageAsync();
         try
         {
-        await page.GotoAsync(_fixture.BaseUrl);
-        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
-
-        // The MQTT status icon is inside .toolbar-hide-xs which is only visible at >=600px.
-        // Use a desktop viewport to ensure it is shown.
         await page.SetViewportSizeAsync(1280, 800);
+        await page.GotoAsync(_fixture.BaseUrl, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
 
+        // The MQTT status icon is inside .toolbar-hide-xs which is only visible at >=450px.
         var mqttIcon = page.Locator(".toolbar-hide-xs svg").First;
         await mqttIcon.WaitForAsync(new LocatorWaitForOptions { Timeout = 15_000 });
         await Assertions.Expect(mqttIcon).ToBeVisibleAsync();

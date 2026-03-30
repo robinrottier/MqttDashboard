@@ -19,11 +19,28 @@ public class AppBarTests : IClassFixture<PlaywrightWebAppFixture>
     {
         var page = await _fixture.Browser!.NewPageAsync();
         await page.SetViewportSizeAsync(width, height);
-        await page.GotoAsync(_fixture.BaseUrl);
-        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
-        // Wait for Blazor Server circuit to be ready
+        // Use DOMContentLoaded first so we don't block on Blazor's persistent WebSocket.
+        await page.GotoAsync(_fixture.BaseUrl, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
+        // Wait for the AppBar to be present (SSR renders it synchronously).
         await page.Locator("header.mud-appbar").WaitForAsync(new LocatorWaitForOptions { Timeout = 15_000 });
         return page;
+    }
+
+    /// <summary>
+    /// Waits for the Blazor Server circuit to be established so that interactive
+    /// click handlers respond. Uses NetworkIdle — which fires once the WebSocket
+    /// upgrade (= circuit handshake) completes and no further HTTP requests are
+    /// in flight — as the circuit-ready signal.
+    /// </summary>
+    private static async Task WaitForBlazorCircuitAsync(IPage page)
+    {
+        // NetworkIdle fires when ≤0 in-flight HTTP requests for 500ms.
+        // Blazor's initial HTTP requests (scripts, CSS) complete before the WebSocket
+        // upgrade; the upgrade itself is the last HTTP exchange, so NetworkIdle fires
+        // shortly after the circuit connects.
+        await page.WaitForLoadStateAsync(
+            LoadState.NetworkIdle,
+            new PageWaitForLoadStateOptions { Timeout = 20_000 });
     }
 
     [Fact]
@@ -32,7 +49,7 @@ public class AppBarTests : IClassFixture<PlaywrightWebAppFixture>
         var page = await NewPageWithSizeAsync(320, 600);
         try
         {
-            // The hamburger is in .appbar-menu-pin which has flex-shrink:0 — it must always be visible.
+            // .appbar-menu-pin has flex-shrink:0 — the hamburger button must always be visible.
             var hamburger = page.Locator(".appbar-menu-pin button");
             await Assertions.Expect(hamburger).ToBeVisibleAsync();
         }
@@ -45,8 +62,9 @@ public class AppBarTests : IClassFixture<PlaywrightWebAppFixture>
         var page = await NewPageWithSizeAsync(1024, 768);
         try
         {
-            // The edit toggle is inside .toolbar-hide-xs — visible only at >= 600px.
-            // It is only rendered when auth is NOT required (default test config has no admin hash).
+            // The edit toggle is inside .toolbar-hide-xs — only hidden at < 450px.
+            // It is only rendered when not in read-only mode AND auth is not required.
+            // The test environment (ASPNETCORE_ENVIRONMENT=Test, ReadOnly=false) should show it.
             var editSwitch = page.Locator(".toolbar-hide-xs .mud-switch-base").First;
             await editSwitch.WaitForAsync(new LocatorWaitForOptions { Timeout = 15_000 });
             await Assertions.Expect(editSwitch).ToBeVisibleAsync();
@@ -55,17 +73,17 @@ public class AppBarTests : IClassFixture<PlaywrightWebAppFixture>
     }
 
     [Fact]
-    public async Task AppBar_NarrowViewport_EditToggleHidden()
+    public async Task AppBar_NarrowViewport_ToolbarItemsHidden()
     {
         var page = await NewPageWithSizeAsync(320, 600);
         try
         {
-            // .toolbar-hide-xs items have display:none at < 600px.
-            var editToggleContainer = page.Locator(".toolbar-hide-xs").First;
-            // It may not even be in the DOM if the user is not admin; if it is, it must be hidden.
-            var count = await editToggleContainer.CountAsync();
+            // .toolbar-hide-xs items have display:none at < 450px (see MainLayout.razor.css).
+            // The first .toolbar-hide-xs div holds the MQTT icon.
+            var toolbarHideXs = page.Locator(".toolbar-hide-xs").First;
+            var count = await toolbarHideXs.CountAsync();
             if (count > 0)
-                await Assertions.Expect(editToggleContainer).ToBeHiddenAsync();
+                await Assertions.Expect(toolbarHideXs).ToBeHiddenAsync();
         }
         finally { await page.CloseAsync(); }
     }
@@ -76,13 +94,18 @@ public class AppBarTests : IClassFixture<PlaywrightWebAppFixture>
         var page = await NewPageWithSizeAsync(400, 700);
         try
         {
-            var hamburger = page.Locator(".appbar-menu-pin button");
+            // Must wait for the Blazor Server circuit before clicking — @onclick handlers
+            // are not wired until SignalR connects.
+            await WaitForBlazorCircuitAsync(page);
+
+            var hamburger = page.Locator(".appbar-menu-pin button").First;
             await hamburger.ClickAsync();
 
-            // The MudMenu popover should become visible with at least one menu item
-            var menuList = page.Locator(".mud-menu-list").First;
-            await menuList.WaitForAsync(new LocatorWaitForOptions { Timeout = 5_000 });
-            await Assertions.Expect(menuList).ToBeVisibleAsync();
+            // MudBlazor 9 renders menu items with class .mud-menu-item inside .mud-menu-list.
+            // Wait for the popover to be open, then check at least one item is visible.
+            var menuItem = page.Locator(".mud-menu-item").First;
+            await menuItem.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+            await Assertions.Expect(menuItem).ToBeVisibleAsync();
         }
         finally { await page.CloseAsync(); }
     }

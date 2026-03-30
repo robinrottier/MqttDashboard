@@ -7,6 +7,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- **Playwright E2E tests** — all 7 tests now pass. Fixed three root causes: (1) server process stdout/stderr pipe buffer deadlock (Kestrel blocked writing logs, blocking HTTP responses); (2) static web assets (`MudBlazor.min.css`, `blazor.web.js`, etc.) returning 500 in `Test` environment — now explicitly enabled via `UseStaticWebAssets()` for non-Development/non-Production environments; (3) HTTPS redirect middleware running in Test env against an HTTP-only server.
+
+### Changed
+- **HTTPS redirect and HSTS** now only applied in `Production` environment (was: all non-Development). This prevents redirect issues when running under `ASPNETCORE_ENVIRONMENT=Test` (used by Playwright and integration tests).
+
 ### Added
 - **Integration test project** (`MqttDashboard.IntegrationTests`) — 12 server-side integration tests using `WebApplicationFactory` and a real `SignalR.Client.HubConnection`. Covers the full MQTT→SignalR data path with a `FakeMqttClientService` (no broker needed): hub connect/subscribe/receive/unsubscribe, per-client topic isolation, cached-value query, broker info, client count. Plus REST API smoke tests (health check, dashboard list, default dashboard GET). 3 Tier-B tests (real in-process broker) are scaffolded and skipped pending a MQTTnet server package addition.
 - **Playwright UI test project** (`MqttDashboard.PlaywrightTests`) — headless Chromium E2E tests via `PlaywrightWebAppFixture` (starts server via `dotnet run`). Covers: home page load/title/MQTT icon, hamburger always visible at narrow viewport (320px), edit toggle hidden at narrow width, edit toggle visible at desktop, hamburger menu opens on click.

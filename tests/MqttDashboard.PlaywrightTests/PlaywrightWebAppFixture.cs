@@ -33,22 +33,29 @@ public sealed class PlaywrightWebAppFixture : IAsyncLifetime
 
         var serverProjectPath = FindServerProjectPath();
 
-        _serverProcess = Process.Start(new ProcessStartInfo
+        var psi = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = $"run --project \"{serverProjectPath}\" --no-launch-profile -- --urls \"{BaseUrl}\"",
+            // --no-build: the server project is built as a dependency of this test project,
+            // so we don't need dotnet run to rebuild it. Avoids long rebuild and prevents
+            // stdout/stderr buffering issues during a slow build phase.
+            Arguments = $"run --no-build --project \"{serverProjectPath}\" --no-launch-profile -- --urls \"{BaseUrl}\"",
             UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            Environment =
-            {
-                ["ASPNETCORE_ENVIRONMENT"] = "Test",
-                ["DiagramStorage__DataDirectory"] = _tempDataDir,
-                // Point at a non-existent broker so MqttClientService fails fast / silently
-                ["MqttSettings__Broker"] = "127.0.0.1",
-                ["MqttSettings__Port"] = "19999",
-            }
-        }) ?? throw new InvalidOperationException("Failed to start server process.");
+            // DO NOT redirect stdout/stderr without reading them. If the server writes
+            // more output than fits in the pipe buffer (~4 KB on Windows), Kestrel blocks
+            // while trying to write, and all subsequent HTTP requests hang.
+            RedirectStandardOutput = false,
+            RedirectStandardError = false,
+        };
+        // Add env overrides to the inherited environment (don't replace it).
+        psi.Environment["ASPNETCORE_ENVIRONMENT"] = "Test";
+        psi.Environment["DiagramStorage__DataDirectory"] = _tempDataDir;
+        // Point at a non-existent broker so MqttClientService fails fast / silently.
+        psi.Environment["MqttSettings__Broker"] = "127.0.0.1";
+        psi.Environment["MqttSettings__Port"] = "19999";
+
+        _serverProcess = Process.Start(psi)
+            ?? throw new InvalidOperationException("Failed to start server process.");
 
         await WaitForServerAsync(TimeSpan.FromSeconds(60));
 
@@ -81,10 +88,12 @@ public sealed class PlaywrightWebAppFixture : IAsyncLifetime
         {
             try
             {
-                var resp = await http.GetAsync($"{BaseUrl}/healthz");
-                if (resp.IsSuccessStatusCode) return;
+                // Any HTTP response (even 503 from the MQTT health check) means
+                // Kestrel is listening and the app is ready to serve requests.
+                await http.GetAsync($"{BaseUrl}/healthz");
+                return;
             }
-            catch { /* not ready yet */ }
+            catch { /* not ready yet — connection refused */ }
 
             if (_serverProcess?.HasExited == true)
                 throw new InvalidOperationException(
@@ -92,7 +101,7 @@ public sealed class PlaywrightWebAppFixture : IAsyncLifetime
 
             await Task.Delay(500);
         }
-        throw new TimeoutException($"Server at {BaseUrl} did not become healthy within {timeout}.");
+        throw new TimeoutException($"Server at {BaseUrl} did not respond within {timeout}.");
     }
 
     private static string FindServerProjectPath()
