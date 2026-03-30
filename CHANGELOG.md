@@ -15,6 +15,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Server log capture** — Playwright fixture now captures server stdout/stderr using async `BeginOutputReadLine` (no pipe-buffer risk). `ServerLog` property exposed for assertions.
 
 ### Added
+- **Custom app icon** — new flow-chart SVG icon (`mqttdashboard-icon.svg`) with three squares connected by lines. Replaces the Material `AccountTree` icon in the AppBar title and the placeholder circles in the PWA manifest.
+- **PWA icons consolidated** — `manifest.webmanifest`, `icon-192.png`, and `icon-512.png` are now in the `MqttDashboard.Client` RCL (`wwwroot/`) rather than duplicated in each host project.
+- **Automatic PNG icon generation** — MSBuild target in `MqttDashboard.Client.csproj` regenerates `icon-192.png` and `icon-512.png` from the SVG source whenever the SVG is modified (incremental; requires `pwsh`).
+- **Roslyn source generator for icon constant** — `AppIcons.MqttDashboard` (inner SVG elements as a C# string for MudBlazor `Icon` parameter) is now generated at compile time from the SVG source via `MqttDashboard.SourceGenerators`. No committed generated file; updating the SVG and rebuilding is all that's needed.
+- **Test category filtering** — Playwright tests are tagged `[Trait("Category","Playwright")]`; `MqttDashboard.runsettings` excludes them by default in VS Test Explorer so fast tests run without waiting for browser startup.
+
+### Added
 - **`ServerLog_HasNoUnexpectedErrors` Playwright test** — asserts no unexpected `[ERR]` lines after a page load (whitelists known MQTT-connection-refused warnings).
 
 ### Added

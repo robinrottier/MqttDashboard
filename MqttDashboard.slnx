@@ -50,6 +50,7 @@
     <File Path="src/Directory.Build.props" />
     <Project Path="src/MqttDashboard.Client/MqttDashboard.Client.csproj" />
     <Project Path="src/MqttDashboard.Server/MqttDashboard.Server.csproj" />
+    <Project Path="src/MqttDashboard.SourceGenerators/MqttDashboard.SourceGenerators.csproj" />
   </Folder>
   <Folder Name="/src/WebApp/">
     <Project Path="src/MqttDashboard.WebApp/MqttDashboard.WebApp.Client/MqttDashboard.WebApp.Client.csproj" />
