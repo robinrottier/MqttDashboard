@@ -7,6 +7,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **`MqttDashboard.Data` project** — new pure-C# library (`net10.0`, no Blazor/ASP.NET/MQTT deps) holding the topic pub/sub infrastructure. Contains `ITopicCache`, `TopicCache`, `TopicMatcher`, and `XmlPayloadHelper`. Enables future non-Blazor hosting (MAUI, Avalonia, etc.) and isolated unit testing.
+- **`MqttDashboard.Data.Tests` project** — 25 unit tests covering `TopicCache` (store/watch/wildcard/dispose) and `TopicMatcher` (MQTT filter matching and regex conversion).
+
+### Changed
+- **`ApplicationState.DataCache`** — type changed from `MqttDataCache` to `ITopicCache` (backed by `TopicCache` from `MqttDashboard.Data`).
+- **`MqttTopicSubscriptionManager`** — private 40-line `TopicMatches()` method replaced by `TopicMatcher.Matches()` from `MqttDashboard.Data`, eliminating the duplicate implementation.
+- **`XmlStringHelper`** (Client) — now a thin shim forwarding to `XmlPayloadHelper` in `MqttDashboard.Data`.
+
+### Removed
+- **`MqttDataCache.cs`** — class deleted; functionality moved to `TopicCache` in `MqttDashboard.Data`.
+
 ### Fixed
 - **`/healthz` probe in Playwright fixture** — now uses `?ignoreMqtt` so probe returns 200 (not 503) when broker absent; fixture fails immediately on unexpected non-2xx (no 60s timeout).
 

@@ -42,6 +42,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/MqttDashboard.Client.Tests/MqttDashboard.Client.Tests.csproj" />
+    <Project Path="tests/MqttDashboard.Data.Tests/MqttDashboard.Data.Tests.csproj" />
     <Project Path="tests/MqttDashboard.IntegrationTests/MqttDashboard.IntegrationTests.csproj" />
     <Project Path="tests/MqttDashboard.PlaywrightTests/MqttDashboard.PlaywrightTests.csproj" />
     <Project Path="tests/MqttDashboard.Server.Tests/MqttDashboard.Server.Tests.csproj" />
@@ -49,6 +50,7 @@
   <Folder Name="/src/">
     <File Path="src/Directory.Build.props" />
     <Project Path="src/MqttDashboard.Client/MqttDashboard.Client.csproj" />
+    <Project Path="src/MqttDashboard.Data/MqttDashboard.Data.csproj" />
     <Project Path="src/MqttDashboard.Server/MqttDashboard.Server.csproj" />
     <Project Path="src/MqttDashboard.SourceGenerators/MqttDashboard.SourceGenerators.csproj" />
   </Folder>

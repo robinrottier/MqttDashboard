@@ -11,6 +11,7 @@ RUN dotnet workload install wasm-tools
 # Copy all project files (for layer caching on package restore)
 COPY src/Directory.Build.props      src/
 COPY src/MqttDashboard.Client/MqttDashboard.Client.csproj                                                           src/MqttDashboard.Client/
+COPY src/MqttDashboard.Data/MqttDashboard.Data.csproj                                                               src/MqttDashboard.Data/
 COPY src/MqttDashboard.Server/MqttDashboard.Server.csproj                                                           src/MqttDashboard.Server/
 COPY src/MqttDashboard.SourceGenerators/MqttDashboard.SourceGenerators.csproj                                       src/MqttDashboard.SourceGenerators/
 COPY src/MqttDashboard.WebApp/MqttDashboard.WebApp.Client/MqttDashboard.WebApp.Client.csproj                        src/MqttDashboard.WebApp/MqttDashboard.WebApp.Client/
@@ -22,6 +23,7 @@ RUN dotnet restore src/MqttDashboard.WebApp/MqttDashboard.WebApp/MqttDashboard.W
 # Copy the rest of the source and .git so MinVer can resolve the version from tags
 COPY .git/ .git/
 COPY src/MqttDashboard.Client/      src/MqttDashboard.Client/
+COPY src/MqttDashboard.Data/        src/MqttDashboard.Data/
 COPY src/MqttDashboard.Server/      src/MqttDashboard.Server/
 COPY src/MqttDashboard.SourceGenerators/ src/MqttDashboard.SourceGenerators/
 COPY src/MqttDashboard.WebApp/      src/MqttDashboard.WebApp/

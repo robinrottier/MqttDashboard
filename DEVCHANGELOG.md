@@ -5,6 +5,67 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
+## 2026-03-30 (batch 4 / FEAT-H) — Data layer extraction into MqttDashboard.Data
+
+### Branch: feature/feat-h-data-layer
+
+This batch implements the FEAT-H data layer refactor from TODO.md. A new pure-C# project
+`MqttDashboard.Data` is created to hold the topic pub/sub infrastructure, separating it from
+the Blazor/ASP.NET layers so it can be reused by future non-Blazor hosts (MAUI, Avalonia, etc.)
+and tested in isolation without any framework dependencies.
+
+### 1. New project: `src/MqttDashboard.Data/`
+
+**Files created:**
+- `MqttDashboard.Data.csproj` — `net10.0`, no external dependencies (pure BCL)
+- `ITopicCache.cs` — interface: `UpdateValue`, `GetValue`, `TryGetValue<T>`, `Watch`, `GetAllTopics`, `GetValuesByPattern`, `Clear`
+- `TopicCache.cs` — implementation (moved logic from `MqttDataCache`; uses `TopicMatcher` for wildcard→regex conversion)
+- `TopicMatcher.cs` — static class with MQTT topic-filter matching logic; extracted from the private `TopicMatches()` in `MqttTopicSubscriptionManager`. Exposes `Matches(filter, topic)` and `ToRegexPattern(filter)`.
+- `XmlPayloadHelper.cs` — XML/DOM sanitization helpers; moved from `MqttDashboard.Client/Helpers/XmlStringHelper.cs`. `TopicCache.UpdateValue()` calls `StripInvalidXmlChars` before storing strings.
+
+**Design notes:**
+- `ITopicCache` is now the surface used by all consumers (widgets, `ApplicationState`, etc.)
+- `TopicCache` is the only implementation for now; future additions could include a read-only view or a versioned cache
+- `TopicMatcher` is the authoritative MQTT wildcard logic; both client-side cache and server-side `MqttTopicSubscriptionManager` now use it
+
+### 2. `MqttDashboard.Client` changes
+
+- Added `<ProjectReference>` to `MqttDashboard.Data`
+- `MqttDataCache.cs` deleted — entirely replaced by `TopicCache` from the new project
+- `ApplicationState.cs`: `public MqttDataCache DataCache` → `public ITopicCache DataCache = new TopicCache()` + added `using MqttDashboard.Data`
+- `Helpers/XmlStringHelper.cs` reduced to a thin forwarding shim delegating to `XmlPayloadHelper` (retained for any code that references it by the old name; only the internal `MqttDataCache.cs` used it, which is now gone, but kept for safety)
+
+### 3. `MqttDashboard.Server` changes
+
+- Added `<ProjectReference>` to `MqttDashboard.Data`
+- `MqttTopicSubscriptionManager.cs`: replaced the private `TopicMatches(filter, topic)` method (40+ lines) with `TopicMatcher.Matches(filter, topic)` from the new project. `TopicMatchesFilter` also delegates to `TopicMatcher.Matches`.
+- Added `using MqttDashboard.Data;`
+
+### 4. New test project: `tests/MqttDashboard.Data.Tests/`
+
+**Files:**
+- `MqttDashboard.Data.Tests.csproj` — xUnit 2.9, references `MqttDashboard.Data` only
+- `TopicMatcherTests.cs` — 12 theory cases + 1 fact covering exact match, `+` single-level, `#` multi-level, level-count mismatch, and `ToRegexPattern()`
+- `TopicCacheTests.cs` — 12 tests covering store/retrieve, typed retrieval, wildcard and exact watchers, dispose/unwatch, `GetValuesByPattern`, `Clear`, and XML sanitization
+
+All 25 new tests pass. Combined test run: 52 passing, 3 skipped (MQTT broker Tier B tests), 0 failing.
+
+### 5. Infrastructure updates
+
+- `MqttDashboard.slnx`: added `MqttDashboard.Data` (src) and `MqttDashboard.Data.Tests` (tests)
+- `.github/workflows/ci.yml`: added `MqttDashboard.Data.Tests` to the unit-test step
+- `.github/workflows/docker.yml`: added `MqttDashboard.Data.Tests` to the Test step
+- `Dockerfile`: added `.csproj` COPY (restore layer) and source COPY (build layer) for the new project
+
+### What is NOT in scope (Phase 2)
+
+- `ISignalRService` not yet renamed to `IDataBackend` — the backend interface abstraction is the next phase
+- `MqttClientService` stays in Server (not moved to a `MqttDashboard.Data.Mqtt` project yet)
+- `SignalRService` / `ServerSignalRService` stay in Client/Server (not yet formalized as `IDataBackend` implementations)
+- Mock/REST backends, data-source config in dashboard file — all Phase 2
+
+
+
 ## 2026-03-30 (batch 3) — Roslyn source generator for app icon + PWA consolidation
 
 ### Commit: cb3c94f · UTC 2026-03-30 · branch: develop

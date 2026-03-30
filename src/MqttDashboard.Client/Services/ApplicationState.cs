@@ -7,6 +7,7 @@ using Blazor.Diagrams.Core.PathGenerators;
 using Blazor.Diagrams.Core.Positions.Resizing;
 using Blazor.Diagrams.Core.Routers;
 using Blazor.Diagrams.Options;
+using MqttDashboard.Data;
 using MqttDashboard.Models;
 using MqttDashboard.Widgets;
 using System.Collections.Concurrent;
@@ -64,7 +65,7 @@ public class ApplicationState
     public string MqttConnectionStatus { get; set; } = "Disconnected";
 
     // MQTT Data Cache
-    public MqttDataCache DataCache { get; } = new();
+    public ITopicCache DataCache { get; } = new TopicCache();
 
     // Theme & UI preferences
     public ThemeMode ThemeMode { get; private set; } = ThemeMode.Auto;

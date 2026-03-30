@@ -16,5 +16,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MqttDashboard.Client\MqttDashboard.Client.csproj" />
+    <ProjectReference Include="..\MqttDashboard.Data\MqttDashboard.Data.csproj" />
   </ItemGroup>
 </Project>
