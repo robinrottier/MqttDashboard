@@ -12,6 +12,7 @@ RUN dotnet workload install wasm-tools
 COPY src/Directory.Build.props      src/
 COPY src/MqttDashboard.Client/MqttDashboard.Client.csproj                                                           src/MqttDashboard.Client/
 COPY src/MqttDashboard.Server/MqttDashboard.Server.csproj                                                           src/MqttDashboard.Server/
+COPY src/MqttDashboard.SourceGenerators/MqttDashboard.SourceGenerators.csproj                                       src/MqttDashboard.SourceGenerators/
 COPY src/MqttDashboard.WebApp/MqttDashboard.WebApp.Client/MqttDashboard.WebApp.Client.csproj                        src/MqttDashboard.WebApp/MqttDashboard.WebApp.Client/
 COPY src/MqttDashboard.WebApp/MqttDashboard.WebApp/MqttDashboard.WebApp.csproj                                      src/MqttDashboard.WebApp/MqttDashboard.WebApp/
 
@@ -22,6 +23,7 @@ RUN dotnet restore src/MqttDashboard.WebApp/MqttDashboard.WebApp/MqttDashboard.W
 COPY .git/ .git/
 COPY src/MqttDashboard.Client/      src/MqttDashboard.Client/
 COPY src/MqttDashboard.Server/      src/MqttDashboard.Server/
+COPY src/MqttDashboard.SourceGenerators/ src/MqttDashboard.SourceGenerators/
 COPY src/MqttDashboard.WebApp/      src/MqttDashboard.WebApp/
 
 # Publish the server project (this also builds & includes the WASM client).
