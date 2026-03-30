@@ -8,6 +8,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **PWA / Web App Manifest** — added `manifest.webmanifest` to both host projects. Firefox (and Chrome/Edge) will show an "Install as app" prompt; once installed the app opens in standalone mode without browser chrome (no address bar, menus). Includes `favicon.png`, `icon-192.png`, and `icon-512.png` icons.
+- **Favicon on main WebApp host** — the primary `WebApp` project now has a `wwwroot/` folder serving `favicon.png` (was missing; the ServerOnly host already had one).
+
+### Added
 - **Auto-save on exit edit mode** — new Options menu item "Auto-save on Exit" (visible while in edit mode). When enabled, exiting edit mode saves automatically without prompting. Setting is system-wide, persisted server-side in `appsettings.user.json` (`App:AutoSaveOnExit`). Loaded from server on every page load.
 - **Edit mode and login/logout in Options menu** — always accessible from the hamburger menu regardless of screen width. "Edit Mode" toggles edit mode with a checkmark indicator; "Logout" / "Login as Admin" appear when auth is configured.
 - **Theme preference persisted** — selected theme (Light/Dark/Auto) is now saved to localStorage and restored on page load.

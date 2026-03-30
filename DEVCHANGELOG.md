@@ -5,6 +5,40 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
+## 2026-03-30 — PWA manifest and favicon
+
+### Commit: (see git log) · UTC 2026-03-30 · branch: copilot/convert-to-spa-or-pwa
+
+### PWA / Web App Manifest
+
+**Problem:** The app had no web app manifest, so browsers like Firefox treated it as a plain website — full browser chrome (address bar, menus) always visible. The main WebApp project also had no `wwwroot` folder and therefore no `favicon.png` served.
+
+**Changes:**
+- Added `manifest.webmanifest` to both host projects' `wwwroot` directories:
+  - `src/MqttDashboard.WebApp/MqttDashboard.WebApp/wwwroot/manifest.webmanifest`
+  - `src/MqttDashboard.WebApp/MqttDashboard.WebAppServerOnly/wwwroot/manifest.webmanifest`
+  - `display: "standalone"` enables Firefox's "install as app" flow, opening without browser chrome
+  - `theme_color` and `background_color` match the MudBlazor dark theme accent
+- Created `src/MqttDashboard.WebApp/MqttDashboard.WebApp/wwwroot/` with:
+  - `favicon.png` (copied from WebAppServerOnly)
+  - `icon-192.png` and `icon-512.png` (upscaled from 32×32 favicon)
+- Added matching `icon-192.png` and `icon-512.png` to WebAppServerOnly `wwwroot`
+- Updated `src/MqttDashboard.Client/App.razor` to add in `<head>`:
+  - `<link rel="manifest" href="manifest.webmanifest" />`
+  - `<meta name="theme-color" content="#594ae2" />`
+  - `<meta name="mobile-web-app-capable" content="yes" />`
+  - `<meta name="apple-mobile-web-app-capable" content="yes" />`
+  - `<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />`
+  - `<meta name="apple-mobile-web-app-title" content="MqttDash" />`
+
+**How it works:** When a user visits the app in Firefox, the browser detects the manifest and shows an "Install" option. Once installed, it opens in standalone mode (no address bar or browser menus). Chrome/Edge show a similar install prompt.
+
+**Caveats:**
+- ⚠️ The icons (192×192 and 512×512) are pixel-scaled from the 32×32 favicon and will appear blocky. Replace `icon-192.png` and `icon-512.png` with higher-resolution artwork when available.
+- No service worker is included — the app is not fully offline-capable. For full PWA with offline support, a service worker caching the Blazor framework files would be needed.
+
+---
+
 ## 2026-03-28 (batch 2) — Gauge arc fix, auto-save server-side, appsettings defaults
 
 ### Commit: (see git log) · UTC 2026-03-28 · branch: develop
