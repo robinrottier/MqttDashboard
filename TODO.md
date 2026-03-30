@@ -13,10 +13,6 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Serialization:
 	- [ ] logged-on user not yet written to `FileInfo` (always admin for now — fine to leave)
 	- [ ] should include version of this app doing the write, and server written from
-- [ ] Server-side "lazy cache": if client request is dropped, server should keep data live for a configurable delay (e.g. 30s) before removing references
-- [ ] Client side lazy cache also: if 2 pages have same dtaa item then only one request going up thru signalr to server and when page changes happen data shoul dbe there immediately as its already in this cache
-	- [ ] MQTT data cache needs seperating out to reusable package with a pub/sub interface and backend to matchin interface either over signal r, or mqtt directly.
-	- [ ] client api to this incude direct and async memory access also
 - [ ] Data item topics per node
 	- [ ] "Link animation" needs a property for index of which data item to animate upon
 - [ ] Page tabs
@@ -50,11 +46,10 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] **Guage**
 	- [ ] needs alternatives such as full circle, 90 or 270 .... aybe thats all the 
 		  option is, how much of a circle is drawn and properties to control orientation
-	- [ ] options to draw "needle" also from some center point to the guage ...
-	  
-- [ ] **Chart** — in-memory time-series sparkline graph
+	- [ ] options to draw "needle" also from some center point to the guage ...	  
 - [ ] **Markdown / HTML** — formatted static content, optionally with data substitution
 - [ ] **IFrame** — embed another web page
+- [ ] **Chart** — in-memory time-series sparkline graph
 
 ### FEAT-D: Multiple dashboard pages _(basic multi-page done — see CHANGELOG)_
 - [ ] Page tab overflow handling (scrolling/dropdown when many pages)
@@ -78,11 +73,35 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Moving a group moves all contained nodes
 - [ ] Split panel type controls to divide up work area into resizable sections
 
-### FEAT-H: Alternate data sources / plugin architecture
-- [ ] Plugin architecture for data sources beyond MQTT
-- [ ] Built-in integrations: REST APIs, WebSockets, Home Assistant local API, Emoncms feeds and time-series
+### FEAT-H: Data layer refactor - alternate data sources / plugin architecture
+= [ ] There's alot of overlap between data access on client to server, and server to mqtt so:
+	- [ ] Refactor client & server data access to use a common interface and shared code where possible, with separate implementations for client-server (SignalR) and server-MQTT.
+	- [ ] MQTT data cache needs seperating out to reusable package with a pub/sub interface and backend to matchin interface either over signal r, or mqtt directly.
+	- [ ] Support a "lazy cache" layer that can be used for both client-server and server-mqtt data access, with a pub/sub interface for updates. This would allow for more efficient data handling and reduce redundant requests.
+	- [ ] so if client request is dropped, server should keep data live for a configurable delay (e.g. 30s) before removing references
+	- [ ] client api to this incude direct and async memory access also
+- [ ] Its all in a seperate proehct MqttDashboard.Data implmenting the basic pub/sub api
+	- [ ] Client API is requesting a topic to an inmeoery cache, and subscribing to updates.
+		- [ ] Thats handles wildards and all the topic parsing and matching
+		- [ ] Its likely to look very much mqtt fontend api but with a more flexible backend and caching layer
+		- [ ] Each in memory cache has a server (maybe more than one) that implements the particular backend talking to the server API of our common data thing
+		- [ ] Somehow, servers say what topics they have data for, by default "#" meaning everything from the root
+		- [ ] If there was more than more server attached to some cache then they would have to differentitate themsevles perhaps just by a root topic path		
+	- [ ] One Server implemtation is subscribing to MQTT topics and updating the cache
+	- [ ] Another server imlemention is over signalR to the server project implementation of this in meory cache
+	- [ ] Another "server" implementation could be a mock data generator for testing,
+	- [ ] or a REST API backend for other data sources (not sure about updates...maybe for things that dont update much)
+	- [ ] This is going to basically impleemt the current front end data aceess with little logical change, just functions names etc.
+	- [ ] Likewise the backend. The middle tier will take some more work to refactor out the common code and interfaces, but the actual MQTT handling code should be mostly reusable as is, just moved into the new structure.
+	- [ ] As a seperate module it wil be easy to create test project for it without exgternal dependencies.
+	- [ ] Perhaps the actual MQTT stuff is seperate again into MqttDashBoard.Data.Mqtt -- the commin client and serve .Data library, although looking very mqtt like wont actual have any mqtt in it
+- [ ] Active data sources stored in the dashboard file? Data requests do not know the source of data just the "topic" key to access it...so potentially same dashboard talks to diffeent backends.
+
+**Phase 2**
+- [ ] Extend Plugin architecture for data sources beyond MQTT
+	- [ ] Built-in integrations: REST APIs, WebSockets, Home Assistant local API, Emoncms feeds and time-series
 - [ ] Admin configures available plugins; nodes select source and configure connection
-- [ ] Active data sources stored in the dashboard file
+- [ ] 
 
 ### FEAT-I: Responsive / mobile layout
 - [ ] Responsive layout adapts to screen size
@@ -107,16 +126,19 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ### FEAT-K: Dashboard versioning & Git integration
 - [ ] Optional Git commit/push of dashboard to a remote repo
-- [ ] Snapshot history for dashboards (previous versions, compare/diff)
+	- [ ] Modeled on node-red project feature.
+- [ ] Or history/backup for dashboards (previous versions, compare/diff) for non-git users
 
 ### FEAT-L: Deployment enhancements
 - [ ] Admin interface: runtime monitoring, logs, connected clients, dashboard file management
-- [ ] More automation to speed relase process e.g. PR with message RC to mean release candiate so auto invokes patch-release auto bump and process
+- [ ] We've lost the "restart" button ...might want to do a restart for other reasosns
+- [ ] More automation to speed relase process
+	- [ ] Local script to run tests, do a final commit, and push, create PR, let the various actions run, merge the PR to main and kick patch-release. Then kick deployment to test server
 
 ### FEAT-M: Settings persistence _(done — settings now in data directory)_
 
 ### FEAT-N: Self-updating deployment
-- [ ] Latest version check checks for tags ... but the actual Docker image may not be available for some time after a tag is pushed. Can it check actual images in ghcr?
+- [ ] The Latest version check checks for tags ... but the actual Docker image may not be available for some time after a tag is pushed. Can it check actual images in ghcr?
 - [ ] Option to follow release-only stream or latest beta stream of pre-releases
 - [ ] How would we revert to a previous version if an update proved bad?
 
