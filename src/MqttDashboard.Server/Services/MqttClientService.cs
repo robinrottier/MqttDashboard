@@ -18,20 +18,9 @@ public class MqttClientService : BackgroundService, IMqttClientService
     private IMqttClient? _mqttClient;
     private MqttClientOptions? _mqttOptions;
     private readonly ConcurrentDictionary<string, bool> _subscribedTopics = new();
-    protected readonly ConcurrentDictionary<string, string> _lastKnownValues = new();
     private CancellationToken _stoppingToken;
     private int _isReconnecting = 0; // 0 = false, 1 = true (Interlocked flag)
 
-    /// <summary>
-    /// Last-known payload for each topic received since server start.
-    /// Used by <see cref="MqttDataHub.GetCurrentValuesForTopics"/> to replay values to reconnecting clients.
-    /// </summary>
-    public IReadOnlyDictionary<string, string> LastKnownValues => _lastKnownValues;
-
-    /// <summary>
-    /// Fires when an MQTT message is received from the broker. Used by in-process subscribers
-    /// (e.g. ServerSignalRService) to receive data without going through the SignalR hub over HTTP.
-    /// </summary>
     public event Func<string, string, DateTime, Task>? OnMessagePublished;
 
     public MqttClientService(
@@ -260,8 +249,6 @@ public class MqttClientService : BackgroundService, IMqttClientService
     protected virtual async Task HandleIncomingMessageAsync(
         string topic, string payload, DateTime timestamp, CancellationToken ct = default)
     {
-        _lastKnownValues[topic] = payload;
-
         var interestedClients = _subscriptionManager.GetInterestedClients(topic);
 
         _logger.LogTrace("Found {Count} interested clients for topic {Topic}", interestedClients.Count, topic);
