@@ -231,7 +231,8 @@ function Ensure-CleanWorkingTree {
     $status = (Run-LocalCommand git "status --porcelain" $false).StdOut.Trim()
     if (-not [string]::IsNullOrWhiteSpace($status)) {
         $lines = $status -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }
-        if ($lines.GetType().Name -eq "String" -and $lines -eq "M TODO.md" -or $lines.Count -eq 1 -and $lines[0] -match 'TODO.md') {
+        if ($lines.GetType().Name -eq "String" -and $lines -eq "M TODO.md" `
+        -or $lines.GetType().Name -eq "String[]" -and $lines.Count -eq 1 -and $lines[0] -match 'TODO.md') {
             Write-Log "Only TODO.md modified: auto-committing"
             Run-LocalCommand git 'add TODO.md'
             Run-LocalCommand git 'commit -m "chore: update TODO"'
@@ -316,9 +317,9 @@ function Update-ChangeLog($newTag) {
     $changelog = 'CHANGELOG.md'
     if (-not (Test-Path $changelog)) { throw "$changelog not found" }
     $lines = Get-Content $changelog
-    $idx = $lines.FindIndex({ $_ -match '^#+\s*\[Unreleased\]' })
+    $idx = [Array]::IndexOf($lines, { $_ -match '^#+\s*\[Unreleased\]' })
     if ($idx -lt 0) { # try alternate header
-        $idx = $lines.FindIndex({ $_ -match '^#\s*Unreleased' })
+        $idx = [Array]::IndexOf($lines, { $_ -match '^#\s*Unreleased' })
     }
     $today = (Get-Date).ToString('yyyy-MM-dd')
     $entry = "- Preparing release $newTag ($today)"
