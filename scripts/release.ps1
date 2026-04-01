@@ -231,7 +231,7 @@ function Ensure-CleanWorkingTree {
     $status = (Run-LocalCommand git "status --porcelain" $false).StdOut.Trim()
     if (-not [string]::IsNullOrWhiteSpace($status)) {
         $lines = $status -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }
-        if ($lines.GetType().Name -eq "System.String" -and $lines -eq "M TODO.md" -or $lines.Count -eq 1 -and $lines[0] -match 'TODO.md') {
+        if ($lines.GetType().Name -eq "String" -and $lines -eq "M TODO.md" -or $lines.Count -eq 1 -and $lines[0] -match 'TODO.md') {
             Write-Log "Only TODO.md modified: auto-committing"
             Run-LocalCommand git 'add TODO.md'
             Run-LocalCommand git 'commit -m "chore: update TODO"'
