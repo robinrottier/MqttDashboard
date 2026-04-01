@@ -74,18 +74,18 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Split panel type controls to divide up work area into resizable sections
 
 ### FEAT-H: Data layer refactor _(Phases 1–4 complete — see CHANGELOG)_
+- [ ] Is MqttDataHub actually used there are 12 references to the class but NO references to any of its members? (double check that!)
 - [ ] Lazy cache/Grace period: if last client unsubscribes from a topic, keep the server-side broker subscription alive for a configurable delay (e.g. 30 s) before actually unsubscribing from the broker — avoids churn if a circuit reconnects
 - [ ] Publishing e.g. from switch widget
 	- [ ] ...if client simply writes to their local cache then that publishes upstream and value trickles thru tree of DataCache
 	- [ ] does it need some sort of access control...its just a inprocess dictionary so maybe its simply read-write?
 	- [ ] outside this installations "network" publishing back to mqtt is controlled by the connection username
-	- [ ] `MqttDashboard.Data.Mqtt` — separate package so the common `.Data` library has no MQTT dependency
-	- [ ] `SignalRDataServer` / `.Data.SignalR` — extract so SignalR is purely a transport adapter
-	- [ ] `IDataCache<T>` — typed value generics
-	- [ ] DataCache value object redesign (replace parallel collections with a richer value type supporting arbitrary tags/metadata)
-	- [ ] Minimize topic-string parsing (join/split on `/`); consider composite key object for the collection
-	- [ ] Topic tree structure for wildcard matching optimisation
-
+- [ ] `MqttDashboard.Data.Mqtt` — separate package so the common `.Data` library has no MQTT dependency
+- [ ] `SignalRDataServer` / `.Data.SignalR` — extract so SignalR is purely a transport adapter
+- [ ] `IDataCache<T>` — typed value generics
+- [ ] DataCache value object redesign (replace parallel collections with a richer value type supporting arbitrary tags/metadata)
+- [ ] Minimize topic-string parsing (join/split on `/`); consider composite key object for the collection
+- [ ] Topic tree structure for wildcard matching optimisation
 
 
 **Phase X — Plugin / alternate data sources**
