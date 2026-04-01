@@ -17,7 +17,7 @@ namespace MqttDashboard.Server.Services;
 /// </list>
 /// </para>
 /// </summary>
-public sealed class ServerDataCache : DataCache
+public sealed class ServerDataCache : DataCache, IServerSnapshotCache
 {
     public ServerDataCache(MqttDataServer mqttDataServer)
     {

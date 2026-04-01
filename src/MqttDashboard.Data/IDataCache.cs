@@ -38,4 +38,10 @@ public interface IDataCache
 
     /// <summary>Remove all cached values.</summary>
     void Clear();
+
+    /// <summary>Returns <c>true</c> if an <see cref="IDataServer"/> has already been registered
+    /// via <see cref="RegisterServer"/>. Use this to avoid double-registration in same-process hosts
+    /// where the cache is pre-wired (e.g. <c>ServerDataCache</c> registers <c>MqttDataServer</c>
+    /// in its constructor).</summary>
+    bool HasServer { get; }
 }

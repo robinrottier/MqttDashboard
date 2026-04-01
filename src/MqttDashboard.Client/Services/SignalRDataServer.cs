@@ -9,10 +9,9 @@ namespace MqttDashboard.Services;
 /// Browser-side <see cref="IDataServer"/> implementation.
 /// Connects to the SignalR hub via WebSocket; translates hub events into the
 /// <see cref="IDataServer"/> contract used by <see cref="IDataCache"/>.
-/// Also implements <see cref="IMqttPublisher"/> and <see cref="IMqttDiagnostics"/>
-/// for the WASM render path.
+/// Also implements <see cref="IMqttPublisher"/> for the WASM render path.
 /// </summary>
-public class SignalRDataServer : IDataServer, IMqttPublisher, IMqttDiagnostics
+public class SignalRDataServer : IDataServer, IMqttPublisher
 {
     private HubConnection? _hubConnection;
     private readonly ILogger<SignalRDataServer> _logger;
@@ -123,26 +122,6 @@ public class SignalRDataServer : IDataServer, IMqttPublisher, IMqttDiagnostics
         {
             _logger.LogWarning("[SignalR] Cannot publish to {Topic}: hub is null", topic);
         }
-    }
-
-    public async Task<string> GetMqttBrokerInfoAsync()
-    {
-        if (_hubConnection is not null)
-        {
-            try { return await _hubConnection.InvokeAsync<string>("GetMqttBrokerInfo"); }
-            catch (Exception ex) { _logger.LogError(ex, "[SignalR] Failed to get broker info"); return "unknown"; }
-        }
-        return "unknown";
-    }
-
-    public async Task<int> GetConnectedClientCountAsync()
-    {
-        if (_hubConnection is not null)
-        {
-            try { return await _hubConnection.InvokeAsync<int>("GetConnectedClientCount"); }
-            catch (Exception ex) { _logger.LogError(ex, "[SignalR] Failed to get client count"); return -1; }
-        }
-        return -1;
     }
 
     public async ValueTask DisposeAsync()

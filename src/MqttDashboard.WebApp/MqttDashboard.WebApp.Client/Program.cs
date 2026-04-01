@@ -13,7 +13,6 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Services.AddScoped<SignalRDataServer>();
 builder.Services.AddScoped<IDataServer>(sp => sp.GetRequiredService<SignalRDataServer>());
 builder.Services.AddScoped<IMqttPublisher>(sp => sp.GetRequiredService<SignalRDataServer>());
-builder.Services.AddScoped<IMqttDiagnostics>(sp => sp.GetRequiredService<SignalRDataServer>());
 
 // Add DashboardService (needs HttpClient)
 builder.Services.AddScoped<IDashboardService, DashboardService>();

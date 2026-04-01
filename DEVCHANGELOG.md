@@ -5,7 +5,131 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
-## 2026-04-01 — MqttDataHub fan-out migrated to ServerDataCache.Subscribe
+## 2026-04-01 — FEAT-H Phase 4: $DASHBOARD topics, IMqttDiagnostics removal, same-process DI
+
+### Commit: TBD · branch: feature/feat-h-data-layer · UTC timestamp: session end
+
+### Context
+
+Phase 4 of the data layer refactor. Completes the full migration away from adhoc pull-style diagnostic calls and lays the groundwork for a same-process (MAUI/combined host) deployment with no SignalR. All six Phase 4 todos (hub-migration, dashboard-topics-provider, ssr-seed-cache, injectable-datacache, remove-mqtt-diagnostics, same-process-di) are now done.
+
+---
+
+### 1. New file: `src/MqttDashboard.Server/Services/DashboardTopics.cs`
+
+Static string constants for all `$DASHBOARD/*` topic paths:
+- `$DASHBOARD/TIME`, `$DASHBOARD/UPTIME`
+- `$DASHBOARD/VERSION`, `$DASHBOARD/VERSION/LATEST`, `$DASHBOARD/VERSION/UPDATE_AVAILABLE`
+- `$DASHBOARD/MQTT/STATUS`, `$DASHBOARD/MQTT/BROKER`, `$DASHBOARD/MQTT/TOPIC_COUNT`
+- `$DASHBOARD/CLIENTS/COUNT`
+
+### 2. New file: `src/MqttDashboard.Server/Services/DashboardMetricsPublisher.cs`
+
+`BackgroundService` that publishes live diagnostic data as virtual `$DASHBOARD/*` topics into `ServerDataCache` (bypassing the MQTT broker entirely):
+
+- Publishes version info once on startup; re-publishes if a newer version is available.
+- Reacts to `MqttConnectionMonitor.OnStateChanged` to update `$DASHBOARD/MQTT/STATUS` and `$DASHBOARD/MQTT/BROKER` reactively.
+- Ticks every second via `PeriodicTimer`: publishes `TIME`, `UPTIME`, `TOPIC_COUNT`, `CLIENTS/COUNT`.
+- Registered as hosted service in `ServiceCollectionExtensions`.
+
+Result: any client subscribing to `$DASHBOARD/CLIENTS/COUNT` (for example) via `DataCache.Subscribe()` receives an immediate seed from cache and live updates every second — no ad-hoc hub methods needed.
+
+### 3. New file: `src/MqttDashboard.Data/IServerSnapshotCache.cs`
+
+Marker interface `IServerSnapshotCache : IDataCache` registered as `ServerDataCache` in server DI. Allows `MqttInitializationService` (Client project) to inject `ServerDataCache` for SSR snapshot seeding without a circular project reference.
+
+### 4. New file: `src/MqttDashboard.Server/Hubs/HubDataSubscriptionStore.cs`
+
+Singleton holding per-connection `IDisposable` subscription handles from `ServerDataCache.Subscribe()`. Needed because `MqttDataHub` is transient per invocation. `OnDisconnectedAsync` disposes all handles via the store.
+
+### 5. Rewrite: `src/MqttDashboard.Server/Hubs/MqttDataHub.cs`
+
+- Removed `MqttTopicSubscriptionManager`, `IConfiguration` injection, and three ad-hoc diagnostic methods (`GetMqttBrokerInfo`, `GetMqttConnectionStatus`, `GetConnectedClientCount`).
+- Added `IHubContext<MqttDataHub>` and `HubDataSubscriptionStore` injection.
+- `SubscribeToTopic` now calls `ServerDataCache.Subscribe()` with a callback that sends `ReceiveMqttData` to the specific connection; handle stored in store.
+- `OnDisconnectedAsync` disposes all handles via store.
+
+### 6. Update: `src/MqttDashboard.Client/Services/MqttInitializationService.cs`
+
+- Removed `IMqttDiagnostics` field and constructor parameter.
+- Removed post-`StartAsync` `GetMqttBrokerInfoAsync()` call — status is now delivered reactively via `StatusChanged` event wired before `StartAsync`.
+- Added optional `IServerSnapshotCache? serverSnapshot` parameter; `SeedFromServerSnapshot()` method iterates all cached values and copies them into `AppState.DataCache` during SSR pre-render (both WASM/Auto and ServerOnly render paths).
+- Added `HasServer` guard: `_appState.DataCache.RegisterServer(_dataServer)` is skipped if `DataCache.HasServer` is already `true` (prevents double-registration in same-process mode where `ServerDataCache` has `MqttDataServer` pre-wired).
+
+### 7. Update: `src/MqttDashboard.Client/Services/ApplicationState.cs`
+
+- Constructor gains optional `IDataCache? dataCache = null`; `DataCache` is set from it (defaults to `new DataCache()` when not injected). Enables same-process hosts to inject `ServerDataCache` directly.
+
+### 8. Update: `src/MqttDashboard.Data/IDataCache.cs` + `DataCache.cs`
+
+- Added `bool HasServer { get; }` to `IDataCache` interface.
+- Implemented in `DataCache` as `_server != null`.
+
+### 9. Delete: `src/MqttDashboard.Client/Services/IMqttDiagnostics.cs`
+
+Interface removed entirely. All diagnostic data is now distributed via `$DASHBOARD/*` virtual topics.
+
+### 10. Update: `src/MqttDashboard.Client/Services/SignalRDataServer.cs`
+
+- Removed `: IMqttDiagnostics` from class declaration.
+- Removed `GetMqttBrokerInfoAsync()` and `GetConnectedClientCountAsync()` methods.
+
+### 11. Update: `src/MqttDashboard.Server/Services/MqttDataServer.cs`
+
+- Removed `: IMqttDiagnostics` from class declaration.
+- Removed `GetMqttBrokerInfoAsync()` and `GetConnectedClientCountAsync()` method implementations.
+
+### 12. Update: `src/MqttDashboard.Client/Components/AboutDialog.razor`
+
+- Removed `@inject IMqttDiagnostics MqttDiagnostics`.
+- Added `@implements IDisposable` and `_clientCountSubscription` field.
+- `OnInitializedAsync` now subscribes `AppState.DataCache.Subscribe("$DASHBOARD/CLIENTS/COUNT", ...)` — fires immediately from cache (if seeded) and on every publisher tick. `Dispose()` disposes the handle.
+
+### 13. Update: `src/MqttDashboard.Server/Extensions/ServiceCollectionExtensions.cs`
+
+- Removed `services.AddSingleton<IMqttDiagnostics>(...)`.
+- Added `HubDataSubscriptionStore` singleton.
+- Added `DashboardMetricsPublisher` hosted service.
+- Added `IServerSnapshotCache` → `ServerDataCache` mapping.
+- Added new `AddMqttDashboardSameProcess()` extension method (see §14).
+
+### 14. New method: `AddMqttDashboardSameProcess()` in `ServiceCollectionExtensions.cs`
+
+Call this after `AddMqttDashboardServerServices()` and `AddMqttDashboardServices()` for a same-process host (MAUI Blazor, combined desktop, embedded):
+
+```csharp
+services.AddSingleton<IDataCache>(sp => sp.GetRequiredService<ServerDataCache>());
+services.AddScoped<IDataServer>(sp => sp.GetRequiredService<MqttDataServer>());
+```
+
+- `ApplicationState` receives `ServerDataCache` directly as its `IDataCache` — no per-circuit copy, no bridge, no SignalR hub.
+- `MqttInitializationService` calls `MqttDataServer.StartAsync()` (re-fires current status) and skips `RegisterServer()` because `DataCache.HasServer` is already `true` (wired in `ServerDataCache` constructor).
+- `IMqttPublisher` → `MqttDataServer` (already registered in `AddMqttDashboardServerServices`).
+
+### 15. Update: `src/MqttDashboard.WebApp/MqttDashboard.WebApp.Client/Program.cs`
+
+- Removed `services.AddScoped<IMqttDiagnostics>(...)`.
+
+### 16. Update: `tests/MqttDashboard.IntegrationTests/MqttDataHubTests.cs`
+
+- Replaced `GetMqttBrokerInfo_ReturnsBrokerString` and `GetConnectedClientCount_ReflectsConnections` (removed hub methods) with:
+  - `DashboardTopics_BrokerInfoPublishedToCache` — subscribes to `$DASHBOARD/MQTT/BROKER`; verifies topic delivered with non-empty payload.
+  - `DashboardTopics_ClientCountPublishedToCache` — subscribes to `$DASHBOARD/CLIENTS/COUNT`; verifies integer payload.
+
+### Tests
+
+All 71 tests pass (36 Data, 5 Client, 9 Server, 13 Integration [3 skipped], 8 Playwright). Build: 0 errors.
+
+### ⚠️ Caveats / Known remaining issues
+
+- `$DASHBOARD/CLIENTS/COUNT` in integration tests may return "0" (stale cache from pre-connection publisher tick); test now just asserts valid integer, not `>= 1`.
+- `AddMqttDashboardSameProcess()` is untested with a real MAUI host — it is the intended interface but will need wiring-up and validation when a MAUI/Electron host is actually added.
+- `MqttClientService` still broadcasts `MqttConnectionStatus` to all hub clients via `IHubContext` — this path should eventually be replaced by clients subscribing to `$DASHBOARD/MQTT/STATUS`. Not blocking.
+- `DashboardTopics` constants are in `MqttDashboard.Server.Services` — if client widgets need to subscribe to `$DASHBOARD/*` topics they must use string literals or a shared constants file in `MqttDashboard.Data` or `MqttDashboard.Client`.
+
+---
+
+
 
 ### Commit: 50d2b40 · branch: feature/feat-h-data-layer
 

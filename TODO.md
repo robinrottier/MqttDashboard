@@ -73,36 +73,18 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Moving a group moves all contained nodes
 - [ ] Split panel type controls to divide up work area into resizable sections
 
-### FEAT-H: Data layer refactor _(Phases 1–3 complete — see CHANGELOG)_
+### FEAT-H: Data layer refactor _(Phases 1–4 complete — see CHANGELOG)_
 - [ ] Lazy cache/Grace period: if last client unsubscribes from a topic, keep the server-side broker subscription alive for a configurable delay (e.g. 30 s) before actually unsubscribing from the broker — avoids churn if a circuit reconnects
 - [ ] Publishing e.g. from switch widget
-	- [ ] ...if client simply writes to their local cache then that publishes upstream and value trickles thru tree of DtaaCache
+	- [ ] ...if client simply writes to their local cache then that publishes upstream and value trickles thru tree of DataCache
 	- [ ] does it need some sort of access control...its just a inprocess dictionary so maybe its simply read-write?
 	- [ ] outside this installations "network" publishing back to mqtt is controlled by the connection username
-- [ ] Diagnostic info e.g. version checks for the about box can now be handles by special data topics from the root
-	- [ ] similar to $SYS in mqtt
-	- [ ] we can use $DASHBOARD (obvisouly that root topic is confugured or its a const string. whats best?).
-	      Includes:
-		- [ ] current time, start time, calculated uptime
-		- [ ] version & version check date & new version if available
-		- [ ] provider specific (mqtt ...$DASHBOARD/MQTT)
-			- [ ] connection status
-			- [ ] topic count
-		- [ ] connected client count ($DASHBOARD/CLIENTS)...total client count at root
-			- [ ] tree for each client and their id and count
-	- [ ] Mqtt is then removed from everywhere except for the actual backend connection. WHich can then be moved into a seperate Data.Mqtt project and that then only place with Mqtt library package depedency
-	- [ ] CLass definion needs to be generic for value items e.g. IDataCache<T> for type of the value
-	- [ ] DataCache could use other properties on the value instead of having lots of collections to track id's, watchers other stuff (DataServer seems to have a lot of collections!)
-	- [ ] One idea is value should have arbitary "Tag" set by caller/user ...could indicate callback, request ids, or anything
-	      But better if its well-typed properties for each application
-	- [ ]  SignalRDataServer ...can that be extracated to a .Data.SignalR package as th eonly place with SignalR depedency?
-		- [ ] Is it used for anythiing else other then the data pub/sub to do with the wasm client/server that interferes with this remodel??
-		- [ ] IN my mind signalr is just a transport (like mqtt) and the class structure and dependencies should reflect that.
-		      So the SignalRDataServer is really just a "SignalRTransport" with a "DataServer" class that is transport-agnostic and handles the caching, subscriptions, etc.
-			  The SignalRTransport would then implement the necessary methods to send/receive messages over SignalR and translate them into the DataServer's internal model
-	- [ ] Trying to minmize how much parsing of opic strings happemns (join and split based on the /)
-	      - should the collection "key" be a composite objbct of the full topic string and its components?. Does that add any value. Perhaps handling wildcard matching.
-	- [ ] I thought we would have a tree structure maintained reflecting the topic structure. Would that add any value? by referencing all the wildcar requests that match a node.
+	- [ ] `MqttDashboard.Data.Mqtt` — separate package so the common `.Data` library has no MQTT dependency
+	- [ ] `SignalRDataServer` / `.Data.SignalR` — extract so SignalR is purely a transport adapter
+	- [ ] `IDataCache<T>` — typed value generics
+	- [ ] DataCache value object redesign (replace parallel collections with a richer value type supporting arbitrary tags/metadata)
+	- [ ] Minimize topic-string parsing (join/split on `/`); consider composite key object for the collection
+	- [ ] Topic tree structure for wildcard matching optimisation
 
 
 

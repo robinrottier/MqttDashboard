@@ -21,10 +21,13 @@ public class ApplicationState
 {
     private readonly int _maxMessageHistory;
 
-    public ApplicationState(Microsoft.Extensions.Configuration.IConfiguration? configuration = null)
+    public ApplicationState(
+        Microsoft.Extensions.Configuration.IConfiguration? configuration = null,
+        IDataCache? dataCache = null)
     {
         var raw = configuration?["App:MaxMessageHistory"];
         _maxMessageHistory = int.TryParse(raw, out var v) && v > 0 ? v : 500;
+        DataCache = dataCache ?? new DataCache();
     }
 
     public string DisplayName => GetType().Assembly
@@ -65,7 +68,7 @@ public class ApplicationState
     public string MqttConnectionStatus { get; set; } = "Disconnected";
 
     // MQTT Data Cache
-    public IDataCache DataCache { get; } = new DataCache();
+    public IDataCache DataCache { get; }
 
     // Theme & UI preferences
     public ThemeMode ThemeMode { get; private set; } = ThemeMode.Auto;

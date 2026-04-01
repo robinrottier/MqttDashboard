@@ -18,7 +18,7 @@ namespace MqttDashboard.Server.Services;
 /// share the same broker-side ref-count.
 /// </para>
 /// <para>
-/// Also implements <see cref="IMqttPublisher"/> and <see cref="IMqttDiagnostics"/> so the
+/// Also implements <see cref="IMqttPublisher"/> so the
 /// rest of the application does not need to take a direct dependency on
 /// <see cref="MqttClientService"/>.
 /// </para>
@@ -29,7 +29,7 @@ namespace MqttDashboard.Server.Services;
 /// call re-fires the current MQTT status so the new circuit UI is seeded correctly.
 /// </para>
 /// </summary>
-public sealed class MqttDataServer : IDataServer, IMqttPublisher, IMqttDiagnostics, IAsyncDisposable
+public sealed class MqttDataServer : IDataServer, IMqttPublisher, IAsyncDisposable
 {
     private readonly MqttClientService _mqttClientService;
     private readonly MqttTopicSubscriptionManager _subscriptionManager;
@@ -109,17 +109,6 @@ public sealed class MqttDataServer : IDataServer, IMqttPublisher, IMqttDiagnosti
         await _mqttClientService.PublishMessageAsync(topic, payload, retain, qos);
         _logger?.LogDebug("[MqttDataServer] Published to {Topic}", topic);
     }
-
-    // ── IMqttDiagnostics ─────────────────────────────────────────────────────────
-
-    public Task<string> GetMqttBrokerInfoAsync()
-    {
-        var broker = _connectionMonitor.Broker;
-        return Task.FromResult(string.IsNullOrEmpty(broker) ? "unknown" : broker);
-    }
-
-    public Task<int> GetConnectedClientCountAsync()
-        => Task.FromResult(_connectionTracker.ConnectedCount);
 
     // ── Private handlers ─────────────────────────────────────────────────────────
 

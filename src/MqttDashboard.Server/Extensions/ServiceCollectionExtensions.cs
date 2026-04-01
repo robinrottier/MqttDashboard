@@ -43,10 +43,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<HttpClient>(sp => CreateLoopbackHttpClient(sp));
 
         // Singleton MQTT data server — feeds ALL incoming messages into ServerDataCache.
-        // Also implements IMqttPublisher and IMqttDiagnostics for the server.
+        // Also implements IMqttPublisher for the server.
         services.AddSingleton<MqttDataServer>();
         services.AddSingleton<IMqttPublisher>(sp => sp.GetRequiredService<MqttDataServer>());
-        services.AddSingleton<IMqttDiagnostics>(sp => sp.GetRequiredService<MqttDataServer>());
 
         // Singleton server-side DataCache — accumulates every MQTT value; shared by all circuits.
         services.AddSingleton<ServerDataCache>();
@@ -77,6 +76,34 @@ public static class ServiceCollectionExtensions
 
         // Publishes live diagnostic data as virtual $DASHBOARD/* topics into ServerDataCache
         services.AddHostedService<DashboardMetricsPublisher>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the additional bindings needed for a same-process host (e.g. MAUI Blazor,
+    /// combined desktop host) where the server and client run in a single DI container
+    /// with no SignalR transport.
+    /// <para>
+    /// Call this <b>after</b> <see cref="AddMqttDashboardServerServices"/> and
+    /// <see cref="MqttDashboard.Services.ServiceCollectionExtensions.AddMqttDashboardServices"/>.
+    /// It registers <see cref="ServerDataCache"/> as the singleton <see cref="MqttDashboard.Data.IDataCache"/>
+    /// so that <see cref="MqttDashboard.Services.ApplicationState"/> uses it directly — no per-circuit
+    /// cache, no bridge, no SignalR hub needed.
+    /// </para>
+    /// <para>
+    /// <see cref="MqttInitializationService"/> automatically skips re-registering a data server
+    /// when <see cref="MqttDashboard.Data.IDataCache.HasServer"/> is already <c>true</c>.
+    /// </para>
+    /// </summary>
+    public static IServiceCollection AddMqttDashboardSameProcess(this IServiceCollection services)
+    {
+        // Wire ApplicationState.DataCache directly to ServerDataCache; no per-circuit copy needed.
+        services.AddSingleton<IDataCache>(sp => sp.GetRequiredService<ServerDataCache>());
+
+        // In same-process mode, IDataServer for MqttInitializationService should be MqttDataServer
+        // directly — not CacheBridgeDataServer (which is the Blazor-Server-circuit adapter).
+        services.AddScoped<IDataServer>(sp => sp.GetRequiredService<MqttDataServer>());
 
         return services;
     }

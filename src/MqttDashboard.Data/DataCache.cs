@@ -113,6 +113,9 @@ public class DataCache : IDataCache
     }
 
     /// <inheritdoc/>
+    public bool HasServer => _server != null;
+
+    /// <inheritdoc/>
     public void RegisterServer(IDataServer server)
     {
         _server = server;

@@ -12,10 +12,10 @@ public class MqttInitializationService
     private readonly ApplicationState _appState;
     private readonly IDashboardService _dashboardService;
     private readonly IDataServer _dataServer;
-    private readonly IMqttDiagnostics _diagnostics;
     private readonly NavigationManager _navigationManager;
     private readonly IAuthService _authService;
     private readonly RenderModeOptions? _renderModeOptions;
+    private readonly IServerSnapshotCache? _serverSnapshot;
     private readonly ILogger<MqttInitializationService>? _logger;
     private bool _initialized = false;
 
@@ -23,19 +23,19 @@ public class MqttInitializationService
         ApplicationState appState,
         IDashboardService dashboardService,
         IDataServer dataServer,
-        IMqttDiagnostics diagnostics,
         NavigationManager navigationManager,
         IAuthService authService,
         RenderModeOptions? renderModeOptions = null,
+        IServerSnapshotCache? serverSnapshot = null,
         ILogger<MqttInitializationService>? logger = null)
     {
         _appState = appState;
         _dashboardService = dashboardService;
         _dataServer = dataServer;
-        _diagnostics = diagnostics;
         _navigationManager = navigationManager;
         _authService = authService;
         _renderModeOptions = renderModeOptions;
+        _serverSnapshot = serverSnapshot;
         _logger = logger;
     }
 
@@ -76,6 +76,7 @@ public class MqttInitializationService
                     if (_renderModeOptions?.IsWasmCapable == true)
                     {
                         // SSR pre-render for WASM/Auto mode: WASM will connect SignalR in the browser.
+                        SeedFromServerSnapshot();
                         _initialized = true;
                         _logger?.LogInformation("MQTT initialization deferred: SignalR will connect in browser");
                         return;
@@ -83,6 +84,7 @@ public class MqttInitializationService
 
                     // SSR pre-render for Blazor Server mode: the Blazor Server circuit hasn't been
                     // established yet. Let the circuit reinitialize fully.
+                    SeedFromServerSnapshot();
                     _logger?.LogInformation("MQTT initialization deferred: SSR pre-render, circuit will initialize");
                     return; // Don't set _initialized = true — circuit scope will re-run this
 
@@ -98,11 +100,10 @@ public class MqttInitializationService
                 await _dataServer.StartAsync(hubUrl);
 
                 _appState.SetDataServer(_dataServer);
-                _appState.DataCache.RegisterServer(_dataServer);
-
-                var serverHost = new Uri(_navigationManager.Uri).Host;
-                var mqttBroker = await _diagnostics.GetMqttBrokerInfoAsync();
-                _appState.SetMqttConnectionStatus($"Connected to {serverHost} (MQTT: {mqttBroker})", true);
+                // Only register if not already wired (e.g. ServerDataCache in same-process mode
+                // already has MqttDataServer registered in its constructor).
+                if (!_appState.DataCache.HasServer)
+                    _appState.DataCache.RegisterServer(_dataServer);
 
                 _logger?.LogInformation("DataServer started successfully");
 
@@ -119,8 +120,21 @@ public class MqttInitializationService
         }
     }
 
+    private void SeedFromServerSnapshot()
+    {
+        if (_serverSnapshot == null) return;
+        var topics = _serverSnapshot.GetAllTopics().ToList();
+        foreach (var topic in topics)
+        {
+            var value = _serverSnapshot.GetValue(topic);
+            if (value != null)
+                _appState.DataCache.UpdateValue(topic, value);
+        }
+        _logger?.LogInformation("[SSR] Seeded {Count} cached values from server snapshot", topics.Count);
+    }
+
     /// <summary>
-    /// Builds the SignalR hub URL for WASM clients. In Blazor Server, ServerSignalRService
+    /// Builds the SignalR hub URL for WASM clients.In Blazor Server, ServerSignalRService
     /// is used instead and this URL is ignored.
     /// </summary>
     private string BuildHubUrl()
