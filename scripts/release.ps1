@@ -317,9 +317,9 @@ function Update-ChangeLog($newTag) {
     $changelog = 'CHANGELOG.md'
     if (-not (Test-Path $changelog)) { throw "$changelog not found" }
     $lines = Get-Content $changelog
-    $idx = $line.IndexOf(($lines | where-object { $_ -match '^#+\s*\[Unreleased\]' }))
+    $idx = $lines.IndexOf(($lines | where-object { $_ -match '^#+\s*\[Unreleased\]' }))
     if ($idx -lt 0) { # try alternate header
-        $idx = $line.IndexOf(($lines | where-object { $_ -match '^#\s*Unreleased' }))
+        $idx = $lines.IndexOf(($lines | where-object { $_ -match '^#\s*Unreleased' }))
     }
     $today = (Get-Date).ToString('yyyy-MM-dd')
     $entry = "- Preparing release $newTag ($today)"
