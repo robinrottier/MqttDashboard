@@ -249,7 +249,8 @@ function Dotnet-Build-And-Test {
         [string]$Configuration = 'Debug'
     )
     Write-Log "Building solution ($Configuration)..."
-    Run-LocalCommand dotnet "build MqttDashboard.slnx -c $Configuration"
+    $res = Run-LocalCommand dotnet "build MqttDashboard.slnx -c $Configuration"
+    if ($res.ExitCode -ne 0) { throw "Build failed for configuration $Configuration" }
 
     # Run tests
     if ($Configuration -eq 'Release' -and $env:SKIP_RELEASE_TESTS -eq '1') {
@@ -266,12 +267,15 @@ function Dotnet-Build-And-Test {
     Write-Log "Running tests ($Configuration) ..."
     $testArgs = "test MqttDashboard.slnx -c $Configuration --no-build"
     if ($testFilter) { $testArgs += ' --filter "' + $testFilter + '"' }
-    Run-LocalCommand dotnet $testArgs
+    $res = Run-LocalCommand dotnet $testArgs
+    if ($res.ExitCode -ne 0) { throw "Tests failed for configuration $Configuration" }
 }
 
 function Git-Pull-EnsureSync {
     Write-Log "Fetching remote..."
-    Run-LocalCommand git 'fetch --prune'
+    $res =Run-LocalCommand git 'fetch --prune'
+    if ($res.ExitCode -ne 0) { throw "git fetch failed" }
+
     $branch = (Run-LocalCommand git 'rev-parse --abbrev-ref HEAD').StdOut.Trim()
     Write-Log "Current branch: $branch"
     Write-Log "Pulling latest from origin/$branch (rebase)..."
@@ -335,10 +339,13 @@ function Update-ChangeLog($newTag) {
 
 function Commit-And-Push-ChangeLog {
     param([string]$branch)
-    Run-LocalCommand git 'add CHANGELOG.md'
-    Run-LocalCommand git 'commit -m "Next RC"'
+    $res = Run-LocalCommand git 'add CHANGELOG.md'
+    if ($res.ExitCode -ne 0) { throw "git add failed" }
+    $res = Run-LocalCommand git 'commit -m "Next RC"'
+    if ($res.ExitCode -ne 0) { throw "git commit failed" }
     if ($env:DRYRUN -eq '1') { Write-Log "DRYRUN: skipping push"; return }
-    Run-LocalCommand git "push origin $branch"
+    $res = Run-LocalCommand git "push origin $branch"
+    if ($res.ExitCode -ne 0) { throw "git push failed" }
 }
 
 function Ensure-GH {
@@ -353,7 +360,7 @@ function Create-And-Merge-PR($branch, $newTag) {
     if (-not $slug) { Write-Log "Could not determine repo slug from git remote"; return }
 
     Write-Log "Creating PR to main for branch $branch..."
-    $prCreate = Run-LocalCommand gh "pr create --title \"Release $newTag\" --body \"Prepare release $newTag\" --base main --head $branch" $false
+    $prCreate = Run-LocalCommand gh "pr create --title ""Release $newTag"" --body ""Prepare release $newTag"" --base main --head $branch" $false
     if ($prCreate.ExitCode -ne 0) { throw "Failed to create PR" }
 
     # Get PR number
