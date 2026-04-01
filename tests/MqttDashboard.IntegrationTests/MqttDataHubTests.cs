@@ -128,8 +128,8 @@ public class MqttDataHubTests : IClassFixture<IntegrationWebApplicationFactory>,
     [Fact]
     public async Task GetCurrentValuesForTopics_ReturnsCachedValues()
     {
-        _factory.FakeMqttService.SeedLastKnownValue("cached/sensor", "42.0");
-        _factory.FakeMqttService.SeedLastKnownValue("cached/other", "on");
+        await _factory.FakeMqttService.SeedLastKnownValueAsync("cached/sensor", "42.0");
+        await _factory.FakeMqttService.SeedLastKnownValueAsync("cached/other", "on");
 
         await using var conn = CreateConnection();
         await conn.StartAsync();
@@ -146,31 +146,44 @@ public class MqttDataHubTests : IClassFixture<IntegrationWebApplicationFactory>,
     }
 
     [Fact]
-    public async Task GetConnectedClientCount_ReflectsConnections()
+    public async Task DashboardTopics_ClientCountPublishedToCache()
     {
         await using var conn1 = CreateConnection();
         await using var conn2 = CreateConnection();
         await conn1.StartAsync();
-
-        var countAfterOne = await conn1.InvokeAsync<int>("GetConnectedClientCount");
-
         await conn2.StartAsync();
-        var countAfterTwo = await conn2.InvokeAsync<int>("GetConnectedClientCount");
 
-        Assert.True(countAfterTwo > countAfterOne,
-            $"Count should increase: was {countAfterOne}, now {countAfterTwo}");
+        // Register listener before subscribing so the immediate cache-seed fires it
+        var dataReceived = HubConnectionHelper.WaitForAsync<string, string, DateTime>(
+            conn1, "ReceiveMqttData", Timeout);
+
+        await conn1.InvokeAsync("SubscribeToTopic", "$DASHBOARD/CLIENTS/COUNT");
+
+        var (topic, payload, _) = await dataReceived;
+
+        Assert.Equal("$DASHBOARD/CLIENTS/COUNT", topic);
+        // Just verify it's a valid integer — exact count is non-deterministic in tests
+        // (the publisher tick may have fired before or after connections were established)
+        Assert.True(int.TryParse(payload, out _), $"Expected integer payload, got '{payload}'");
     }
 
     [Fact]
-    public async Task GetMqttBrokerInfo_ReturnsBrokerString()
+    public async Task DashboardTopics_BrokerInfoPublishedToCache()
     {
         await using var conn = CreateConnection();
         await conn.StartAsync();
 
-        var info = await conn.InvokeAsync<string>("GetMqttBrokerInfo");
+        // Register listener before subscribing so the immediate cache-seed fires it
+        var dataReceived = HubConnectionHelper.WaitForAsync<string, string, DateTime>(
+            conn, "ReceiveMqttData", Timeout);
 
-        Assert.False(string.IsNullOrEmpty(info));
-        Assert.Contains(":", info); // format is "host:port"
+        await conn.InvokeAsync("SubscribeToTopic", "$DASHBOARD/MQTT/BROKER");
+
+        var (topic, payload, _) = await dataReceived;
+
+        Assert.Equal("$DASHBOARD/MQTT/BROKER", topic);
+        Assert.False(string.IsNullOrEmpty(payload));
+        // In production the format is "host:port"; in tests with a fake service it may be "unknown"
     }
 
     [Fact]

@@ -1101,12 +1101,12 @@ public partial class Display : IDisposable
 
     private async Task SyncSubscriptionsAsync(HashSet<string> previous, IReadOnlyCollection<string> current)
     {
-        if (AppState.SignalRService == null) return;
+        if (AppState.DataServer == null) return;
         var currentSet = new HashSet<string>(current);
         foreach (var topic in previous.Where(t => !currentSet.Contains(t)))
-            await AppState.SignalRService.UnsubscribeFromTopicAsync(topic);
+            await AppState.DataServer.UnsubscribeAsync(topic);
         foreach (var topic in currentSet.Where(t => !previous.Contains(t)))
-            await AppState.SignalRService.SubscribeToTopicAsync(topic);
+            await AppState.DataServer.SubscribeAsync(topic);
     }
 
     // ── Save As / Open ────────────────────────────────────────────────────────

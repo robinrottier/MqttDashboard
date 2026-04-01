@@ -50,6 +50,16 @@ public class IntegrationWebApplicationFactory : WebApplicationFactory<Program>
         });
     }
 
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        var host = base.CreateHost(builder);
+        // Eagerly resolve ServerDataCache so MqttDataServer is constructed and its
+        // OnMessagePublished / OnStateChanged handlers are wired before any test
+        // injects fake MQTT messages via FakeMqttClientService.
+        _ = host.Services.GetRequiredService<ServerDataCache>();
+        return host;
+    }
+
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);

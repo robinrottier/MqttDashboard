@@ -4,9 +4,9 @@
 @using MudBlazor
 @inject ApplicationState AppState
 @inject NavigationManager NavManager
-@inject ISignalRService SignalRService
 @inject HttpClient Http
 @inject MudBlazor.IDialogService DialogService
+@implements IDisposable
 
 <MudDialog>
     <DialogContent>
@@ -173,6 +173,7 @@
     private List<InfoItem> _debugInfo = new();
     private bool _showDebugInfo;
     private int _clientCount = -1;
+    private IDisposable? _clientCountSubscription;
 
     private UpdateStatusDto? _updateStatus;
     private bool _checkingUpdate = false;
@@ -184,7 +185,15 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _clientCount = await SignalRService.GetConnectedClientCountAsync();
+        // Subscribe to live client count from $DASHBOARD topic; fires immediately if cached.
+        _clientCountSubscription = AppState.DataCache.Subscribe("$DASHBOARD/CLIENTS/COUNT", (_, val) =>
+        {
+            if (int.TryParse(val?.ToString(), out var count))
+            {
+                _clientCount = count;
+                InvokeAsync(StateHasChanged);
+            }
+        });
 
         var appAssembly = typeof(AboutDialog).Assembly;
         var appName = AppState.DisplayName;
@@ -253,6 +262,8 @@
         }
         StateHasChanged();
     }
+
+    public void Dispose() => _clientCountSubscription?.Dispose();
 
     private async Task CheckForUpdates()
     {

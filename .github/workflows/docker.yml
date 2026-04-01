@@ -30,6 +30,8 @@ jobs:
         run: |
           dotnet test tests/MqttDashboard.Client.Tests/MqttDashboard.Client.Tests.csproj \
             -c Release --no-build --verbosity normal
+          dotnet test tests/MqttDashboard.Data.Tests/MqttDashboard.Data.Tests.csproj \
+            -c Release --no-build --verbosity normal
           dotnet test tests/MqttDashboard.Server.Tests/MqttDashboard.Server.Tests.csproj \
             -c Release --no-build --verbosity normal
           dotnet test tests/MqttDashboard.IntegrationTests/MqttDashboard.IntegrationTests.csproj \
