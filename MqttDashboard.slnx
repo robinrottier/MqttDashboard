@@ -4,6 +4,7 @@
     <File Path="data/dashboards/Default.json" />
   </Folder>
   <Folder Name="/solution items/">
+    <File Path="CHANGELOG.md" />
     <File Path="DEVCHANGELOG.md" />
     <File Path="TODO.md" />
   </Folder>
