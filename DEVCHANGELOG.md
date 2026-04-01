@@ -5,6 +5,38 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
+## 2026-04-01 — MqttDataHub fan-out migrated to ServerDataCache.Subscribe
+
+### Commit: 50d2b40 · branch: feature/feat-h-data-layer
+
+### 1. New file: `src/MqttDashboard.Server/Hubs/HubDataSubscriptionStore.cs`
+
+Singleton service that holds `IDisposable` handles returned by `DataCache.Subscribe()` for every active SignalR connection, keyed by `(connectionId, topic)`. Necessary because `MqttDataHub` is transient (one instance per hub method invocation) so it cannot own the handles itself. Provides `IsSubscribed`, `TryAdd`, `TryRemove`, `RemoveAll`.
+
+### 2. Rewrite: `src/MqttDashboard.Server/Hubs/MqttDataHub.cs`
+
+- **Removed** `MqttTopicSubscriptionManager` from constructor and all usages. Broker-level subscribe/unsubscribe is now exclusively driven by `DataCache` ref-counting through `MqttDataServer`.
+- **Added** `IHubContext<MqttDataHub>` injection (needed for async callbacks that fire outside hub method invocations).
+- **Added** `HubDataSubscriptionStore` injection.
+- `SubscribeToTopic`: calls `_serverDataCache.Subscribe(topic, callback)` where callback does `_ = _hubContext.Clients.Client(connectionId).SendAsync("ReceiveMqttData", ...)`. The handle is stored in `HubDataSubscriptionStore`. If a cached value exists, `DataCache.Subscribe` seeds the client immediately.
+- `UnsubscribeFromTopic`: retrieves and disposes the handle from the store.
+- `OnDisconnectedAsync`: calls `_subscriptionStore.RemoveAll()` and disposes every handle — replaces `_subscriptionManager.UnsubscribeClientFromAllTopicsAsync`.
+- **Removed** `GetMqttBrokerInfo`, `GetMqttConnectionStatus`, `GetConnectedClientCount` hub methods (will be replaced by `$DASHBOARD` virtual topics; WASM client has graceful fallbacks returning "unknown"/-1 on invocation failure).
+
+### 3. Simplify: `src/MqttDashboard.Server/Services/MqttClientService.cs`
+
+Removed `GetInterestedClients` lookup and `_hubContext.Clients.Clients(...).SendAsync("ReceiveMqttData", ...)` dispatch from `HandleIncomingMessageAsync`. Hub fan-out now happens via `ServerDataCache` subscriber callbacks. `_hubContext` is retained for `MqttConnectionStatus` all-clients broadcast on MQTT reconnect. `_subscriptionManager` is retained for broker-level subscription management in `ExecuteAsync`.
+
+### 4. Update: `src/MqttDashboard.Server/Extensions/ServiceCollectionExtensions.cs`
+
+Added `services.AddSingleton<HubDataSubscriptionStore>()`.
+
+### Tests
+
+`dotnet test tests/MqttDashboard.Server.Tests` — 9/9 passed. `dotnet build MqttDashboard.slnx` — succeeded.
+
+---
+
 ## 2026-03-30 (batch 6 / FEAT-H Phase 3) — Server-side DataCache + CacheBridgeDataServer
 
 ### Branch: feature/feat-h-data-layer

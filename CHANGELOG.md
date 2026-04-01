@@ -7,6 +7,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- **`MqttDataHub`** — SignalR hub fan-out now uses `ServerDataCache.Subscribe()` callbacks instead of `MqttTopicSubscriptionManager.GetInterestedClients()`. Each client subscription stores a `IDisposable` handle in the new `HubDataSubscriptionStore` singleton; disposing it on disconnect automatically ref-counts the broker subscription down via `DataCache`. Clients receive the current cached value immediately on subscribe (no wait for next MQTT message).
+- **`MqttClientService.HandleIncomingMessageAsync`** — removed direct SignalR dispatch; fan-out is now handled by the hub's `DataCache` subscriber callbacks.
+- Removed `GetMqttBrokerInfo`, `GetMqttConnectionStatus`, `GetConnectedClientCount` hub methods (WASM client returns "unknown"/-1 gracefully; replacements via virtual topics planned).
+
 ### Added — FEAT-H: Data layer refactor (Phases 1–3)
 - **`MqttDashboard.Data` project** — new pure-C# library (no Blazor/ASP.NET/MQTT dependencies) holding the entire topic pub/sub infrastructure: `IDataCache`, `DataCache`, `IDataServer`, `CacheBridgeDataServer`, `TopicMatcher`, `XmlPayloadHelper`. Enables future non-Blazor hosting and isolated unit testing.
 - **`IDataCache` / `DataCache`** — thread-safe in-memory topic store with wildcard subscribe (`+` / `#`), demand-driven upstream subscription (first subscriber triggers `IDataServer.SubscribeAsync`; last subscriber triggers `UnsubscribeAsync`).
