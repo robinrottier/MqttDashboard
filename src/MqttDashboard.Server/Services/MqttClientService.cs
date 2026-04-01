@@ -242,34 +242,14 @@ public class MqttClientService : BackgroundService, IMqttClientService
     }
 
     /// <summary>
-    /// Processes an incoming MQTT message: caches the value, dispatches to interested
-    /// SignalR clients, and notifies in-process subscribers. Override in test doubles to
-    /// inject fake messages without a real broker.
+    /// Processes an incoming MQTT message and notifies in-process subscribers.
+    /// Hub fan-out is handled by <see cref="MqttDashboard.Server.Hubs.MqttDataHub"/> via
+    /// <see cref="ServerDataCache"/> callbacks — no direct SignalR dispatch here.
+    /// Override in test doubles to inject fake messages without a real broker.
     /// </summary>
     protected virtual async Task HandleIncomingMessageAsync(
         string topic, string payload, DateTime timestamp, CancellationToken ct = default)
     {
-        var interestedClients = _subscriptionManager.GetInterestedClients(topic);
-
-        _logger.LogTrace("Found {Count} interested clients for topic {Topic}", interestedClients.Count, topic);
-
-        if (interestedClients.Any())
-        {
-            try
-            {
-                await _hubContext.Clients.Clients(interestedClients.ToList())
-                    .SendAsync("ReceiveMqttData", topic, payload, timestamp, ct);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error sending MQTT message to clients for topic {Topic}", topic);
-            }
-        }
-        else
-        {
-            _logger.LogTrace("No interested clients found for topic {Topic}", topic);
-        }
-
         var inProcessHandler = OnMessagePublished;
         if (inProcessHandler != null)
         {

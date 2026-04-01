@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MqttDashboard.Server.Services;
 
@@ -7,73 +6,70 @@ namespace MqttDashboard.Server.Hubs;
 
 public class MqttDataHub : Hub
 {
-    private readonly MqttTopicSubscriptionManager _subscriptionManager;
+    private readonly IHubContext<MqttDataHub> _hubContext;
     private readonly ILogger<MqttDataHub> _logger;
-    private readonly IConfiguration _configuration;
     private readonly MqttConnectionMonitor _connectionMonitor;
     private readonly ClientConnectionTracker _connectionTracker;
     private readonly IMqttClientService _mqttClientService;
     private readonly ServerDataCache _serverDataCache;
+    private readonly HubDataSubscriptionStore _subscriptionStore;
 
     public MqttDataHub(
-        MqttTopicSubscriptionManager subscriptionManager,
+        IHubContext<MqttDataHub> hubContext,
         ILogger<MqttDataHub> logger,
-        IConfiguration configuration,
         MqttConnectionMonitor connectionMonitor,
         ClientConnectionTracker connectionTracker,
         IMqttClientService mqttClientService,
-        ServerDataCache serverDataCache)
+        ServerDataCache serverDataCache,
+        HubDataSubscriptionStore subscriptionStore)
     {
-        _subscriptionManager = subscriptionManager;
+        _hubContext = hubContext;
         _logger = logger;
-        _configuration = configuration;
         _connectionMonitor = connectionMonitor;
         _connectionTracker = connectionTracker;
         _mqttClientService = mqttClientService;
         _serverDataCache = serverDataCache;
+        _subscriptionStore = subscriptionStore;
     }
 
     public async Task SubscribeToTopic(string topic)
     {
-        _logger.LogInformation("Client {ConnectionId} requesting subscription to topic: {Topic}", Context.ConnectionId, topic);
-        var success = await _subscriptionManager.SubscribeClientToTopicAsync(Context.ConnectionId, topic);
-        if (success)
-            _logger.LogInformation("Client {ConnectionId} successfully subscribed to topic: {Topic}", Context.ConnectionId, topic);
-        else
-            _logger.LogWarning("Client {ConnectionId} already subscribed to topic: {Topic}", Context.ConnectionId, topic);
+        var connectionId = Context.ConnectionId;
+        _logger.LogInformation("Client {ConnectionId} requesting subscription to topic: {Topic}", connectionId, topic);
 
-        // Always send confirmation
+        if (_subscriptionStore.IsSubscribed(connectionId, topic))
+        {
+            _logger.LogWarning("Client {ConnectionId} already subscribed to topic: {Topic}", connectionId, topic);
+        }
+        else
+        {
+            var handle = _serverDataCache.Subscribe(topic, (t, v) =>
+                _ = _hubContext.Clients.Client(connectionId)
+                    .SendAsync("ReceiveMqttData", t, v?.ToString() ?? string.Empty, DateTime.UtcNow));
+
+            _subscriptionStore.TryAdd(connectionId, topic, handle);
+            _logger.LogInformation("Client {ConnectionId} successfully subscribed to topic: {Topic}", connectionId, topic);
+        }
+
         await Clients.Caller.SendAsync("SubscriptionConfirmed", topic);
     }
 
     public async Task UnsubscribeFromTopic(string topic)
     {
-        _logger.LogInformation("Client {ConnectionId} requesting unsubscription from topic: {Topic}", Context.ConnectionId, topic);
-        var success = await _subscriptionManager.UnsubscribeClientFromTopicAsync(Context.ConnectionId, topic);
-        if (success)
+        var connectionId = Context.ConnectionId;
+        _logger.LogInformation("Client {ConnectionId} requesting unsubscription from topic: {Topic}", connectionId, topic);
+
+        if (_subscriptionStore.TryRemove(connectionId, topic, out var handle))
         {
-            _logger.LogInformation("Client {ConnectionId} successfully unsubscribed from topic: {Topic}", Context.ConnectionId, topic);
+            handle?.Dispose();
+            _logger.LogInformation("Client {ConnectionId} successfully unsubscribed from topic: {Topic}", connectionId, topic);
             await Clients.Caller.SendAsync("UnsubscriptionConfirmed", topic);
         }
         else
         {
-            _logger.LogWarning("Client {ConnectionId} was not subscribed to topic: {Topic}", Context.ConnectionId, topic);
+            _logger.LogWarning("Client {ConnectionId} was not subscribed to topic: {Topic}", connectionId, topic);
         }
     }
-
-    public Task<string> GetMqttBrokerInfo()
-    {
-        var broker = _configuration["MqttSettings:Broker"] ?? "unknown";
-        var port = _configuration["MqttSettings:Port"] ?? "1883";
-        return Task.FromResult($"{broker}:{port}");
-    }
-
-    public Task<string> GetMqttConnectionStatus()
-    {
-        return Task.FromResult(_connectionMonitor.State.ToString());
-    }
-
-    public Task<int> GetConnectedClientCount() => Task.FromResult(_connectionTracker.ConnectedCount);
 
     public async Task PublishMessage(string topic, string payload, bool retain = false, int qos = 0)
     {
@@ -96,7 +92,6 @@ public class MqttDataHub : Hub
     {
         _connectionTracker.Increment();
         _logger.LogInformation("Client {ConnectionId} connected to MQTT Hub", Context.ConnectionId);
-        // Push current MQTT state to the newly connected client
         await Clients.Caller.SendAsync("MqttConnectionStatus",
             _connectionMonitor.State.ToString(),
             _connectionMonitor.ReconnectAttempts);
@@ -106,7 +101,9 @@ public class MqttDataHub : Hub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         _connectionTracker.Decrement();
-        await _subscriptionManager.UnsubscribeClientFromAllTopicsAsync(Context.ConnectionId);
+        foreach (var handle in _subscriptionStore.RemoveAll(Context.ConnectionId))
+            handle.Dispose();
+
         if (exception != null)
             _logger.LogWarning(exception, "Client {ConnectionId} disconnected with exception", Context.ConnectionId);
         else

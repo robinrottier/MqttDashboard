@@ -21,6 +21,9 @@ public static class ServiceCollectionExtensions
         // Add MQTT Connection Monitor as singleton
         services.AddSingleton<MqttConnectionMonitor>();
 
+        // Singleton store for per-connection DataCache subscription handles in MqttDataHub.
+        services.AddSingleton<HubDataSubscriptionStore>();
+
         // Register MqttClientService as both a singleton (injectable) and a hosted service.
         services.AddSingleton<MqttClientService>();
         services.AddHostedService(sp => sp.GetRequiredService<MqttClientService>());
@@ -47,6 +50,9 @@ public static class ServiceCollectionExtensions
 
         // Singleton server-side DataCache — accumulates every MQTT value; shared by all circuits.
         services.AddSingleton<ServerDataCache>();
+        // Expose ServerDataCache as IServerSnapshotCache so MqttInitializationService can seed
+        // AppState.DataCache during SSR pre-render. Per-circuit DataCache instances are unaffected.
+        services.AddSingleton<IServerSnapshotCache>(sp => sp.GetRequiredService<ServerDataCache>());
 
         // Scoped per-circuit IDataServer: bridges the circuit's local DataCache to ServerDataCache.
         // Status and reconnect events are forwarded from the singleton MqttDataServer.
@@ -68,6 +74,9 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient("UpdateCheck");
         services.AddSingleton<UpdateCheckService>();
         services.AddHostedService(sp => sp.GetRequiredService<UpdateCheckService>());
+
+        // Publishes live diagnostic data as virtual $DASHBOARD/* topics into ServerDataCache
+        services.AddHostedService<DashboardMetricsPublisher>();
 
         return services;
     }
