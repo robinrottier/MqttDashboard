@@ -7,7 +7,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ## BUGS
 
 - [ ] Open dialog ... seems very small and too far to left on the screen. Maybe it should be centered and larger? (this was on firefox)
-- [ ] Was logged in (due to cookie I guess) and then did "logout admin" ...it went to "Login dialog" but really shoul dgo to home page simply
+- [ ] I was logged in (due to cookie I guess) and then did "logout admin" ...it went to "Login dialog" but really shoul dgo to home page simply
       with no logged in user state and I can log in if required
 
 ## 🟡 Minor Enhancements
