@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using MqttDashboard.Server.Services;
+using MqttDashboard.Mqtt;
 
 namespace MqttDashboard.Server.Health;
 

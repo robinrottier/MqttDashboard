@@ -1,4 +1,4 @@
-namespace MqttDashboard.Server.Services;
+namespace MqttDashboard.Mqtt;
 
 public enum MqttConnectionState { Disconnected, Connecting, Connected, Failed }
 

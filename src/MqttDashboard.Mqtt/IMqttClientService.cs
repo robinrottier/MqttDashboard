@@ -1,4 +1,4 @@
-namespace MqttDashboard.Server.Services;
+namespace MqttDashboard.Mqtt;
 
 /// <summary>
 /// Interface for the MQTT client service, exposing the functionality needed by

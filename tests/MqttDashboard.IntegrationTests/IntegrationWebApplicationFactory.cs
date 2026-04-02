@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using MqttDashboard.Mqtt;
 using MqttDashboard.Server.Services;
 
 namespace MqttDashboard.IntegrationTests;

@@ -1,5 +1,6 @@
 using MqttDashboard.Data;
 using MqttDashboard.Models;
+using MqttDashboard.Mqtt;
 using MqttDashboard.Server.Hubs;
 using MqttDashboard.Services;
 using Microsoft.Extensions.Logging;

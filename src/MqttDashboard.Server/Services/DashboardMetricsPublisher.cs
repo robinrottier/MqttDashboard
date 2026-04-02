@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using MqttDashboard.Mqtt;
 using MqttDashboard.Server.Hubs;
 using System.Reflection;
 

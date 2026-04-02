@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using MQTTnet;
 using System.Collections.Concurrent;
 
-namespace MqttDashboard.Server.Services;
+namespace MqttDashboard.Mqtt;
 
 public class MqttClientService : BackgroundService, IMqttClientService
 {

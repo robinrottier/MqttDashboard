@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
+using MqttDashboard.Mqtt;
+using MqttDashboard.Server.Hubs;
 using MqttDashboard.Server.Services;
 
 namespace MqttDashboard.Server.Hubs;

@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using MqttDashboard.Data;
 
-namespace MqttDashboard.Server.Services;
+namespace MqttDashboard.Mqtt;
 
 /// <summary>
 /// Ref-counts broker-level MQTT subscriptions across all subscribers (SignalR hub clients

@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using MqttDashboard.Server.Services;
+using MqttDashboard.Mqtt;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 

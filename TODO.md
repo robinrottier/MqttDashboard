@@ -90,8 +90,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 	- [ ] outside this installations "network" publishing back to mqtt is controlled by the connection username so no problem there but shoul dbe an
 	      option on creation of the mqtt cache to allow publishing or not for this cache
 - [ ] Lazy cache/Grace period: if last client unsubscribes from a topic, keep the server-side broker subscription alive for a configurable delay (e.g. 30 s) before actually unsubscribing from the broker — avoids churn if a circuit reconnects ✅ done
-- [ ] `MqttDashboard.Data.Mqtt` — separate package so the common `.Data` library has no MQTT dependency
-	- [ ] Main blocker resolved: `MqttClientService` no longer references `IHubContext<DataHub>` (extracted to `MqttStatusBroadcaster`). The MQTT files are now SignalR-free. Next step is creating the new project and moving them.
+- [ ] `MqttDashboard.Mqtt` project extracted ✅ done — `MqttClientService`, `MqttConnectionMonitor`, `MqttTopicSubscriptionManager`, `IMqttClientService` now live in their own project with no SignalR/Blazor dependencies
 - [ ] `SignalRDataServer` / `.Data.SignalR` — extract so SignalR is purely a transport adapter
 	- [ ] `SignalRDataServer` is already clean (only `SignalR.Client` + `MqttDashboard.Data` deps); straightforward to extract.
 - [ ] `IDataCache<T>` — typed value generics
@@ -104,7 +103,6 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 	- [ ] Built-in integrations: REST APIs, WebSockets, Home Assistant local API, Emoncms feeds and time-series
 	- [ ] Mock data generator server implementation (useful for testing / demo without a broker)
 	- [ ] Finance market plugin (e..g Yaho finance?)
-	- [ ] `MqttDashboard.Data.Mqtt` — separate package so the common `.Data` library has no MQTT dependency
 - [ ] Admin configures available plugins; nodes select source and configure connection
 
 ### FEAT-I: Responsive / mobile layout

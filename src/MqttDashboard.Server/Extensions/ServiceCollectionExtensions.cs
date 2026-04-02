@@ -1,4 +1,5 @@
 using MqttDashboard.Data;
+using MqttDashboard.Mqtt;
 using MqttDashboard.Server.Hubs;
 using MqttDashboard.Server.Services;
 using MqttDashboard.Server.Filters;

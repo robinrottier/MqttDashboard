@@ -5,6 +5,71 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
+## 2026-04-02 — FEAT-H: Extract MqttDashboard.Mqtt project
+
+### Commit: TBD · branch: feature/feat-h-data-layer · UTC: 2026-04-02T11:xx
+
+### Context
+
+With `MqttClientService` fully decoupled from SignalR (previous commit), the four pure MQTT files were ready to live in their own project. Extracted into `MqttDashboard.Mqtt` — a class library with no Blazor or SignalR dependencies. `MqttDashboard.Server` now references `.Mqtt` as a sibling project.
+
+---
+
+### 1. New project: `src/MqttDashboard.Mqtt/MqttDashboard.Mqtt.csproj`
+
+- `net10.0`, `FrameworkReference Microsoft.AspNetCore.App` (for `BackgroundService`)
+- `PackageReference MQTTnet 5.1.0.1559`
+- `ProjectReference MqttDashboard.Data`
+- No SignalR, Blazor, or MudBlazor references
+
+### 2. Moved files (via `git mv` — history preserved)
+
+| Old location | New location |
+|---|---|
+| `Server/Services/IMqttClientService.cs` | `Mqtt/IMqttClientService.cs` |
+| `Server/Services/MqttClientService.cs` | `Mqtt/MqttClientService.cs` |
+| `Server/Services/MqttConnectionMonitor.cs` | `Mqtt/MqttConnectionMonitor.cs` |
+| `Server/Services/MqttTopicSubscriptionManager.cs` | `Mqtt/MqttTopicSubscriptionManager.cs` |
+
+Namespace changed from `MqttDashboard.Server.Services` → `MqttDashboard.Mqtt` in all four files.
+
+### 3. Update: `src/MqttDashboard.Server/MqttDashboard.Server.csproj`
+
+- Removed `PackageReference MQTTnet` (moved to `.Mqtt` project — no `.Server` code uses MQTTnet types directly)
+- Added `ProjectReference MqttDashboard.Mqtt`
+
+### 4. Using statement updates in `.Server`
+
+Files that reference the moved types now add `using MqttDashboard.Mqtt;`:
+- `Hubs/DataHub.cs` — `MqttConnectionMonitor`, `IMqttClientService`
+- `Hubs/MqttStatusBroadcaster.cs` — `MqttConnectionMonitor`
+- `Services/MqttDataServer.cs` — `MqttClientService`, `MqttTopicSubscriptionManager`, `MqttConnectionMonitor`
+- `Services/DashboardMetricsPublisher.cs` — `MqttConnectionMonitor`
+- `Extensions/ServiceCollectionExtensions.cs` — all four types
+- `Health/MqttConnectionHealthCheck.cs` — `MqttConnectionMonitor`
+
+### 5. Update: test projects
+
+`tests/MqttDashboard.IntegrationTests/FakeMqttClientService.cs` and `IntegrationWebApplicationFactory.cs` — `using MqttDashboard.Server.Services` → `using MqttDashboard.Mqtt` (plus keep `.Server.Services` where other non-moved types are still used).
+
+### 6. Updated `MqttDashboard.slnx`
+
+Added `MqttDashboard.Mqtt` to the `/src/` folder in the solution.
+
+### Result
+
+Dependency chain:
+```
+MqttDashboard.Data   (pure abstractions, no NuGet deps)
+MqttDashboard.Mqtt   (MQTTnet only — no Blazor/SignalR)
+MqttDashboard.Server (AspNetCore + SignalR host, references .Mqtt + .Data + .Client)
+MqttDashboard.Client (Blazor + SignalR.Client, references .Data)
+```
+
+All 71 tests pass (was 66 before — PlaywrightTests added 5).
+
+---
+
 ## 2026-04-02 — FEAT-H: Decouple MqttClientService from SignalR
 
 ### Commit: TBD · branch: feature/feat-h-data-layer · UTC: 2026-04-02T11:xx
