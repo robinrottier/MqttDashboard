@@ -1,16 +1,13 @@
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MQTTnet;
-using MqttDashboard.Server.Hubs;
 using System.Collections.Concurrent;
 
 namespace MqttDashboard.Server.Services;
 
 public class MqttClientService : BackgroundService, IMqttClientService
 {
-    private readonly IHubContext<DataHub> _hubContext;
     private readonly ILogger<MqttClientService> _logger;
     private readonly IConfiguration _configuration;
     private readonly MqttTopicSubscriptionManager _subscriptionManager;
@@ -24,13 +21,11 @@ public class MqttClientService : BackgroundService, IMqttClientService
     public event Func<string, string, DateTime, Task>? OnMessagePublished;
 
     public MqttClientService(
-        IHubContext<DataHub> hubContext,
         ILogger<MqttClientService> logger,
         IConfiguration configuration,
         MqttTopicSubscriptionManager subscriptionManager,
         MqttConnectionMonitor connectionMonitor)
     {
-        _hubContext = hubContext;
         _logger = logger;
         _configuration = configuration;
         _subscriptionManager = subscriptionManager;
@@ -55,11 +50,6 @@ public class MqttClientService : BackgroundService, IMqttClientService
                 mqttBroker, mqttPort, string.IsNullOrEmpty(mqttUsername) ? "<none>" : mqttUsername);
 
             _connectionMonitor.SetBroker($"{mqttBroker}:{mqttPort}");
-
-            _connectionMonitor.OnStateChanged += async (state, attempts) =>
-            {
-                await _hubContext.Clients.All.SendAsync("MqttConnectionStatus", state.ToString(), attempts, stoppingToken);
-            };
 
             var optionsBuilder = new MqttClientOptionsBuilder()
                 .WithTcpServer(mqttBroker, mqttPort)

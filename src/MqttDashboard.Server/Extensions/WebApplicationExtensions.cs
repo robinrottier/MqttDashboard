@@ -26,6 +26,10 @@ public static class WebApplicationExtensions
         var renderModeOptions = app.Services.GetService<MqttDashboard.Services.RenderModeOptions>();
         app.Lifetime.ApplicationStarted.Register(() =>
         {
+            // Force MqttStatusBroadcaster to be instantiated so its constructor wires
+            // the MqttConnectionMonitor.OnStateChanged → SignalR broadcast event.
+            app.Services.GetRequiredService<MqttStatusBroadcaster>();
+
             try
             {
                 var addresses = app.Services.GetService<IServer>()

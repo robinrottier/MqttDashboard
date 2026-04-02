@@ -5,6 +5,47 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
+## 2026-04-02 — FEAT-H: Decouple MqttClientService from SignalR
+
+### Commit: TBD · branch: feature/feat-h-data-layer · UTC: 2026-04-02T11:xx
+
+### Context
+
+`MqttClientService` had a direct dependency on `IHubContext<DataHub>` solely to broadcast `MqttConnectionStatus` to all SignalR clients whenever the MQTT connection state changed. MQTT code should have zero knowledge of SignalR. Fixed by extracting the broadcast into a dedicated `MqttStatusBroadcaster` class.
+
+---
+
+### 1. New file: `src/MqttDashboard.Server/Hubs/MqttStatusBroadcaster.cs`
+
+Tiny singleton that wires `MqttConnectionMonitor.OnStateChanged` → `IHubContext<DataHub>.Clients.All.SendAsync("MqttConnectionStatus", ...)`. This is the only place in the codebase that needs to know about both `MqttConnectionMonitor` and `DataHub`. Constructor wires the event once; no methods exposed.
+
+Instantiated eagerly in `WebApplicationExtensions.UseMqttDashboard` via `ApplicationStarted` callback so the event is wired before any clients connect.
+
+### 2. Update: `src/MqttDashboard.Server/Services/MqttClientService.cs`
+
+- Removed `IHubContext<DataHub>` field and constructor parameter.
+- Removed `using Microsoft.AspNetCore.SignalR;` and `using MqttDashboard.Server.Hubs;`.
+- Removed the `_connectionMonitor.OnStateChanged` lambda that broadcast to hub clients.
+- `MqttClientService` now has **zero SignalR references** — pure MQTT concern.
+
+### 3. Update: `src/MqttDashboard.Server/Extensions/ServiceCollectionExtensions.cs`
+
+Registered `MqttStatusBroadcaster` as a singleton.
+
+### 4. Update: `src/MqttDashboard.Server/Extensions/WebApplicationExtensions.cs`
+
+Added `app.Services.GetRequiredService<MqttStatusBroadcaster>()` in the `ApplicationStarted` callback to force instantiation at startup.
+
+### 5. Update: `tests/MqttDashboard.IntegrationTests/FakeMqttClientService.cs`
+
+Removed `IHubContext<DataHub>` from the test double constructor to match the updated base class signature.
+
+### Result
+
+`MqttClientService` imports: was `using Microsoft.AspNetCore.SignalR` + `using MqttDashboard.Server.Hubs` — both gone. The MQTT files (`MqttClientService`, `MqttDataServer`, `MqttConnectionMonitor`, `MqttTopicSubscriptionManager`, `IMqttClientService`) now have no SignalR dependencies, removing the main blocker to extracting them into a standalone `MqttDashboard.Mqtt` project.
+
+---
+
 ## 2026-04-02 — FEAT-H: PublishAsync on IDataCache/IDataServer + lazy unsubscribe grace period
 
 ### Commit: TBD · branch: feature/feat-h-data-layer · UTC: 2026-04-02T10:xx

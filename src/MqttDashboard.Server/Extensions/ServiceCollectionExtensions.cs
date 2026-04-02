@@ -30,6 +30,10 @@ public static class ServiceCollectionExtensions
         // Also register as the interface so hubs and tests can inject IMqttClientService.
         services.AddSingleton<IMqttClientService>(sp => sp.GetRequiredService<MqttClientService>());
 
+        // Bridges MqttConnectionMonitor state changes into SignalR hub broadcasts.
+        // Keeps SignalR knowledge out of MqttClientService.
+        services.AddSingleton<MqttStatusBroadcaster>();
+
         // Add Diagram Storage Service
         services.AddSingleton<DashboardStorageService>();
 
