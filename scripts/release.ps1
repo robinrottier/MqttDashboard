@@ -363,7 +363,7 @@ function Create-And-Merge-PR($branch, $newTag) {
     $prCreate = Run-LocalCommand gh "pr create --title ""Release $newTag"" --body ""Prepare release $newTag"" --base main --head $branch" $false
     if ($prCreate.ExitCode -ne 0) { throw "Failed to create PR" }
 
-    $now = [DateTime]::Now
+    $now = [DateTime]::NowUtc.AddSeconds(-10) # just a bit before now as start time for PR workflow
 
     # Get PR number
     $prJson = (Run-LocalCommand gh "pr view --json number --jq .number").StdOut.Trim()
