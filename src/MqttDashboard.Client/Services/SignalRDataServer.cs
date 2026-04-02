@@ -9,9 +9,10 @@ namespace MqttDashboard.Services;
 /// Browser-side <see cref="IDataServer"/> implementation.
 /// Connects to the SignalR hub via WebSocket; translates hub events into the
 /// <see cref="IDataServer"/> contract used by <see cref="IDataCache"/>.
-/// Also implements <see cref="IMqttPublisher"/> for the WASM render path.
+/// Implements <see cref="IDataServer.PublishAsync"/> by forwarding to the hub's
+/// <c>PublishMessage</c> method.
 /// </summary>
-public class SignalRDataServer : IDataServer, IMqttPublisher
+public class SignalRDataServer : IDataServer
 {
     private HubConnection? _hubConnection;
     private readonly ILogger<SignalRDataServer> _logger;
@@ -110,7 +111,7 @@ public class SignalRDataServer : IDataServer, IMqttPublisher
         }
     }
 
-    public async Task PublishMessageAsync(string topic, string payload, bool retain = false, int qos = 0)
+    public async Task PublishAsync(string topic, string payload, bool retain = false, int qos = 0)
     {
         if (_hubConnection is not null)
         {

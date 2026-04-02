@@ -5,7 +5,54 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
-## 2026-04-02 — FEAT-H: Data/Hub naming & organisation cleanup
+## 2026-04-02 — FEAT-H: PublishAsync on IDataCache/IDataServer + lazy unsubscribe grace period
+
+### Commit: TBD · branch: feature/feat-h-data-layer · UTC: 2026-04-02T10:xx
+
+### Context
+
+Two FEAT-H items: (1) unify publishing into the cache/server abstraction and eliminate the now-redundant `IMqttPublisher` interface; (2) add a grace-period delay before broker unsubscribes to prevent churn on circuit reconnect.
+
+---
+
+### 1. `IDataCache.PublishAsync` (new method)
+
+Added `Task PublishAsync(string topic, string payload, bool retain = false, int qos = 0)` to `IDataCache`.
+- `DataCache.PublishAsync` immediately calls `UpdateValue` (so all local subscribers see the new value without waiting for a broker echo) then forwards to `_server.PublishAsync`.
+- This is the single publish entrypoint for all widgets — no need to inject any other service.
+
+### 2. `IDataServer.PublishAsync` (new method)
+
+Added matching `Task PublishAsync(...)` to `IDataServer`. Each implementation:
+- **`MqttDataServer`**: calls `MqttClientService.PublishMessageAsync` → broker.
+- **`SignalRDataServer`**: calls hub `PublishMessage` method → server → broker.
+- **`CacheBridgeDataServer`**: delegates to `_upstream.PublishAsync` (chains into `ServerDataCache` → `MqttDataServer`).
+
+### 3. `IMqttPublisher` removed
+
+Interface deleted (`src/MqttDashboard.Client/Services/IMqttPublisher.cs`). All `: IMqttPublisher` declarations removed from `MqttDataServer` and `SignalRDataServer`. DI registrations removed from `ServiceCollectionExtensions.cs` and `WebApp.Client/Program.cs`. Doc comments updated.
+
+### 4. `SwitchNodeWidget` updated
+
+Removed `@inject IMqttPublisher MqttPublisher`. Toggle now calls `AppState.DataCache.PublishAsync(...)` directly — consistent with how all other data flows through the cache.
+
+### 5. Lazy unsubscribe grace period in `MqttTopicSubscriptionManager`
+
+When the last subscriber for a topic leaves, the broker-level unsubscribe is now deferred by a configurable grace period (default **30 s**).
+- A `CancellationTokenSource` is stored per topic in `_pendingUnsubs`.
+- If any client resubscribes within the window, the pending unsubscribe is cancelled.
+- After the delay expires, `OnTopicUnsubscribeRequested` fires as before.
+- Grace period is configurable via the constructor (`int gracePeriodMs = 30_000`); pass `0` to disable.
+- Added XML doc comment explaining the behaviour.
+- `ScheduleUnsubscribe` / `CancelPendingUnsubscribe` / `FireUnsubscribeAsync` helpers keep the semaphore-protected paths clean.
+
+### 6. TODO.md cleanup
+
+- Removed stale "Is MqttDataHub actually used?" item (DataHub is clearly used; renamed last session).
+- Removed naming-pattern arrow item (resolved last session).
+- Marked lazy-unsubscribe item done inline.
+
+
 
 ### Commit: TBD · branch: feature/feat-h-data-layer · UTC: 2026-04-02T10:xx
 

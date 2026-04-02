@@ -83,17 +83,15 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Split panel type controls to divide up work area into resizable sections
 
 ### FEAT-H: Data layer refactor _(Phases 1–4 complete — see CHANGELOG)_
-- [ ] Is MqttDataHub actually used there are 12 references to the class but NO references to any of its members? (double check that!)
 - [ ] Publishing e.g. from switch widget
 	- [ ] ...if client simply writes to their local cache then that publishes upstream and value trickles thru tree of DataCache
 	- [ ] IDataVache could have setvalue to simply write local stored value and Publish (mirrors Subscribe) to set a value and publish to connected clients
 	- [ ] ??does it need some sort of access control...its just a inprocess dictionary so maybe its simply read-write always or maybe in a dervied interface (e.g. IDataCacheWithPublish : IDataCache).What would be best?
 	- [ ] outside this installations "network" publishing back to mqtt is controlled by the connection username so no problem there but shoul dbe an
 	      option on creation of the mqtt cache to allow publishing or not for this cache
-- [ ] Lazy cache/Grace period: if last client unsubscribes from a topic, keep the server-side broker subscription alive for a configurable delay (e.g. 30 s) before actually unsubscribing from the broker — avoids churn if a circuit reconnects
+- [ ] Lazy cache/Grace period: if last client unsubscribes from a topic, keep the server-side broker subscription alive for a configurable delay (e.g. 30 s) before actually unsubscribing from the broker — avoids churn if a circuit reconnects ✅ done
 - [ ] `MqttDashboard.Data.Mqtt` — separate package so the common `.Data` library has no MQTT dependency
 - [ ] `SignalRDataServer` / `.Data.SignalR` — extract so SignalR is purely a transport adapter
-- [ ] ---> trying to get some common pattern to the naming for everything to do with Data and Cache and fanout etc.
 - [ ] `IDataCache<T>` — typed value generics
 	- [ ] DataCache value object redesign (replace parallel collections with a richer value type supporting arbitrary tags/metadata)
 - [ ] Minimize topic-string parsing (join/split on `/`); consider composite key object for the collection

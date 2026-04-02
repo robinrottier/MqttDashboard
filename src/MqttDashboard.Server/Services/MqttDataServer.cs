@@ -18,9 +18,9 @@ namespace MqttDashboard.Server.Services;
 /// share the same broker-side ref-count.
 /// </para>
 /// <para>
-/// Also implements <see cref="IMqttPublisher"/> so the
-/// rest of the application does not need to take a direct dependency on
-/// <see cref="MqttClientService"/>.
+/// Implements <see cref="IDataServer.PublishAsync"/> by forwarding to <see cref="MqttClientService"/>
+/// so the rest of the application publishes via the cache without taking a direct dependency
+/// on the MQTT client.
 /// </para>
 /// <para>
 /// <b>Lifecycle:</b> event handlers are wired in the constructor because this is a singleton
@@ -29,7 +29,7 @@ namespace MqttDashboard.Server.Services;
 /// call re-fires the current MQTT status so the new circuit UI is seeded correctly.
 /// </para>
 /// </summary>
-public sealed class MqttDataServer : IDataServer, IMqttPublisher, IAsyncDisposable
+public sealed class MqttDataServer : IDataServer, IAsyncDisposable
 {
     private readonly MqttClientService _mqttClientService;
     private readonly MqttTopicSubscriptionManager _subscriptionManager;
@@ -102,9 +102,9 @@ public sealed class MqttDataServer : IDataServer, IMqttPublisher, IAsyncDisposab
         _logger?.LogDebug("[MqttDataServer] Unsubscribed from {Topic}", topic);
     }
 
-    // ── IMqttPublisher ───────────────────────────────────────────────────────────
+    // ── IDataServer.PublishAsync ─────────────────────────────────────────────────
 
-    public async Task PublishMessageAsync(string topic, string payload, bool retain = false, int qos = 0)
+    public async Task PublishAsync(string topic, string payload, bool retain = false, int qos = 0)
     {
         await _mqttClientService.PublishMessageAsync(topic, payload, retain, qos);
         _logger?.LogDebug("[MqttDataServer] Published to {Topic}", topic);

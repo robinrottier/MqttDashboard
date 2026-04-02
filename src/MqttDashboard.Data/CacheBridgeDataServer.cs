@@ -67,6 +67,10 @@ public sealed class CacheBridgeDataServer : IDataServer
     }
 
     /// <inheritdoc/>
+    public Task PublishAsync(string topic, string payload, bool retain = false, int qos = 0)
+        => _upstream.PublishAsync(topic, payload, retain, qos);
+
+    /// <inheritdoc/>
     /// <remarks>Idempotent: subscribing the same topic twice is a no-op on the second call.</remarks>
     public Task SubscribeAsync(string topic)
     {

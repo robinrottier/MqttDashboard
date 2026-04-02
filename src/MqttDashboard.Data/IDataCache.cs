@@ -7,6 +7,13 @@ namespace MqttDashboard.Data;
 /// </summary>
 public interface IDataCache
 {
+    /// <summary>
+    /// Publish a value to the upstream data source (e.g. MQTT broker or SignalR hub).
+    /// Also updates the local cache immediately so subscribers see the change without
+    /// waiting for the upstream echo.
+    /// </summary>
+    Task PublishAsync(string topic, string payload, bool retain = false, int qos = 0);
+
     /// <summary>Store a value and notify all matching subscribers.</summary>
     void UpdateValue(string topic, object value);
 

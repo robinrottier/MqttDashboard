@@ -42,10 +42,7 @@ public static class ServiceCollectionExtensions
         // Register a scoped HttpClient for use in Blazor components (server-side rendering)
         services.AddScoped<HttpClient>(sp => CreateLoopbackHttpClient(sp));
 
-        // Singleton MQTT data server — feeds ALL incoming messages into ServerDataCache.
-        // Also implements IMqttPublisher for the server.
         services.AddSingleton<MqttDataServer>();
-        services.AddSingleton<IMqttPublisher>(sp => sp.GetRequiredService<MqttDataServer>());
 
         // Singleton server-side DataCache — accumulates every MQTT value; shared by all circuits.
         services.AddSingleton<ServerDataCache>();

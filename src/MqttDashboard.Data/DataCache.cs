@@ -33,6 +33,16 @@ public class DataCache : IDataCache
     // ── IDataCache ──────────────────────────────────────────────────────────────
 
     /// <inheritdoc/>
+    public async Task PublishAsync(string topic, string payload, bool retain = false, int qos = 0)
+    {
+        // Update locally immediately so subscribers see the new value without waiting
+        // for the upstream echo (broker may not echo depending on settings).
+        UpdateValue(topic, payload);
+        if (_server != null)
+            await _server.PublishAsync(topic, payload, retain, qos);
+    }
+
+    /// <inheritdoc/>
     public void UpdateValue(string topic, object value)
     {
         if (value is string s)
