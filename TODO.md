@@ -91,7 +91,9 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 	      option on creation of the mqtt cache to allow publishing or not for this cache
 - [ ] Lazy cache/Grace period: if last client unsubscribes from a topic, keep the server-side broker subscription alive for a configurable delay (e.g. 30 s) before actually unsubscribing from the broker — avoids churn if a circuit reconnects ✅ done
 - [ ] `MqttDashboard.Data.Mqtt` — separate package so the common `.Data` library has no MQTT dependency
+	- [ ] Blocker: `MqttClientService` directly references `IHubContext<DataHub>` to broadcast connection status — breaks the MQTT/SignalR coupling. Need to replace with an event/callback before the MQTT files can live in their own project independent of AspNetCore/SignalR.
 - [ ] `SignalRDataServer` / `.Data.SignalR` — extract so SignalR is purely a transport adapter
+	- [ ] `SignalRDataServer` is already clean (only `SignalR.Client` + `MqttDashboard.Data` deps); extraction would be straightforward once `.Data.Mqtt` blocker is resolved.
 - [ ] `IDataCache<T>` — typed value generics
 	- [ ] DataCache value object redesign (replace parallel collections with a richer value type supporting arbitrary tags/metadata)
 - [ ] Minimize topic-string parsing (join/split on `/`); consider composite key object for the collection
