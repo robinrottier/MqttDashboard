@@ -363,6 +363,8 @@ function Create-And-Merge-PR($branch, $newTag) {
     $prCreate = Run-LocalCommand gh "pr create --title ""Release $newTag"" --body ""Prepare release $newTag"" --base main --head $branch" $false
     if ($prCreate.ExitCode -ne 0) { throw "Failed to create PR" }
 
+    $now = [DateTime]::Now
+
     # Get PR number
     $prJson = (Run-LocalCommand gh "pr view --json number --jq .number").StdOut.Trim()
     if (-not $prJson) { throw "Unable to determine PR number" }
@@ -377,10 +379,10 @@ function Create-And-Merge-PR($branch, $newTag) {
     while ($true) {
         Start-Sleep -Seconds $interval; $elapsed += $interval
         # Use gh to list recent runs for this branch and check if any are in progress or failed
-        $runsOut = (Run-LocalCommand gh "run list --branch $branch --limit 50 --json status,conclusion,headBranch" $false).StdOut
+        $runsOut = (Run-LocalCommand gh "run list --branch $branch --limit 50 --json status,conclusion,headBranch,startedAt" $false).StdOut
         if (-not $runsOut) { Write-Log "No run info yet"; continue }
         # rough check: if any run has status in_progress or queued -> wait; if any failed -> abort; if at least one completed+success -> proceed
-        $runs = $runsOut | ConvertFrom-Json
+        $runs = $runsOut | ConvertFrom-Json | Where-Object { $_.startedAt -ge $now } # only consider runs started in the last hour to avoid picking up old runs from previous commits   
         if ($null -eq $runs -or $runs.Count -eq 0) { Write-Log "No workflow runs yet..."; if ($elapsed -gt $timeout) { throw "Timeout waiting for workflows" }; continue }
         $inProgress = $runs | Where-Object { $_.status -ne 'completed' }
         if ($null -ne $inProgress -and $inProgress.Count -gt 0) { Write-Log "Workflows still in progress..."; if ($elapsed -gt $timeout) { throw "Timeout waiting for workflows" }; continue }
