@@ -164,7 +164,7 @@ function Preflight-Checks {
 }
 
 
-function Run-LocalCommand([string]$exe, [string]$cmdArgs, $failOnError=$true) {
+function Run-LocalCommand([string]$exe, [string]$cmdArgs, $failOnError=$true, $noFallback=$false) {
     Write-Log "-> $exe $cmdArgs"
 
     # Try to resolve the command to an actual application executable. If the
@@ -176,7 +176,7 @@ function Run-LocalCommand([string]$exe, [string]$cmdArgs, $failOnError=$true) {
         $arguments = $cmdArgs
         $useShell = $false
     }
-    else {
+    elseif (-not $noFallback) {
         # Fallback: run through the detected shell so aliases/functions work
         $fileName = $SHELL_EXE
         # Build a single command string: exe + args
@@ -203,7 +203,7 @@ function Run-LocalCommand([string]$exe, [string]$cmdArgs, $failOnError=$true) {
     # If running the resolved application produced no output but succeeded,
     # some environments use wrapper scripts or shims that behave differently
     # when invoked directly. Retry via the shell fallback in that case.
-    if (-not $useShell -and $p.ExitCode -eq 0 -and ([string]::IsNullOrEmpty($stdout)) -and ([string]::IsNullOrEmpty($stderr))) {
+    if (-not $noFallback -and -not $useShell -and $p.ExitCode -eq 0 -and ([string]::IsNullOrEmpty($stdout)) -and ([string]::IsNullOrEmpty($stderr))) {
         Write-Log "No output from direct invocation; retrying via shell fallback"
         $fileName = $SHELL_EXE
         $escapedArgs = $cmdArgs -replace '"', '`"'
@@ -394,28 +394,31 @@ function Create-And-Merge-PR($branch, $newTag) {
 
     Write-Log "Merging PR #$prNumber into main..."
     if ($env:DRYRUN -eq '1') { Write-Log "DRYRUN: skipping PR merge"; return }
-    $res = Run-LocalCommand gh "pr merge $prNumber --merge --delete-branch --repo $slug --confirm"
+    $res = Run-LocalCommand gh "pr merge $prNumber --merge --delete-branch --repo $slug"
     if ($res.ExitCode -ne 0) { throw "Failed to merge PR #$prNumber" }
 }
 
 function Create-Tag-And-Push($tag) {
     Write-Log "Creating annotated tag $tag"
-    $res = Run-LocalCommand git "tag -a $tag -m \"Release $tag\""
+    $res = Run-LocalCommand git "tag -a $tag -m `"Release $tag`"" $false $true
     if ($res.ExitCode -ne 0) { throw "Failed to create tag $tag" }
     if ($env:DRYRUN -eq '1') { Write-Log "DRYRUN: skipping tag push"; return }
-    $res = Run-LocalCommand git "push origin $tag"
+    $res = Run-LocalCommand git "push origin $tag" $false $true
     if ($res.ExitCode -ne 0) { throw "Failed to push tag $tag" }
 }
 
 function Wait-For-TagWorkflows($tag) {
     if (-not (Ensure-GH)) { Write-Log "gh CLI not found: cannot poll tag workflows"; return }
     Write-Log "Waiting for workflows triggered by tag $tag..."
+
+    $now = [DateTime]::UtcNow.AddSeconds(-10) # just a bit before now as start time for PR workflow
+
     $timeout = 60 * 45; $interval = 20; $elapsed = 0
     while ($true) {
         Start-Sleep -Seconds $interval; $elapsed += $interval
-        $runsOut = (Run-LocalCommand gh "run list --branch $tag --limit 50 --json status,conclusion,headBranch" $false).StdOut
+        $runsOut = (Run-LocalCommand gh "run list --branch $tag --limit 50 --json status,conclusion,headBranch,startedAt" $false).StdOut
         if (-not $runsOut) { Write-Log "No runs detected yet for tag $tag"; if ($elapsed -gt $timeout) { throw "Timeout waiting for tag workflows" }; continue }
-        $runs = $runsOut | ConvertFrom-Json
+        $runs = $runsOut | ConvertFrom-Json | Where-Object { $_.startedAt -ge $now } # only consider runs started in the last hour to avoid picking up old runs from previous commits   
         if ($null -eq $runs -or $runs.Count -eq 0) { Write-Log "No runs yet"; if ($elapsed -gt $timeout) { throw "Timeout waiting for tag workflows" }; continue }
         $inProgress = $runs | Where-Object { $_.status -ne 'completed' }
         if ($inProgress.Count -gt 0) { Write-Log "Tag workflows in progress..."; if ($elapsed -gt $timeout) { throw "Timeout waiting for tag workflows" }; continue }
