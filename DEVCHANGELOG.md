@@ -5,6 +5,54 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
+## 2026-04-02 — FEAT-H: Data/Hub naming & organisation cleanup
+
+### Commit: TBD · branch: feature/feat-h-data-layer · UTC: 2026-04-02T10:xx
+
+### Context
+
+Naming consistency pass across the server-side data layer. Goal: MQTT-specific code lives in `Services/` with `Mqtt*` names; SignalR hub code lives in `Hubs/` with `Hub*` / `DataHub` names; no misleading cross-domain prefixes.
+
+---
+
+### 1. `Hubs/MqttDataHub.cs` → `Hubs/DataHub.cs` (class: `DataHub`)
+
+`MqttDataHub` was a SignalR `Hub` subclass — nothing MQTT-specific about it. It relays data from `ServerDataCache` to browser clients over SignalR. Renamed to `DataHub`.
+- `IHubContext<MqttDataHub>` → `IHubContext<DataHub>` everywhere.
+- Hub route: `/mqttdatahub` → `/datahub` (in `WebApplicationExtensions.cs`).
+- Client URL in `MqttInitializationService.BuildHubUrl()`: `"mqttdatahub"` → `"datahub"`.
+- Updated log message from "connected to MQTT Hub" → "connected to Data Hub".
+
+### 2. `Hubs/HubDataSubscriptionStore.cs` → `Hubs/HubSubscriptionStore.cs` (class: `HubSubscriptionStore`)
+
+Simpler name; "Data" was redundant — the store is per-hub-connection by definition.
+Updated doc comment reference from `MqttDataHub` → `DataHub`.
+
+### 3. `Services/ClientConnectionTracker.cs` → `Hubs/HubConnectionTracker.cs` (class: `HubConnectionTracker`)
+
+Tracks connected SignalR clients — that's a hub concern, not a general service concern. Moved to `Hubs/`, renamed to `HubConnectionTracker`, namespace changed to `MqttDashboard.Server.Hubs`.
+Updated refs in: `DataHub.cs`, `MqttDataServer.cs`, `DashboardMetricsPublisher.cs`, `ServiceCollectionExtensions.cs`.
+`DashboardMetricsPublisher.cs` gained `using MqttDashboard.Server.Hubs;`.
+
+### 4. `Hubs/MqttTopicSubscriptionManager.cs` → `Services/MqttTopicSubscriptionManager.cs`
+
+This class ref-counts broker-level MQTT topic subscriptions. It has no dependency on SignalR and is consumed only by `MqttDataServer` and `MqttClientService` — both in `Services/`. Moved there; namespace changed to `MqttDashboard.Server.Services`.
+
+### 5. `IMqttClientService.cs` doc comment updated
+
+Reference to `MqttDataHub` → `DataHub`.
+
+### 6. Tests updated
+
+- `FakeMqttClientService.cs`: `IHubContext<MqttDataHub>` → `IHubContext<DataHub>`.
+- `HubConnectionHelper.cs`: default hub path `"mqttdatahub"` → `"datahub"`.
+- `MqttDataHubTests.cs`: doc comment updated.
+
+All 21 tests pass (13 integration + 8 Playwright).
+
+
+---
+
 ## 2026-04-01 — FEAT-H Phase 4: $DASHBOARD topics, IMqttDiagnostics removal, same-process DI
 
 ### Commit: TBD · branch: feature/feat-h-data-layer · UTC timestamp: session end

@@ -15,7 +15,7 @@ namespace MqttDashboard.IntegrationTests;
 public class FakeMqttClientService : MqttClientService
 {
     public FakeMqttClientService(
-        IHubContext<MqttDataHub> hubContext,
+        IHubContext<DataHub> hubContext,
         ILogger<MqttClientService> logger,
         IConfiguration configuration,
         MqttTopicSubscriptionManager subscriptionManager,

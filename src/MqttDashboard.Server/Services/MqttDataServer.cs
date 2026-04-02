@@ -34,7 +34,7 @@ public sealed class MqttDataServer : IDataServer, IMqttPublisher, IAsyncDisposab
     private readonly MqttClientService _mqttClientService;
     private readonly MqttTopicSubscriptionManager _subscriptionManager;
     private readonly MqttConnectionMonitor _connectionMonitor;
-    private readonly ClientConnectionTracker _connectionTracker;
+    private readonly HubConnectionTracker _connectionTracker;
     private readonly ILogger<MqttDataServer>? _logger;
 
     /// <summary>Stable connection-ID used when registering with <see cref="MqttTopicSubscriptionManager"/>.</summary>
@@ -50,7 +50,7 @@ public sealed class MqttDataServer : IDataServer, IMqttPublisher, IAsyncDisposab
         MqttClientService mqttClientService,
         MqttTopicSubscriptionManager subscriptionManager,
         MqttConnectionMonitor connectionMonitor,
-        ClientConnectionTracker connectionTracker,
+        HubConnectionTracker connectionTracker,
         ILogger<MqttDataServer>? logger = null)
     {
         _mqttClientService = mqttClientService;

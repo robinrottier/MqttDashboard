@@ -15,14 +15,14 @@ public static class ServiceCollectionExtensions
         // Add MQTT Topic Subscription Manager as singleton
         services.AddSingleton<MqttTopicSubscriptionManager>();
 
-        // Add connected client tracker as singleton
-        services.AddSingleton<ClientConnectionTracker>();
+        // Add connected client tracker as singleton (tracks SignalR hub connections)
+        services.AddSingleton<HubConnectionTracker>();
 
         // Add MQTT Connection Monitor as singleton
         services.AddSingleton<MqttConnectionMonitor>();
 
-        // Singleton store for per-connection DataCache subscription handles in MqttDataHub.
-        services.AddSingleton<HubDataSubscriptionStore>();
+        // Singleton store for per-connection DataCache subscription handles in DataHub.
+        services.AddSingleton<HubSubscriptionStore>();
 
         // Register MqttClientService as both a singleton (injectable) and a hosted service.
         services.AddSingleton<MqttClientService>();

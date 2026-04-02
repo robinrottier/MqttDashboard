@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using MqttDashboard.Data;
 
-namespace MqttDashboard.Server.Hubs;
+namespace MqttDashboard.Server.Services;
 
 public class MqttTopicSubscriptionManager
 {

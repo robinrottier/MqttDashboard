@@ -4,10 +4,10 @@ namespace MqttDashboard.Server.Hubs;
 
 /// <summary>
 /// Singleton store for per-connection <see cref="MqttDashboard.Data.IDataCache"/> subscription handles
-/// in <see cref="MqttDataHub"/>. Persists across hub method invocations (hubs are
+/// in <see cref="DataHub"/>. Persists across hub method invocations (hubs are
 /// transient — one instance per invocation).
 /// </summary>
-public sealed class HubDataSubscriptionStore
+public sealed class HubSubscriptionStore
 {
     private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, IDisposable>> _subs = new();
 

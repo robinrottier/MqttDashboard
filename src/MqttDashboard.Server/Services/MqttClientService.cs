@@ -10,7 +10,7 @@ namespace MqttDashboard.Server.Services;
 
 public class MqttClientService : BackgroundService, IMqttClientService
 {
-    private readonly IHubContext<MqttDataHub> _hubContext;
+    private readonly IHubContext<DataHub> _hubContext;
     private readonly ILogger<MqttClientService> _logger;
     private readonly IConfiguration _configuration;
     private readonly MqttTopicSubscriptionManager _subscriptionManager;
@@ -24,7 +24,7 @@ public class MqttClientService : BackgroundService, IMqttClientService
     public event Func<string, string, DateTime, Task>? OnMessagePublished;
 
     public MqttClientService(
-        IHubContext<MqttDataHub> hubContext,
+        IHubContext<DataHub> hubContext,
         ILogger<MqttClientService> logger,
         IConfiguration configuration,
         MqttTopicSubscriptionManager subscriptionManager,
@@ -243,7 +243,7 @@ public class MqttClientService : BackgroundService, IMqttClientService
 
     /// <summary>
     /// Processes an incoming MQTT message and notifies in-process subscribers.
-    /// Hub fan-out is handled by <see cref="MqttDashboard.Server.Hubs.MqttDataHub"/> via
+    /// Hub fan-out is handled by <see cref="MqttDashboard.Server.Hubs.DataHub"/> via
     /// <see cref="ServerDataCache"/> callbacks — no direct SignalR dispatch here.
     /// Override in test doubles to inject fake messages without a real broker.
     /// </summary>
