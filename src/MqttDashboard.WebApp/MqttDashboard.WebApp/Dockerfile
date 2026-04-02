@@ -12,6 +12,7 @@ RUN dotnet workload install wasm-tools
 COPY src/Directory.Build.props      src/
 COPY src/MqttDashboard.Client/MqttDashboard.Client.csproj                                                           src/MqttDashboard.Client/
 COPY src/MqttDashboard.Data/MqttDashboard.Data.csproj                                                               src/MqttDashboard.Data/
+COPY src/MqttDashboard.Mqtt/MqttDashboard.Mqtt.csproj                                                               src/MqttDashboard.Mqtt/
 COPY src/MqttDashboard.Server/MqttDashboard.Server.csproj                                                           src/MqttDashboard.Server/
 COPY src/MqttDashboard.SourceGenerators/MqttDashboard.SourceGenerators.csproj                                       src/MqttDashboard.SourceGenerators/
 COPY src/MqttDashboard.WebApp/MqttDashboard.WebApp.Client/MqttDashboard.WebApp.Client.csproj                        src/MqttDashboard.WebApp/MqttDashboard.WebApp.Client/
@@ -24,6 +25,7 @@ RUN dotnet restore src/MqttDashboard.WebApp/MqttDashboard.WebApp/MqttDashboard.W
 COPY .git/ .git/
 COPY src/MqttDashboard.Client/      src/MqttDashboard.Client/
 COPY src/MqttDashboard.Data/        src/MqttDashboard.Data/
+COPY src/MqttDashboard.Mqtt/        src/MqttDashboard.Mqtt/
 COPY src/MqttDashboard.Server/      src/MqttDashboard.Server/
 COPY src/MqttDashboard.SourceGenerators/ src/MqttDashboard.SourceGenerators/
 COPY src/MqttDashboard.WebApp/      src/MqttDashboard.WebApp/
