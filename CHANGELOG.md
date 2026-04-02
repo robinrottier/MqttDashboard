@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ---
 
 ## [Unreleased]
+- Preparing release v0.1.16 (2026-04-03)
+- Preparing release v0.1.16 (2026-04-03)
+- Preparing release v0.1.16 (2026-04-03)
+- Preparing release v0.1.16 (2026-04-02)
+- Preparing release v0.1.16 (2026-04-02)
+- Preparing release v0.1.16 (2026-04-02)
+- Preparing release v0.1.16 (2026-04-02)
+- Preparing release v0.1.16 (2026-04-02)
+- Preparing release v0.1.16 (2026-04-02)
 - Preparing release v0.1.16 (2026-04-02)
 - Preparing release v0.1.16 (2026-04-02)
 
@@ -18,6 +27,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 - **`AboutDialog`** — connected-client count now subscribes to `$DASHBOARD/CLIENTS/COUNT` via `AppState.DataCache` (live, reactive) instead of a one-shot `IMqttDiagnostics.GetConnectedClientCountAsync()` RPC call.
 - **`ApplicationState`** — `DataCache` is now constructor-injectable (`IDataCache? dataCache = null`; defaults to `new DataCache()`). Same-process hosts can inject `ServerDataCache` directly.
+- **Hub naming & file organisation** — SignalR hub renamed `MqttDataHub` → `DataHub`; hub route `/mqttdatahub` → `/datahub`. `HubDataSubscriptionStore` → `HubSubscriptionStore`. `ClientConnectionTracker` → `HubConnectionTracker` (moved to `Hubs/`). `MqttTopicSubscriptionManager` moved from `Hubs/` to `Services/` (it is pure MQTT broker logic, not hub logic).
+- **`IDataCache.PublishAsync` / `IDataServer.PublishAsync`** — publish is now a first-class operation on the cache/server abstraction. `DataCache.PublishAsync` updates locally first then forwards upstream. `IMqttPublisher` interface removed; `SwitchNodeWidget` now calls `AppState.DataCache.PublishAsync` directly.
+- **Lazy broker unsubscribe** — `MqttTopicSubscriptionManager` now holds the broker subscription alive for a configurable grace period (default 30 s) after the last subscriber leaves, cancelling the pending unsubscribe if any client resubscribes within that window.
+- **`MqttDashboard.Mqtt` project extracted** — `MqttClientService`, `MqttConnectionMonitor`, `MqttTopicSubscriptionManager`, `IMqttClientService` now live in a dedicated project with no SignalR/Blazor dependencies. `MqttDashboard.Server` references it; MQTTnet NuGet dependency moved there.
+- **`MqttClientService` decoupled from SignalR** — new `MqttStatusBroadcaster` singleton owns the `MqttConnectionMonitor` → SignalR broadcast. `MqttClientService` now has zero SignalR references, unblocking future extraction into a standalone `MqttDashboard.Mqtt` project.
 - **`MqttInitializationService`** — removed `IMqttDiagnostics` dependency; connection status is now delivered purely via the reactive `StatusChanged` event. Skips `RegisterServer()` if the cache already has a server wired.
 
 ### Removed

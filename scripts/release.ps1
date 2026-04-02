@@ -363,6 +363,8 @@ function Create-And-Merge-PR($branch, $newTag) {
     $prCreate = Run-LocalCommand gh "pr create --title ""Release $newTag"" --body ""Prepare release $newTag"" --base main --head $branch" $false
     if ($prCreate.ExitCode -ne 0) { throw "Failed to create PR" }
 
+    $now = [DateTime]::UtcNow.AddSeconds(-10) # just a bit before now as start time for PR workflow
+
     # Get PR number
     $prJson = (Run-LocalCommand gh "pr view --json number --jq .number").StdOut.Trim()
     if (-not $prJson) { throw "Unable to determine PR number" }
@@ -377,29 +379,32 @@ function Create-And-Merge-PR($branch, $newTag) {
     while ($true) {
         Start-Sleep -Seconds $interval; $elapsed += $interval
         # Use gh to list recent runs for this branch and check if any are in progress or failed
-        $runsOut = (Run-LocalCommand gh "run list --branch $branch --limit 50 --json status,conclusion,headBranch" $false).StdOut
+        $runsOut = (Run-LocalCommand gh "run list --branch $branch --limit 50 --json status,conclusion,headBranch,startedAt" $false).StdOut
         if (-not $runsOut) { Write-Log "No run info yet"; continue }
         # rough check: if any run has status in_progress or queued -> wait; if any failed -> abort; if at least one completed+success -> proceed
-        $runs = $runsOut | ConvertFrom-Json
-        if ($runs -eq $null -or $runs.Count -eq 0) { Write-Log "No workflow runs yet..."; if ($elapsed -gt $timeout) { throw "Timeout waiting for workflows" }; continue }
+        $runs = $runsOut | ConvertFrom-Json | Where-Object { $_.startedAt -ge $now } # only consider runs started in the last hour to avoid picking up old runs from previous commits   
+        if ($null -eq $runs -or $runs.Count -eq 0) { Write-Log "No workflow runs yet..."; if ($elapsed -gt $timeout) { throw "Timeout waiting for workflows" }; continue }
         $inProgress = $runs | Where-Object { $_.status -ne 'completed' }
-        if ($inProgress.Count -gt 0) { Write-Log "Workflows still in progress..."; if ($elapsed -gt $timeout) { throw "Timeout waiting for workflows" }; continue }
+        if ($null -ne $inProgress -and $inProgress.Count -gt 0) { Write-Log "Workflows still in progress..."; if ($elapsed -gt $timeout) { throw "Timeout waiting for workflows" }; continue }
         $failed = $runs | Where-Object { $_.conclusion -ne 'success' }
-        if ($failed.Count -gt 0) { throw "One or more workflow runs failed. See Actions for details." }
+        if ($null -ne $failed -and $failed.Count -gt 0) { throw "One or more workflow runs failed. See Actions for details." }
         Write-Log "Workflows succeeded"
         break
     }
 
     Write-Log "Merging PR #$prNumber into main..."
     if ($env:DRYRUN -eq '1') { Write-Log "DRYRUN: skipping PR merge"; return }
-    Run-LocalCommand gh "pr merge $prNumber --merge --delete-branch --repo $slug --confirm"
+    $res = Run-LocalCommand gh "pr merge $prNumber --merge --delete-branch --repo $slug --confirm"
+    if ($res.ExitCode -ne 0) { throw "Failed to merge PR #$prNumber" }
 }
 
 function Create-Tag-And-Push($tag) {
     Write-Log "Creating annotated tag $tag"
-    Run-LocalCommand git "tag -a $tag -m \"Release $tag\""
+    $res = Run-LocalCommand git "tag -a $tag -m \"Release $tag\""
+    if ($res.ExitCode -ne 0) { throw "Failed to create tag $tag" }
     if ($env:DRYRUN -eq '1') { Write-Log "DRYRUN: skipping tag push"; return }
-    Run-LocalCommand git "push origin $tag"
+    $res = Run-LocalCommand git "push origin $tag"
+    if ($res.ExitCode -ne 0) { throw "Failed to push tag $tag" }
 }
 
 function Wait-For-TagWorkflows($tag) {
@@ -411,7 +416,7 @@ function Wait-For-TagWorkflows($tag) {
         $runsOut = (Run-LocalCommand gh "run list --branch $tag --limit 50 --json status,conclusion,headBranch" $false).StdOut
         if (-not $runsOut) { Write-Log "No runs detected yet for tag $tag"; if ($elapsed -gt $timeout) { throw "Timeout waiting for tag workflows" }; continue }
         $runs = $runsOut | ConvertFrom-Json
-        if ($runs.Count -eq 0) { Write-Log "No runs yet"; if ($elapsed -gt $timeout) { throw "Timeout waiting for tag workflows" }; continue }
+        if ($null -eq $runs -or $runs.Count -eq 0) { Write-Log "No runs yet"; if ($elapsed -gt $timeout) { throw "Timeout waiting for tag workflows" }; continue }
         $inProgress = $runs | Where-Object { $_.status -ne 'completed' }
         if ($inProgress.Count -gt 0) { Write-Log "Tag workflows in progress..."; if ($elapsed -gt $timeout) { throw "Timeout waiting for tag workflows" }; continue }
         $failed = $runs | Where-Object { $_.conclusion -ne 'success' }

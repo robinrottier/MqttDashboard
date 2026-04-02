@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 namespace MqttDashboard.IntegrationTests;
 
 /// <summary>
-/// Tier A integration tests for <c>MqttDataHub</c>.
+/// Tier A integration tests for <c>DataHub</c>.
 /// Use <see cref="IntegrationWebApplicationFactory"/> — no real MQTT broker needed.
 /// Messages are injected via <see cref="FakeMqttClientService.TriggerIncomingMessageAsync"/>.
 /// </summary>

@@ -15,7 +15,7 @@ public static class HubConnectionHelper
     /// Handlers should be registered on the returned connection BEFORE calling
     /// <see cref="HubConnection.StartAsync"/> so no messages are missed.
     /// </summary>
-    public static HubConnection Create(WebApplicationFactory<Program> factory, string hubPath = "mqttdatahub")
+    public static HubConnection Create(WebApplicationFactory<Program> factory, string hubPath = "datahub")
     {
         var httpClient = factory.CreateClient();
 

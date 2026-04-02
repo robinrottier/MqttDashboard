@@ -5,11 +5,13 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Services\MqttDataServer.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
-    <PackageReference Include="MQTTnet" Version="5.1.0.1559" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.3" />
     <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
@@ -17,5 +19,6 @@
   <ItemGroup>
     <ProjectReference Include="..\MqttDashboard.Client\MqttDashboard.Client.csproj" />
     <ProjectReference Include="..\MqttDashboard.Data\MqttDashboard.Data.csproj" />
+    <ProjectReference Include="..\MqttDashboard.Mqtt\MqttDashboard.Mqtt.csproj" />
   </ItemGroup>
 </Project>

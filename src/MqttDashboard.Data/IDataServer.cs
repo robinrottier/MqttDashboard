@@ -9,6 +9,12 @@ namespace MqttDashboard.Data;
 /// </summary>
 public interface IDataServer : IAsyncDisposable
 {
+    /// <summary>
+    /// Publish a value upstream (e.g. to the MQTT broker or via SignalR to the server).
+    /// Called by <see cref="IDataCache.PublishAsync"/> after updating the local cache.
+    /// </summary>
+    Task PublishAsync(string topic, string payload, bool retain = false, int qos = 0);
+
     /// <summary>Fired when the server has a new value for a topic. The cache wires this to <see cref="IDataCache.UpdateValue"/>.</summary>
     event Action<string, object>? ValueUpdated;
 

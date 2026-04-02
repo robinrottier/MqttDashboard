@@ -1,16 +1,13 @@
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MQTTnet;
-using MqttDashboard.Server.Hubs;
 using System.Collections.Concurrent;
 
-namespace MqttDashboard.Server.Services;
+namespace MqttDashboard.Mqtt;
 
 public class MqttClientService : BackgroundService, IMqttClientService
 {
-    private readonly IHubContext<MqttDataHub> _hubContext;
     private readonly ILogger<MqttClientService> _logger;
     private readonly IConfiguration _configuration;
     private readonly MqttTopicSubscriptionManager _subscriptionManager;
@@ -24,13 +21,11 @@ public class MqttClientService : BackgroundService, IMqttClientService
     public event Func<string, string, DateTime, Task>? OnMessagePublished;
 
     public MqttClientService(
-        IHubContext<MqttDataHub> hubContext,
         ILogger<MqttClientService> logger,
         IConfiguration configuration,
         MqttTopicSubscriptionManager subscriptionManager,
         MqttConnectionMonitor connectionMonitor)
     {
-        _hubContext = hubContext;
         _logger = logger;
         _configuration = configuration;
         _subscriptionManager = subscriptionManager;
@@ -55,11 +50,6 @@ public class MqttClientService : BackgroundService, IMqttClientService
                 mqttBroker, mqttPort, string.IsNullOrEmpty(mqttUsername) ? "<none>" : mqttUsername);
 
             _connectionMonitor.SetBroker($"{mqttBroker}:{mqttPort}");
-
-            _connectionMonitor.OnStateChanged += async (state, attempts) =>
-            {
-                await _hubContext.Clients.All.SendAsync("MqttConnectionStatus", state.ToString(), attempts, stoppingToken);
-            };
 
             var optionsBuilder = new MqttClientOptionsBuilder()
                 .WithTcpServer(mqttBroker, mqttPort)
@@ -243,7 +233,7 @@ public class MqttClientService : BackgroundService, IMqttClientService
 
     /// <summary>
     /// Processes an incoming MQTT message and notifies in-process subscribers.
-    /// Hub fan-out is handled by <see cref="MqttDashboard.Server.Hubs.MqttDataHub"/> via
+    /// Hub fan-out is handled by <see cref="MqttDashboard.Server.Hubs.DataHub"/> via
     /// <see cref="ServerDataCache"/> callbacks — no direct SignalR dispatch here.
     /// Override in test doubles to inject fake messages without a real broker.
     /// </summary>

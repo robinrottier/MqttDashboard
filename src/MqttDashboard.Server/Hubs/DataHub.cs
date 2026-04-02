@@ -1,27 +1,29 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
+using MqttDashboard.Mqtt;
+using MqttDashboard.Server.Hubs;
 using MqttDashboard.Server.Services;
 
 namespace MqttDashboard.Server.Hubs;
 
-public class MqttDataHub : Hub
+public class DataHub : Hub
 {
-    private readonly IHubContext<MqttDataHub> _hubContext;
-    private readonly ILogger<MqttDataHub> _logger;
+    private readonly IHubContext<DataHub> _hubContext;
+    private readonly ILogger<DataHub> _logger;
     private readonly MqttConnectionMonitor _connectionMonitor;
-    private readonly ClientConnectionTracker _connectionTracker;
+    private readonly HubConnectionTracker _connectionTracker;
     private readonly IMqttClientService _mqttClientService;
     private readonly ServerDataCache _serverDataCache;
-    private readonly HubDataSubscriptionStore _subscriptionStore;
+    private readonly HubSubscriptionStore _subscriptionStore;
 
-    public MqttDataHub(
-        IHubContext<MqttDataHub> hubContext,
-        ILogger<MqttDataHub> logger,
+    public DataHub(
+        IHubContext<DataHub> hubContext,
+        ILogger<DataHub> logger,
         MqttConnectionMonitor connectionMonitor,
-        ClientConnectionTracker connectionTracker,
+        HubConnectionTracker connectionTracker,
         IMqttClientService mqttClientService,
         ServerDataCache serverDataCache,
-        HubDataSubscriptionStore subscriptionStore)
+        HubSubscriptionStore subscriptionStore)
     {
         _hubContext = hubContext;
         _logger = logger;
@@ -91,7 +93,7 @@ public class MqttDataHub : Hub
     public override async Task OnConnectedAsync()
     {
         _connectionTracker.Increment();
-        _logger.LogInformation("Client {ConnectionId} connected to MQTT Hub", Context.ConnectionId);
+        _logger.LogInformation("Client {ConnectionId} connected to Data Hub", Context.ConnectionId);
         await Clients.Caller.SendAsync("MqttConnectionStatus",
             _connectionMonitor.State.ToString(),
             _connectionMonitor.ReconnectAttempts);

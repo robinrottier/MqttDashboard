@@ -280,6 +280,7 @@
     {
         await AuthService.LogoutAsync();
         AppState.SetAuthState(false, true);
-        Nav.NavigateTo("/login");
+        // After logout show home page (not the login dialog) so user sees the default unauthenticated view
+        Nav.NavigateTo("/");
     }
 }

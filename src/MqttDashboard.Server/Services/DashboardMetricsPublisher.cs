@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using MqttDashboard.Mqtt;
+using MqttDashboard.Server.Hubs;
 using System.Reflection;
 
 namespace MqttDashboard.Server.Services;
@@ -14,7 +16,7 @@ public sealed class DashboardMetricsPublisher : BackgroundService
 {
     private readonly ServerDataCache _cache;
     private readonly MqttConnectionMonitor _connectionMonitor;
-    private readonly ClientConnectionTracker _connectionTracker;
+    private readonly HubConnectionTracker _connectionTracker;
     private readonly UpdateCheckService _updateCheckService;
     private readonly ILogger<DashboardMetricsPublisher> _logger;
     private readonly DateTime _startTime = DateTime.UtcNow;
@@ -22,7 +24,7 @@ public sealed class DashboardMetricsPublisher : BackgroundService
     public DashboardMetricsPublisher(
         ServerDataCache cache,
         MqttConnectionMonitor connectionMonitor,
-        ClientConnectionTracker connectionTracker,
+        HubConnectionTracker connectionTracker,
         UpdateCheckService updateCheckService,
         ILogger<DashboardMetricsPublisher> logger)
     {

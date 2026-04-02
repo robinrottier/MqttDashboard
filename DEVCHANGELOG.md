@@ -5,6 +5,207 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
+## 2026-04-02 — FEAT-H: Extract MqttDashboard.Mqtt project
+
+### Commit: TBD · branch: feature/feat-h-data-layer · UTC: 2026-04-02T11:xx
+
+### Context
+
+With `MqttClientService` fully decoupled from SignalR (previous commit), the four pure MQTT files were ready to live in their own project. Extracted into `MqttDashboard.Mqtt` — a class library with no Blazor or SignalR dependencies. `MqttDashboard.Server` now references `.Mqtt` as a sibling project.
+
+---
+
+### 1. New project: `src/MqttDashboard.Mqtt/MqttDashboard.Mqtt.csproj`
+
+- `net10.0`, `FrameworkReference Microsoft.AspNetCore.App` (for `BackgroundService`)
+- `PackageReference MQTTnet 5.1.0.1559`
+- `ProjectReference MqttDashboard.Data`
+- No SignalR, Blazor, or MudBlazor references
+
+### 2. Moved files (via `git mv` — history preserved)
+
+| Old location | New location |
+|---|---|
+| `Server/Services/IMqttClientService.cs` | `Mqtt/IMqttClientService.cs` |
+| `Server/Services/MqttClientService.cs` | `Mqtt/MqttClientService.cs` |
+| `Server/Services/MqttConnectionMonitor.cs` | `Mqtt/MqttConnectionMonitor.cs` |
+| `Server/Services/MqttTopicSubscriptionManager.cs` | `Mqtt/MqttTopicSubscriptionManager.cs` |
+
+Namespace changed from `MqttDashboard.Server.Services` → `MqttDashboard.Mqtt` in all four files.
+
+### 3. Update: `src/MqttDashboard.Server/MqttDashboard.Server.csproj`
+
+- Removed `PackageReference MQTTnet` (moved to `.Mqtt` project — no `.Server` code uses MQTTnet types directly)
+- Added `ProjectReference MqttDashboard.Mqtt`
+
+### 4. Using statement updates in `.Server`
+
+Files that reference the moved types now add `using MqttDashboard.Mqtt;`:
+- `Hubs/DataHub.cs` — `MqttConnectionMonitor`, `IMqttClientService`
+- `Hubs/MqttStatusBroadcaster.cs` — `MqttConnectionMonitor`
+- `Services/MqttDataServer.cs` — `MqttClientService`, `MqttTopicSubscriptionManager`, `MqttConnectionMonitor`
+- `Services/DashboardMetricsPublisher.cs` — `MqttConnectionMonitor`
+- `Extensions/ServiceCollectionExtensions.cs` — all four types
+- `Health/MqttConnectionHealthCheck.cs` — `MqttConnectionMonitor`
+
+### 5. Update: test projects
+
+`tests/MqttDashboard.IntegrationTests/FakeMqttClientService.cs` and `IntegrationWebApplicationFactory.cs` — `using MqttDashboard.Server.Services` → `using MqttDashboard.Mqtt` (plus keep `.Server.Services` where other non-moved types are still used).
+
+### 6. Updated `MqttDashboard.slnx`
+
+Added `MqttDashboard.Mqtt` to the `/src/` folder in the solution.
+
+### Result
+
+Dependency chain:
+```
+MqttDashboard.Data   (pure abstractions, no NuGet deps)
+MqttDashboard.Mqtt   (MQTTnet only — no Blazor/SignalR)
+MqttDashboard.Server (AspNetCore + SignalR host, references .Mqtt + .Data + .Client)
+MqttDashboard.Client (Blazor + SignalR.Client, references .Data)
+```
+
+All 71 tests pass (was 66 before — PlaywrightTests added 5).
+
+---
+
+## 2026-04-02 — FEAT-H: Decouple MqttClientService from SignalR
+
+### Commit: TBD · branch: feature/feat-h-data-layer · UTC: 2026-04-02T11:xx
+
+### Context
+
+`MqttClientService` had a direct dependency on `IHubContext<DataHub>` solely to broadcast `MqttConnectionStatus` to all SignalR clients whenever the MQTT connection state changed. MQTT code should have zero knowledge of SignalR. Fixed by extracting the broadcast into a dedicated `MqttStatusBroadcaster` class.
+
+---
+
+### 1. New file: `src/MqttDashboard.Server/Hubs/MqttStatusBroadcaster.cs`
+
+Tiny singleton that wires `MqttConnectionMonitor.OnStateChanged` → `IHubContext<DataHub>.Clients.All.SendAsync("MqttConnectionStatus", ...)`. This is the only place in the codebase that needs to know about both `MqttConnectionMonitor` and `DataHub`. Constructor wires the event once; no methods exposed.
+
+Instantiated eagerly in `WebApplicationExtensions.UseMqttDashboard` via `ApplicationStarted` callback so the event is wired before any clients connect.
+
+### 2. Update: `src/MqttDashboard.Server/Services/MqttClientService.cs`
+
+- Removed `IHubContext<DataHub>` field and constructor parameter.
+- Removed `using Microsoft.AspNetCore.SignalR;` and `using MqttDashboard.Server.Hubs;`.
+- Removed the `_connectionMonitor.OnStateChanged` lambda that broadcast to hub clients.
+- `MqttClientService` now has **zero SignalR references** — pure MQTT concern.
+
+### 3. Update: `src/MqttDashboard.Server/Extensions/ServiceCollectionExtensions.cs`
+
+Registered `MqttStatusBroadcaster` as a singleton.
+
+### 4. Update: `src/MqttDashboard.Server/Extensions/WebApplicationExtensions.cs`
+
+Added `app.Services.GetRequiredService<MqttStatusBroadcaster>()` in the `ApplicationStarted` callback to force instantiation at startup.
+
+### 5. Update: `tests/MqttDashboard.IntegrationTests/FakeMqttClientService.cs`
+
+Removed `IHubContext<DataHub>` from the test double constructor to match the updated base class signature.
+
+### Result
+
+`MqttClientService` imports: was `using Microsoft.AspNetCore.SignalR` + `using MqttDashboard.Server.Hubs` — both gone. The MQTT files (`MqttClientService`, `MqttDataServer`, `MqttConnectionMonitor`, `MqttTopicSubscriptionManager`, `IMqttClientService`) now have no SignalR dependencies, removing the main blocker to extracting them into a standalone `MqttDashboard.Mqtt` project.
+
+---
+
+## 2026-04-02 — FEAT-H: PublishAsync on IDataCache/IDataServer + lazy unsubscribe grace period
+
+### Commit: TBD · branch: feature/feat-h-data-layer · UTC: 2026-04-02T10:xx
+
+### Context
+
+Two FEAT-H items: (1) unify publishing into the cache/server abstraction and eliminate the now-redundant `IMqttPublisher` interface; (2) add a grace-period delay before broker unsubscribes to prevent churn on circuit reconnect.
+
+---
+
+### 1. `IDataCache.PublishAsync` (new method)
+
+Added `Task PublishAsync(string topic, string payload, bool retain = false, int qos = 0)` to `IDataCache`.
+- `DataCache.PublishAsync` immediately calls `UpdateValue` (so all local subscribers see the new value without waiting for a broker echo) then forwards to `_server.PublishAsync`.
+- This is the single publish entrypoint for all widgets — no need to inject any other service.
+
+### 2. `IDataServer.PublishAsync` (new method)
+
+Added matching `Task PublishAsync(...)` to `IDataServer`. Each implementation:
+- **`MqttDataServer`**: calls `MqttClientService.PublishMessageAsync` → broker.
+- **`SignalRDataServer`**: calls hub `PublishMessage` method → server → broker.
+- **`CacheBridgeDataServer`**: delegates to `_upstream.PublishAsync` (chains into `ServerDataCache` → `MqttDataServer`).
+
+### 3. `IMqttPublisher` removed
+
+Interface deleted (`src/MqttDashboard.Client/Services/IMqttPublisher.cs`). All `: IMqttPublisher` declarations removed from `MqttDataServer` and `SignalRDataServer`. DI registrations removed from `ServiceCollectionExtensions.cs` and `WebApp.Client/Program.cs`. Doc comments updated.
+
+### 4. `SwitchNodeWidget` updated
+
+Removed `@inject IMqttPublisher MqttPublisher`. Toggle now calls `AppState.DataCache.PublishAsync(...)` directly — consistent with how all other data flows through the cache.
+
+### 5. Lazy unsubscribe grace period in `MqttTopicSubscriptionManager`
+
+When the last subscriber for a topic leaves, the broker-level unsubscribe is now deferred by a configurable grace period (default **30 s**).
+- A `CancellationTokenSource` is stored per topic in `_pendingUnsubs`.
+- If any client resubscribes within the window, the pending unsubscribe is cancelled.
+- After the delay expires, `OnTopicUnsubscribeRequested` fires as before.
+- Grace period is configurable via the constructor (`int gracePeriodMs = 30_000`); pass `0` to disable.
+- Added XML doc comment explaining the behaviour.
+- `ScheduleUnsubscribe` / `CancelPendingUnsubscribe` / `FireUnsubscribeAsync` helpers keep the semaphore-protected paths clean.
+
+### 6. TODO.md cleanup
+
+- Removed stale "Is MqttDataHub actually used?" item (DataHub is clearly used; renamed last session).
+- Removed naming-pattern arrow item (resolved last session).
+- Marked lazy-unsubscribe item done inline.
+
+
+
+### Commit: TBD · branch: feature/feat-h-data-layer · UTC: 2026-04-02T10:xx
+
+### Context
+
+Naming consistency pass across the server-side data layer. Goal: MQTT-specific code lives in `Services/` with `Mqtt*` names; SignalR hub code lives in `Hubs/` with `Hub*` / `DataHub` names; no misleading cross-domain prefixes.
+
+---
+
+### 1. `Hubs/MqttDataHub.cs` → `Hubs/DataHub.cs` (class: `DataHub`)
+
+`MqttDataHub` was a SignalR `Hub` subclass — nothing MQTT-specific about it. It relays data from `ServerDataCache` to browser clients over SignalR. Renamed to `DataHub`.
+- `IHubContext<MqttDataHub>` → `IHubContext<DataHub>` everywhere.
+- Hub route: `/mqttdatahub` → `/datahub` (in `WebApplicationExtensions.cs`).
+- Client URL in `MqttInitializationService.BuildHubUrl()`: `"mqttdatahub"` → `"datahub"`.
+- Updated log message from "connected to MQTT Hub" → "connected to Data Hub".
+
+### 2. `Hubs/HubDataSubscriptionStore.cs` → `Hubs/HubSubscriptionStore.cs` (class: `HubSubscriptionStore`)
+
+Simpler name; "Data" was redundant — the store is per-hub-connection by definition.
+Updated doc comment reference from `MqttDataHub` → `DataHub`.
+
+### 3. `Services/ClientConnectionTracker.cs` → `Hubs/HubConnectionTracker.cs` (class: `HubConnectionTracker`)
+
+Tracks connected SignalR clients — that's a hub concern, not a general service concern. Moved to `Hubs/`, renamed to `HubConnectionTracker`, namespace changed to `MqttDashboard.Server.Hubs`.
+Updated refs in: `DataHub.cs`, `MqttDataServer.cs`, `DashboardMetricsPublisher.cs`, `ServiceCollectionExtensions.cs`.
+`DashboardMetricsPublisher.cs` gained `using MqttDashboard.Server.Hubs;`.
+
+### 4. `Hubs/MqttTopicSubscriptionManager.cs` → `Services/MqttTopicSubscriptionManager.cs`
+
+This class ref-counts broker-level MQTT topic subscriptions. It has no dependency on SignalR and is consumed only by `MqttDataServer` and `MqttClientService` — both in `Services/`. Moved there; namespace changed to `MqttDashboard.Server.Services`.
+
+### 5. `IMqttClientService.cs` doc comment updated
+
+Reference to `MqttDataHub` → `DataHub`.
+
+### 6. Tests updated
+
+- `FakeMqttClientService.cs`: `IHubContext<MqttDataHub>` → `IHubContext<DataHub>`.
+- `HubConnectionHelper.cs`: default hub path `"mqttdatahub"` → `"datahub"`.
+- `MqttDataHubTests.cs`: doc comment updated.
+
+All 21 tests pass (13 integration + 8 Playwright).
+
+
+---
+
 ## 2026-04-01 — FEAT-H Phase 4: $DASHBOARD topics, IMqttDiagnostics removal, same-process DI
 
 ### Commit: TBD · branch: feature/feat-h-data-layer · UTC timestamp: session end

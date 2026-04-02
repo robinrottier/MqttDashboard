@@ -1,8 +1,8 @@
-namespace MqttDashboard.Server.Services;
+namespace MqttDashboard.Mqtt;
 
 /// <summary>
 /// Interface for the MQTT client service, exposing the functionality needed by
-/// <see cref="Hubs.MqttDataHub"/> and test doubles.
+/// <see cref="Hubs.DataHub"/> and test doubles.
 /// </summary>
 public interface IMqttClientService
 {

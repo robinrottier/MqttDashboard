@@ -375,3 +375,4 @@ FodyWeavers.xsd
 **/appsettings.[Dd]evelopment.json
 docker-compose.override.yml
 
+*.deb

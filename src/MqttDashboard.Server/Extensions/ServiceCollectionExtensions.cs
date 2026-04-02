@@ -1,4 +1,5 @@
 using MqttDashboard.Data;
+using MqttDashboard.Mqtt;
 using MqttDashboard.Server.Hubs;
 using MqttDashboard.Server.Services;
 using MqttDashboard.Server.Filters;
@@ -15,20 +16,24 @@ public static class ServiceCollectionExtensions
         // Add MQTT Topic Subscription Manager as singleton
         services.AddSingleton<MqttTopicSubscriptionManager>();
 
-        // Add connected client tracker as singleton
-        services.AddSingleton<ClientConnectionTracker>();
+        // Add connected client tracker as singleton (tracks SignalR hub connections)
+        services.AddSingleton<HubConnectionTracker>();
 
         // Add MQTT Connection Monitor as singleton
         services.AddSingleton<MqttConnectionMonitor>();
 
-        // Singleton store for per-connection DataCache subscription handles in MqttDataHub.
-        services.AddSingleton<HubDataSubscriptionStore>();
+        // Singleton store for per-connection DataCache subscription handles in DataHub.
+        services.AddSingleton<HubSubscriptionStore>();
 
         // Register MqttClientService as both a singleton (injectable) and a hosted service.
         services.AddSingleton<MqttClientService>();
         services.AddHostedService(sp => sp.GetRequiredService<MqttClientService>());
         // Also register as the interface so hubs and tests can inject IMqttClientService.
         services.AddSingleton<IMqttClientService>(sp => sp.GetRequiredService<MqttClientService>());
+
+        // Bridges MqttConnectionMonitor state changes into SignalR hub broadcasts.
+        // Keeps SignalR knowledge out of MqttClientService.
+        services.AddSingleton<MqttStatusBroadcaster>();
 
         // Add Diagram Storage Service
         services.AddSingleton<DashboardStorageService>();
@@ -42,10 +47,7 @@ public static class ServiceCollectionExtensions
         // Register a scoped HttpClient for use in Blazor components (server-side rendering)
         services.AddScoped<HttpClient>(sp => CreateLoopbackHttpClient(sp));
 
-        // Singleton MQTT data server — feeds ALL incoming messages into ServerDataCache.
-        // Also implements IMqttPublisher for the server.
         services.AddSingleton<MqttDataServer>();
-        services.AddSingleton<IMqttPublisher>(sp => sp.GetRequiredService<MqttDataServer>());
 
         // Singleton server-side DataCache — accumulates every MQTT value; shared by all circuits.
         services.AddSingleton<ServerDataCache>();

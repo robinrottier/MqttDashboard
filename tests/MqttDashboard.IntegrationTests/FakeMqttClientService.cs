@@ -1,7 +1,5 @@
 using System.Collections.Concurrent;
-using Microsoft.AspNetCore.SignalR;
-using MqttDashboard.Server.Hubs;
-using MqttDashboard.Server.Services;
+using MqttDashboard.Mqtt;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 
@@ -15,12 +13,11 @@ namespace MqttDashboard.IntegrationTests;
 public class FakeMqttClientService : MqttClientService
 {
     public FakeMqttClientService(
-        IHubContext<MqttDataHub> hubContext,
         ILogger<MqttClientService> logger,
         IConfiguration configuration,
         MqttTopicSubscriptionManager subscriptionManager,
         MqttConnectionMonitor connectionMonitor)
-        : base(hubContext, logger, configuration, subscriptionManager, connectionMonitor) { }
+        : base(logger, configuration, subscriptionManager, connectionMonitor) { }
 
     /// <summary>Does nothing — no broker connection is made in tests.</summary>
     protected override Task ExecuteAsync(CancellationToken stoppingToken) => Task.CompletedTask;

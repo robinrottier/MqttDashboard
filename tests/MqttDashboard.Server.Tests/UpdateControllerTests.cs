@@ -82,7 +82,7 @@ public class UpdateControllerTests
         var mockFactory = new Mock<IHttpClientFactory>();
         mockFactory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(client);
 
-        var config = new ConfigurationBuilder().AddInMemoryCollection(new[] { new KeyValuePair<string,string>("Auth:AdminPasswordHash","hash") }).Build();
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new[] { new KeyValuePair<string, string?>("Auth:AdminPasswordHash", "hash") }).Build();
 
         // User not authenticated
         var controller = CreateController(mockFactory.Object, config, new ClaimsPrincipal(new ClaimsIdentity()));

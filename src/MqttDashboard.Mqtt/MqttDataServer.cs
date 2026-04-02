@@ -1,10 +1,12 @@
 using MqttDashboard.Data;
-using MqttDashboard.Models;
-using MqttDashboard.Server.Hubs;
-using MqttDashboard.Services;
+//using MqttDashboard.Models;
+using MqttDashboard.Mqtt;
+//using MqttDashboard.Server.Hubs;
+//using MqttDashboard.Services;
 using Microsoft.Extensions.Logging;
 
-namespace MqttDashboard.Server.Services;
+//namespace MqttDashboard.Server.Services;
+namespace MqttDashboard.Mqtt;
 
 /// <summary>
 /// Singleton <see cref="IDataServer"/> that bridges the MQTT broker into the server-side
@@ -18,9 +20,9 @@ namespace MqttDashboard.Server.Services;
 /// share the same broker-side ref-count.
 /// </para>
 /// <para>
-/// Also implements <see cref="IMqttPublisher"/> so the
-/// rest of the application does not need to take a direct dependency on
-/// <see cref="MqttClientService"/>.
+/// Implements <see cref="IDataServer.PublishAsync"/> by forwarding to <see cref="MqttClientService"/>
+/// so the rest of the application publishes via the cache without taking a direct dependency
+/// on the MQTT client.
 /// </para>
 /// <para>
 /// <b>Lifecycle:</b> event handlers are wired in the constructor because this is a singleton
@@ -29,12 +31,12 @@ namespace MqttDashboard.Server.Services;
 /// call re-fires the current MQTT status so the new circuit UI is seeded correctly.
 /// </para>
 /// </summary>
-public sealed class MqttDataServer : IDataServer, IMqttPublisher, IAsyncDisposable
+public sealed class MqttDataServer : IDataServer, IAsyncDisposable
 {
     private readonly MqttClientService _mqttClientService;
     private readonly MqttTopicSubscriptionManager _subscriptionManager;
     private readonly MqttConnectionMonitor _connectionMonitor;
-    private readonly ClientConnectionTracker _connectionTracker;
+    //private readonly HubConnectionTracker _connectionTracker;
     private readonly ILogger<MqttDataServer>? _logger;
 
     /// <summary>Stable connection-ID used when registering with <see cref="MqttTopicSubscriptionManager"/>.</summary>
@@ -50,13 +52,13 @@ public sealed class MqttDataServer : IDataServer, IMqttPublisher, IAsyncDisposab
         MqttClientService mqttClientService,
         MqttTopicSubscriptionManager subscriptionManager,
         MqttConnectionMonitor connectionMonitor,
-        ClientConnectionTracker connectionTracker,
+        //HubConnectionTracker connectionTracker,
         ILogger<MqttDataServer>? logger = null)
     {
         _mqttClientService = mqttClientService;
         _subscriptionManager = subscriptionManager;
         _connectionMonitor = connectionMonitor;
-        _connectionTracker = connectionTracker;
+        //_connectionTracker = connectionTracker;
         _logger = logger;
 
         // Wire events in ctor — safe for a singleton that lives for the app lifetime.
@@ -102,9 +104,9 @@ public sealed class MqttDataServer : IDataServer, IMqttPublisher, IAsyncDisposab
         _logger?.LogDebug("[MqttDataServer] Unsubscribed from {Topic}", topic);
     }
 
-    // ── IMqttPublisher ───────────────────────────────────────────────────────────
+    // ── IDataServer.PublishAsync ─────────────────────────────────────────────────
 
-    public async Task PublishMessageAsync(string topic, string payload, bool retain = false, int qos = 0)
+    public async Task PublishAsync(string topic, string payload, bool retain = false, int qos = 0)
     {
         await _mqttClientService.PublishMessageAsync(topic, payload, retain, qos);
         _logger?.LogDebug("[MqttDataServer] Published to {Topic}", topic);

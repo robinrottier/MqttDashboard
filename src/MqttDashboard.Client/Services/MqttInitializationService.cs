@@ -139,7 +139,7 @@ public class MqttInitializationService
     /// </summary>
     private string BuildHubUrl()
     {
-        return _navigationManager.ToAbsoluteUri("mqttdatahub").ToString();
+        return _navigationManager.ToAbsoluteUri("datahub").ToString();
     }
 
     private async Task RestoreSubscriptionsAsync()
