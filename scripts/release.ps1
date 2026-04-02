@@ -414,7 +414,7 @@ function Wait-For-TagWorkflows($tag) {
         $runsOut = (Run-LocalCommand gh "run list --branch $tag --limit 50 --json status,conclusion,headBranch" $false).StdOut
         if (-not $runsOut) { Write-Log "No runs detected yet for tag $tag"; if ($elapsed -gt $timeout) { throw "Timeout waiting for tag workflows" }; continue }
         $runs = $runsOut | ConvertFrom-Json
-        if ($runs.Count -eq 0) { Write-Log "No runs yet"; if ($elapsed -gt $timeout) { throw "Timeout waiting for tag workflows" }; continue }
+        if ($null -eq $runs -or $runs.Count -eq 0) { Write-Log "No runs yet"; if ($elapsed -gt $timeout) { throw "Timeout waiting for tag workflows" }; continue }
         $inProgress = $runs | Where-Object { $_.status -ne 'completed' }
         if ($inProgress.Count -gt 0) { Write-Log "Tag workflows in progress..."; if ($elapsed -gt $timeout) { throw "Timeout waiting for tag workflows" }; continue }
         $failed = $runs | Where-Object { $_.conclusion -ne 'success' }
