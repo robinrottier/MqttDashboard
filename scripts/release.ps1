@@ -383,7 +383,7 @@ function Create-And-Merge-PR($branch, $newTag) {
         $runs = $runsOut | ConvertFrom-Json
         if ($null -eq $runs -or $runs.Count -eq 0) { Write-Log "No workflow runs yet..."; if ($elapsed -gt $timeout) { throw "Timeout waiting for workflows" }; continue }
         $inProgress = $runs | Where-Object { $_.status -ne 'completed' }
-        if ($inProgress.Count -gt 0) { Write-Log "Workflows still in progress..."; if ($elapsed -gt $timeout) { throw "Timeout waiting for workflows" }; continue }
+        if ($null -ne $inProgress -and $inProgress.Count -gt 0) { Write-Log "Workflows still in progress..."; if ($elapsed -gt $timeout) { throw "Timeout waiting for workflows" }; continue }
         $failed = $runs | Where-Object { $_.conclusion -ne 'success' }
         if ($null -ne $failed -and $failed.Count -gt 0) { throw "One or more workflow runs failed. See Actions for details." }
         Write-Log "Workflows succeeded"
