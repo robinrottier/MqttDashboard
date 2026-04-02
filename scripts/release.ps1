@@ -381,11 +381,11 @@ function Create-And-Merge-PR($branch, $newTag) {
         if (-not $runsOut) { Write-Log "No run info yet"; continue }
         # rough check: if any run has status in_progress or queued -> wait; if any failed -> abort; if at least one completed+success -> proceed
         $runs = $runsOut | ConvertFrom-Json
-        if ($runs -eq $null -or $runs.Count -eq 0) { Write-Log "No workflow runs yet..."; if ($elapsed -gt $timeout) { throw "Timeout waiting for workflows" }; continue }
+        if ($null -eq $runs -or $runs.Count -eq 0) { Write-Log "No workflow runs yet..."; if ($elapsed -gt $timeout) { throw "Timeout waiting for workflows" }; continue }
         $inProgress = $runs | Where-Object { $_.status -ne 'completed' }
         if ($inProgress.Count -gt 0) { Write-Log "Workflows still in progress..."; if ($elapsed -gt $timeout) { throw "Timeout waiting for workflows" }; continue }
         $failed = $runs | Where-Object { $_.conclusion -ne 'success' }
-        if ($failed.Count -gt 0) { throw "One or more workflow runs failed. See Actions for details." }
+        if ($null -ne $failed -and $failed.Count -gt 0) { throw "One or more workflow runs failed. See Actions for details." }
         Write-Log "Workflows succeeded"
         break
     }
