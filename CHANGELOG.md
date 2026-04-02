@@ -13,6 +13,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Preparing release v0.1.16 (2026-04-02)
 - Preparing release v0.1.16 (2026-04-02)
 - Preparing release v0.1.16 (2026-04-02)
+- Preparing release v0.1.16 (2026-04-02)
 
 ### Added
 - **`$DASHBOARD/*` virtual topics** — new `DashboardMetricsPublisher` background service publishes live diagnostic data into `ServerDataCache` every second without touching the MQTT broker. Topics: `$DASHBOARD/TIME`, `UPTIME`, `VERSION`, `VERSION/LATEST`, `VERSION/UPDATE_AVAILABLE`, `MQTT/STATUS`, `MQTT/BROKER`, `MQTT/TOPIC_COUNT`, `CLIENTS/COUNT`. Any widget or dialog can subscribe to these like any other topic.
