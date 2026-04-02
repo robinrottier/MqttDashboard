@@ -6,10 +6,21 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ## BUGS
 
+- [ ] Open dialog ... seems very small and too far to left on the screen. Maybe it should be centered and larger? (this was on firefox)
+- [ ] Was logged in (due to cookie I guess) and then did "logout admin" ...it went to "Login dialog" but really shoul dgo to home page simply
+      with no logged in user state and I can log in if required
+
 ## 🟡 Minor Enhancements
 
-- [ ] Property transition
-	- [ ] Also a means to drag reordering around the conditions to specify which is first match
+- [ ] release.ps1
+	- [ ] make sure it'll rnu on linux/wsl aswell as windows
+	- [ ] what happens if it runs on powershell.exe on windows? can it simply rerun itself on pwsh.exe?
+	- [ ] is there a terminal/console library it can use to make it more user friendly and interactive? without losing complete non-attended run ability
+	- [ ] needs final step to auto-updagrade a remote deployment to the new version after release is done (e.g. via ssh and docker compose pull+restart OR by interacting with API on that eployment)
+- [ ] Need a way to share dashboards between installations (and dev). Can the API be opened up with a read/write interface to other isntallations via https??
+	- [ ] Then in "OPen" and "Save As" dialogs we could choose destaniotn respository: local file or remote dashboard repo (with list of dashboards to choose from)
+- [ ] Node Property dialog - color transition
+	- [ ] Needs a means to drag reordering around the conditions to specify which is first match
 - [ ] Serialization:
 	- [ ] logged-on user not yet written to `FileInfo` (always admin for now — fine to leave)
 	- [ ] should include version of this app doing the write, and server written from
@@ -22,8 +33,6 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Node properties dialog
 	- [ ] Can this dialog be moveable and have apply button to changes dynamically without closing
 - [ ] Log viewer columns: choices for date (and format), time (and format), topic path, topic name, topic full path&name, value — **Full 6-column boolean options done**; date/time format options still open
-- [ ] mqtt publishing should have other parameters (e.g. message expiry)
-- [ ] Confirm- mqtt publishing is a reusable compoennt (especially configuration of it in node properties)
 - [ ] IMport and Export dont seem to be able to see Windows clipboard ... is there some permissions to enable it? This was on firefox
 - [ ] Serialization: node ID GUIDs in file — map to sequential 1-based IDs for file (need port+link ID remapping too). Needs a json serilaizer class for Dashboard to manage the mapping.
 
@@ -75,18 +84,20 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ### FEAT-H: Data layer refactor _(Phases 1–4 complete — see CHANGELOG)_
 - [ ] Is MqttDataHub actually used there are 12 references to the class but NO references to any of its members? (double check that!)
-- [ ] Lazy cache/Grace period: if last client unsubscribes from a topic, keep the server-side broker subscription alive for a configurable delay (e.g. 30 s) before actually unsubscribing from the broker — avoids churn if a circuit reconnects
 - [ ] Publishing e.g. from switch widget
 	- [ ] ...if client simply writes to their local cache then that publishes upstream and value trickles thru tree of DataCache
-	- [ ] does it need some sort of access control...its just a inprocess dictionary so maybe its simply read-write?
-	- [ ] outside this installations "network" publishing back to mqtt is controlled by the connection username
+	- [ ] IDataVache could have setvalue to simply write local stored value and Publish (mirrors Subscribe) to set a value and publish to connected clients
+	- [ ] ??does it need some sort of access control...its just a inprocess dictionary so maybe its simply read-write always or maybe in a dervied interface (e.g. IDataCacheWithPublish : IDataCache).What would be best?
+	- [ ] outside this installations "network" publishing back to mqtt is controlled by the connection username so no problem there but shoul dbe an
+	      option on creation of the mqtt cache to allow publishing or not for this cache
+- [ ] Lazy cache/Grace period: if last client unsubscribes from a topic, keep the server-side broker subscription alive for a configurable delay (e.g. 30 s) before actually unsubscribing from the broker — avoids churn if a circuit reconnects
 - [ ] `MqttDashboard.Data.Mqtt` — separate package so the common `.Data` library has no MQTT dependency
 - [ ] `SignalRDataServer` / `.Data.SignalR` — extract so SignalR is purely a transport adapter
+- [ ] ---> trying to get some common pattern to the naming for everything to do with Data and Cache and fanout etc.
 - [ ] `IDataCache<T>` — typed value generics
-- [ ] DataCache value object redesign (replace parallel collections with a richer value type supporting arbitrary tags/metadata)
+	- [ ] DataCache value object redesign (replace parallel collections with a richer value type supporting arbitrary tags/metadata)
 - [ ] Minimize topic-string parsing (join/split on `/`); consider composite key object for the collection
 - [ ] Topic tree structure for wildcard matching optimisation
-
 
 **Phase X — Plugin / alternate data sources**
 - [ ] Extend plugin architecture for data sources beyond MQTT
@@ -126,6 +137,7 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] We've lost the "restart" button ...might want to do a restart for other reasosns
 - [ ] More automation to speed relase process
 	- [ ] Local script to run tests, do a final commit, and push, create PR, let the various actions run, merge the PR to main and kick patch-release. Then kick deployment to test server
+	      release.ps1 - still in testing
 
 ### FEAT-M: Settings persistence _(done — settings now in data directory)_
 

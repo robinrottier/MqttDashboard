@@ -392,14 +392,17 @@ function Create-And-Merge-PR($branch, $newTag) {
 
     Write-Log "Merging PR #$prNumber into main..."
     if ($env:DRYRUN -eq '1') { Write-Log "DRYRUN: skipping PR merge"; return }
-    Run-LocalCommand gh "pr merge $prNumber --merge --delete-branch --repo $slug --confirm"
+    $res = Run-LocalCommand gh "pr merge $prNumber --merge --delete-branch --repo $slug --confirm"
+    if ($res.ExitCode -ne 0) { throw "Failed to merge PR #$prNumber" }
 }
 
 function Create-Tag-And-Push($tag) {
     Write-Log "Creating annotated tag $tag"
-    Run-LocalCommand git "tag -a $tag -m \"Release $tag\""
+    $res = Run-LocalCommand git "tag -a $tag -m \"Release $tag\""
+    if ($res.ExitCode -ne 0) { throw "Failed to create tag $tag" }
     if ($env:DRYRUN -eq '1') { Write-Log "DRYRUN: skipping tag push"; return }
-    Run-LocalCommand git "push origin $tag"
+    $res = Run-LocalCommand git "push origin $tag"
+    if ($res.ExitCode -ne 0) { throw "Failed to push tag $tag" }
 }
 
 function Wait-For-TagWorkflows($tag) {
