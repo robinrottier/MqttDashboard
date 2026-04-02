@@ -1,17 +1,17 @@
 using MQTTnet.Server;
 
-namespace MqttDashboard.IntegrationTests;
+namespace MqttDashboard.Mqtt.Tests;
 
 /// <summary>
-/// xUnit class fixture that starts a real in-process MQTTnet broker for the duration of a
-/// test class.  The broker listens on a dynamically-assigned free TCP port to avoid
-/// collisions when tests run in parallel.
+/// xUnit class fixture that starts a real in-process MQTT broker for the duration of a test class.
+/// The broker listens on a dynamically-assigned free TCP port to avoid collisions when tests
+/// run in parallel.
 /// </summary>
 public sealed class InProcessMqttBrokerFixture : IAsyncLifetime
 {
     private MqttServer? _server;
 
-    /// <summary>The TCP port the in-process broker is listening on.</summary>
+    /// <summary>The TCP port the broker is listening on.</summary>
     public int Port { get; private set; }
 
     public async Task InitializeAsync()

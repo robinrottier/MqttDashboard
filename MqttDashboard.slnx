@@ -45,6 +45,7 @@
     <Project Path="tests/MqttDashboard.Client.Tests/MqttDashboard.Client.Tests.csproj" />
     <Project Path="tests/MqttDashboard.Data.Tests/MqttDashboard.Data.Tests.csproj" />
     <Project Path="tests/MqttDashboard.IntegrationTests/MqttDashboard.IntegrationTests.csproj" />
+    <Project Path="tests/MqttDashboard.Mqtt.Tests/MqttDashboard.Mqtt.Tests.csproj" />
     <Project Path="tests/MqttDashboard.PlaywrightTests/MqttDashboard.PlaywrightTests.csproj" />
     <Project Path="tests/MqttDashboard.Server.Tests/MqttDashboard.Server.Tests.csproj" />
   </Folder>

@@ -41,14 +41,22 @@ public class MqttFlowIntegrationTests : IClassFixture<InProcessMqttBrokerFixture
 
     private static async Task WaitForMqttConnectedAsync(HubConnection conn)
     {
-        var deadline = DateTime.UtcNow + Timeout;
-        while (DateTime.UtcNow < deadline)
+        var tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        conn.On<string, int>("MqttConnectionStatus", (status, _) =>
         {
-            var status = await conn.InvokeAsync<string>("GetMqttConnectionStatus");
-            if (status == "Connected") return;
-            await Task.Delay(200);
-        }
-        throw new TimeoutException("MqttClientService did not connect to the in-process broker within the timeout.");
+            if (status == "Connected") tcs.TrySetResult(status);
+        });
+
+        // If already received before we registered (OnConnectedAsync fires very fast),
+        // poll by re-subscribing briefly.
+        await Task.Delay(100);
+
+        var deadline = DateTime.UtcNow + Timeout;
+        while (!tcs.Task.IsCompleted && DateTime.UtcNow < deadline)
+            await Task.Delay(100);
+
+        if (!tcs.Task.IsCompleted)
+            throw new TimeoutException("MqttClientService did not connect to the in-process broker within the timeout.");
     }
 
     private async Task<IMqttClient> GetPublisherAsync()
@@ -79,12 +87,7 @@ public class MqttFlowIntegrationTests : IClassFixture<InProcessMqttBrokerFixture
 
     // ── Tests ─────────────────────────────────────────────────────────────────
 
-    private const string TierBSkipReason =
-        "Tier B requires an in-process MQTT broker. MQTTnet v5 removed the server from the main " +
-        "package. Add the MQTTnet server package and implement InProcessMqttBrokerFixture.InitializeAsync " +
-        "to enable these tests.";
-
-    [Fact(Skip = TierBSkipReason)]
+    [Fact]
     public async Task Publish_Via_Broker_ClientReceivesData()
     {
         var (_, conn) = await StartAsync();
@@ -108,7 +111,7 @@ public class MqttFlowIntegrationTests : IClassFixture<InProcessMqttBrokerFixture
         Assert.Equal("hello-from-broker", payload);
     }
 
-    [Fact(Skip = TierBSkipReason)]
+    [Fact]
     public async Task WildcardSubscription_MatchesMultipleTopics()
     {
         var (_, conn) = await StartAsync();
@@ -137,7 +140,7 @@ public class MqttFlowIntegrationTests : IClassFixture<InProcessMqttBrokerFixture
         Assert.Contains(received, r => r.topic == "wildcard/b" && r.payload == "payload-b");
     }
 
-    [Fact(Skip = TierBSkipReason)]
+    [Fact]
     public async Task RetainedMessage_DeliveredOnSubscribe()
     {
         // Publish a retained message BEFORE the SignalR client subscribes
