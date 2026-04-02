@@ -5,9 +5,92 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
-## 2026-04-02 — FEAT-H: Extract MqttDashboard.Mqtt project
+## 2026-04-02 — Add MQTT and Data layer integration tests
 
-### Commit: TBD · branch: feature/feat-h-data-layer · UTC: 2026-04-02T11:xx
+### Commit: c4f6f81 · branch: feature/feat-h-data-layer · UTC: 2026-04-02T23:22:52Z
+
+#### New project: `MqttDashboard.Mqtt.Tests`
+
+**Files:** `tests/MqttDashboard.Mqtt.Tests/` (new project, added to `MqttDashboard.slnx`)
+
+**Why:** `MqttDashboard.Mqtt` and `MqttDashboard.Data` are now separate modules; they needed
+test coverage that exercises them against a real in-process MQTT broker rather than relying
+on mocks or the full server stack.
+
+**`InProcessMqttBrokerFixture`** — xUnit `IAsyncLifetime` class fixture that starts a real
+`MQTTnet.Server` broker on a free port for the duration of the test class. Added
+`MQTTnet.Server 5.1.0.1559` package to this project. The same pattern was applied to
+`MqttDashboard.IntegrationTests` (see below).
+
+**`MqttTestHelpers`** — static helpers shared by all test classes: `StartServiceAsync`
+builds and starts a `MqttClientService` against the broker (waits for `Connected` state),
+`ConnectExternalClientAsync` creates a plain `IMqttClient` for publisher/subscriber roles,
+`PublishAsync` / `WaitForMessageAsync` convenience wrappers.
+
+**`MqttClientServiceTests`** (4 tests):
+- `Service_ConnectsToInProcessBroker` — verifies `MqttConnectionMonitor.State == Connected`.
+- `Subscribe_ThenPublishFromExternalClient_MessageReceived` — subscribes a topic via
+  `MqttTopicSubscriptionManager`, publishes from a second client, asserts `OnMessagePublished`
+  fires with the correct topic/payload.
+- `Subscribe_WildcardTopic_MatchingMessagesReceived` — verifies `sensors/+/temp` wildcard
+  matches two topics but not `sensors/room1/humidity`.
+- `Publish_MessageDeliveredToBrokerSubscriber` — `PublishMessageAsync` sends a message that
+  an external subscriber receives.
+- `UnsubscribeClient_NoMoreMessagesDelivered` — after `UnsubscribeClientFromTopicAsync` no
+  further messages arrive (grace period set to 0 ms in tests).
+
+**`MqttDataCacheIntegrationTests`** (5 tests) — wires a `DataCache` to `MqttClientService`
+via a test-local `MqttDataServerStub` (implements `IDataServer`; no dependency on Server project):
+- `BrokerMessage_ArriveInDataCacheSubscriber` — broker publish → `UpdateValue` → subscriber callback.
+- `BrokerMessage_WildcardSubscription_MultipleCacheUpdates` — wildcard cache subscription on top of MQTT.
+- `DataCache_PublishAsync_SendsMessageToBroker` — `cache.PublishAsync` flows through stub → `PublishMessageAsync` → external subscriber receives it.
+- `RoundTrip_PublishFromCacheA_ReceivedByCacheB` — two independent `MqttClientService` instances on the same broker; Cache A publishes, Cache B subscriber receives, no shared memory.
+- `RoundTrip_PublishFromCacheB_ReceivedByCacheA` — reverse direction.
+
+---
+
+#### Chained `DataCache` tests in `MqttDashboard.Data.Tests`
+
+**File:** `tests/MqttDashboard.Data.Tests/ChainedCacheTests.cs` (new)
+
+**Why:** The `CacheBridgeDataServer` wires caches together in a chain. These tests verify
+the multi-level chain topology that production code relies on (server-side singleton cache →
+per-circuit bridge → per-circuit cache).
+
+**Tests (11):**
+- Two-level chain: upstream update → downstream subscriber, wildcard subscriber, seed from
+  cached value on subscribe.
+- Two-level publish: `downstream.PublishAsync` updates upstream subscribers and also updates
+  the downstream cache immediately (local echo).
+- Three-level chain (A→B→C): value from A reaches subscriber on C; publish on C reaches A.
+- Demand-driven subscription propagation: first subscriber on downstream triggers bridge to
+  subscribe on upstream.
+- Dispose handle stops propagation.
+- Two subscribers on same downstream topic both receive all updates.
+
+---
+
+#### Enable Tier B integration tests in `MqttDashboard.IntegrationTests`
+
+**Files:** `InProcessMqttBrokerFixture.cs`, `MqttFlowIntegrationTests.cs`,
+`MqttDashboard.IntegrationTests.csproj`
+
+**Why:** These tests were stubbed out with `[Fact(Skip = ...)]` because `MQTTnet v5` moved
+the server component to a separate package. The package (`MQTTnet.Server 5.1.0.1559`) is
+now available and has been added.
+
+**Changes:**
+- Replaced stub `InProcessMqttBrokerFixture` with a real implementation using `MqttServerFactory`.
+- Removed `Skip` attributes from all 3 `MqttFlowIntegrationTests` tests.
+- Fixed `WaitForMqttConnectedAsync`: it was calling `InvokeAsync<string>("GetMqttConnectionStatus")`
+  (method no longer exists); replaced with a listener on the `MqttConnectionStatus` client event
+  that `DataHub.OnConnectedAsync` sends. ⚠️ The hub sends this immediately on connect, so there
+  is a small window where the event arrives before the listener is registered; the fix polls for
+  100 ms to handle this.
+
+---
+
+
 
 ### Context
 
