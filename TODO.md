@@ -9,8 +9,11 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 ## 🟡 Minor Enhancements
 
 - [ ] release.ps1
+	- [ ] if select skip then menu shou dbe re=-presented for confirmation
+	- [ ] shoudl be "Skip or include" to invert option not just skip it
+	- [ ] i selected 1 for skip and it still seemd to do it
 	- [ ] console output: each step shows what it's doing but then reverts to a single line if OK (like `dotnet build` can do) — currently all sub-command output is streamed verbosely
-	- [ ] detailed output review on failure — buffer step output and dump it in full only when a step fails
+	- [ ] detailed output review on failure — buffer step output and dump it in full only when a step fails. Could be "Show detailed" option at that last prompt
 - [ ] Need a way to share dashboards between installations (and dev). Can the API be opened up with a read/write interface to other isntallations via https??
 	- [ ] Then in "OPen" and "Save As" dialogs we could choose destaniotn respository: local file or remote dashboard repo (with list of dashboards to choose from)
 - [ ] Node Property dialog - color transition
