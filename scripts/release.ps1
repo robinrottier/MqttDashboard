@@ -80,10 +80,18 @@
 .PARAMETER Help
     Show this help text. Alias: -h
 
+.PARAMETER LightBackground
+    Use darker colours suitable for white/light-theme terminal backgrounds.
+    Auto-detection is unreliable in Windows Terminal and many other emulators,
+    so pass this flag (or set LIGHT_BACKGROUND=1) when your terminal has a light
+    background. You can also set it permanently in your profile:
+        $env:LIGHT_BACKGROUND = '1'
+
 .EXAMPLE
     pwsh ./scripts/release.ps1 -h
     pwsh ./scripts/release.ps1 -Help
     pwsh ./scripts/release.ps1
+    pwsh ./scripts/release.ps1 -LightBackground        # white/light terminal theme
     pwsh ./scripts/release.ps1 -DryRun
     pwsh ./scripts/release.ps1 -Verify
     pwsh ./scripts/release.ps1 -Verify -Skip docker-build
@@ -96,6 +104,7 @@
     Environment variable fallbacks:
       DRYRUN=1               equivalent to -DryRun
       VERIFY=1               equivalent to -Verify
+      LIGHT_BACKGROUND=1     equivalent to -LightBackground (add to profile for permanent use)
       NO_GH=1                equivalent to -NoGh
       SKIP_RELEASE_TESTS=1   equivalent to -SkipReleaseTests
       SKIP_PUBLISH_CHECK=1   equivalent to -SkipPublishCheck
@@ -125,7 +134,8 @@ Param(
     [string[]]$Skip = @(),
     [switch]$NonInteractive,
     [Alias('h')]
-    [switch]$Help
+    [switch]$Help,
+    [switch]$LightBackground
 )
 
 Set-StrictMode -Version Latest
@@ -160,22 +170,21 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 Push-Location $RepoRoot
 
-# ─── Console color scheme (adapts to light or dark terminal background) ───────
-$_bg = try { $Host.UI.RawUI.BackgroundColor } catch { [ConsoleColor]::Black }
-$_isLight = $_bg -in @(
-    [ConsoleColor]::White, [ConsoleColor]::Gray,
-    [ConsoleColor]::Yellow, [ConsoleColor]::Cyan, [ConsoleColor]::Green
-)
+# ─── Console color scheme ─────────────────────────────────────────────────────
+# Auto-detection of terminal background is unreliable in Windows Terminal and
+# many other terminal emulators. Use -LightBackground (or LIGHT_BACKGROUND=1)
+# for white/light-theme terminals; default palette assumes dark background.
+$_light = $LightBackground -or $env:LIGHT_BACKGROUND -eq '1'
 $C = @{
-    Header  = if ($_isLight) { 'DarkCyan'   } else { 'Cyan'    }
-    Step    = if ($_isLight) { 'DarkGray'   } else { 'Gray'    }
-    Ok      = if ($_isLight) { 'DarkGreen'  } else { 'Green'   }
-    Warn    = if ($_isLight) { 'DarkMagenta'} else { 'Yellow'  }
-    Fail    = 'Red'   # readable on both
-    Active  = if ($_isLight) { 'Black'      } else { 'White'   }
+    Header  = if ($_light) { 'DarkCyan'    } else { 'Cyan'   }
+    Step    = 'DarkGray'    # readable on both
+    Ok      = if ($_light) { 'DarkGreen'   } else { 'Green'  }
+    Warn    = if ($_light) { 'DarkMagenta' } else { 'Yellow' }
+    Fail    = 'Red'         # readable on both
+    Active  = if ($_light) { 'Black'       } else { 'White'  }
     Dim     = 'DarkGray'
-    Cyan    = if ($_isLight) { 'DarkCyan'   } else { 'Cyan'    }
-    Yellow  = if ($_isLight) { 'DarkMagenta'} else { 'Yellow'  }
+    Cyan    = if ($_light) { 'DarkCyan'    } else { 'Cyan'   }
+    Yellow  = if ($_light) { 'DarkMagenta' } else { 'Yellow' }
 }
 
 function Write-Header([string]$msg) { Write-Host "`n=== $msg ===" -ForegroundColor $C.Header }
