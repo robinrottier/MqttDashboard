@@ -262,8 +262,9 @@ $script:CurrentBranch  = $null
 # Run a command, streaming output to the terminal. Returns exit code.
 function Invoke-Cmd([string]$Exe, [string[]]$ArgList) {
     Write-Step "→ $Exe $($ArgList -join ' ')"
-    & $Exe @ArgList
-    return $LASTEXITCODE
+    & $Exe @ArgList | Out-Host   # Out-Host bypasses pipeline so $code = Invoke-Cmd captures only the exit code
+    $ec = $LASTEXITCODE          # capture immediately before anything else can change it
+    return $ec
 }
 
 # Run a command and return its stdout as a trimmed string (stderr discarded).
@@ -324,8 +325,8 @@ function Step-CleanTree {
 function Step-BuildDebug {
     Write-Step "Building (Debug)..."
     Assert-Cmd dotnet @('build', 'MqttDashboard.slnx', '-c', 'Debug') "Debug build failed"
-    Write-Step "Testing (Debug)..."
-    Assert-Cmd dotnet @('test', 'MqttDashboard.slnx', '-c', 'Debug', '--no-build') "Debug tests failed"
+    Write-Step "Testing (Debug) [filter: $EffTestFilter]..."
+    Assert-Cmd dotnet @('test', 'MqttDashboard.slnx', '-c', 'Debug', '--no-build', '--filter', $EffTestFilter) "Debug tests failed"
     Write-Ok "Debug build + tests passed"
 }
 
