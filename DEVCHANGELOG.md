@@ -5,9 +5,204 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
-## 2026-04-02 — FEAT-H: Extract MqttDashboard.Mqtt project
+## 2026-04-03 — release.ps1: -Verify mode, publish-check, docker-build, post-deploy steps
 
-### Commit: TBD · branch: feature/feat-h-data-layer · UTC: 2026-04-02T11:xx
+### Commit: TBD · branch: feature/feat-h-data-layer
+
+#### `scripts/release.ps1` — 4 enhancements
+
+**1. `-Verify` mode**
+
+New `-Verify` switch (also `VERIFY=1` env var). When set, `Get-StepsToRun` restricts to the
+6 local steps: `preflight → clean → build-debug → build-release → publish-check → docker-build`.
+No git state changes, no remote operations, no `gh` CLI required.
+
+`Step-Preflight` updated to skip the `gh` availability requirement when `-Verify` is active and
+to skip the remote-URL check (not needed for local verification).
+
+Suitable for use as a Copilot post-change verification gate at the end of each session. Also
+useful as a quick pre-push sanity check on the developer's machine.
+
+Distinguished from `-DryRun`: `-DryRun` still rehearses the full release flow (commits changelog
+locally, etc.) but skips remote pushes; `-Verify` is purely local with zero git mutations.
+
+**2. `publish-check` step (new)**
+
+Mirrors what `release.yml` does for the `linux-x64` target: runs `dotnet publish -c Release
+-r linux-x64 --self-contained true`. Catches trim errors, missing publish-only assemblies, or AOT
+failures that would slip past `dotnet build`. Cleans up the output directory (`artifacts/publish-check`)
+after success. Auto-skipped with `-SkipPublishCheck` switch or `SKIP_PUBLISH_CHECK=1` env var.
+
+⚠️ This step does a full wasm-tools publish so it can be slow (2–4 min) on first run; subsequent
+runs benefit from incremental build cache.
+
+**3. `docker-build` step (new)**
+
+Mirrors `docker.yml`'s build step: `docker build -f src/.../Dockerfile -t mqttdashboard:local .`
+using the repo root as build context. Auto-skipped (with a warning) if:
+- `docker` is not on PATH, or
+- the Docker daemon is not running (`docker info` returns non-zero).
+
+Does not push — local verification only. Tags the image `mqttdashboard:local` for manual inspection.
+
+**4. `post-deploy` step (new)**
+
+Final step (position 14). SSHs to a remote host and runs:
+```
+docker compose -f <compose-file> pull && docker compose -f <compose-file> up -d
+```
+Configuration via env vars:
+- `DEPLOY_HOST` — required; step auto-skips if not set
+- `DEPLOY_USER` — SSH user (default: `$env:USER` / `$env:USERNAME`)
+- `DEPLOY_PATH` — remote working dir (default: `/opt/mqttdashboard`)
+- `DEPLOY_COMPOSE_FILE` — compose file name (default: `docker-compose.yml`)
+
+Skipped in `-DryRun` mode. Documented in `.NOTES` of the script help block.
+
+**Updated step catalogue**
+
+Step order expanded from 11 → 14:
+```
+preflight → clean → build-debug → build-release → publish-check → docker-build
+→ sync → version → changelog → push-changelog → pr → tag → wait-workflows → post-deploy
+```
+
+Help text (`.DESCRIPTION`, `.PARAMETER`, `.NOTES`, `.EXAMPLE`) updated throughout.
+
+---
+
+## 2026-04-03 — release.ps1 rewrite: Linux/WSL compat, step selection, bug fixes
+
+### Commit: TBD · branch: feature/feat-h-data-layer
+
+### Context
+
+Full rewrite of `scripts/release.ps1` addressing all open TODO items and several
+latent bugs found during review.
+
+### Bugs fixed
+
+| Bug | Previous behaviour | Fix |
+|-----|--------------------|-----|
+| `$args = @()` | Throws under `Set-StrictMode -Version Latest` (`$args` is read-only) | Removed — GNU-arg parsing replaced with proper `Param()` only |
+| `Parse-GnuArgs` | Read the *function*'s empty `$args`, not the script's; GNU flags silently ignored | Entire function removed; all flags handled via `[CmdletBinding()] Param()` |
+| `-WorkflowTimeoutMinutes` not used | Both wait functions hardcoded 30 and 45 min timeouts; parameter was dead | Both wait functions now use `$WorkflowTimeoutMinutes * 60` |
+| `Exec` dead function | 10-line function never called anywhere | Removed |
+| Parallel mode silent failures | `Start-Process` without `-RedirectStandardOutput` merged both streams; build failure output lost | Separate temp files capture each job's output; replayed to host after `Wait-Process` |
+| `Update-ChangeLog` wrong format | Inserted raw `- Preparing release vX.Y.Z` bullet inside `[Unreleased]` | Now inserts a proper `## [vX.Y.Z] - YYYY-MM-DD` versioned section |
+| PR CI polling via `gh run list` | Polling workflow runs by branch is unreliable for PR checks | Replaced with `gh pr checks $prNum --json state,name` |
+| `Run-LocalCommand` empty-output retry | Heuristic retried via shell fallback when stdout empty — fired on legitimate no-output commands | Replaced with `Invoke-Cmd` / `Get-CmdOutput` / `Assert-Cmd` helpers using `& $Exe @ArgList` directly |
+
+### New features
+
+**Linux / WSL compatibility** — all commands now invoked with `& $Exe @ArgList` (works on Windows, Linux, macOS, WSL). Uses `Join-Path`/`Split-Path` for paths; no hardcoded backslashes. `Pop-Location` in `finally` restores caller's directory.
+
+**Auto-restart from `powershell.exe` → `pwsh`** — script detects `PSVersion.Major -lt 7`, resolves `pwsh` on PATH, re-executes with all bound parameters forwarded.
+
+**Step selection: `-From`, `-Only`, `-Skip`, `-BumpType`** — resume from a named step, run a single step, skip named steps, or bump major/minor instead of patch.
+
+**Interactive step selection menu** — when stdin is attached and no explicit step flags are set, shows a numbered checklist and lets the user enter step numbers to skip.
+
+**Interactive retry/skip on failure** — `[R]etry [S]kip [A]bort` prompt on step failure in interactive mode; auto-aborts in CI/non-interactive.
+
+**Coloured output** — cyan headers, gray step detail, green success, yellow warnings, red failures.
+
+### ⚠️ Remaining open items
+
+- Buffered step output (show only on failure) — not yet implemented
+- Docker build smoke-test step — not yet added
+- Post-release remote-deployment upgrade step — not yet added
+
+---
+
+
+
+## 2026-04-02 — Add MQTT and Data layer integration tests
+
+### Commit: c4f6f81 · branch: feature/feat-h-data-layer · UTC: 2026-04-02T23:22:52Z
+
+#### New project: `MqttDashboard.Mqtt.Tests`
+
+**Files:** `tests/MqttDashboard.Mqtt.Tests/` (new project, added to `MqttDashboard.slnx`)
+
+**Why:** `MqttDashboard.Mqtt` and `MqttDashboard.Data` are now separate modules; they needed
+test coverage that exercises them against a real in-process MQTT broker rather than relying
+on mocks or the full server stack.
+
+**`InProcessMqttBrokerFixture`** — xUnit `IAsyncLifetime` class fixture that starts a real
+`MQTTnet.Server` broker on a free port for the duration of the test class. Added
+`MQTTnet.Server 5.1.0.1559` package to this project. The same pattern was applied to
+`MqttDashboard.IntegrationTests` (see below).
+
+**`MqttTestHelpers`** — static helpers shared by all test classes: `StartServiceAsync`
+builds and starts a `MqttClientService` against the broker (waits for `Connected` state),
+`ConnectExternalClientAsync` creates a plain `IMqttClient` for publisher/subscriber roles,
+`PublishAsync` / `WaitForMessageAsync` convenience wrappers.
+
+**`MqttClientServiceTests`** (4 tests):
+- `Service_ConnectsToInProcessBroker` — verifies `MqttConnectionMonitor.State == Connected`.
+- `Subscribe_ThenPublishFromExternalClient_MessageReceived` — subscribes a topic via
+  `MqttTopicSubscriptionManager`, publishes from a second client, asserts `OnMessagePublished`
+  fires with the correct topic/payload.
+- `Subscribe_WildcardTopic_MatchingMessagesReceived` — verifies `sensors/+/temp` wildcard
+  matches two topics but not `sensors/room1/humidity`.
+- `Publish_MessageDeliveredToBrokerSubscriber` — `PublishMessageAsync` sends a message that
+  an external subscriber receives.
+- `UnsubscribeClient_NoMoreMessagesDelivered` — after `UnsubscribeClientFromTopicAsync` no
+  further messages arrive (grace period set to 0 ms in tests).
+
+**`MqttDataCacheIntegrationTests`** (5 tests) — wires a `DataCache` to `MqttClientService`
+via a test-local `MqttDataServerStub` (implements `IDataServer`; no dependency on Server project):
+- `BrokerMessage_ArriveInDataCacheSubscriber` — broker publish → `UpdateValue` → subscriber callback.
+- `BrokerMessage_WildcardSubscription_MultipleCacheUpdates` — wildcard cache subscription on top of MQTT.
+- `DataCache_PublishAsync_SendsMessageToBroker` — `cache.PublishAsync` flows through stub → `PublishMessageAsync` → external subscriber receives it.
+- `RoundTrip_PublishFromCacheA_ReceivedByCacheB` — two independent `MqttClientService` instances on the same broker; Cache A publishes, Cache B subscriber receives, no shared memory.
+- `RoundTrip_PublishFromCacheB_ReceivedByCacheA` — reverse direction.
+
+---
+
+#### Chained `DataCache` tests in `MqttDashboard.Data.Tests`
+
+**File:** `tests/MqttDashboard.Data.Tests/ChainedCacheTests.cs` (new)
+
+**Why:** The `CacheBridgeDataServer` wires caches together in a chain. These tests verify
+the multi-level chain topology that production code relies on (server-side singleton cache →
+per-circuit bridge → per-circuit cache).
+
+**Tests (11):**
+- Two-level chain: upstream update → downstream subscriber, wildcard subscriber, seed from
+  cached value on subscribe.
+- Two-level publish: `downstream.PublishAsync` updates upstream subscribers and also updates
+  the downstream cache immediately (local echo).
+- Three-level chain (A→B→C): value from A reaches subscriber on C; publish on C reaches A.
+- Demand-driven subscription propagation: first subscriber on downstream triggers bridge to
+  subscribe on upstream.
+- Dispose handle stops propagation.
+- Two subscribers on same downstream topic both receive all updates.
+
+---
+
+#### Enable Tier B integration tests in `MqttDashboard.IntegrationTests`
+
+**Files:** `InProcessMqttBrokerFixture.cs`, `MqttFlowIntegrationTests.cs`,
+`MqttDashboard.IntegrationTests.csproj`
+
+**Why:** These tests were stubbed out with `[Fact(Skip = ...)]` because `MQTTnet v5` moved
+the server component to a separate package. The package (`MQTTnet.Server 5.1.0.1559`) is
+now available and has been added.
+
+**Changes:**
+- Replaced stub `InProcessMqttBrokerFixture` with a real implementation using `MqttServerFactory`.
+- Removed `Skip` attributes from all 3 `MqttFlowIntegrationTests` tests.
+- Fixed `WaitForMqttConnectedAsync`: it was calling `InvokeAsync<string>("GetMqttConnectionStatus")`
+  (method no longer exists); replaced with a listener on the `MqttConnectionStatus` client event
+  that `DataHub.OnConnectedAsync` sends. ⚠️ The hub sends this immediately on connect, so there
+  is a small window where the event arrives before the listener is registered; the fix polls for
+  100 ms to handle this.
+
+---
+
+
 
 ### Context
 

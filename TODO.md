@@ -6,17 +6,11 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ## BUGS
 
-- [ ] Open dialog ... seems very small and too far to left on the screen. Maybe it should be centered and larger? (this was on firefox)
-- [ ] I was logged in (due to cookie I guess) and then did "logout admin" ...it went to "Login dialog" but really shoul dgo to home page simply
-      with no logged in user state and I can log in if required
-
 ## 🟡 Minor Enhancements
 
 - [ ] release.ps1
-	- [ ] make sure it'll rnu on linux/wsl aswell as windows
-	- [ ] what happens if it runs on powershell.exe on windows? can it simply rerun itself on pwsh.exe?
-	- [ ] is there a terminal/console library it can use to make it more user friendly and interactive? without losing complete non-attended run ability
-	- [ ] needs final step to auto-updagrade a remote deployment to the new version after release is done (e.g. via ssh and docker compose pull+restart OR by interacting with API on that eployment)
+	- [ ] console output: each step shows what it's doing but then reverts to a single line if OK (like `dotnet build` can do) — currently all sub-command output is streamed verbosely
+	- [ ] detailed output review on failure — buffer step output and dump it in full only when a step fails. Could be "Show detailed" option at that last prompt
 - [ ] Need a way to share dashboards between installations (and dev). Can the API be opened up with a read/write interface to other isntallations via https??
 	- [ ] Then in "OPen" and "Save As" dialogs we could choose destaniotn respository: local file or remote dashboard repo (with list of dashboards to choose from)
 - [ ] Node Property dialog - color transition

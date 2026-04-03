@@ -1,4 +1,4 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
@@ -6,19 +6,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ---
 
 ## [Unreleased]
-- Preparing release v0.1.16 (2026-04-03)
-- Preparing release v0.1.16 (2026-04-03)
-- Preparing release v0.1.16 (2026-04-03)
-- Preparing release v0.1.16 (2026-04-02)
-- Preparing release v0.1.16 (2026-04-02)
-- Preparing release v0.1.16 (2026-04-02)
-- Preparing release v0.1.16 (2026-04-02)
-- Preparing release v0.1.16 (2026-04-02)
-- Preparing release v0.1.16 (2026-04-02)
-- Preparing release v0.1.16 (2026-04-02)
+
+## [v0.1.17] - 2026-04-03
+
+## [v0.1.17] - 2026-04-03
 - Preparing release v0.1.16 (2026-04-02)
 
+### Changed
+- **`scripts/release.ps1`** — full rewrite: Linux/WSL compatible, auto-restarts in pwsh 7 when invoked from Windows PowerShell 5.1, step selection via `-From`/`-Only`/`-Skip`/`-BumpType`, interactive step-selection menu and retry/skip prompts on failure, coloured output. Bug fixes: `-WorkflowTimeoutMinutes` was silently ignored, parallel mode swallowed failures, CHANGELOG insert format was wrong, PR CI polling now uses `gh pr checks`.
+- **`scripts/release.ps1`** — added `-Verify` mode (local-only check: preflight → build → publish → docker build, no git ops, no `gh` required); new steps `publish-check` (mirrors `release.yml`), `docker-build` (mirrors `docker.yml`), and `post-deploy` (SSH deploy, auto-skipped unless `DEPLOY_HOST` env var is set). Step count updated to 14.
+
 ### Added
+- **`MqttDashboard.Mqtt.Tests`** — new test project with a real in-process MQTTnet broker (`MQTTnet.Server`).
+  Tests cover `MqttClientService` connect/subscribe/publish, wildcard subscriptions, and unsubscribe.
+- **`MqttDataCacheIntegrationTests`** — full-chain tests: broker message → `DataCache` subscriber,
+  `DataCache.PublishAsync` → broker, and real two-instance round-trips through the broker.
+- **`ChainedCacheTests`** in `MqttDashboard.Data.Tests` — two/three-level `DataCache` chain tests
+  covering downstream value flow, upstream publish, demand-driven subscription propagation, and dispose.
+- **Tier B integration tests enabled** — `MqttFlowIntegrationTests` (in `MqttDashboard.IntegrationTests`)
+  now run against a real in-process broker; previously skipped pending the `MQTTnet.Server` package.
+
+
 - **`$DASHBOARD/*` virtual topics** — new `DashboardMetricsPublisher` background service publishes live diagnostic data into `ServerDataCache` every second without touching the MQTT broker. Topics: `$DASHBOARD/TIME`, `UPTIME`, `VERSION`, `VERSION/LATEST`, `VERSION/UPDATE_AVAILABLE`, `MQTT/STATUS`, `MQTT/BROKER`, `MQTT/TOPIC_COUNT`, `CLIENTS/COUNT`. Any widget or dialog can subscribe to these like any other topic.
 - **`IDataCache.HasServer`** — bool property; `true` when a data server is already registered. Used to prevent double-registration in same-process hosts.
 - **`AddMqttDashboardSameProcess()`** DI helper — call after the standard server+client DI setup for a same-process host (MAUI Blazor, combined desktop, embedded). Wires `ApplicationState.DataCache` directly to `ServerDataCache` (no per-circuit copy, no bridge, no SignalR transport needed).
