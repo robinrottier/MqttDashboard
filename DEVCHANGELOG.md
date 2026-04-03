@@ -5,6 +5,52 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
+## 2026-04-03 — release.ps1 rewrite: Linux/WSL compat, step selection, bug fixes
+
+### Commit: TBD · branch: feature/feat-h-data-layer
+
+### Context
+
+Full rewrite of `scripts/release.ps1` addressing all open TODO items and several
+latent bugs found during review.
+
+### Bugs fixed
+
+| Bug | Previous behaviour | Fix |
+|-----|--------------------|-----|
+| `$args = @()` | Throws under `Set-StrictMode -Version Latest` (`$args` is read-only) | Removed — GNU-arg parsing replaced with proper `Param()` only |
+| `Parse-GnuArgs` | Read the *function*'s empty `$args`, not the script's; GNU flags silently ignored | Entire function removed; all flags handled via `[CmdletBinding()] Param()` |
+| `-WorkflowTimeoutMinutes` not used | Both wait functions hardcoded 30 and 45 min timeouts; parameter was dead | Both wait functions now use `$WorkflowTimeoutMinutes * 60` |
+| `Exec` dead function | 10-line function never called anywhere | Removed |
+| Parallel mode silent failures | `Start-Process` without `-RedirectStandardOutput` merged both streams; build failure output lost | Separate temp files capture each job's output; replayed to host after `Wait-Process` |
+| `Update-ChangeLog` wrong format | Inserted raw `- Preparing release vX.Y.Z` bullet inside `[Unreleased]` | Now inserts a proper `## [vX.Y.Z] - YYYY-MM-DD` versioned section |
+| PR CI polling via `gh run list` | Polling workflow runs by branch is unreliable for PR checks | Replaced with `gh pr checks $prNum --json state,name` |
+| `Run-LocalCommand` empty-output retry | Heuristic retried via shell fallback when stdout empty — fired on legitimate no-output commands | Replaced with `Invoke-Cmd` / `Get-CmdOutput` / `Assert-Cmd` helpers using `& $Exe @ArgList` directly |
+
+### New features
+
+**Linux / WSL compatibility** — all commands now invoked with `& $Exe @ArgList` (works on Windows, Linux, macOS, WSL). Uses `Join-Path`/`Split-Path` for paths; no hardcoded backslashes. `Pop-Location` in `finally` restores caller's directory.
+
+**Auto-restart from `powershell.exe` → `pwsh`** — script detects `PSVersion.Major -lt 7`, resolves `pwsh` on PATH, re-executes with all bound parameters forwarded.
+
+**Step selection: `-From`, `-Only`, `-Skip`, `-BumpType`** — resume from a named step, run a single step, skip named steps, or bump major/minor instead of patch.
+
+**Interactive step selection menu** — when stdin is attached and no explicit step flags are set, shows a numbered checklist and lets the user enter step numbers to skip.
+
+**Interactive retry/skip on failure** — `[R]etry [S]kip [A]bort` prompt on step failure in interactive mode; auto-aborts in CI/non-interactive.
+
+**Coloured output** — cyan headers, gray step detail, green success, yellow warnings, red failures.
+
+### ⚠️ Remaining open items
+
+- Buffered step output (show only on failure) — not yet implemented
+- Docker build smoke-test step — not yet added
+- Post-release remote-deployment upgrade step — not yet added
+
+---
+
+
+
 ## 2026-04-02 — Add MQTT and Data layer integration tests
 
 ### Commit: c4f6f81 · branch: feature/feat-h-data-layer · UTC: 2026-04-02T23:22:52Z

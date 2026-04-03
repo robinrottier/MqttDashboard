@@ -1,501 +1,532 @@
 <#
-PowerShell release helper for MqttDashboard
+.SYNOPSIS
+    Release automation helper for MqttDashboard.
 
-Usage: pwsh ./scripts/release.ps1
+.DESCRIPTION
+    Performs a full patch-release workflow from local source:
 
-This script performs a patch release workflow from current local source code.
-Steps (each depends on previous):
- - Ensure working tree is clean (auto-commit TODO.md if the only change)
- - Build (Debug) and run tests (Debug)
- - Build (Release) and run tests in Release (skips browser tests by default)
- - Pull remote and ensure in-sync
- - Compute next patch version (based on latest semver tag)
- - Update CHANGELOG.md under [Unreleased] with a "Preparing release vX.Y.Z" line and commit as "Next RC"
- - Push branch, create PR to main, wait for CI checks to pass, merge PR
- - Create annotated tag vX.Y.Z and push tag (this triggers tag-based CI like patch-release)
- - Optionally wait for release workflows to succeed (requires 'gh' CLI)
+      1.  preflight       Verify required tools (git, dotnet, gh)
+      2.  clean           Auto-commit TODO.md if the only dirty file; else abort
+      3.  build-debug     Build + test (Debug configuration)
+      4.  build-release   Build + test (Release configuration)
+      5.  sync            Fetch + pull --rebase from origin
+      6.  version         Compute next semver tag from latest git tag
+      7.  changelog       Insert versioned section into CHANGELOG.md
+      8.  push-changelog  Commit + push the changelog update
+      9.  pr              Create PR → main, wait for CI checks, merge
+      10. tag             Create annotated tag and push it
+      11. wait-workflows  Wait for release workflows triggered by the tag
 
-Notes:
- - The script prefers using the 'gh' GitHub CLI if available for PRs and workflow checks.
- - If gh is not available, the script will still perform local git operations but will not automate PR merging or Actions polling.
- - Requires pwsh and git and dotnet on PATH.
+    Runs on pwsh 7+ (Windows, Linux, WSL).
+    When invoked under Windows PowerShell 5.1, automatically re-launches in pwsh
+    if available on PATH.
 
-Environment variables:
- - GITHUB_TOKEN (optional) - used by gh if configured; gh login is recommended.
- - RELEASE_TEST_FILTER (optional) - test filter to use for Release config (default excludes Playwright by trait: "TestCategory!=Playwright").
- - SKIP_RELEASE_TESTS=1 - skip running tests for Release build.
- - DRYRUN=1 - perform a dry run (no pushes, no merges, no tags)
+.PARAMETER DryRun
+    Skip all remote operations (push, merge, tag push).
+
+.PARAMETER NoGh
+    Disable GitHub CLI automation (PR creation, workflow polling).
+
+.PARAMETER SkipReleaseTests
+    Skip running tests for the Release build.
+
+.PARAMETER ReleaseTestFilter
+    Test filter expression for Release config. Default: 'TestCategory!=Playwright'.
+
+.PARAMETER Parallel
+    Run Debug and Release build+test stages concurrently (output is written to
+    separate temp files and replayed on completion).
+
+.PARAMETER WorkflowTimeoutMinutes
+    Maximum minutes to wait for GitHub Actions workflows (default: 30).
+
+.PARAMETER BumpType
+    Version component to increment: patch (default), minor, or major.
+
+.PARAMETER From
+    Start from a named step, skipping all earlier ones. Useful to resume after
+    a failure without re-running build/test.
+    Step names: preflight clean build-debug build-release sync version
+                changelog push-changelog pr tag wait-workflows
+
+.PARAMETER Only
+    Run exactly one named step and exit.
+
+.PARAMETER Skip
+    Step name(s) to skip. Accepts an array or a comma-separated string.
+
+.PARAMETER NonInteractive
+    Suppress all interactive prompts; abort automatically on failure.
+    Implied when stdin is redirected (e.g. CI pipelines).
+
+.EXAMPLE
+    pwsh ./scripts/release.ps1
+    pwsh ./scripts/release.ps1 -DryRun
+    pwsh ./scripts/release.ps1 -From sync
+    pwsh ./scripts/release.ps1 -Only build-debug
+    pwsh ./scripts/release.ps1 -Skip build-debug,build-release -DryRun
+    pwsh ./scripts/release.ps1 -BumpType minor -WorkflowTimeoutMinutes 45
+
+.NOTES
+    Environment variable fallbacks:
+      DRYRUN=1               equivalent to -DryRun
+      NO_GH=1                equivalent to -NoGh
+      SKIP_RELEASE_TESTS=1   equivalent to -SkipReleaseTests
+      RELEASE_TEST_FILTER    equivalent to -ReleaseTestFilter
 #>
 
+[CmdletBinding()]
 Param(
-    [switch]$Help,
     [switch]$DryRun,
     [switch]$NoGh,
     [switch]$SkipReleaseTests,
-    [string]$ReleaseTestFilter,
+    [string]$ReleaseTestFilter = '',
     [switch]$Parallel,
     [int]$WorkflowTimeoutMinutes = 30,
-    [switch]$verbose = $false
+    [ValidateSet('patch','minor','major')]
+    [string]$BumpType = 'patch',
+    [string]$From = '',
+    [string]$Only = '',
+    [string[]]$Skip = @(),
+    [switch]$NonInteractive
 )
 
 Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
 
-function Show-Help {
-    @"
-Usage: pwsh ./scripts/release.ps1 [options]
-
-Options:
-  -Help                 Show this help text
-  -DryRun               Do not push, merge or tag (dry run)
-  -RequireGh            Fail if GitHub CLI (gh) is not available
-  -SkipReleaseTests     Skip running tests for the Release build
-  -ReleaseTestFilter    Test filter to use for Release config (overrides default)
-  -Parallel             Run Debug and Release build/test stages in parallel
-  -WorkflowTimeoutMinutes <n>  Timeout minutes to wait for workflows (default: 30)
-
-Environment variables (fallbacks):
-  GITHUB_TOKEN          used by gh if configured
-  RELEASE_TEST_FILTER   alternative way to pass release test filter
-  DRYRUN=1              alternative to -DryRun
-  SKIP_RELEASE_TESTS=1  alternative to -SkipReleaseTests
-
-Examples:
-  pwsh ./scripts/release.ps1 -DryRun
-  pwsh ./scripts/release.ps1 -RequireGh -ReleaseTestFilter 'Category!=Playwright' -Parallel
-"@
-}
-
-# If PowerShell bound the -Help switch via Param(), handle it immediately to avoid running any commands.
-if ($Help) { Show-Help; exit 0 }
-
-# Quick check of PowerShell $args to intercept common help flags before any work starts
-if ($args -and ($args -contains '--help' -or $args -contains '-h' -or $args -contains '/?' -or $args -contains '/h')) {
-    Show-Help; exit 0
-}
-
-# Immediate raw-arg check to catch GNU-style flags passed to the script (e.g. --help)
-# Check both $args and the raw command line for common help tokens so they never reach git/dotnet.
-try {
-    $rawArgs = [Environment]::GetCommandLineArgs()
-    $cmdLine = if ($rawArgs) { $rawArgs -join ' ' } else { '' }
-    if ($cmdLine -match '--help' -or $cmdLine -match '\s-h(\s|$)' -or $cmdLine -match '/\?' -or $cmdLine -match '/h') {
-        Show-Help; exit 0
+# ─── Auto-restart in pwsh 7+ when invoked from Windows PowerShell 5.1 ─────────
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    $pwshExe = Get-Command pwsh -ErrorAction SilentlyContinue
+    if ($pwshExe) {
+        Write-Host "Windows PowerShell detected — re-launching in pwsh 7+..." -ForegroundColor Yellow
+        $fwdArgs = [System.Collections.Generic.List[string]]::new()
+        $fwdArgs.Add('-NoProfile'); $fwdArgs.Add('-File'); $fwdArgs.Add($MyInvocation.MyCommand.Path)
+        foreach ($kv in $MyInvocation.BoundParameters.GetEnumerator()) {
+            if ($kv.Value -is [switch]) {
+                if ($kv.Value.IsPresent) { $fwdArgs.Add("-$($kv.Key)") }
+            } elseif ($kv.Value -is [string[]]) {
+                $fwdArgs.Add("-$($kv.Key)"); $fwdArgs.AddRange([string[]]$kv.Value)
+            } else {
+                $fwdArgs.Add("-$($kv.Key)"); $fwdArgs.Add("$($kv.Value)")
+            }
+        }
+        & $pwshExe.Source @fwdArgs
+        exit $LASTEXITCODE
     }
-} catch {
-    # ignore errors reading raw args
+    Write-Warning "pwsh (PowerShell 7+) not found on PATH. Continuing on Windows PowerShell — some features may not work correctly."
 }
 
-# Note: do not clear `$args` here — we need it for GNU-style parsing below.
-# Make the script compatible with either PowerShell Core (`pwsh`) or Windows PowerShell.
-# Later we will clear `$args` after parsing to avoid forwarding leftover flags to
-# the first external command.
+# ─── Repo root ────────────────────────────────────────────────────────────────
+$RepoRoot = Split-Path -Parent $PSScriptRoot
+Push-Location $RepoRoot
 
-function Parse-GnuArgs {
-    if ($args -and $args.Count -gt 0) {
-        foreach ($a in $args) {
-            switch -Wildcard ($a) {
-                '--help' { $Help = $true; break }
-                '-h' { $Help = $true; break }
-                '--dry-run' { $DryRun = $true; break }
-                '--dryrun' { $DryRun = $true; break }
-                '--no-gh' { $NoGh = $true; break }
-                '--skip-release-tests' { $SkipReleaseTests = $true; break }
-                '--parallel' { $Parallel = $true; break }
-                '--release-test-filter=*' { $val = $a.Substring($a.IndexOf('=')+1); if ($val) { $ReleaseTestFilter = $val }; break }
-                default { }
+# ─── Console helpers ──────────────────────────────────────────────────────────
+function Write-Header([string]$msg) { Write-Host "`n=== $msg ===" -ForegroundColor Cyan }
+function Write-Step([string]$msg)   { Write-Host "    $msg" -ForegroundColor Gray }
+function Write-Ok([string]$msg)     { Write-Host "  ✓ $msg" -ForegroundColor Green }
+function Write-Warn([string]$msg)   { Write-Host "  ⚠ $msg" -ForegroundColor Yellow }
+function Write-Fail([string]$msg)   { Write-Host "  ✗ $msg" -ForegroundColor Red }
+
+# ─── Effective flags ──────────────────────────────────────────────────────────
+$IsDryRun      = $DryRun      -or $env:DRYRUN              -eq '1'
+$IsNoGh        = $NoGh        -or $env:NO_GH               -eq '1'
+$IsSkipTests   = $SkipReleaseTests -or $env:SKIP_RELEASE_TESTS -eq '1'
+$EffTestFilter = if ($ReleaseTestFilter) { $ReleaseTestFilter }
+                 elseif ($env:RELEASE_TEST_FILTER) { $env:RELEASE_TEST_FILTER }
+                 else { 'TestCategory!=Playwright' }
+
+# Interactive only when attached to a real terminal and not suppressed
+$IsInteractive = -not $NonInteractive -and
+                 -not $IsDryRun -and
+                 [Environment]::UserInteractive -and
+                 -not [Console]::IsInputRedirected
+
+# ─── Step catalogue ───────────────────────────────────────────────────────────
+$StepOrder = @(
+    'preflight', 'clean', 'build-debug', 'build-release',
+    'sync', 'version', 'changelog', 'push-changelog',
+    'pr', 'tag', 'wait-workflows'
+)
+$StepDesc = @{
+    'preflight'      = 'Preflight checks (tools, git remote)'
+    'clean'          = 'Ensure clean working tree'
+    'build-debug'    = 'Build and test (Debug)'
+    'build-release'  = 'Build and test (Release)'
+    'sync'           = 'Pull and sync with remote'
+    'version'        = 'Compute next version'
+    'changelog'      = 'Update CHANGELOG.md'
+    'push-changelog' = 'Commit and push changelog'
+    'pr'             = 'Create PR → wait for CI → merge'
+    'tag'            = 'Create and push release tag'
+    'wait-workflows' = 'Wait for release workflows'
+}
+
+# Resolve skip set (accepts array or comma-separated strings)
+$SkipSet = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+foreach ($s in $Skip) { foreach ($part in ($s -split ',')) { [void]$SkipSet.Add($part.Trim()) } }
+
+# Build the ordered list of steps to run
+function Get-StepsToRun {
+    if ($Only) { return @($Only.Trim()) }
+    $started = [string]::IsNullOrEmpty($From)
+    return $StepOrder | Where-Object {
+        if (-not $started -and ($_ -ieq $From.Trim())) { $started = $true }
+        $started -and -not $SkipSet.Contains($_)
+    }
+}
+
+# ─── Shared state populated by steps ─────────────────────────────────────────
+$script:NextVersion    = $null
+$script:CurrentBranch  = $null
+
+# ─── Command helpers ──────────────────────────────────────────────────────────
+
+# Run a command, streaming output to the terminal. Returns exit code.
+function Invoke-Cmd([string]$Exe, [string[]]$ArgList) {
+    Write-Step "→ $Exe $($ArgList -join ' ')"
+    & $Exe @ArgList
+    return $LASTEXITCODE
+}
+
+# Run a command and return its stdout as a trimmed string (stderr discarded).
+function Get-CmdOutput([string]$Exe, [string[]]$ArgList) {
+    $out = & $Exe @ArgList 2>$null
+    return ($out -join "`n").Trim()
+}
+
+function Assert-Cmd([string]$Exe, [string[]]$ArgList, [string]$ErrorMsg = '') {
+    $code = Invoke-Cmd $Exe $ArgList
+    if ($code -ne 0) { throw $(if ($ErrorMsg) { $ErrorMsg } else { "$Exe exited with code $code" }) }
+}
+
+# ─── Step: preflight ─────────────────────────────────────────────────────────
+function Step-Preflight {
+    foreach ($tool in @('git', 'dotnet')) {
+        if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) {
+            throw "$tool not found on PATH. Install it and ensure it is on PATH."
+        }
+    }
+    $ghAvail = [bool](Get-Command gh -ErrorAction SilentlyContinue)
+    if (-not $IsNoGh -and -not $ghAvail) {
+        throw "gh CLI required but not found. Install from https://cli.github.com/ or pass -NoGh to skip GH automation."
+    }
+    if ($IsNoGh -and -not $ghAvail) {
+        Write-Warn "gh CLI not available — PR automation and workflow polling disabled"
+    }
+    $remote = Get-CmdOutput git @('remote', 'get-url', 'origin')
+    if (-not $remote) { throw "git remote 'origin' not configured. Add an origin remote and retry." }
+    Write-Ok "git, dotnet$(if ($ghAvail) { ', gh' }) found"
+    Write-Ok "Remote: $remote"
+}
+
+# ─── Step: clean ─────────────────────────────────────────────────────────────
+function Step-CleanTree {
+    $status = Get-CmdOutput git @('status', '--porcelain')
+    if ([string]::IsNullOrWhiteSpace($status)) { Write-Ok "Working tree clean"; return }
+
+    $lines = ($status -split "`n") | Where-Object { $_ -ne '' }
+    $isTodoOnly = $lines.Count -eq 1 -and $lines[0] -match 'TODO\.md$'
+
+    if ($isTodoOnly) {
+        Write-Step "Only TODO.md modified — auto-committing"
+        Assert-Cmd git @('add', 'TODO.md')
+        Assert-Cmd git @('commit', '-m', 'chore: update TODO')
+        Write-Ok "TODO.md committed"
+    } else {
+        throw "Working tree is dirty. Commit or stash changes before releasing.`n$status"
+    }
+}
+
+# ─── Step: build-debug ───────────────────────────────────────────────────────
+function Step-BuildDebug {
+    Write-Step "Building (Debug)..."
+    Assert-Cmd dotnet @('build', 'MqttDashboard.slnx', '-c', 'Debug') "Debug build failed"
+    Write-Step "Testing (Debug)..."
+    Assert-Cmd dotnet @('test', 'MqttDashboard.slnx', '-c', 'Debug', '--no-build') "Debug tests failed"
+    Write-Ok "Debug build + tests passed"
+}
+
+# ─── Step: build-release ─────────────────────────────────────────────────────
+function Step-BuildRelease {
+    if ($Parallel) {
+        # Run both configs concurrently; replay captured output afterwards.
+        Write-Step "Building Debug + Release in parallel..."
+        $dOut  = [System.IO.Path]::GetTempFileName()
+        $rOut  = [System.IO.Path]::GetTempFileName()
+        $dCmd  = "dotnet build MqttDashboard.slnx -c Debug && dotnet test MqttDashboard.slnx -c Debug --no-build"
+        $filter = $EffTestFilter
+        $rTest = if ($IsSkipTests) { '' } else { " && dotnet test MqttDashboard.slnx -c Release --no-build --filter `"$filter`"" }
+        $rCmd  = "dotnet build MqttDashboard.slnx -c Release$rTest"
+        $p1 = Start-Process pwsh -ArgumentList @('-NoProfile','-Command',$dCmd) -PassThru -RedirectStandardOutput $dOut -RedirectStandardError "$dOut.err" -NoNewWindow
+        $p2 = Start-Process pwsh -ArgumentList @('-NoProfile','-Command',$rCmd) -PassThru -RedirectStandardOutput $rOut -RedirectStandardError "$rOut.err" -NoNewWindow
+        Wait-Process -Id $p1.Id, $p2.Id
+        Write-Host (Get-Content $dOut -Raw) -ForegroundColor Gray
+        Write-Host (Get-Content $rOut -Raw) -ForegroundColor Gray
+        Remove-Item $dOut, "$dOut.err", $rOut, "$rOut.err" -ErrorAction SilentlyContinue
+        if ($p1.ExitCode -ne 0) { throw "Debug build/test failed" }
+        if ($p2.ExitCode -ne 0) { throw "Release build/test failed" }
+        Write-Ok "Parallel Debug + Release build and tests passed"
+        return   # skip the sequential Release-only logic below
+    }
+
+    Write-Step "Building (Release)..."
+    Assert-Cmd dotnet @('build', 'MqttDashboard.slnx', '-c', 'Release') "Release build failed"
+    if ($IsSkipTests) { Write-Warn "Skipping Release tests (-SkipReleaseTests)"; return }
+    Write-Step "Testing (Release) [filter: $EffTestFilter]..."
+    Assert-Cmd dotnet @('test', 'MqttDashboard.slnx', '-c', 'Release', '--no-build', '--filter', $EffTestFilter) "Release tests failed"
+    Write-Ok "Release build + tests passed"
+}
+
+# ─── Step: sync ──────────────────────────────────────────────────────────────
+function Step-GitSync {
+    Assert-Cmd git @('fetch', '--prune') "git fetch failed"
+    $script:CurrentBranch = Get-CmdOutput git @('rev-parse', '--abbrev-ref', 'HEAD')
+    Write-Step "Branch: $($script:CurrentBranch)"
+    $code = Invoke-Cmd git @('pull', '--rebase', 'origin', $script:CurrentBranch)
+    if ($code -ne 0) { throw "git pull --rebase failed. Resolve conflicts and retry." }
+    Write-Ok "Synced with origin/$($script:CurrentBranch)"
+}
+
+# ─── Step: version ───────────────────────────────────────────────────────────
+function Step-ComputeVersion {
+    if (-not $script:CurrentBranch) {
+        $script:CurrentBranch = Get-CmdOutput git @('rev-parse', '--abbrev-ref', 'HEAD')
+    }
+    $allTags = Get-CmdOutput git @('tag', '--list')
+    $latest = $allTags -split "`n" |
+        Where-Object { $_ -match '^v?(\d+)\.(\d+)\.(\d+)$' } |
+        Sort-Object { [Version]"$($_ -replace '^v','')" } |
+        Select-Object -Last 1
+
+    if ($latest -and $latest -match '^v?(\d+)\.(\d+)\.(\d+)$') {
+        $maj = [int]$Matches[1]; $min = [int]$Matches[2]; $pat = [int]$Matches[3]
+        $next = switch ($BumpType) {
+            'major' { "v$($maj+1).0.0" }
+            'minor' { "v$maj.$($min+1).0" }
+            default { "v$maj.$min.$($pat+1)" }
+        }
+    } else {
+        $latest = '(none)'; $next = 'v0.1.0'
+    }
+    $script:NextVersion = $next
+    Write-Ok "Latest: $latest  →  Next ($BumpType bump): $next"
+}
+
+# ─── Step: changelog ─────────────────────────────────────────────────────────
+function Step-UpdateChangelog {
+    if (-not $script:NextVersion) { throw "Version not computed — run 'version' step first" }
+    $path = Join-Path $RepoRoot 'CHANGELOG.md'
+    if (-not (Test-Path $path)) { throw "CHANGELOG.md not found at $path" }
+
+    $content = Get-Content $path -Raw
+    $today   = Get-Date -Format 'yyyy-MM-dd'
+    $verLine = "## [$($script:NextVersion)] - $today"
+
+    # Insert a new versioned section immediately after ## [Unreleased]
+    if ($content -match '(?m)^## \[Unreleased\]') {
+        # Add blank line between [Unreleased] and the new versioned section
+        $content = $content -replace '(?m)^(## \[Unreleased\])', "`$1`n`n$verLine"
+    } else {
+        Write-Warn "No [Unreleased] section found — prepending versioned section"
+        $content = "## [Unreleased]`n`n$verLine`n`n" + $content
+    }
+    [System.IO.File]::WriteAllText($path, $content, [System.Text.Encoding]::UTF8)
+    Write-Ok "CHANGELOG.md updated ($verLine)"
+}
+
+# ─── Step: push-changelog ────────────────────────────────────────────────────
+function Step-CommitChangelog {
+    if (-not $script:CurrentBranch) {
+        $script:CurrentBranch = Get-CmdOutput git @('rev-parse', '--abbrev-ref', 'HEAD')
+    }
+    Assert-Cmd git @('add', 'CHANGELOG.md')
+    Assert-Cmd git @('commit', '-m', "chore: prepare release $($script:NextVersion)")
+    if ($IsDryRun) { Write-Warn "DRYRUN: skipping push"; return }
+    Assert-Cmd git @('push', 'origin', $script:CurrentBranch) "git push failed"
+    Write-Ok "Changelog committed and pushed"
+}
+
+# ─── Step: pr ────────────────────────────────────────────────────────────────
+function Step-CreateMergePR {
+    if ($IsNoGh -or -not (Get-Command gh -ErrorAction SilentlyContinue)) {
+        Write-Warn "NoGh / gh missing: skipping PR creation. Create and merge the PR manually, then re-run with -From tag."
+        return
+    }
+    $branch = if ($script:CurrentBranch) { $script:CurrentBranch } else { Get-CmdOutput git @('rev-parse', '--abbrev-ref', 'HEAD') }
+    Write-Step "Creating PR: $branch → main for $($script:NextVersion)"
+    if ($IsDryRun) { Write-Warn "DRYRUN: skipping PR create/merge"; return }
+
+    Assert-Cmd gh @('pr', 'create', '--title', "Release $($script:NextVersion)", '--body', "Prepare release $($script:NextVersion)", '--base', 'main', '--head', $branch) "Failed to create PR"
+    $prNum = Get-CmdOutput gh @('pr', 'view', '--json', 'number', '--jq', '.number')
+    if (-not $prNum) { throw "Could not determine PR number" }
+    Write-Ok "PR #$prNum created"
+
+    # Wait for CI checks using gh pr checks (accurate per-check status)
+    $timeoutSec = $WorkflowTimeoutMinutes * 60
+    $interval = 15; $elapsed = 0
+    Write-Step "Waiting for CI checks on PR #$prNum (timeout: $WorkflowTimeoutMinutes min)..."
+    while ($true) {
+        Start-Sleep -Seconds $interval; $elapsed += $interval
+        if ($elapsed -gt $timeoutSec) { throw "Timeout ($WorkflowTimeoutMinutes min) waiting for PR CI checks" }
+
+        $checksJson = Get-CmdOutput gh @('pr', 'checks', $prNum, '--json', 'state,name,__typename')
+        if (-not $checksJson) { Write-Step "  No checks yet..."; continue }
+        try   { $checks = $checksJson | ConvertFrom-Json }
+        catch { Write-Step "  Waiting for checks to appear..."; continue }
+        if (-not $checks -or $checks.Count -eq 0) { Write-Step "  No checks yet..."; continue }
+
+        $failed  = @($checks | Where-Object { $_.state -in @('FAILURE','ERROR','CANCELLED','TIMED_OUT') })
+        $pending = @($checks | Where-Object { $_.state -notin @('SUCCESS','SKIPPED','NEUTRAL','FAILURE','ERROR','CANCELLED','TIMED_OUT') })
+
+        if ($failed.Count -gt 0) { throw "CI check(s) failed: $(($failed.name) -join ', ')" }
+        if ($pending.Count -eq 0) { Write-Ok "All CI checks passed"; break }
+        Write-Step "  Pending: $(($pending.name) -join ', ')..."
+    }
+
+    $slug = Get-RepoSlug
+    Assert-Cmd gh @('pr', 'merge', $prNum, '--merge', '--delete-branch', '--repo', $slug) "Failed to merge PR #$prNum"
+    Write-Ok "PR #$prNum merged into main"
+}
+
+# ─── Step: tag ───────────────────────────────────────────────────────────────
+function Step-CreateTag {
+    if (-not $script:NextVersion) { throw "Version not set — run 'version' step first" }
+    Assert-Cmd git @('tag', '-a', $script:NextVersion, '-m', "Release $($script:NextVersion)") "Failed to create tag"
+    if ($IsDryRun) { Write-Warn "DRYRUN: skipping tag push"; return }
+    Assert-Cmd git @('push', 'origin', $script:NextVersion) "Failed to push tag"
+    Write-Ok "Tag $($script:NextVersion) created and pushed"
+}
+
+# ─── Step: wait-workflows ────────────────────────────────────────────────────
+function Step-WaitWorkflows {
+    if ($IsNoGh -or -not (Get-Command gh -ErrorAction SilentlyContinue)) {
+        Write-Warn "gh not available: skipping workflow wait"
+        return
+    }
+    $tag = $script:NextVersion
+    $timeoutSec = $WorkflowTimeoutMinutes * 60
+    $interval = 20; $elapsed = 0
+    $startTime = [DateTime]::UtcNow.AddSeconds(-30)
+    Write-Step "Waiting for workflows triggered by tag $tag (timeout: $WorkflowTimeoutMinutes min)..."
+
+    while ($true) {
+        Start-Sleep -Seconds $interval; $elapsed += $interval
+        if ($elapsed -gt $timeoutSec) { throw "Timeout ($WorkflowTimeoutMinutes min) waiting for release workflows" }
+
+        $runsJson = Get-CmdOutput gh @('run', 'list', '--branch', $tag, '--limit', '50', '--json', 'status,conclusion,name,startedAt')
+        if (-not $runsJson) { Write-Step "  No runs detected yet for $tag..."; continue }
+        try   { $runs = @($runsJson | ConvertFrom-Json | Where-Object { $_.startedAt -ge $startTime }) }
+        catch { continue }
+        if ($runs.Count -eq 0) { Write-Step "  Waiting for workflow runs to appear..."; continue }
+
+        $failed     = @($runs | Where-Object { $_.status -eq 'completed' -and $_.conclusion -notin @('success','skipped','neutral') })
+        $inProgress = @($runs | Where-Object { $_.status -ne 'completed' })
+
+        if ($failed.Count -gt 0) { throw "Release workflow(s) failed: $(($failed.name) -join ', ')" }
+        if ($inProgress.Count -eq 0) { Write-Ok "All release workflows succeeded"; break }
+        Write-Step "  In progress: $(($inProgress.name) -join ', ')..."
+    }
+}
+
+# ─── Helpers ─────────────────────────────────────────────────────────────────
+function Get-RepoSlug {
+    $url = Get-CmdOutput git @('remote', 'get-url', 'origin')
+    if ($url -match 'github\.com[:/](.+?)/(.+?)(?:\.git)?$') { return "$($Matches[1])/$($Matches[2])" }
+    throw "Could not parse GitHub repo slug from remote URL: $url"
+}
+
+# ─── Interactive step menu ────────────────────────────────────────────────────
+function Show-StepMenu([string[]]$planned) {
+    Write-Host "`nSteps planned to run:" -ForegroundColor Cyan
+    $i = 1
+    foreach ($s in $StepOrder) {
+        $inPlan = $planned -icontains $s
+        $marker = if ($inPlan) { '[x]' } else { '[ ]' }
+        $color  = if ($inPlan) { 'White' } else { 'DarkGray' }
+        Write-Host ("  {0,2}. {1} {2,-20} {3}" -f $i, $marker, $s, $StepDesc[$s]) -ForegroundColor $color
+        $i++
+    }
+    Write-Host "`nEnter numbers of steps to SKIP (comma-separated), or press Enter to run all planned steps:" -ForegroundColor Yellow
+    $input = Read-Host '  Skip'
+    if ([string]::IsNullOrWhiteSpace($input)) { return $planned }
+
+    $skipNums = $input -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^\d+$' } | ForEach-Object { [int]$_ }
+    $toSkip   = $skipNums | ForEach-Object { if ($_ -ge 1 -and $_ -le $StepOrder.Count) { $StepOrder[$_ - 1] } }
+    return $planned | Where-Object { $toSkip -notcontains $_ }
+}
+
+# Interactive prompt when a step fails: Retry / Skip / Abort
+function Prompt-OnFailure([string]$stepName) {
+    if (-not $IsInteractive) { return 'abort' }
+    Write-Host "`n  Step '$stepName' failed." -ForegroundColor Red
+    Write-Host "  [R]etry  [S]kip  [A]bort (default)" -ForegroundColor Yellow
+    $choice = (Read-Host '  Choice').Trim().ToLower()
+    $action = switch ($choice) {
+        'r' { 'retry' }
+        's' { 'skip'  }
+        default { 'abort' }
+    }
+    return $action
+}
+
+# ─── Step dispatch table ─────────────────────────────────────────────────────
+$StepFns = @{
+    'preflight'      = { Step-Preflight }
+    'clean'          = { Step-CleanTree }
+    'build-debug'    = { Step-BuildDebug }
+    'build-release'  = { Step-BuildRelease }
+    'sync'           = { Step-GitSync }
+    'version'        = { Step-ComputeVersion }
+    'changelog'      = { Step-UpdateChangelog }
+    'push-changelog' = { Step-CommitChangelog }
+    'pr'             = { Step-CreateMergePR }
+    'tag'            = { Step-CreateTag }
+    'wait-workflows' = { Step-WaitWorkflows }
+}
+
+# ─── Main ────────────────────────────────────────────────────────────────────
+try {
+    if ($IsDryRun) { Write-Warn "DRY RUN — no pushes, merges or tags will be made" }
+
+    $stepsToRun = [string[]](Get-StepsToRun)
+
+    # When running interactively with no explicit step selection, show the menu
+    if ($IsInteractive -and -not $Only -and -not $From -and $SkipSet.Count -eq 0) {
+        $stepsToRun = [string[]](Show-StepMenu $stepsToRun)
+    } else {
+        Write-Host "`nSteps to run: $($stepsToRun -join ' → ')" -ForegroundColor Cyan
+    }
+
+    if ($stepsToRun.Count -eq 0) { Write-Warn "No steps selected. Exiting."; exit 0 }
+
+    $total = $stepsToRun.Count; $num = 0
+    foreach ($step in $stepsToRun) {
+        $num++
+        Write-Header "[$num/$total] $step — $($StepDesc[$step])"
+
+        $succeeded = $false
+        while (-not $succeeded) {
+            try {
+                & $StepFns[$step]
+                $succeeded = $true
+            } catch {
+                Write-Fail "Step '$step' failed: $_"
+                $action = Prompt-OnFailure $step
+                switch ($action) {
+                    'retry' { Write-Warn "Retrying '$step'..." }
+                    'skip'  { Write-Warn "Skipping '$step'"; $succeeded = $true }
+                    default { throw "Aborted at step '$step': $_" }
+                }
             }
         }
     }
-}
 
-## Decide which shell executable to use when launching subprocess shells.
-## Prefer `pwsh` if installed; otherwise fall back to the current `powershell`.
-try {
-    $pwshCmd = Get-Command pwsh -ErrorAction SilentlyContinue
-} catch { $pwshCmd = $null }
-if ($pwshCmd) { $SHELL_EXE = $pwshCmd.Source } else {
-    $psCmd = Get-Command powershell -ErrorAction SilentlyContinue
-    if ($psCmd) { $SHELL_EXE = $psCmd.Source } else { throw "Neither pwsh nor powershell executable found on PATH." }
-}
-
-function Write-Log { param($msg) Write-Host "[release] $msg" }
-function Exec($cmd, $failOnError = $true) {
-    Write-Log "-> $cmd"
-    $proc = Start-Process -FilePath $SHELL_EXE -ArgumentList ('-NoProfile','-NonInteractive','-Command',$cmd) -Wait -NoNewWindow -PassThru -RedirectStandardOutput -RedirectStandardError
-    $out = $proc.StandardOutput.ReadToEnd()
-    $err = $proc.StandardError.ReadToEnd()
-    if ($verbose && $out) { Write-Host $out }
-    if ($verbose && $err) { Write-Host $err }
-    if ($failOnError -and $proc.ExitCode -ne 0) { throw "Command failed: $cmd (exit $($proc.ExitCode))" }
-    return $proc.ExitCode
-}
-
-function Preflight-Checks {
-    Write-Log "Running preflight checks..."
-    $required = @('git','dotnet')
-    foreach ($r in $required) {
-        if (-not (Get-Command $r -ErrorAction SilentlyContinue)) {
-            throw "$r not found on PATH. Please install and ensure it's on PATH."
-        }
-    }
-
-    # By default require gh CLI to enable PR automation and workflow polling
-    # Use --no-gh or -NoGh to opt out for environments without gh.
-    $ghCmd = Get-Command gh -ErrorAction SilentlyContinue
-    if (-not $NoGh -and $env:NO_GH -ne '1') {
-        if (-not $ghCmd) {
-            throw "gh CLI not found but required. Install https://cli.github.com/ and authenticate, or run with --no-gh to skip GH automation."
-        }
-    }
-    else {
-        if (-not $ghCmd) {
-            Write-Log "gh CLI not found — running in no-gh mode (PR automation and workflow polling disabled)."
-        }
-    }
-
-    # Ensure git remote origin exists. Some git installations behave
-    # differently when invoked non-interactively, so try a couple of variants.
-    $remote = (Run-LocalCommand git 'remote get-url origin' $false).StdOut.Trim()
-    if (-not $remote) {
-        Write-Log "Primary git remote query returned empty — trying fallback 'git config --get remote.origin.url'"
-        $remote = (Run-LocalCommand git 'config --get remote.origin.url' $false).StdOut.Trim()
-    }
-    if (-not $remote) { throw "git remote 'origin' not configured or could not be detected. Add an origin remote and retry." }
-}
-
-
-function Run-LocalCommand([string]$exe, [string]$cmdArgs, $failOnError=$true, $noFallback=$false) {
-    Write-Log "-> $exe $cmdArgs"
-
-    # Try to resolve the command to an actual application executable. If the
-    # command is an alias or function, invoke it via the chosen shell so that
-    # shell-level resolution (and PATH) behaves the same as an interactive run.
-    $cmdInfo = Get-Command $exe -ErrorAction SilentlyContinue
-    if ($cmdInfo -and $cmdInfo.CommandType -eq 'Application' -and $cmdInfo.Source) {
-        $fileName = $cmdInfo.Source
-        $arguments = $cmdArgs
-        $useShell = $false
-    }
-    elseif (-not $noFallback) {
-        # Fallback: run through the detected shell so aliases/functions work
-        $fileName = $SHELL_EXE
-        # Build a single command string: exe + args
-        $escapedArgs = $cmdArgs -replace '"', '`"'
-        # Use PowerShell backtick-escaped quotes so the inner command is passed as a
-        # single quoted argument to the shell executable.
-        $arguments = "-NoProfile -NonInteractive -Command `"$exe $escapedArgs`""
-        $useShell = $true
-    }
-
-    $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = $fileName
-    $psi.Arguments = $arguments
-    $psi.WorkingDirectory = Get-Location
-    Write-Log "Executing: $fileName $arguments"
-    $psi.RedirectStandardOutput = $true
-    $psi.RedirectStandardError = $true
-    $psi.UseShellExecute = $false
-    $p = [System.Diagnostics.Process]::Start($psi)
-    $stdout = $p.StandardOutput.ReadToEnd()
-    $stderr = $p.StandardError.ReadToEnd()
-    $p.WaitForExit()
-
-    # If running the resolved application produced no output but succeeded,
-    # some environments use wrapper scripts or shims that behave differently
-    # when invoked directly. Retry via the shell fallback in that case.
-    if (-not $noFallback -and -not $useShell -and $p.ExitCode -eq 0 -and ([string]::IsNullOrEmpty($stdout)) -and ([string]::IsNullOrEmpty($stderr))) {
-        Write-Log "No output from direct invocation; retrying via shell fallback"
-        $fileName = $SHELL_EXE
-        $escapedArgs = $cmdArgs -replace '"', '`"'
-        $arguments = "-NoProfile -NonInteractive -Command `"$exe $escapedArgs`""
-        $psi = New-Object System.Diagnostics.ProcessStartInfo
-        $psi.FileName = $fileName
-        $psi.Arguments = $arguments
-        $psi.WorkingDirectory = Get-Location
-        $psi.RedirectStandardOutput = $true
-        $psi.RedirectStandardError = $true
-        $psi.UseShellExecute = $false
-        $p = [System.Diagnostics.Process]::Start($psi)
-        $stdout = $p.StandardOutput.ReadToEnd()
-        $stderr = $p.StandardError.ReadToEnd()
-        $p.WaitForExit()
-    }
-    if ($verbose -and $stdout) { Write-Host $stdout }
-    if ($verbose -and $stderr) { Write-Host $stderr }
-    if ($failOnError -and $p.ExitCode -ne 0) { throw "$exe exited with code $($p.ExitCode)\n$stderr" }
-    return @{ ExitCode = $p.ExitCode; StdOut = $stdout; StdErr = $stderr }
-}
-
-function Ensure-CleanWorkingTree {
-    Write-Log "Checking git status..."
-    $status = (Run-LocalCommand git "status --porcelain" $false).StdOut.Trim()
-    if (-not [string]::IsNullOrWhiteSpace($status)) {
-        $lines = $status -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }
-        if ($lines.GetType().Name -eq "String" -and $lines -eq "M TODO.md" `
-        -or $lines.GetType().Name -eq "String[]" -and $lines.Count -eq 1 -and $lines[0] -match 'TODO.md') {
-            Write-Log "Only TODO.md modified: auto-committing"
-            Run-LocalCommand git 'add TODO.md'
-            Run-LocalCommand git 'commit -m "chore: update TODO"'
-        }
-        else {
-            throw "Working tree is dirty. Commit or stash changes before releasing.`n$status"
-        }
-    }
-    else { Write-Log "Working tree clean." }
-}
-
-function Dotnet-Build-And-Test {
-    param(
-        [string]$Configuration = 'Debug'
-    )
-    Write-Log "Building solution ($Configuration)..."
-    $res = Run-LocalCommand dotnet "build MqttDashboard.slnx -c $Configuration"
-    if ($res.ExitCode -ne 0) { throw "Build failed for configuration $Configuration" }
-
-    # Run tests
-    if ($Configuration -eq 'Release' -and $env:SKIP_RELEASE_TESTS -eq '1') {
-        Write-Log "Skipping tests for Release build (SKIP_RELEASE_TESTS=1)"
-        return
-    }
-
-    $testFilter = $env:RELEASE_TEST_FILTER
-    if (-not $testFilter -and $Configuration -eq 'Release') {
-        # Default: try to exclude browser tests that may require Playwright / browser env
-        $testFilter = 'TestCategory!=Playwright'
-    }
-
-    Write-Log "Running tests ($Configuration) ..."
-    $testArgs = "test MqttDashboard.slnx -c $Configuration --no-build"
-    if ($testFilter) { $testArgs += ' --filter "' + $testFilter + '"' }
-    $res = Run-LocalCommand dotnet $testArgs
-    if ($res.ExitCode -ne 0) { throw "Tests failed for configuration $Configuration" }
-}
-
-function Git-Pull-EnsureSync {
-    Write-Log "Fetching remote..."
-    $res =Run-LocalCommand git 'fetch --prune'
-    if ($res.ExitCode -ne 0) { throw "git fetch failed" }
-
-    $branch = (Run-LocalCommand git 'rev-parse --abbrev-ref HEAD').StdOut.Trim()
-    Write-Log "Current branch: $branch"
-    Write-Log "Pulling latest from origin/$branch (rebase)..."
-    $exit = Run-LocalCommand git "pull --rebase origin $branch" $false
-    if ($exit.ExitCode -ne 0) {
-        throw "git pull failed or there are merge conflicts. Resolve them and retry."
-    }
-}
-
-function Get-RepoSlug {
-    $url = (Run-LocalCommand git 'remote get-url origin').StdOut.Trim()
-    # supports https://github.com/owner/repo.git or git@github.com:owner/repo.git
-    if ($url -match 'github.com[:/](.+?)/(.+?)(?:\.git)?$') { return "$($matches[1])/$($matches[2])" }
-    return $null
-}
-
-function Get-LatestSemverTag {
-    # list tags, filter semver-like, pick highest
-    $tagsOut = (Run-LocalCommand git 'tag --list').StdOut -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }
-    $semverTags = @()
-    foreach ($t in $tagsOut) {
-        if ($t -match 'v?(\d+)\.(\d+)\.(\d+)$') {
-            $major = [int]$matches[1]; $minor = [int]$matches[2]; $patch = [int]$matches[3]
-            $semverTags += [PSCustomObject]@{ Tag = $t; Major=$major; Minor=$minor; Patch=$patch }
-        }
-    }
-    if ($semverTags.Count -eq 0) { return $null }
-    $sorted = $semverTags | Sort-Object Major,Minor,Patch -Descending
-    return $sorted[0].Tag
-}
-
-function Bump-PatchTag($tag) {
-    if (-not $tag) { return 'v0.0.1' }
-    if ($tag -match '^v?(\d+)\.(\d+)\.(\d+)$') {
-        $major=[int]$matches[1]; $minor=[int]$matches[2]; $patch=[int]$matches[3]
-        $patch++
-        return "v$major.$minor.$patch"
-    }
-    throw "Unable to parse tag: $tag"
-}
-
-function Update-ChangeLog($newTag) {
-    $changelog = 'CHANGELOG.md'
-    if (-not (Test-Path $changelog)) { throw "$changelog not found" }
-    $lines = Get-Content $changelog
-    $idx = $lines.IndexOf(($lines | where-object { $_ -match '^#+\s*\[Unreleased\]' }))
-    if ($idx -lt 0) { # try alternate header
-        $idx = $lines.IndexOf(($lines | where-object { $_ -match '^#\s*Unreleased' }))
-    }
-    $today = (Get-Date).ToString('yyyy-MM-dd')
-    $entry = "- Preparing release $newTag ($today)"
-    if ($idx -ge 0) {
-        $insertAt = $idx + 1
-        $newLines = $lines[0..($insertAt-1)] + @($entry) + $lines[$insertAt..($lines.Count-1)]
-    } else {
-        # Prepend an Unreleased section
-        $newLines = @('# [Unreleased]','', $entry, '') + $lines
-    }
-    Set-Content -Path $changelog -Value $newLines -Encoding UTF8
-}
-
-function Commit-And-Push-ChangeLog {
-    param([string]$branch)
-    $res = Run-LocalCommand git 'add CHANGELOG.md'
-    if ($res.ExitCode -ne 0) { throw "git add failed" }
-    $res = Run-LocalCommand git 'commit -m "Next RC"'
-    if ($res.ExitCode -ne 0) { throw "git commit failed" }
-    if ($env:DRYRUN -eq '1') { Write-Log "DRYRUN: skipping push"; return }
-    $res = Run-LocalCommand git "push origin $branch"
-    if ($res.ExitCode -ne 0) { throw "git push failed" }
-}
-
-function Ensure-GH {
-    $gh = Get-Command gh -ErrorAction SilentlyContinue
-    if (-not $gh) { Write-Log "gh CLI not found. Install https://cli.github.com/ to enable PR automation and Actions polling."; return $false }
-    return $true
-}
-
-function Create-And-Merge-PR($branch, $newTag) {
-    if (-not (Ensure-GH)) { Write-Log "Skipping PR creation/merge (gh missing). You must create and merge a PR manually."; return }
-    $slug = Get-RepoSlug
-    if (-not $slug) { Write-Log "Could not determine repo slug from git remote"; return }
-
-    Write-Log "Creating PR to main for branch $branch..."
-    $prCreate = Run-LocalCommand gh "pr create --title ""Release $newTag"" --body ""Prepare release $newTag"" --base main --head $branch" $false
-    if ($prCreate.ExitCode -ne 0) { throw "Failed to create PR" }
-
-    $now = [DateTime]::UtcNow.AddSeconds(-10) # just a bit before now as start time for PR workflow
-
-    # Get PR number
-    $prJson = (Run-LocalCommand gh "pr view --json number --jq .number").StdOut.Trim()
-    if (-not $prJson) { throw "Unable to determine PR number" }
-    $prNumber = $prJson
-    Write-Log "PR created: #$prNumber"
-
-    # Wait for checks to succeed on the branch
-    $timeout = 60 * 30 # 30 minutes
-    $interval = 15
-    $elapsed = 0
-    Write-Log "Waiting for workflow checks (max $($timeout/60) minutes)..."
-    while ($true) {
-        Start-Sleep -Seconds $interval; $elapsed += $interval
-        # Use gh to list recent runs for this branch and check if any are in progress or failed
-        $runsOut = (Run-LocalCommand gh "run list --branch $branch --limit 50 --json status,conclusion,headBranch,startedAt" $false).StdOut
-        if (-not $runsOut) { Write-Log "No run info yet"; continue }
-        # rough check: if any run has status in_progress or queued -> wait; if any failed -> abort; if at least one completed+success -> proceed
-        $runs = $runsOut | ConvertFrom-Json | Where-Object { $_.startedAt -ge $now } # only consider runs started in the last hour to avoid picking up old runs from previous commits   
-        if ($null -eq $runs -or $runs.Count -eq 0) { Write-Log "No workflow runs yet..."; if ($elapsed -gt $timeout) { throw "Timeout waiting for workflows" }; continue }
-        $inProgress = $runs | Where-Object { $_.status -ne 'completed' }
-        if ($null -ne $inProgress -and $inProgress.Count -gt 0) { Write-Log "Workflows still in progress..."; if ($elapsed -gt $timeout) { throw "Timeout waiting for workflows" }; continue }
-        $failed = $runs | Where-Object { $_.conclusion -ne 'success' }
-        if ($null -ne $failed -and $failed.Count -gt 0) { throw "One or more workflow runs failed. See Actions for details." }
-        Write-Log "Workflows succeeded"
-        break
-    }
-
-    Write-Log "Merging PR #$prNumber into main..."
-    if ($env:DRYRUN -eq '1') { Write-Log "DRYRUN: skipping PR merge"; return }
-    $res = Run-LocalCommand gh "pr merge $prNumber --merge --delete-branch --repo $slug"
-    if ($res.ExitCode -ne 0) { throw "Failed to merge PR #$prNumber" }
-}
-
-function Create-Tag-And-Push($tag) {
-    Write-Log "Creating annotated tag $tag"
-    $res = Run-LocalCommand git "tag -a $tag -m `"Release $tag`"" $false $true
-    if ($res.ExitCode -ne 0) { throw "Failed to create tag $tag" }
-    if ($env:DRYRUN -eq '1') { Write-Log "DRYRUN: skipping tag push"; return }
-    $res = Run-LocalCommand git "push origin $tag" $false $true
-    if ($res.ExitCode -ne 0) { throw "Failed to push tag $tag" }
-}
-
-function Wait-For-TagWorkflows($tag) {
-    if (-not (Ensure-GH)) { Write-Log "gh CLI not found: cannot poll tag workflows"; return }
-    Write-Log "Waiting for workflows triggered by tag $tag..."
-
-    $now = [DateTime]::UtcNow.AddSeconds(-10) # just a bit before now as start time for PR workflow
-
-    $timeout = 60 * 45; $interval = 20; $elapsed = 0
-    while ($true) {
-        Start-Sleep -Seconds $interval; $elapsed += $interval
-        $runsOut = (Run-LocalCommand gh "run list --branch $tag --limit 50 --json status,conclusion,headBranch,startedAt" $false).StdOut
-        if (-not $runsOut) { Write-Log "No runs detected yet for tag $tag"; if ($elapsed -gt $timeout) { throw "Timeout waiting for tag workflows" }; continue }
-        $runs = $runsOut | ConvertFrom-Json | Where-Object { $_.startedAt -ge $now } # only consider runs started in the last hour to avoid picking up old runs from previous commits   
-        if ($null -eq $runs -or $runs.Count -eq 0) { Write-Log "No runs yet"; if ($elapsed -gt $timeout) { throw "Timeout waiting for tag workflows" }; continue }
-        $inProgress = $runs | Where-Object { $_.status -ne 'completed' }
-        if ($inProgress.Count -gt 0) { Write-Log "Tag workflows in progress..."; if ($elapsed -gt $timeout) { throw "Timeout waiting for tag workflows" }; continue }
-        $failed = $runs | Where-Object { $_.conclusion -ne 'success' }
-        if ($failed.Count -gt 0) { throw "One or more tag workflow runs failed. Check Actions." }
-        Write-Log "All detected tag workflows succeeded"
-        break
-    }
-}
-
-# --- Main flow ---
-try {
-    cd $PSScriptRoot/.. | Out-Null
-    Write-Log "Working directory: $(Get-Location)"
-
-    # Parse any GNU-style args passed in (e.g. --help)
-    Parse-GnuArgs
-
-    # Clear automatic $args now that parsing is done to avoid forwarding any
-    # leftover flags to the first external command invoked by the script.
-    $args = @()
-
-    if ($Help) { Show-Help; exit 0 }
-
-    # Resolve effective flags from parameters and environment
-    $DRYRUN = $DryRun.IsPresent -or ($env:DRYRUN -eq '1')
-    $NO_GH = $NoGh.IsPresent -or ($env:NO_GH -eq '1')
-    $SKIP_RELEASE_TESTS_FLAG = $SkipReleaseTests.IsPresent -or ($env:SKIP_RELEASE_TESTS -eq '1')
-    if ($ReleaseTestFilter) { $GLOBAL:RELEASE_TEST_FILTER = $ReleaseTestFilter } elseif ($env:RELEASE_TEST_FILTER) { $GLOBAL:RELEASE_TEST_FILTER = $env:RELEASE_TEST_FILTER }
-
-    Preflight-Checks
-
-    Ensure-CleanWorkingTree
-
-    if ($Parallel.IsPresent) {
-        Write-Log "Running Debug and Release build/tests in parallel"
-        $debugCmd = 'dotnet build MqttDashboard.slnx -c Debug; dotnet test MqttDashboard.slnx -c Debug --no-build'
-        $releaseTestPart = ''
-        if (-not $SKIP_RELEASE_TESTS_FLAG) {
-            $filter = $GLOBAL:RELEASE_TEST_FILTER
-            if (-not $filter -and $null -eq $filter) { $filter = 'TestCategory!=Playwright' }
-            $releaseTestPart = '; dotnet test MqttDashboard.slnx -c Release --no-build --filter "' + $filter + '"'
-        }
-        $releaseCmd = "dotnet build MqttDashboard.slnx -c Release$releaseTestPart"
-
-        $p1 = Start-Process -FilePath $SHELL_EXE -ArgumentList ('-NoProfile','-NonInteractive','-Command',$debugCmd) -PassThru
-        $p2 = Start-Process -FilePath $SHELL_EXE -ArgumentList ('-NoProfile','-NonInteractive','-Command',$releaseCmd) -PassThru
-        Wait-Process -Id $p1.Id, $p2.Id
-        if ($p1.ExitCode -ne 0 -or $p2.ExitCode -ne 0) { throw 'One or more build/test processes failed' }
-    }
-    else {
-        Dotnet-Build-And-Test -Configuration 'Debug'
-        if ($SKIP_RELEASE_TESTS_FLAG) { Write-Log 'Skipping Release tests per flag' }
-        Dotnet-Build-And-Test -Configuration 'Release'
-    }
-
-    Git-Pull-EnsureSync
-
-    $latest = Get-LatestSemverTag
-    Write-Log "Latest tag: $latest"
-    $next = Bump-PatchTag $latest
-    Write-Log "Next patch tag: $next"
-
-    Update-ChangeLog $next
-
-    $currentBranch = (Run-LocalCommand git 'rev-parse --abbrev-ref HEAD').StdOut.Trim()
-    Commit-And-Push-ChangeLog -branch $currentBranch
-
-    Create-And-Merge-PR $currentBranch $next
-
-    Create-Tag-And-Push $next
-
-    Wait-For-TagWorkflows $next
-
-    Write-Log "Release succeeded: $next — ready to deploy"
+    Write-Host "`n✓ Release $($script:NextVersion ?? '(version not computed)') complete." -ForegroundColor Green
 }
 catch {
-    Write-Host "[release] ERROR: $_" -ForegroundColor Red
+    Write-Fail "RELEASE FAILED: $_"
     exit 1
+}
+finally {
+    Pop-Location
 }
