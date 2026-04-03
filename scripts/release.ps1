@@ -555,7 +555,11 @@ function Step-PostDeploy {
     $deployUser  = if ($env:DEPLOY_USER)         { $env:DEPLOY_USER }         else { $env:USER ?? $env:USERNAME }
     $deployPath  = if ($env:DEPLOY_PATH)         { $env:DEPLOY_PATH }         else { '/opt/mqttdashboard' }
     $composeFile = if ($env:DEPLOY_COMPOSE_FILE) { $env:DEPLOY_COMPOSE_FILE } else { 'docker-compose.yml' }
-    $sshTarget   = "$deployUser@$deployHost"
+    if ($deployUser -and $deployUser -ne '-') {
+        $sshTarget   = "$deployUser@$deployHost"
+    } else {
+        $sshTarget   = $deployHost
+    }
     $remoteCmd   = "cd '$deployPath' && docker compose -f '$composeFile' pull && docker compose -f '$composeFile' up -d"
 
     Write-Step "Deploying to $sshTarget : $deployPath ($composeFile)"
