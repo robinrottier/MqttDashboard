@@ -1,4 +1,5 @@
 using MqttDashboard.Data;
+using MqttDashboard.Mqtt;
 
 namespace MqttDashboard.Server.Services;
 

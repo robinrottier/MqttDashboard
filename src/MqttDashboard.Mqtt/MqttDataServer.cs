@@ -1,11 +1,12 @@
 using MqttDashboard.Data;
-using MqttDashboard.Models;
+//using MqttDashboard.Models;
 using MqttDashboard.Mqtt;
-using MqttDashboard.Server.Hubs;
-using MqttDashboard.Services;
+//using MqttDashboard.Server.Hubs;
+//using MqttDashboard.Services;
 using Microsoft.Extensions.Logging;
 
-namespace MqttDashboard.Server.Services;
+//namespace MqttDashboard.Server.Services;
+namespace MqttDashboard.Mqtt;
 
 /// <summary>
 /// Singleton <see cref="IDataServer"/> that bridges the MQTT broker into the server-side
@@ -35,7 +36,7 @@ public sealed class MqttDataServer : IDataServer, IAsyncDisposable
     private readonly MqttClientService _mqttClientService;
     private readonly MqttTopicSubscriptionManager _subscriptionManager;
     private readonly MqttConnectionMonitor _connectionMonitor;
-    private readonly HubConnectionTracker _connectionTracker;
+    //private readonly HubConnectionTracker _connectionTracker;
     private readonly ILogger<MqttDataServer>? _logger;
 
     /// <summary>Stable connection-ID used when registering with <see cref="MqttTopicSubscriptionManager"/>.</summary>
@@ -51,13 +52,13 @@ public sealed class MqttDataServer : IDataServer, IAsyncDisposable
         MqttClientService mqttClientService,
         MqttTopicSubscriptionManager subscriptionManager,
         MqttConnectionMonitor connectionMonitor,
-        HubConnectionTracker connectionTracker,
+        //HubConnectionTracker connectionTracker,
         ILogger<MqttDataServer>? logger = null)
     {
         _mqttClientService = mqttClientService;
         _subscriptionManager = subscriptionManager;
         _connectionMonitor = connectionMonitor;
-        _connectionTracker = connectionTracker;
+        //_connectionTracker = connectionTracker;
         _logger = logger;
 
         // Wire events in ctor — safe for a singleton that lives for the app lifetime.
