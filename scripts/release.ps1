@@ -77,7 +77,12 @@
     Suppress all interactive prompts; abort automatically on failure.
     Implied when stdin is redirected (e.g. CI pipelines).
 
+.PARAMETER Help
+    Show this help text. Alias: -h
+
 .EXAMPLE
+    pwsh ./scripts/release.ps1 -h
+    pwsh ./scripts/release.ps1 -Help
     pwsh ./scripts/release.ps1
     pwsh ./scripts/release.ps1 -DryRun
     pwsh ./scripts/release.ps1 -Verify
@@ -118,11 +123,16 @@ Param(
     [string]$From = '',
     [string]$Only = '',
     [string[]]$Skip = @(),
-    [switch]$NonInteractive
+    [switch]$NonInteractive,
+    [Alias('h')]
+    [switch]$Help
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+# ─── -Help / -h ───────────────────────────────────────────────────────────────
+if ($Help) { Get-Help $MyInvocation.MyCommand.Path -Detailed; exit 0 }
 
 # ─── Auto-restart in pwsh 7+ when invoked from Windows PowerShell 5.1 ─────────
 if ($PSVersionTable.PSVersion.Major -lt 7) {
@@ -150,12 +160,29 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 Push-Location $RepoRoot
 
-# ─── Console helpers ──────────────────────────────────────────────────────────
-function Write-Header([string]$msg) { Write-Host "`n=== $msg ===" -ForegroundColor Cyan }
-function Write-Step([string]$msg)   { Write-Host "    $msg" -ForegroundColor Gray }
-function Write-Ok([string]$msg)     { Write-Host "  ✓ $msg" -ForegroundColor Green }
-function Write-Warn([string]$msg)   { Write-Host "  ⚠ $msg" -ForegroundColor Yellow }
-function Write-Fail([string]$msg)   { Write-Host "  ✗ $msg" -ForegroundColor Red }
+# ─── Console color scheme (adapts to light or dark terminal background) ───────
+$_bg = try { $Host.UI.RawUI.BackgroundColor } catch { [ConsoleColor]::Black }
+$_isLight = $_bg -in @(
+    [ConsoleColor]::White, [ConsoleColor]::Gray,
+    [ConsoleColor]::Yellow, [ConsoleColor]::Cyan, [ConsoleColor]::Green
+)
+$C = @{
+    Header  = if ($_isLight) { 'DarkCyan'   } else { 'Cyan'    }
+    Step    = if ($_isLight) { 'DarkGray'   } else { 'Gray'    }
+    Ok      = if ($_isLight) { 'DarkGreen'  } else { 'Green'   }
+    Warn    = if ($_isLight) { 'DarkMagenta'} else { 'Yellow'  }
+    Fail    = 'Red'   # readable on both
+    Active  = if ($_isLight) { 'Black'      } else { 'White'   }
+    Dim     = 'DarkGray'
+    Cyan    = if ($_isLight) { 'DarkCyan'   } else { 'Cyan'    }
+    Yellow  = if ($_isLight) { 'DarkMagenta'} else { 'Yellow'  }
+}
+
+function Write-Header([string]$msg) { Write-Host "`n=== $msg ===" -ForegroundColor $C.Header }
+function Write-Step([string]$msg)   { Write-Host "    $msg"       -ForegroundColor $C.Step   }
+function Write-Ok([string]$msg)     { Write-Host "  ✓ $msg"       -ForegroundColor $C.Ok     }
+function Write-Warn([string]$msg)   { Write-Host "  ⚠ $msg"       -ForegroundColor $C.Warn   }
+function Write-Fail([string]$msg)   { Write-Host "  ✗ $msg"       -ForegroundColor $C.Fail   }
 
 # ─── Effective flags ──────────────────────────────────────────────────────────
 $IsDryRun      = $DryRun      -or $env:DRYRUN              -eq '1'
@@ -537,16 +564,16 @@ function Get-RepoSlug {
 
 # ─── Interactive step menu ────────────────────────────────────────────────────
 function Show-StepMenu([string[]]$planned) {
-    Write-Host "`nSteps planned to run:" -ForegroundColor Cyan
+    Write-Host "`nSteps planned to run:" -ForegroundColor $C.Cyan
     $i = 1
     foreach ($s in $StepOrder) {
         $inPlan = $planned -icontains $s
         $marker = if ($inPlan) { '[x]' } else { '[ ]' }
-        $color  = if ($inPlan) { 'White' } else { 'DarkGray' }
+        $color  = if ($inPlan) { $C.Active } else { $C.Dim }
         Write-Host ("  {0,2}. {1} {2,-20} {3}" -f $i, $marker, $s, $StepDesc[$s]) -ForegroundColor $color
         $i++
     }
-    Write-Host "`nEnter numbers of steps to SKIP (comma-separated), or press Enter to run all planned steps:" -ForegroundColor Yellow
+    Write-Host "`nEnter numbers of steps to SKIP (comma-separated), or press Enter to run all planned steps:" -ForegroundColor $C.Yellow
     $input = Read-Host '  Skip'
     if ([string]::IsNullOrWhiteSpace($input)) { return $planned }
 
@@ -558,8 +585,8 @@ function Show-StepMenu([string[]]$planned) {
 # Interactive prompt when a step fails: Retry / Skip / Abort
 function Prompt-OnFailure([string]$stepName) {
     if (-not $IsInteractive) { return 'abort' }
-    Write-Host "`n  Step '$stepName' failed." -ForegroundColor Red
-    Write-Host "  [R]etry  [S]kip  [A]bort (default)" -ForegroundColor Yellow
+    Write-Host "`n  Step '$stepName' failed." -ForegroundColor $C.Fail
+    Write-Host "  [R]etry  [S]kip  [A]bort (default)" -ForegroundColor $C.Yellow
     $choice = (Read-Host '  Choice').Trim().ToLower()
     $action = switch ($choice) {
         'r' { 'retry' }
@@ -598,7 +625,7 @@ try {
     if ($IsInteractive -and -not $Only -and -not $From -and $SkipSet.Count -eq 0) {
         $stepsToRun = [string[]](Show-StepMenu $stepsToRun)
     } else {
-        Write-Host "`nSteps to run: $($stepsToRun -join ' → ')" -ForegroundColor Cyan
+        Write-Host "`nSteps to run: $($stepsToRun -join ' → ')" -ForegroundColor $C.Cyan
     }
 
     if ($stepsToRun.Count -eq 0) { Write-Warn "No steps selected. Exiting."; exit 0 }
@@ -626,9 +653,9 @@ try {
     }
 
     if ($IsVerify) {
-        Write-Host "`n✓ Local verification complete — all checks passed." -ForegroundColor Green
+        Write-Host "`n✓ Local verification complete — all checks passed." -ForegroundColor $C.Ok
     } else {
-        Write-Host "`n✓ Release $($script:NextVersion ?? '(version not computed)') complete." -ForegroundColor Green
+        Write-Host "`n✓ Release $($script:NextVersion ?? '(version not computed)') complete." -ForegroundColor $C.Ok
     }
 }
 catch {
