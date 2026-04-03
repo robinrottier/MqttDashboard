@@ -574,22 +574,43 @@ function Get-RepoSlug {
 
 # ─── Interactive step menu ────────────────────────────────────────────────────
 function Show-StepMenu([string[]]$planned) {
-    Write-Host "`nSteps planned to run:" -ForegroundColor $C.Cyan
-    $i = 1
-    foreach ($s in $StepOrder) {
-        $inPlan = $planned -icontains $s
-        $marker = if ($inPlan) { '[x]' } else { '[ ]' }
-        $color  = if ($inPlan) { $C.Active } else { $C.Dim }
-        Write-Host ("  {0,2}. {1} {2,-20} {3}" -f $i, $marker, $s, $StepDesc[$s]) -ForegroundColor $color
-        $i++
-    }
-    Write-Host "`nEnter numbers of steps to SKIP (comma-separated), or press Enter to run all planned steps:" -ForegroundColor $C.Yellow
-    $input = Read-Host '  Skip'
-    if ([string]::IsNullOrWhiteSpace($input)) { return $planned }
+    # Mutable set of currently-selected steps; HashSet gives O(1) toggle
+    $selected = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($s in $planned) { [void]$selected.Add($s) }
 
-    $skipNums = $input -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^\d+$' } | ForEach-Object { [int]$_ }
-    $toSkip   = $skipNums | ForEach-Object { if ($_ -ge 1 -and $_ -le $StepOrder.Count) { $StepOrder[$_ - 1] } }
-    return $planned | Where-Object { $toSkip -notcontains $_ }
+    while ($true) {
+        Write-Host "`nStep plan — [✓] will run  [ ] skipped:" -ForegroundColor $C.Cyan
+        $i = 1
+        foreach ($s in $StepOrder) {
+            $on     = $selected.Contains($s)
+            $marker = if ($on) { '[✓]' } else { '[ ]' }
+            $color  = if ($on) { $C.Active } else { $C.Dim }
+            Write-Host ("  {0,2}. {1} {2,-20} {3}" -f $i, $marker, $s, $StepDesc[$s]) -ForegroundColor $color
+            $i++
+        }
+        Write-Host ""
+        Write-Host "  Enter number(s) to toggle include/skip (e.g. 1,3), or press Enter to run:" -ForegroundColor $C.Yellow
+        $rawInput = Read-Host '  >'
+
+        if ([string]::IsNullOrWhiteSpace($rawInput)) { break }
+
+        $nums = $rawInput -split ',' |
+            ForEach-Object { $_.Trim() } |
+            Where-Object   { $_ -match '^\d+$' } |
+            ForEach-Object { [int]$_ }
+
+        foreach ($n in $nums) {
+            if ($n -ge 1 -and $n -le $StepOrder.Count) {
+                $step = $StepOrder[$n - 1]
+                if ($selected.Contains($step)) { [void]$selected.Remove($step) }
+                else                           { [void]$selected.Add($step)    }
+            }
+        }
+        # Loop back — user sees updated markers before confirming
+    }
+
+    # Return in canonical step order
+    return [string[]]($StepOrder | Where-Object { $selected.Contains($_) })
 }
 
 # Interactive prompt when a step fails: Retry / Skip / Abort
