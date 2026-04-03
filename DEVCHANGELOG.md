@@ -5,6 +5,784 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
+## 2026-04-03 — release.ps1: -Verify mode, publish-check, docker-build, post-deploy steps
+
+### Commit: TBD · branch: feature/feat-h-data-layer
+
+#### `scripts/release.ps1` — 4 enhancements
+
+**1. `-Verify` mode**
+
+New `-Verify` switch (also `VERIFY=1` env var). When set, `Get-StepsToRun` restricts to the
+6 local steps: `preflight → clean → build-debug → build-release → publish-check → docker-build`.
+No git state changes, no remote operations, no `gh` CLI required.
+
+`Step-Preflight` updated to skip the `gh` availability requirement when `-Verify` is active and
+to skip the remote-URL check (not needed for local verification).
+
+Suitable for use as a Copilot post-change verification gate at the end of each session. Also
+useful as a quick pre-push sanity check on the developer's machine.
+
+Distinguished from `-DryRun`: `-DryRun` still rehearses the full release flow (commits changelog
+locally, etc.) but skips remote pushes; `-Verify` is purely local with zero git mutations.
+
+**2. `publish-check` step (new)**
+
+Mirrors what `release.yml` does for the `linux-x64` target: runs `dotnet publish -c Release
+-r linux-x64 --self-contained true`. Catches trim errors, missing publish-only assemblies, or AOT
+failures that would slip past `dotnet build`. Cleans up the output directory (`artifacts/publish-check`)
+after success. Auto-skipped with `-SkipPublishCheck` switch or `SKIP_PUBLISH_CHECK=1` env var.
+
+⚠️ This step does a full wasm-tools publish so it can be slow (2–4 min) on first run; subsequent
+runs benefit from incremental build cache.
+
+**3. `docker-build` step (new)**
+
+Mirrors `docker.yml`'s build step: `docker build -f src/.../Dockerfile -t mqttdashboard:local .`
+using the repo root as build context. Auto-skipped (with a warning) if:
+- `docker` is not on PATH, or
+- the Docker daemon is not running (`docker info` returns non-zero).
+
+Does not push — local verification only. Tags the image `mqttdashboard:local` for manual inspection.
+
+**4. `post-deploy` step (new)**
+
+Final step (position 14). SSHs to a remote host and runs:
+```
+docker compose -f <compose-file> pull && docker compose -f <compose-file> up -d
+```
+Configuration via env vars:
+- `DEPLOY_HOST` — required; step auto-skips if not set
+- `DEPLOY_USER` — SSH user (default: `$env:USER` / `$env:USERNAME`)
+- `DEPLOY_PATH` — remote working dir (default: `/opt/mqttdashboard`)
+- `DEPLOY_COMPOSE_FILE` — compose file name (default: `docker-compose.yml`)
+
+Skipped in `-DryRun` mode. Documented in `.NOTES` of the script help block.
+
+**Updated step catalogue**
+
+Step order expanded from 11 → 14:
+```
+preflight → clean → build-debug → build-release → publish-check → docker-build
+→ sync → version → changelog → push-changelog → pr → tag → wait-workflows → post-deploy
+```
+
+Help text (`.DESCRIPTION`, `.PARAMETER`, `.NOTES`, `.EXAMPLE`) updated throughout.
+
+---
+
+## 2026-04-03 — release.ps1 rewrite: Linux/WSL compat, step selection, bug fixes
+
+### Commit: TBD · branch: feature/feat-h-data-layer
+
+### Context
+
+Full rewrite of `scripts/release.ps1` addressing all open TODO items and several
+latent bugs found during review.
+
+### Bugs fixed
+
+| Bug | Previous behaviour | Fix |
+|-----|--------------------|-----|
+| `$args = @()` | Throws under `Set-StrictMode -Version Latest` (`$args` is read-only) | Removed — GNU-arg parsing replaced with proper `Param()` only |
+| `Parse-GnuArgs` | Read the *function*'s empty `$args`, not the script's; GNU flags silently ignored | Entire function removed; all flags handled via `[CmdletBinding()] Param()` |
+| `-WorkflowTimeoutMinutes` not used | Both wait functions hardcoded 30 and 45 min timeouts; parameter was dead | Both wait functions now use `$WorkflowTimeoutMinutes * 60` |
+| `Exec` dead function | 10-line function never called anywhere | Removed |
+| Parallel mode silent failures | `Start-Process` without `-RedirectStandardOutput` merged both streams; build failure output lost | Separate temp files capture each job's output; replayed to host after `Wait-Process` |
+| `Update-ChangeLog` wrong format | Inserted raw `- Preparing release vX.Y.Z` bullet inside `[Unreleased]` | Now inserts a proper `## [vX.Y.Z] - YYYY-MM-DD` versioned section |
+| PR CI polling via `gh run list` | Polling workflow runs by branch is unreliable for PR checks | Replaced with `gh pr checks $prNum --json state,name` |
+| `Run-LocalCommand` empty-output retry | Heuristic retried via shell fallback when stdout empty — fired on legitimate no-output commands | Replaced with `Invoke-Cmd` / `Get-CmdOutput` / `Assert-Cmd` helpers using `& $Exe @ArgList` directly |
+
+### New features
+
+**Linux / WSL compatibility** — all commands now invoked with `& $Exe @ArgList` (works on Windows, Linux, macOS, WSL). Uses `Join-Path`/`Split-Path` for paths; no hardcoded backslashes. `Pop-Location` in `finally` restores caller's directory.
+
+**Auto-restart from `powershell.exe` → `pwsh`** — script detects `PSVersion.Major -lt 7`, resolves `pwsh` on PATH, re-executes with all bound parameters forwarded.
+
+**Step selection: `-From`, `-Only`, `-Skip`, `-BumpType`** — resume from a named step, run a single step, skip named steps, or bump major/minor instead of patch.
+
+**Interactive step selection menu** — when stdin is attached and no explicit step flags are set, shows a numbered checklist and lets the user enter step numbers to skip.
+
+**Interactive retry/skip on failure** — `[R]etry [S]kip [A]bort` prompt on step failure in interactive mode; auto-aborts in CI/non-interactive.
+
+**Coloured output** — cyan headers, gray step detail, green success, yellow warnings, red failures.
+
+### ⚠️ Remaining open items
+
+- Buffered step output (show only on failure) — not yet implemented
+- Docker build smoke-test step — not yet added
+- Post-release remote-deployment upgrade step — not yet added
+
+---
+
+
+
+## 2026-04-02 — Add MQTT and Data layer integration tests
+
+### Commit: c4f6f81 · branch: feature/feat-h-data-layer · UTC: 2026-04-02T23:22:52Z
+
+#### New project: `MqttDashboard.Mqtt.Tests`
+
+**Files:** `tests/MqttDashboard.Mqtt.Tests/` (new project, added to `MqttDashboard.slnx`)
+
+**Why:** `MqttDashboard.Mqtt` and `MqttDashboard.Data` are now separate modules; they needed
+test coverage that exercises them against a real in-process MQTT broker rather than relying
+on mocks or the full server stack.
+
+**`InProcessMqttBrokerFixture`** — xUnit `IAsyncLifetime` class fixture that starts a real
+`MQTTnet.Server` broker on a free port for the duration of the test class. Added
+`MQTTnet.Server 5.1.0.1559` package to this project. The same pattern was applied to
+`MqttDashboard.IntegrationTests` (see below).
+
+**`MqttTestHelpers`** — static helpers shared by all test classes: `StartServiceAsync`
+builds and starts a `MqttClientService` against the broker (waits for `Connected` state),
+`ConnectExternalClientAsync` creates a plain `IMqttClient` for publisher/subscriber roles,
+`PublishAsync` / `WaitForMessageAsync` convenience wrappers.
+
+**`MqttClientServiceTests`** (4 tests):
+- `Service_ConnectsToInProcessBroker` — verifies `MqttConnectionMonitor.State == Connected`.
+- `Subscribe_ThenPublishFromExternalClient_MessageReceived` — subscribes a topic via
+  `MqttTopicSubscriptionManager`, publishes from a second client, asserts `OnMessagePublished`
+  fires with the correct topic/payload.
+- `Subscribe_WildcardTopic_MatchingMessagesReceived` — verifies `sensors/+/temp` wildcard
+  matches two topics but not `sensors/room1/humidity`.
+- `Publish_MessageDeliveredToBrokerSubscriber` — `PublishMessageAsync` sends a message that
+  an external subscriber receives.
+- `UnsubscribeClient_NoMoreMessagesDelivered` — after `UnsubscribeClientFromTopicAsync` no
+  further messages arrive (grace period set to 0 ms in tests).
+
+**`MqttDataCacheIntegrationTests`** (5 tests) — wires a `DataCache` to `MqttClientService`
+via a test-local `MqttDataServerStub` (implements `IDataServer`; no dependency on Server project):
+- `BrokerMessage_ArriveInDataCacheSubscriber` — broker publish → `UpdateValue` → subscriber callback.
+- `BrokerMessage_WildcardSubscription_MultipleCacheUpdates` — wildcard cache subscription on top of MQTT.
+- `DataCache_PublishAsync_SendsMessageToBroker` — `cache.PublishAsync` flows through stub → `PublishMessageAsync` → external subscriber receives it.
+- `RoundTrip_PublishFromCacheA_ReceivedByCacheB` — two independent `MqttClientService` instances on the same broker; Cache A publishes, Cache B subscriber receives, no shared memory.
+- `RoundTrip_PublishFromCacheB_ReceivedByCacheA` — reverse direction.
+
+---
+
+#### Chained `DataCache` tests in `MqttDashboard.Data.Tests`
+
+**File:** `tests/MqttDashboard.Data.Tests/ChainedCacheTests.cs` (new)
+
+**Why:** The `CacheBridgeDataServer` wires caches together in a chain. These tests verify
+the multi-level chain topology that production code relies on (server-side singleton cache →
+per-circuit bridge → per-circuit cache).
+
+**Tests (11):**
+- Two-level chain: upstream update → downstream subscriber, wildcard subscriber, seed from
+  cached value on subscribe.
+- Two-level publish: `downstream.PublishAsync` updates upstream subscribers and also updates
+  the downstream cache immediately (local echo).
+- Three-level chain (A→B→C): value from A reaches subscriber on C; publish on C reaches A.
+- Demand-driven subscription propagation: first subscriber on downstream triggers bridge to
+  subscribe on upstream.
+- Dispose handle stops propagation.
+- Two subscribers on same downstream topic both receive all updates.
+
+---
+
+#### Enable Tier B integration tests in `MqttDashboard.IntegrationTests`
+
+**Files:** `InProcessMqttBrokerFixture.cs`, `MqttFlowIntegrationTests.cs`,
+`MqttDashboard.IntegrationTests.csproj`
+
+**Why:** These tests were stubbed out with `[Fact(Skip = ...)]` because `MQTTnet v5` moved
+the server component to a separate package. The package (`MQTTnet.Server 5.1.0.1559`) is
+now available and has been added.
+
+**Changes:**
+- Replaced stub `InProcessMqttBrokerFixture` with a real implementation using `MqttServerFactory`.
+- Removed `Skip` attributes from all 3 `MqttFlowIntegrationTests` tests.
+- Fixed `WaitForMqttConnectedAsync`: it was calling `InvokeAsync<string>("GetMqttConnectionStatus")`
+  (method no longer exists); replaced with a listener on the `MqttConnectionStatus` client event
+  that `DataHub.OnConnectedAsync` sends. ⚠️ The hub sends this immediately on connect, so there
+  is a small window where the event arrives before the listener is registered; the fix polls for
+  100 ms to handle this.
+
+---
+
+
+
+### Context
+
+With `MqttClientService` fully decoupled from SignalR (previous commit), the four pure MQTT files were ready to live in their own project. Extracted into `MqttDashboard.Mqtt` — a class library with no Blazor or SignalR dependencies. `MqttDashboard.Server` now references `.Mqtt` as a sibling project.
+
+---
+
+### 1. New project: `src/MqttDashboard.Mqtt/MqttDashboard.Mqtt.csproj`
+
+- `net10.0`, `FrameworkReference Microsoft.AspNetCore.App` (for `BackgroundService`)
+- `PackageReference MQTTnet 5.1.0.1559`
+- `ProjectReference MqttDashboard.Data`
+- No SignalR, Blazor, or MudBlazor references
+
+### 2. Moved files (via `git mv` — history preserved)
+
+| Old location | New location |
+|---|---|
+| `Server/Services/IMqttClientService.cs` | `Mqtt/IMqttClientService.cs` |
+| `Server/Services/MqttClientService.cs` | `Mqtt/MqttClientService.cs` |
+| `Server/Services/MqttConnectionMonitor.cs` | `Mqtt/MqttConnectionMonitor.cs` |
+| `Server/Services/MqttTopicSubscriptionManager.cs` | `Mqtt/MqttTopicSubscriptionManager.cs` |
+
+Namespace changed from `MqttDashboard.Server.Services` → `MqttDashboard.Mqtt` in all four files.
+
+### 3. Update: `src/MqttDashboard.Server/MqttDashboard.Server.csproj`
+
+- Removed `PackageReference MQTTnet` (moved to `.Mqtt` project — no `.Server` code uses MQTTnet types directly)
+- Added `ProjectReference MqttDashboard.Mqtt`
+
+### 4. Using statement updates in `.Server`
+
+Files that reference the moved types now add `using MqttDashboard.Mqtt;`:
+- `Hubs/DataHub.cs` — `MqttConnectionMonitor`, `IMqttClientService`
+- `Hubs/MqttStatusBroadcaster.cs` — `MqttConnectionMonitor`
+- `Services/MqttDataServer.cs` — `MqttClientService`, `MqttTopicSubscriptionManager`, `MqttConnectionMonitor`
+- `Services/DashboardMetricsPublisher.cs` — `MqttConnectionMonitor`
+- `Extensions/ServiceCollectionExtensions.cs` — all four types
+- `Health/MqttConnectionHealthCheck.cs` — `MqttConnectionMonitor`
+
+### 5. Update: test projects
+
+`tests/MqttDashboard.IntegrationTests/FakeMqttClientService.cs` and `IntegrationWebApplicationFactory.cs` — `using MqttDashboard.Server.Services` → `using MqttDashboard.Mqtt` (plus keep `.Server.Services` where other non-moved types are still used).
+
+### 6. Updated `MqttDashboard.slnx`
+
+Added `MqttDashboard.Mqtt` to the `/src/` folder in the solution.
+
+### Result
+
+Dependency chain:
+```
+MqttDashboard.Data   (pure abstractions, no NuGet deps)
+MqttDashboard.Mqtt   (MQTTnet only — no Blazor/SignalR)
+MqttDashboard.Server (AspNetCore + SignalR host, references .Mqtt + .Data + .Client)
+MqttDashboard.Client (Blazor + SignalR.Client, references .Data)
+```
+
+All 71 tests pass (was 66 before — PlaywrightTests added 5).
+
+---
+
+## 2026-04-02 — FEAT-H: Decouple MqttClientService from SignalR
+
+### Commit: TBD · branch: feature/feat-h-data-layer · UTC: 2026-04-02T11:xx
+
+### Context
+
+`MqttClientService` had a direct dependency on `IHubContext<DataHub>` solely to broadcast `MqttConnectionStatus` to all SignalR clients whenever the MQTT connection state changed. MQTT code should have zero knowledge of SignalR. Fixed by extracting the broadcast into a dedicated `MqttStatusBroadcaster` class.
+
+---
+
+### 1. New file: `src/MqttDashboard.Server/Hubs/MqttStatusBroadcaster.cs`
+
+Tiny singleton that wires `MqttConnectionMonitor.OnStateChanged` → `IHubContext<DataHub>.Clients.All.SendAsync("MqttConnectionStatus", ...)`. This is the only place in the codebase that needs to know about both `MqttConnectionMonitor` and `DataHub`. Constructor wires the event once; no methods exposed.
+
+Instantiated eagerly in `WebApplicationExtensions.UseMqttDashboard` via `ApplicationStarted` callback so the event is wired before any clients connect.
+
+### 2. Update: `src/MqttDashboard.Server/Services/MqttClientService.cs`
+
+- Removed `IHubContext<DataHub>` field and constructor parameter.
+- Removed `using Microsoft.AspNetCore.SignalR;` and `using MqttDashboard.Server.Hubs;`.
+- Removed the `_connectionMonitor.OnStateChanged` lambda that broadcast to hub clients.
+- `MqttClientService` now has **zero SignalR references** — pure MQTT concern.
+
+### 3. Update: `src/MqttDashboard.Server/Extensions/ServiceCollectionExtensions.cs`
+
+Registered `MqttStatusBroadcaster` as a singleton.
+
+### 4. Update: `src/MqttDashboard.Server/Extensions/WebApplicationExtensions.cs`
+
+Added `app.Services.GetRequiredService<MqttStatusBroadcaster>()` in the `ApplicationStarted` callback to force instantiation at startup.
+
+### 5. Update: `tests/MqttDashboard.IntegrationTests/FakeMqttClientService.cs`
+
+Removed `IHubContext<DataHub>` from the test double constructor to match the updated base class signature.
+
+### Result
+
+`MqttClientService` imports: was `using Microsoft.AspNetCore.SignalR` + `using MqttDashboard.Server.Hubs` — both gone. The MQTT files (`MqttClientService`, `MqttDataServer`, `MqttConnectionMonitor`, `MqttTopicSubscriptionManager`, `IMqttClientService`) now have no SignalR dependencies, removing the main blocker to extracting them into a standalone `MqttDashboard.Mqtt` project.
+
+---
+
+## 2026-04-02 — FEAT-H: PublishAsync on IDataCache/IDataServer + lazy unsubscribe grace period
+
+### Commit: TBD · branch: feature/feat-h-data-layer · UTC: 2026-04-02T10:xx
+
+### Context
+
+Two FEAT-H items: (1) unify publishing into the cache/server abstraction and eliminate the now-redundant `IMqttPublisher` interface; (2) add a grace-period delay before broker unsubscribes to prevent churn on circuit reconnect.
+
+---
+
+### 1. `IDataCache.PublishAsync` (new method)
+
+Added `Task PublishAsync(string topic, string payload, bool retain = false, int qos = 0)` to `IDataCache`.
+- `DataCache.PublishAsync` immediately calls `UpdateValue` (so all local subscribers see the new value without waiting for a broker echo) then forwards to `_server.PublishAsync`.
+- This is the single publish entrypoint for all widgets — no need to inject any other service.
+
+### 2. `IDataServer.PublishAsync` (new method)
+
+Added matching `Task PublishAsync(...)` to `IDataServer`. Each implementation:
+- **`MqttDataServer`**: calls `MqttClientService.PublishMessageAsync` → broker.
+- **`SignalRDataServer`**: calls hub `PublishMessage` method → server → broker.
+- **`CacheBridgeDataServer`**: delegates to `_upstream.PublishAsync` (chains into `ServerDataCache` → `MqttDataServer`).
+
+### 3. `IMqttPublisher` removed
+
+Interface deleted (`src/MqttDashboard.Client/Services/IMqttPublisher.cs`). All `: IMqttPublisher` declarations removed from `MqttDataServer` and `SignalRDataServer`. DI registrations removed from `ServiceCollectionExtensions.cs` and `WebApp.Client/Program.cs`. Doc comments updated.
+
+### 4. `SwitchNodeWidget` updated
+
+Removed `@inject IMqttPublisher MqttPublisher`. Toggle now calls `AppState.DataCache.PublishAsync(...)` directly — consistent with how all other data flows through the cache.
+
+### 5. Lazy unsubscribe grace period in `MqttTopicSubscriptionManager`
+
+When the last subscriber for a topic leaves, the broker-level unsubscribe is now deferred by a configurable grace period (default **30 s**).
+- A `CancellationTokenSource` is stored per topic in `_pendingUnsubs`.
+- If any client resubscribes within the window, the pending unsubscribe is cancelled.
+- After the delay expires, `OnTopicUnsubscribeRequested` fires as before.
+- Grace period is configurable via the constructor (`int gracePeriodMs = 30_000`); pass `0` to disable.
+- Added XML doc comment explaining the behaviour.
+- `ScheduleUnsubscribe` / `CancelPendingUnsubscribe` / `FireUnsubscribeAsync` helpers keep the semaphore-protected paths clean.
+
+### 6. TODO.md cleanup
+
+- Removed stale "Is MqttDataHub actually used?" item (DataHub is clearly used; renamed last session).
+- Removed naming-pattern arrow item (resolved last session).
+- Marked lazy-unsubscribe item done inline.
+
+
+
+### Commit: TBD · branch: feature/feat-h-data-layer · UTC: 2026-04-02T10:xx
+
+### Context
+
+Naming consistency pass across the server-side data layer. Goal: MQTT-specific code lives in `Services/` with `Mqtt*` names; SignalR hub code lives in `Hubs/` with `Hub*` / `DataHub` names; no misleading cross-domain prefixes.
+
+---
+
+### 1. `Hubs/MqttDataHub.cs` → `Hubs/DataHub.cs` (class: `DataHub`)
+
+`MqttDataHub` was a SignalR `Hub` subclass — nothing MQTT-specific about it. It relays data from `ServerDataCache` to browser clients over SignalR. Renamed to `DataHub`.
+- `IHubContext<MqttDataHub>` → `IHubContext<DataHub>` everywhere.
+- Hub route: `/mqttdatahub` → `/datahub` (in `WebApplicationExtensions.cs`).
+- Client URL in `MqttInitializationService.BuildHubUrl()`: `"mqttdatahub"` → `"datahub"`.
+- Updated log message from "connected to MQTT Hub" → "connected to Data Hub".
+
+### 2. `Hubs/HubDataSubscriptionStore.cs` → `Hubs/HubSubscriptionStore.cs` (class: `HubSubscriptionStore`)
+
+Simpler name; "Data" was redundant — the store is per-hub-connection by definition.
+Updated doc comment reference from `MqttDataHub` → `DataHub`.
+
+### 3. `Services/ClientConnectionTracker.cs` → `Hubs/HubConnectionTracker.cs` (class: `HubConnectionTracker`)
+
+Tracks connected SignalR clients — that's a hub concern, not a general service concern. Moved to `Hubs/`, renamed to `HubConnectionTracker`, namespace changed to `MqttDashboard.Server.Hubs`.
+Updated refs in: `DataHub.cs`, `MqttDataServer.cs`, `DashboardMetricsPublisher.cs`, `ServiceCollectionExtensions.cs`.
+`DashboardMetricsPublisher.cs` gained `using MqttDashboard.Server.Hubs;`.
+
+### 4. `Hubs/MqttTopicSubscriptionManager.cs` → `Services/MqttTopicSubscriptionManager.cs`
+
+This class ref-counts broker-level MQTT topic subscriptions. It has no dependency on SignalR and is consumed only by `MqttDataServer` and `MqttClientService` — both in `Services/`. Moved there; namespace changed to `MqttDashboard.Server.Services`.
+
+### 5. `IMqttClientService.cs` doc comment updated
+
+Reference to `MqttDataHub` → `DataHub`.
+
+### 6. Tests updated
+
+- `FakeMqttClientService.cs`: `IHubContext<MqttDataHub>` → `IHubContext<DataHub>`.
+- `HubConnectionHelper.cs`: default hub path `"mqttdatahub"` → `"datahub"`.
+- `MqttDataHubTests.cs`: doc comment updated.
+
+All 21 tests pass (13 integration + 8 Playwright).
+
+
+---
+
+## 2026-04-01 — FEAT-H Phase 4: $DASHBOARD topics, IMqttDiagnostics removal, same-process DI
+
+### Commit: TBD · branch: feature/feat-h-data-layer · UTC timestamp: session end
+
+### Context
+
+Phase 4 of the data layer refactor. Completes the full migration away from adhoc pull-style diagnostic calls and lays the groundwork for a same-process (MAUI/combined host) deployment with no SignalR. All six Phase 4 todos (hub-migration, dashboard-topics-provider, ssr-seed-cache, injectable-datacache, remove-mqtt-diagnostics, same-process-di) are now done.
+
+---
+
+### 1. New file: `src/MqttDashboard.Server/Services/DashboardTopics.cs`
+
+Static string constants for all `$DASHBOARD/*` topic paths:
+- `$DASHBOARD/TIME`, `$DASHBOARD/UPTIME`
+- `$DASHBOARD/VERSION`, `$DASHBOARD/VERSION/LATEST`, `$DASHBOARD/VERSION/UPDATE_AVAILABLE`
+- `$DASHBOARD/MQTT/STATUS`, `$DASHBOARD/MQTT/BROKER`, `$DASHBOARD/MQTT/TOPIC_COUNT`
+- `$DASHBOARD/CLIENTS/COUNT`
+
+### 2. New file: `src/MqttDashboard.Server/Services/DashboardMetricsPublisher.cs`
+
+`BackgroundService` that publishes live diagnostic data as virtual `$DASHBOARD/*` topics into `ServerDataCache` (bypassing the MQTT broker entirely):
+
+- Publishes version info once on startup; re-publishes if a newer version is available.
+- Reacts to `MqttConnectionMonitor.OnStateChanged` to update `$DASHBOARD/MQTT/STATUS` and `$DASHBOARD/MQTT/BROKER` reactively.
+- Ticks every second via `PeriodicTimer`: publishes `TIME`, `UPTIME`, `TOPIC_COUNT`, `CLIENTS/COUNT`.
+- Registered as hosted service in `ServiceCollectionExtensions`.
+
+Result: any client subscribing to `$DASHBOARD/CLIENTS/COUNT` (for example) via `DataCache.Subscribe()` receives an immediate seed from cache and live updates every second — no ad-hoc hub methods needed.
+
+### 3. New file: `src/MqttDashboard.Data/IServerSnapshotCache.cs`
+
+Marker interface `IServerSnapshotCache : IDataCache` registered as `ServerDataCache` in server DI. Allows `MqttInitializationService` (Client project) to inject `ServerDataCache` for SSR snapshot seeding without a circular project reference.
+
+### 4. New file: `src/MqttDashboard.Server/Hubs/HubDataSubscriptionStore.cs`
+
+Singleton holding per-connection `IDisposable` subscription handles from `ServerDataCache.Subscribe()`. Needed because `MqttDataHub` is transient per invocation. `OnDisconnectedAsync` disposes all handles via the store.
+
+### 5. Rewrite: `src/MqttDashboard.Server/Hubs/MqttDataHub.cs`
+
+- Removed `MqttTopicSubscriptionManager`, `IConfiguration` injection, and three ad-hoc diagnostic methods (`GetMqttBrokerInfo`, `GetMqttConnectionStatus`, `GetConnectedClientCount`).
+- Added `IHubContext<MqttDataHub>` and `HubDataSubscriptionStore` injection.
+- `SubscribeToTopic` now calls `ServerDataCache.Subscribe()` with a callback that sends `ReceiveMqttData` to the specific connection; handle stored in store.
+- `OnDisconnectedAsync` disposes all handles via store.
+
+### 6. Update: `src/MqttDashboard.Client/Services/MqttInitializationService.cs`
+
+- Removed `IMqttDiagnostics` field and constructor parameter.
+- Removed post-`StartAsync` `GetMqttBrokerInfoAsync()` call — status is now delivered reactively via `StatusChanged` event wired before `StartAsync`.
+- Added optional `IServerSnapshotCache? serverSnapshot` parameter; `SeedFromServerSnapshot()` method iterates all cached values and copies them into `AppState.DataCache` during SSR pre-render (both WASM/Auto and ServerOnly render paths).
+- Added `HasServer` guard: `_appState.DataCache.RegisterServer(_dataServer)` is skipped if `DataCache.HasServer` is already `true` (prevents double-registration in same-process mode where `ServerDataCache` has `MqttDataServer` pre-wired).
+
+### 7. Update: `src/MqttDashboard.Client/Services/ApplicationState.cs`
+
+- Constructor gains optional `IDataCache? dataCache = null`; `DataCache` is set from it (defaults to `new DataCache()` when not injected). Enables same-process hosts to inject `ServerDataCache` directly.
+
+### 8. Update: `src/MqttDashboard.Data/IDataCache.cs` + `DataCache.cs`
+
+- Added `bool HasServer { get; }` to `IDataCache` interface.
+- Implemented in `DataCache` as `_server != null`.
+
+### 9. Delete: `src/MqttDashboard.Client/Services/IMqttDiagnostics.cs`
+
+Interface removed entirely. All diagnostic data is now distributed via `$DASHBOARD/*` virtual topics.
+
+### 10. Update: `src/MqttDashboard.Client/Services/SignalRDataServer.cs`
+
+- Removed `: IMqttDiagnostics` from class declaration.
+- Removed `GetMqttBrokerInfoAsync()` and `GetConnectedClientCountAsync()` methods.
+
+### 11. Update: `src/MqttDashboard.Server/Services/MqttDataServer.cs`
+
+- Removed `: IMqttDiagnostics` from class declaration.
+- Removed `GetMqttBrokerInfoAsync()` and `GetConnectedClientCountAsync()` method implementations.
+
+### 12. Update: `src/MqttDashboard.Client/Components/AboutDialog.razor`
+
+- Removed `@inject IMqttDiagnostics MqttDiagnostics`.
+- Added `@implements IDisposable` and `_clientCountSubscription` field.
+- `OnInitializedAsync` now subscribes `AppState.DataCache.Subscribe("$DASHBOARD/CLIENTS/COUNT", ...)` — fires immediately from cache (if seeded) and on every publisher tick. `Dispose()` disposes the handle.
+
+### 13. Update: `src/MqttDashboard.Server/Extensions/ServiceCollectionExtensions.cs`
+
+- Removed `services.AddSingleton<IMqttDiagnostics>(...)`.
+- Added `HubDataSubscriptionStore` singleton.
+- Added `DashboardMetricsPublisher` hosted service.
+- Added `IServerSnapshotCache` → `ServerDataCache` mapping.
+- Added new `AddMqttDashboardSameProcess()` extension method (see §14).
+
+### 14. New method: `AddMqttDashboardSameProcess()` in `ServiceCollectionExtensions.cs`
+
+Call this after `AddMqttDashboardServerServices()` and `AddMqttDashboardServices()` for a same-process host (MAUI Blazor, combined desktop, embedded):
+
+```csharp
+services.AddSingleton<IDataCache>(sp => sp.GetRequiredService<ServerDataCache>());
+services.AddScoped<IDataServer>(sp => sp.GetRequiredService<MqttDataServer>());
+```
+
+- `ApplicationState` receives `ServerDataCache` directly as its `IDataCache` — no per-circuit copy, no bridge, no SignalR hub.
+- `MqttInitializationService` calls `MqttDataServer.StartAsync()` (re-fires current status) and skips `RegisterServer()` because `DataCache.HasServer` is already `true` (wired in `ServerDataCache` constructor).
+- `IMqttPublisher` → `MqttDataServer` (already registered in `AddMqttDashboardServerServices`).
+
+### 15. Update: `src/MqttDashboard.WebApp/MqttDashboard.WebApp.Client/Program.cs`
+
+- Removed `services.AddScoped<IMqttDiagnostics>(...)`.
+
+### 16. Update: `tests/MqttDashboard.IntegrationTests/MqttDataHubTests.cs`
+
+- Replaced `GetMqttBrokerInfo_ReturnsBrokerString` and `GetConnectedClientCount_ReflectsConnections` (removed hub methods) with:
+  - `DashboardTopics_BrokerInfoPublishedToCache` — subscribes to `$DASHBOARD/MQTT/BROKER`; verifies topic delivered with non-empty payload.
+  - `DashboardTopics_ClientCountPublishedToCache` — subscribes to `$DASHBOARD/CLIENTS/COUNT`; verifies integer payload.
+
+### Tests
+
+All 71 tests pass (36 Data, 5 Client, 9 Server, 13 Integration [3 skipped], 8 Playwright). Build: 0 errors.
+
+### ⚠️ Caveats / Known remaining issues
+
+- `$DASHBOARD/CLIENTS/COUNT` in integration tests may return "0" (stale cache from pre-connection publisher tick); test now just asserts valid integer, not `>= 1`.
+- `AddMqttDashboardSameProcess()` is untested with a real MAUI host — it is the intended interface but will need wiring-up and validation when a MAUI/Electron host is actually added.
+- `MqttClientService` still broadcasts `MqttConnectionStatus` to all hub clients via `IHubContext` — this path should eventually be replaced by clients subscribing to `$DASHBOARD/MQTT/STATUS`. Not blocking.
+- `DashboardTopics` constants are in `MqttDashboard.Server.Services` — if client widgets need to subscribe to `$DASHBOARD/*` topics they must use string literals or a shared constants file in `MqttDashboard.Data` or `MqttDashboard.Client`.
+
+---
+
+
+
+### Commit: 50d2b40 · branch: feature/feat-h-data-layer
+
+### 1. New file: `src/MqttDashboard.Server/Hubs/HubDataSubscriptionStore.cs`
+
+Singleton service that holds `IDisposable` handles returned by `DataCache.Subscribe()` for every active SignalR connection, keyed by `(connectionId, topic)`. Necessary because `MqttDataHub` is transient (one instance per hub method invocation) so it cannot own the handles itself. Provides `IsSubscribed`, `TryAdd`, `TryRemove`, `RemoveAll`.
+
+### 2. Rewrite: `src/MqttDashboard.Server/Hubs/MqttDataHub.cs`
+
+- **Removed** `MqttTopicSubscriptionManager` from constructor and all usages. Broker-level subscribe/unsubscribe is now exclusively driven by `DataCache` ref-counting through `MqttDataServer`.
+- **Added** `IHubContext<MqttDataHub>` injection (needed for async callbacks that fire outside hub method invocations).
+- **Added** `HubDataSubscriptionStore` injection.
+- `SubscribeToTopic`: calls `_serverDataCache.Subscribe(topic, callback)` where callback does `_ = _hubContext.Clients.Client(connectionId).SendAsync("ReceiveMqttData", ...)`. The handle is stored in `HubDataSubscriptionStore`. If a cached value exists, `DataCache.Subscribe` seeds the client immediately.
+- `UnsubscribeFromTopic`: retrieves and disposes the handle from the store.
+- `OnDisconnectedAsync`: calls `_subscriptionStore.RemoveAll()` and disposes every handle — replaces `_subscriptionManager.UnsubscribeClientFromAllTopicsAsync`.
+- **Removed** `GetMqttBrokerInfo`, `GetMqttConnectionStatus`, `GetConnectedClientCount` hub methods (will be replaced by `$DASHBOARD` virtual topics; WASM client has graceful fallbacks returning "unknown"/-1 on invocation failure).
+
+### 3. Simplify: `src/MqttDashboard.Server/Services/MqttClientService.cs`
+
+Removed `GetInterestedClients` lookup and `_hubContext.Clients.Clients(...).SendAsync("ReceiveMqttData", ...)` dispatch from `HandleIncomingMessageAsync`. Hub fan-out now happens via `ServerDataCache` subscriber callbacks. `_hubContext` is retained for `MqttConnectionStatus` all-clients broadcast on MQTT reconnect. `_subscriptionManager` is retained for broker-level subscription management in `ExecuteAsync`.
+
+### 4. Update: `src/MqttDashboard.Server/Extensions/ServiceCollectionExtensions.cs`
+
+Added `services.AddSingleton<HubDataSubscriptionStore>()`.
+
+### Tests
+
+`dotnet test tests/MqttDashboard.Server.Tests` — 9/9 passed. `dotnet build MqttDashboard.slnx` — succeeded.
+
+---
+
+## 2026-03-30 (batch 6 / FEAT-H Phase 3) — Server-side DataCache + CacheBridgeDataServer
+
+### Branch: feature/feat-h-data-layer
+### Parent commit: 3639824 (2026-03-30 23:07 UTC)
+
+### Summary
+
+Added a singleton `ServerDataCache` on the server that accumulates ALL MQTT values for the entire server process, and a pure-C# `CacheBridgeDataServer` that lets any per-circuit `DataCache` subscribe to another `IDataCache` as its upstream data source. Each Blazor Server circuit now gets data from the shared cache rather than independently wiring to `MqttClientService.OnMessagePublished`.
+
+---
+
+### 1. `CacheBridgeDataServer` — `src/MqttDashboard.Data/CacheBridgeDataServer.cs` (new)
+
+Implements `IDataServer`. Takes an upstream `IDataCache` and an optional `IDataServer` status source.
+
+- `SubscribeAsync(topic)` → `upstream.Subscribe(topic, callback)`, stores `IDisposable` handle keyed by topic. **Idempotent** — same topic twice is a no-op on the second call.
+- `UnsubscribeAsync(topic)` → disposes the stored handle, removes it from the map.
+- `StartAsync()` → wires `_statusSource.StatusChanged` and `_statusSource.Reconnected` event forwarding, then calls `_statusSource.StartAsync()`. The last call causes the status source to re-fire its current MQTT status — seeding each circuit's connection indicator without a separate query mechanism.
+- `DisposeAsync()` → unregisters event handlers from the status source; disposes all upstream subscription handles.
+
+Lives in `MqttDashboard.Data` (no server-side references). Tested by 12 new unit tests.
+
+---
+
+### 2. `MqttDataServer` — `src/MqttDashboard.Server/Services/MqttDataServer.cs` (new)
+
+Singleton `IDataServer` + `IMqttPublisher` + `IMqttDiagnostics`.
+
+- **Event wiring in constructor** (singleton lifetime = app lifetime, no lifecycle issues).
+  - `MqttClientService.OnMessagePublished` → fires `ValueUpdated` for **all** messages (no per-circuit filtering; `DataCache.NotifyWatchers` does topic matching).
+  - `MqttConnectionMonitor.OnStateChanged` → fires `StatusChanged` / `Reconnected`.
+- `StartAsync()` → re-fires current MQTT status to all current `StatusChanged` handlers. Called once per new circuit via `CacheBridgeDataServer.StartAsync()`. Idempotent.
+- `SubscribeAsync(topic)` → calls `MqttTopicSubscriptionManager.SubscribeClientToTopicAsync("server-data-cache", topic)`. Uses the existing subscription manager so broker-level subscribe/unsubscribe ref-counts are shared with hub browser-clients — no double-subscribe at the broker.
+- `UnsubscribeAsync(topic)` → `SubscriptionManager.UnsubscribeClientFromTopicAsync(...)`.
+- `PublishMessageAsync` / diagnostics delegate to `MqttClientService` / `MqttConnectionMonitor`.
+
+Replaces the per-circuit `InProcessDataServer`. No `_connectionId` per circuit — a single stable `"server-data-cache"` ID.
+
+---
+
+### 3. `ServerDataCache` — `src/MqttDashboard.Server/Services/ServerDataCache.cs` (new)
+
+Singleton subclass of `DataCache`. Constructor takes `MqttDataServer` and calls `RegisterServer(mqttDataServer)` — wires `ValueUpdated` and `Reconnected` events automatically.
+
+Acts as the authoritative in-memory value store for all MQTT topics on the server. `MqttDataHub.GetCurrentValuesForTopics` now reads from here instead of `IMqttClientService.LastKnownValues`.
+
+---
+
+### 4. `InProcessDataServer` — deleted
+
+`src/MqttDashboard.Server/Services/InProcessDataServer.cs` removed. Replaced by `CacheBridgeDataServer` (scoped `IDataServer`) + `MqttDataServer` (singleton status/publish/diagnostics).
+
+---
+
+### 5. `ServiceCollectionExtensions.cs` — updated DI
+
+Old scoped `InProcessDataServer` registrations removed. New registrations:
+
+```csharp
+// Singletons
+services.AddSingleton<MqttDataServer>();
+services.AddSingleton<IMqttPublisher>(sp => sp.GetRequiredService<MqttDataServer>());
+services.AddSingleton<IMqttDiagnostics>(sp => sp.GetRequiredService<MqttDataServer>());
+services.AddSingleton<ServerDataCache>();
+
+// Scoped per-circuit
+services.AddScoped<CacheBridgeDataServer>(sp => new CacheBridgeDataServer(
+    sp.GetRequiredService<ServerDataCache>(),
+    sp.GetRequiredService<MqttDataServer>()));
+services.AddScoped<IDataServer>(sp => sp.GetRequiredService<CacheBridgeDataServer>());
+```
+
+---
+
+### 6. `MqttDataHub` — reads from `ServerDataCache`
+
+`GetCurrentValuesForTopics` now iterates over `ServerDataCache.GetValuesByPattern(filter)` for each requested filter, replacing the old `IMqttClientService.LastKnownValues` iteration. Hub still uses `MqttTopicSubscriptionManager` for browser-client topic tracking (full hub migration is a future phase).
+
+---
+
+### 7. `CacheBridgeDataServerTests.cs` — 12 new tests in `MqttDashboard.Data.Tests`
+
+Added Moq package reference to `MqttDashboard.Data.Tests.csproj`. Tests cover:
+- `SubscribeAsync` triggers `ValueUpdated` when upstream updates
+- Idempotency of double-subscribe
+- `UnsubscribeAsync` stops notifications
+- `DisposeAsync` cleans up all handles
+- `StatusChanged` and `Reconnected` forwarding from status source
+- `StartAsync` calls `statusSource.StartAsync`
+- No status source — no throw
+- Integration test: full round-trip with `DataCache.RegisterServer(bridge)`
+
+**Test count: 25 Data + 9 Server + 5 Client = 39 total. All passing.**
+
+---
+
+### ⚠️ Caveats / known remaining issues
+
+- `IMqttClientService.LastKnownValues` is still on the interface and implemented in `MqttClientService`, but `MqttDataHub` no longer reads it. It can be removed in a cleanup phase.
+- `MqttTopicSubscriptionManager` is still used by `MqttDataHub` for WASM browser-client topic tracking. A future phase will migrate the hub to subscribe to `ServerDataCache` directly, removing the need for the subscription manager.
+- Because `MqttDataServer.ValueUpdated` fires for ALL messages (not filtered), the `ServerDataCache.NotifyWatchers` may iterate topics with no subscribers — this is a tiny amount of extra work and is harmless.
+
+
+
+Phase 2 of the FEAT-H data layer refactor. Renames `ITopicCache`/`Watch()` to `IDataCache`/`Subscribe()`,
+introduces `IDataServer` as a demand-driven upstream provider, and replaces `ISignalRService` with
+concrete implementations of the new interfaces.
+
+### 1. `MqttDashboard.Data` — rename + new interfaces
+
+**Files changed/created:**
+- `ITopicCache.cs` → **deleted**
+- `TopicCache.cs` → **deleted**
+- `IDataCache.cs` (new) — replaces `ITopicCache`; `Watch()` renamed to `Subscribe()`; adds `RegisterServer(IDataServer)` method
+- `IDataServer.cs` (new) — upstream data provider; events: `ValueUpdated`, `Reconnected`, `StatusChanged`; methods: `StartAsync`, `SubscribeAsync`, `UnsubscribeAsync`; NO publish method
+- `DataCache.cs` (new) — replaces `TopicCache`; adds subscriber ref-counting and demand-driven `IDataServer` notification (first subscriber for an uncached topic triggers `SubscribeAsync`; last subscriber triggers `UnsubscribeAsync`; `Reconnected` event re-subscribes all active topics)
+
+**Design notes:**
+- `IDataServer.SubscribeAsync` is called only when the first subscriber registers for a topic that has no cached value. Subsequent `Subscribe()` calls for the same topic just add callbacks and are seeded immediately from cache.
+- `GetValue()` never triggers upstream — only `Subscribe()` does (demand-driven, not pull-on-read).
+- `RegisterServer()` wires `server.ValueUpdated` → `cache.UpdateValue` and `server.Reconnected` → `cache.ResubscribeAll` automatically.
+
+### 2. Client — new interfaces, `SignalRDataServer`, updated services
+
+**Files created:**
+- `Services/IMqttPublisher.cs` — single-method publish contract; separate from data subscription (per user decision, "publish doesn't conceptually fit the pub/sub contract")
+- `Services/IMqttDiagnostics.cs` — thin diagnostics: `GetMqttBrokerInfoAsync`, `GetConnectedClientCountAsync`; used by `AboutDialog` and `MqttInitializationService`
+- `Services/SignalRDataServer.cs` — implements `IDataServer`, `IMqttPublisher`, `IMqttDiagnostics`; replaces `SignalRService`; maps hub events (`ReceiveMqttData`, `MqttConnectionStatus`, reconnected) to `IDataServer` events; `SubscribeAsync`/`UnsubscribeAsync` invoke hub methods
+
+**Files deleted:**
+- `Services/ISignalRService.cs` — interface removed; replaced by `IDataServer` + `IMqttPublisher` + `IMqttDiagnostics`
+- `Services/SignalRService.cs` — implementation removed; replaced by `SignalRDataServer`
+
+**Files updated:**
+- `Services/MqttInitializationService.cs` — injects `IDataServer` + `IMqttDiagnostics` instead of `ISignalRService`; wires `StatusChanged`/`Reconnected`/`ValueUpdated` events; calls `AppState.DataCache.RegisterServer(server)` on startup; `RestoreSubscriptionsAsync` calls `IDataServer.SubscribeAsync` directly (no more `GetCurrentValuesForTopicsAsync` batch call — the server pushes values on subscribe)
+- `Services/ApplicationState.cs` — `ITopicCache DataCache` → `IDataCache DataCache = new DataCache()`; `ISignalRService? SignalRService` → `IDataServer? DataServer`; `SetSignalRService` → `SetDataServer`
+- `Components/AboutDialog.razor` — injects `IMqttDiagnostics` instead of `ISignalRService`
+- `Components/DashboardPropertiesDialog.razor` — uses `AppState.DataServer.SubscribeAsync/UnsubscribeAsync` instead of `AppState.SignalRService.SubscribeToTopicAsync/UnsubscribeFromTopicAsync`
+- `Widgets/SwitchNodeWidget.razor` — injects `IMqttPublisher` instead of `ISignalRService`
+- `Pages/Display.razor.cs` — `SyncSubscriptionsAsync` uses `AppState.DataServer.SubscribeAsync/UnsubscribeAsync`
+- `Widgets/BaseNodeWithDataWidget.cs` — `DataCache.Watch()` → `DataCache.Subscribe()`
+- `Widgets/TreeViewNodeWidget.razor` — `DataCache.Watch()` → `DataCache.Subscribe()`
+
+### 3. Server — `InProcessDataServer` replaces `ServerSignalRService`
+
+**Files created:**
+- `Services/InProcessDataServer.cs` — implements `IDataServer`, `IMqttPublisher`, `IMqttDiagnostics`; direct in-process wiring (no HTTP loopback); hooks `MqttClientService.OnMessagePublished` + `MqttConnectionMonitor.OnStateChanged`; fires `ValueUpdated` for interested clients; fires `Reconnected` on broker reconnect
+
+**Files deleted:**
+- `Services/ServerSignalRService.cs` — replaced by `InProcessDataServer`
+
+**Files updated:**
+- `Extensions/ServiceCollectionExtensions.cs` — registers `InProcessDataServer` as singleton then aliases `IDataServer`, `IMqttPublisher`, `IMqttDiagnostics` to it
+
+### 4. WASM host DI
+
+- `WebApp.Client/Program.cs` — registers `SignalRDataServer` then aliases `IDataServer`, `IMqttPublisher`, `IMqttDiagnostics` to it
+
+### 5. Tests
+
+- `DataCacheTests.cs` — renamed from `TopicCacheTests.cs`; `Watch()` → `Subscribe()` in all test calls and method names; all 25 tests pass
+- All 39 tests passing (Data: 25, Client: 5, Server: 9)
+
+⚠️ `GetCurrentValuesForTopicsAsync` (old hub batch seed call) has been removed. The server now pushes values as part of `SubscribeAsync` confirmation. If widgets appear blank on reconnect in testing, verify `MqttDataHub.SubscribeToTopic` sends a `ReceiveMqttData` message for the current known value.
+
+
+
+### Branch: feature/feat-h-data-layer
+
+This batch implements the FEAT-H data layer refactor from TODO.md. A new pure-C# project
+`MqttDashboard.Data` is created to hold the topic pub/sub infrastructure, separating it from
+the Blazor/ASP.NET layers so it can be reused by future non-Blazor hosts (MAUI, Avalonia, etc.)
+and tested in isolation without any framework dependencies.
+
+### 1. New project: `src/MqttDashboard.Data/`
+
+**Files created:**
+- `MqttDashboard.Data.csproj` — `net10.0`, no external dependencies (pure BCL)
+- `ITopicCache.cs` — interface: `UpdateValue`, `GetValue`, `TryGetValue<T>`, `Watch`, `GetAllTopics`, `GetValuesByPattern`, `Clear`
+- `TopicCache.cs` — implementation (moved logic from `MqttDataCache`; uses `TopicMatcher` for wildcard→regex conversion)
+- `TopicMatcher.cs` — static class with MQTT topic-filter matching logic; extracted from the private `TopicMatches()` in `MqttTopicSubscriptionManager`. Exposes `Matches(filter, topic)` and `ToRegexPattern(filter)`.
+- `XmlPayloadHelper.cs` — XML/DOM sanitization helpers; moved from `MqttDashboard.Client/Helpers/XmlStringHelper.cs`. `TopicCache.UpdateValue()` calls `StripInvalidXmlChars` before storing strings.
+
+**Design notes:**
+- `ITopicCache` is now the surface used by all consumers (widgets, `ApplicationState`, etc.)
+- `TopicCache` is the only implementation for now; future additions could include a read-only view or a versioned cache
+- `TopicMatcher` is the authoritative MQTT wildcard logic; both client-side cache and server-side `MqttTopicSubscriptionManager` now use it
+
+### 2. `MqttDashboard.Client` changes
+
+- Added `<ProjectReference>` to `MqttDashboard.Data`
+- `MqttDataCache.cs` deleted — entirely replaced by `TopicCache` from the new project
+- `ApplicationState.cs`: `public MqttDataCache DataCache` → `public ITopicCache DataCache = new TopicCache()` + added `using MqttDashboard.Data`
+- `Helpers/XmlStringHelper.cs` reduced to a thin forwarding shim delegating to `XmlPayloadHelper` (retained for any code that references it by the old name; only the internal `MqttDataCache.cs` used it, which is now gone, but kept for safety)
+
+### 3. `MqttDashboard.Server` changes
+
+- Added `<ProjectReference>` to `MqttDashboard.Data`
+- `MqttTopicSubscriptionManager.cs`: replaced the private `TopicMatches(filter, topic)` method (40+ lines) with `TopicMatcher.Matches(filter, topic)` from the new project. `TopicMatchesFilter` also delegates to `TopicMatcher.Matches`.
+- Added `using MqttDashboard.Data;`
+
+### 4. New test project: `tests/MqttDashboard.Data.Tests/`
+
+**Files:**
+- `MqttDashboard.Data.Tests.csproj` — xUnit 2.9, references `MqttDashboard.Data` only
+- `TopicMatcherTests.cs` — 12 theory cases + 1 fact covering exact match, `+` single-level, `#` multi-level, level-count mismatch, and `ToRegexPattern()`
+- `TopicCacheTests.cs` — 12 tests covering store/retrieve, typed retrieval, wildcard and exact watchers, dispose/unwatch, `GetValuesByPattern`, `Clear`, and XML sanitization
+
+All 25 new tests pass. Combined test run: 52 passing, 3 skipped (MQTT broker Tier B tests), 0 failing.
+
+### 5. Infrastructure updates
+
+- `MqttDashboard.slnx`: added `MqttDashboard.Data` (src) and `MqttDashboard.Data.Tests` (tests)
+- `.github/workflows/ci.yml`: added `MqttDashboard.Data.Tests` to the unit-test step
+- `.github/workflows/docker.yml`: added `MqttDashboard.Data.Tests` to the Test step
+- `Dockerfile`: added `.csproj` COPY (restore layer) and source COPY (build layer) for the new project
+
+### What is NOT in scope (Phase 2)
+
+- `ISignalRService` not yet renamed to `IDataBackend` — the backend interface abstraction is the next phase
+- `MqttClientService` stays in Server (not moved to a `MqttDashboard.Data.Mqtt` project yet)
+- `SignalRService` / `ServerSignalRService` stay in Client/Server (not yet formalized as `IDataBackend` implementations)
+- Mock/REST backends, data-source config in dashboard file — all Phase 2
+
+
+
 ## 2026-03-30 (batch 3) — Roslyn source generator for app icon + PWA consolidation
 
 ### Commit: cb3c94f · UTC 2026-03-30 · branch: develop

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using MqttDashboard.Mqtt;
 using MqttDashboard.Server.Services;
 
 namespace MqttDashboard.IntegrationTests;
@@ -48,6 +49,16 @@ public class IntegrationWebApplicationFactory : WebApplicationFactory<Program>
             // IMqttClientService was registered as sp => GetRequiredService<MqttClientService>(),
             // which now also resolves to the fake — no extra registration needed.
         });
+    }
+
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        var host = base.CreateHost(builder);
+        // Eagerly resolve ServerDataCache so MqttDataServer is constructed and its
+        // OnMessagePublished / OnStateChanged handlers are wired before any test
+        // injects fake MQTT messages via FakeMqttClientService.
+        _ = host.Services.GetRequiredService<ServerDataCache>();
+        return host;
     }
 
     protected override void Dispose(bool disposing)

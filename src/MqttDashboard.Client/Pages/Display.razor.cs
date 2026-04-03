@@ -1101,12 +1101,12 @@ public partial class Display : IDisposable
 
     private async Task SyncSubscriptionsAsync(HashSet<string> previous, IReadOnlyCollection<string> current)
     {
-        if (AppState.SignalRService == null) return;
+        if (AppState.DataServer == null) return;
         var currentSet = new HashSet<string>(current);
         foreach (var topic in previous.Where(t => !currentSet.Contains(t)))
-            await AppState.SignalRService.UnsubscribeFromTopicAsync(topic);
+            await AppState.DataServer.UnsubscribeAsync(topic);
         foreach (var topic in currentSet.Where(t => !previous.Contains(t)))
-            await AppState.SignalRService.SubscribeToTopicAsync(topic);
+            await AppState.DataServer.SubscribeAsync(topic);
     }
 
     // ── Save As / Open ────────────────────────────────────────────────────────
@@ -1119,7 +1119,8 @@ public partial class Display : IDisposable
             { d => d.Label, "Dashboard name" },
             { d => d.Value, AppState.DashboardName }
         };
-        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseButton = true };
+        // Use a slightly larger, centered dialog for Open (was ExtraSmall/full-width which appeared narrow/left-aligned in some browsers)
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = false, CloseButton = true };
         var dialog = await DialogService.ShowAsync<SimpleInputDialog>("Save As", parameters, options);
         var result = await dialog.Result;
         if (result is { Canceled: false, Data: string name } && !string.IsNullOrWhiteSpace(name))
@@ -1167,7 +1168,8 @@ public partial class Display : IDisposable
         {
             { d => d.DashboardNames, names }
         };
-        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseButton = true };
+        // Use a slightly larger, centered dialog for Open so it appears centered across browsers
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = false, CloseButton = true };
         var dialog = await DialogService.ShowAsync<DashboardPickerDialog>("Open Dashboard", parameters, options);
         var result = await dialog.Result;
         if (result is { Canceled: false, Data: string name } && !string.IsNullOrWhiteSpace(name))

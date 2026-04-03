@@ -8,15 +8,16 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 
 ## 🟡 Minor Enhancements
 
-- [ ] Property transition
-	- [ ] Also a means to drag reordering around the conditions to specify which is first match
+- [ ] release.ps1
+	- [ ] console output: each step shows what it's doing but then reverts to a single line if OK (like `dotnet build` can do) — currently all sub-command output is streamed verbosely
+	- [ ] detailed output review on failure — buffer step output and dump it in full only when a step fails. Could be "Show detailed" option at that last prompt
+- [ ] Need a way to share dashboards between installations (and dev). Can the API be opened up with a read/write interface to other isntallations via https??
+	- [ ] Then in "OPen" and "Save As" dialogs we could choose destaniotn respository: local file or remote dashboard repo (with list of dashboards to choose from)
+- [ ] Node Property dialog - color transition
+	- [ ] Needs a means to drag reordering around the conditions to specify which is first match
 - [ ] Serialization:
 	- [ ] logged-on user not yet written to `FileInfo` (always admin for now — fine to leave)
 	- [ ] should include version of this app doing the write, and server written from
-- [ ] Server-side "lazy cache": if client request is dropped, server should keep data live for a configurable delay (e.g. 30s) before removing references
-- [ ] Client side lazy cache also: if 2 pages have same dtaa item then only one request going up thru signalr to server and when page changes happen data shoul dbe there immediately as its already in this cache
-	- [ ] MQTT data cache needs seperating out to reusable package with a pub/sub interface and backend to matchin interface either over signal r, or mqtt directly.
-	- [ ] client api to this incude direct and async memory access also
 - [ ] Data item topics per node
 	- [ ] "Link animation" needs a property for index of which data item to animate upon
 - [ ] Page tabs
@@ -26,8 +27,6 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Node properties dialog
 	- [ ] Can this dialog be moveable and have apply button to changes dynamically without closing
 - [ ] Log viewer columns: choices for date (and format), time (and format), topic path, topic name, topic full path&name, value — **Full 6-column boolean options done**; date/time format options still open
-- [ ] mqtt publishing should have other parameters (e.g. message expiry)
-- [ ] Confirm- mqtt publishing is a reusable compoennt (especially configuration of it in node properties)
 - [ ] IMport and Export dont seem to be able to see Windows clipboard ... is there some permissions to enable it? This was on firefox
 - [ ] Serialization: node ID GUIDs in file — map to sequential 1-based IDs for file (need port+link ID remapping too). Needs a json serilaizer class for Dashboard to manage the mapping.
 
@@ -50,11 +49,10 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] **Guage**
 	- [ ] needs alternatives such as full circle, 90 or 270 .... aybe thats all the 
 		  option is, how much of a circle is drawn and properties to control orientation
-	- [ ] options to draw "needle" also from some center point to the guage ...
-	  
-- [ ] **Chart** — in-memory time-series sparkline graph
+	- [ ] options to draw "needle" also from some center point to the guage ...	  
 - [ ] **Markdown / HTML** — formatted static content, optionally with data substitution
 - [ ] **IFrame** — embed another web page
+- [ ] **Chart** — in-memory time-series sparkline graph
 
 ### FEAT-D: Multiple dashboard pages _(basic multi-page done — see CHANGELOG)_
 - [ ] Page tab overflow handling (scrolling/dropdown when many pages)
@@ -78,11 +76,28 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] Moving a group moves all contained nodes
 - [ ] Split panel type controls to divide up work area into resizable sections
 
-### FEAT-H: Alternate data sources / plugin architecture
-- [ ] Plugin architecture for data sources beyond MQTT
-- [ ] Built-in integrations: REST APIs, WebSockets, Home Assistant local API, Emoncms feeds and time-series
+### FEAT-H: Data layer refactor _(Phases 1–4 complete — see CHANGELOG)_
+- [ ] Publishing e.g. from switch widget
+	- [ ] ...if client simply writes to their local cache then that publishes upstream and value trickles thru tree of DataCache
+	- [ ] IDataVache could have setvalue to simply write local stored value and Publish (mirrors Subscribe) to set a value and publish to connected clients
+	- [ ] ??does it need some sort of access control...its just a inprocess dictionary so maybe its simply read-write always or maybe in a dervied interface (e.g. IDataCacheWithPublish : IDataCache).What would be best?
+	- [ ] outside this installations "network" publishing back to mqtt is controlled by the connection username so no problem there but shoul dbe an
+	      option on creation of the mqtt cache to allow publishing or not for this cache
+- [ ] Lazy cache/Grace period: if last client unsubscribes from a topic, keep the server-side broker subscription alive for a configurable delay (e.g. 30 s) before actually unsubscribing from the broker — avoids churn if a circuit reconnects ✅ done
+- [ ] `MqttDashboard.Mqtt` project extracted ✅ done — `MqttClientService`, `MqttConnectionMonitor`, `MqttTopicSubscriptionManager`, `IMqttClientService` now live in their own project with no SignalR/Blazor dependencies
+- [ ] `SignalRDataServer` / `.Data.SignalR` — extract so SignalR is purely a transport adapter
+	- [ ] `SignalRDataServer` is already clean (only `SignalR.Client` + `MqttDashboard.Data` deps); straightforward to extract.
+- [ ] `IDataCache<T>` — typed value generics
+	- [ ] DataCache value object redesign (replace parallel collections with a richer value type supporting arbitrary tags/metadata)
+- [ ] Minimize topic-string parsing (join/split on `/`); consider composite key object for the collection
+- [ ] Topic tree structure for wildcard matching optimisation
+
+**Phase X — Plugin / alternate data sources**
+- [ ] Extend plugin architecture for data sources beyond MQTT
+	- [ ] Built-in integrations: REST APIs, WebSockets, Home Assistant local API, Emoncms feeds and time-series
+	- [ ] Mock data generator server implementation (useful for testing / demo without a broker)
+	- [ ] Finance market plugin (e..g Yaho finance?)
 - [ ] Admin configures available plugins; nodes select source and configure connection
-- [ ] Active data sources stored in the dashboard file
 
 ### FEAT-I: Responsive / mobile layout
 - [ ] Responsive layout adapts to screen size
@@ -104,19 +119,22 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] JWT-based auth for API endpoints, with token issued on login and stored in browser local storage
 	- [ ] I dont know what that means -- does it apply to this type of setup? API calls are all internal frmo client to server
 
-
 ### FEAT-K: Dashboard versioning & Git integration
 - [ ] Optional Git commit/push of dashboard to a remote repo
-- [ ] Snapshot history for dashboards (previous versions, compare/diff)
+	- [ ] Modeled on node-red project feature.
+- [ ] Or history/backup for dashboards (previous versions, compare/diff) for non-git 
 
 ### FEAT-L: Deployment enhancements
 - [ ] Admin interface: runtime monitoring, logs, connected clients, dashboard file management
-- [ ] More automation to speed relase process e.g. PR with message RC to mean release candiate so auto invokes patch-release auto bump and process
+- [ ] We've lost the "restart" button ...might want to do a restart for other reasosns
+- [ ] More automation to speed relase process
+	- [ ] Local script to run tests, do a final commit, and push, create PR, let the various actions run, merge the PR to main and kick patch-release. Then kick deployment to test server
+	      release.ps1 - still in testing
 
 ### FEAT-M: Settings persistence _(done — settings now in data directory)_
 
 ### FEAT-N: Self-updating deployment
-- [ ] Latest version check checks for tags ... but the actual Docker image may not be available for some time after a tag is pushed. Can it check actual images in ghcr?
+- [ ] The Latest version check checks for tags ... but the actual Docker image may not be available for some time after a tag is pushed. Can it check actual images in ghcr?
 - [ ] Option to follow release-only stream or latest beta stream of pre-releases
 - [ ] How would we revert to a previous version if an update proved bad?
 

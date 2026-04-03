@@ -83,8 +83,8 @@
         RebuildTree();
 
         var wildcardTopic = RootTopicValue.TrimEnd('/') + "/#";
-        _watchSubscription = AppState.DataCache.Watch(wildcardTopic, OnTopicChanged);
-        _rootWatchSubscription = AppState.DataCache.Watch(RootTopicValue, OnTopicChanged);
+        _watchSubscription = AppState.DataCache.Subscribe(wildcardTopic, OnTopicChanged);
+        _rootWatchSubscription = AppState.DataCache.Subscribe(RootTopicValue, OnTopicChanged);
     }
 
     private void OnTopicChanged(string topic, object value)

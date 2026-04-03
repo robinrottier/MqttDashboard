@@ -1,16 +1,13 @@
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MQTTnet;
-using MqttDashboard.Server.Hubs;
 using System.Collections.Concurrent;
 
-namespace MqttDashboard.Server.Services;
+namespace MqttDashboard.Mqtt;
 
 public class MqttClientService : BackgroundService, IMqttClientService
 {
-    private readonly IHubContext<MqttDataHub> _hubContext;
     private readonly ILogger<MqttClientService> _logger;
     private readonly IConfiguration _configuration;
     private readonly MqttTopicSubscriptionManager _subscriptionManager;
@@ -18,30 +15,17 @@ public class MqttClientService : BackgroundService, IMqttClientService
     private IMqttClient? _mqttClient;
     private MqttClientOptions? _mqttOptions;
     private readonly ConcurrentDictionary<string, bool> _subscribedTopics = new();
-    protected readonly ConcurrentDictionary<string, string> _lastKnownValues = new();
     private CancellationToken _stoppingToken;
     private int _isReconnecting = 0; // 0 = false, 1 = true (Interlocked flag)
 
-    /// <summary>
-    /// Last-known payload for each topic received since server start.
-    /// Used by <see cref="MqttDataHub.GetCurrentValuesForTopics"/> to replay values to reconnecting clients.
-    /// </summary>
-    public IReadOnlyDictionary<string, string> LastKnownValues => _lastKnownValues;
-
-    /// <summary>
-    /// Fires when an MQTT message is received from the broker. Used by in-process subscribers
-    /// (e.g. ServerSignalRService) to receive data without going through the SignalR hub over HTTP.
-    /// </summary>
     public event Func<string, string, DateTime, Task>? OnMessagePublished;
 
     public MqttClientService(
-        IHubContext<MqttDataHub> hubContext,
         ILogger<MqttClientService> logger,
         IConfiguration configuration,
         MqttTopicSubscriptionManager subscriptionManager,
         MqttConnectionMonitor connectionMonitor)
     {
-        _hubContext = hubContext;
         _logger = logger;
         _configuration = configuration;
         _subscriptionManager = subscriptionManager;
@@ -66,11 +50,6 @@ public class MqttClientService : BackgroundService, IMqttClientService
                 mqttBroker, mqttPort, string.IsNullOrEmpty(mqttUsername) ? "<none>" : mqttUsername);
 
             _connectionMonitor.SetBroker($"{mqttBroker}:{mqttPort}");
-
-            _connectionMonitor.OnStateChanged += async (state, attempts) =>
-            {
-                await _hubContext.Clients.All.SendAsync("MqttConnectionStatus", state.ToString(), attempts, stoppingToken);
-            };
 
             var optionsBuilder = new MqttClientOptionsBuilder()
                 .WithTcpServer(mqttBroker, mqttPort)
@@ -253,36 +232,14 @@ public class MqttClientService : BackgroundService, IMqttClientService
     }
 
     /// <summary>
-    /// Processes an incoming MQTT message: caches the value, dispatches to interested
-    /// SignalR clients, and notifies in-process subscribers. Override in test doubles to
-    /// inject fake messages without a real broker.
+    /// Processes an incoming MQTT message and notifies in-process subscribers.
+    /// Hub fan-out is handled by <see cref="MqttDashboard.Server.Hubs.DataHub"/> via
+    /// <see cref="ServerDataCache"/> callbacks — no direct SignalR dispatch here.
+    /// Override in test doubles to inject fake messages without a real broker.
     /// </summary>
     protected virtual async Task HandleIncomingMessageAsync(
         string topic, string payload, DateTime timestamp, CancellationToken ct = default)
     {
-        _lastKnownValues[topic] = payload;
-
-        var interestedClients = _subscriptionManager.GetInterestedClients(topic);
-
-        _logger.LogTrace("Found {Count} interested clients for topic {Topic}", interestedClients.Count, topic);
-
-        if (interestedClients.Any())
-        {
-            try
-            {
-                await _hubContext.Clients.Clients(interestedClients.ToList())
-                    .SendAsync("ReceiveMqttData", topic, payload, timestamp, ct);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error sending MQTT message to clients for topic {Topic}", topic);
-            }
-        }
-        else
-        {
-            _logger.LogTrace("No interested clients found for topic {Topic}", topic);
-        }
-
         var inProcessHandler = OnMessagePublished;
         if (inProcessHandler != null)
         {

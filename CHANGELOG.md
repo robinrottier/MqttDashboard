@@ -1,4 +1,4 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
@@ -6,6 +6,81 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ---
 
 ## [Unreleased]
+
+## [v0.1.17] - 2026-04-03
+
+## [v0.1.17] - 2026-04-03
+- Preparing release v0.1.16 (2026-04-02)
+
+### Changed
+- **`scripts/release.ps1`** — full rewrite: Linux/WSL compatible, auto-restarts in pwsh 7 when invoked from Windows PowerShell 5.1, step selection via `-From`/`-Only`/`-Skip`/`-BumpType`, interactive step-selection menu and retry/skip prompts on failure, coloured output. Bug fixes: `-WorkflowTimeoutMinutes` was silently ignored, parallel mode swallowed failures, CHANGELOG insert format was wrong, PR CI polling now uses `gh pr checks`.
+- **`scripts/release.ps1`** — added `-Verify` mode (local-only check: preflight → build → publish → docker build, no git ops, no `gh` required); new steps `publish-check` (mirrors `release.yml`), `docker-build` (mirrors `docker.yml`), and `post-deploy` (SSH deploy, auto-skipped unless `DEPLOY_HOST` env var is set). Step count updated to 14.
+
+### Added
+- **`MqttDashboard.Mqtt.Tests`** — new test project with a real in-process MQTTnet broker (`MQTTnet.Server`).
+  Tests cover `MqttClientService` connect/subscribe/publish, wildcard subscriptions, and unsubscribe.
+- **`MqttDataCacheIntegrationTests`** — full-chain tests: broker message → `DataCache` subscriber,
+  `DataCache.PublishAsync` → broker, and real two-instance round-trips through the broker.
+- **`ChainedCacheTests`** in `MqttDashboard.Data.Tests` — two/three-level `DataCache` chain tests
+  covering downstream value flow, upstream publish, demand-driven subscription propagation, and dispose.
+- **Tier B integration tests enabled** — `MqttFlowIntegrationTests` (in `MqttDashboard.IntegrationTests`)
+  now run against a real in-process broker; previously skipped pending the `MQTTnet.Server` package.
+
+
+- **`$DASHBOARD/*` virtual topics** — new `DashboardMetricsPublisher` background service publishes live diagnostic data into `ServerDataCache` every second without touching the MQTT broker. Topics: `$DASHBOARD/TIME`, `UPTIME`, `VERSION`, `VERSION/LATEST`, `VERSION/UPDATE_AVAILABLE`, `MQTT/STATUS`, `MQTT/BROKER`, `MQTT/TOPIC_COUNT`, `CLIENTS/COUNT`. Any widget or dialog can subscribe to these like any other topic.
+- **`IDataCache.HasServer`** — bool property; `true` when a data server is already registered. Used to prevent double-registration in same-process hosts.
+- **`AddMqttDashboardSameProcess()`** DI helper — call after the standard server+client DI setup for a same-process host (MAUI Blazor, combined desktop, embedded). Wires `ApplicationState.DataCache` directly to `ServerDataCache` (no per-circuit copy, no bridge, no SignalR transport needed).
+- SSR pre-render snapshot seeding: during the server-side pre-render phase, `MqttInitializationService` now seeds `AppState.DataCache` from `ServerDataCache` so widgets render with real data in the initial HTML instead of blank values.
+
+### Changed
+- **`AboutDialog`** — connected-client count now subscribes to `$DASHBOARD/CLIENTS/COUNT` via `AppState.DataCache` (live, reactive) instead of a one-shot `IMqttDiagnostics.GetConnectedClientCountAsync()` RPC call.
+- **`ApplicationState`** — `DataCache` is now constructor-injectable (`IDataCache? dataCache = null`; defaults to `new DataCache()`). Same-process hosts can inject `ServerDataCache` directly.
+- **Hub naming & file organisation** — SignalR hub renamed `MqttDataHub` → `DataHub`; hub route `/mqttdatahub` → `/datahub`. `HubDataSubscriptionStore` → `HubSubscriptionStore`. `ClientConnectionTracker` → `HubConnectionTracker` (moved to `Hubs/`). `MqttTopicSubscriptionManager` moved from `Hubs/` to `Services/` (it is pure MQTT broker logic, not hub logic).
+- **`IDataCache.PublishAsync` / `IDataServer.PublishAsync`** — publish is now a first-class operation on the cache/server abstraction. `DataCache.PublishAsync` updates locally first then forwards upstream. `IMqttPublisher` interface removed; `SwitchNodeWidget` now calls `AppState.DataCache.PublishAsync` directly.
+- **Lazy broker unsubscribe** — `MqttTopicSubscriptionManager` now holds the broker subscription alive for a configurable grace period (default 30 s) after the last subscriber leaves, cancelling the pending unsubscribe if any client resubscribes within that window.
+- **`MqttDashboard.Mqtt` project extracted** — `MqttClientService`, `MqttConnectionMonitor`, `MqttTopicSubscriptionManager`, `IMqttClientService` now live in a dedicated project with no SignalR/Blazor dependencies. `MqttDashboard.Server` references it; MQTTnet NuGet dependency moved there.
+- **`MqttClientService` decoupled from SignalR** — new `MqttStatusBroadcaster` singleton owns the `MqttConnectionMonitor` → SignalR broadcast. `MqttClientService` now has zero SignalR references, unblocking future extraction into a standalone `MqttDashboard.Mqtt` project.
+- **`MqttInitializationService`** — removed `IMqttDiagnostics` dependency; connection status is now delivered purely via the reactive `StatusChanged` event. Skips `RegisterServer()` if the cache already has a server wired.
+
+### Removed
+- **`IMqttDiagnostics`** interface and all implementations (`MqttDataServer`, `SignalRDataServer`) — superseded by `$DASHBOARD/*` virtual topics.
+- `GetMqttBrokerInfo`, `GetMqttConnectionStatus`, `GetConnectedClientCount` SignalR hub methods — replaced by topic subscriptions.
+
+### Changed
+- **`MqttDataHub`** — SignalR hub fan-out now uses `ServerDataCache.Subscribe()` callbacks instead of `MqttTopicSubscriptionManager.GetInterestedClients()`. Each client subscription stores a `IDisposable` handle in the new `HubDataSubscriptionStore` singleton; disposing it on disconnect automatically ref-counts the broker subscription down via `DataCache`. Clients receive the current cached value immediately on subscribe (no wait for next MQTT message).
+- **`MqttClientService.HandleIncomingMessageAsync`** — removed direct SignalR dispatch; fan-out is now handled by the hub's `DataCache` subscriber callbacks.
+
+### Added — FEAT-H: Data layer refactor (Phases 1–3)
+- **`MqttDashboard.Data` project** — new pure-C# library (no Blazor/ASP.NET/MQTT dependencies) holding the entire topic pub/sub infrastructure: `IDataCache`, `DataCache`, `IDataServer`, `CacheBridgeDataServer`, `TopicMatcher`, `XmlPayloadHelper`. Enables future non-Blazor hosting and isolated unit testing.
+- **`IDataCache` / `DataCache`** — thread-safe in-memory topic store with wildcard subscribe (`+` / `#`), demand-driven upstream subscription (first subscriber triggers `IDataServer.SubscribeAsync`; last subscriber triggers `UnsubscribeAsync`).
+- **`IDataServer`** — upstream data-provider contract. Implementations push `ValueUpdated`, `StatusChanged`, `Reconnected` events into the cache.
+- **`SignalRDataServer`** (Client/WASM) — `IDataServer` + `IMqttPublisher` over SignalR. Replaces `SignalRService`.
+- **`MqttDataServer`** (Server singleton) — `IDataServer` + `IMqttPublisher` wired directly to `MqttClientService.OnMessagePublished`. Broker-level subscribe/unsubscribe via `MqttTopicSubscriptionManager`.
+- **`ServerDataCache`** (Server singleton) — `DataCache` subclass registered with `MqttDataServer`. Accumulates all MQTT values for the entire server process; shared across all Blazor Server circuits. `MqttDataHub.GetCurrentValuesForTopics` reads from here.
+- **`CacheBridgeDataServer`** — pure-C# `IDataServer` bridge: subscribes to an upstream `IDataCache` and forwards data/status events downstream. Used by each Blazor Server circuit to subscribe to `ServerDataCache` without independently hooking MQTT events. Idempotent subscribe; forwards status from an optional status-source server.
+- **`IMqttPublisher`** — publish-only interface; `SwitchNodeWidget` injects this instead of the full `IDataServer`.
+- **55 unit + integration tests** covering `DataCache`, `TopicMatcher`, `CacheBridgeDataServer`, hub flow, and REST API.
+
+### Changed — FEAT-H
+- Blazor Server circuits now receive data from `ServerDataCache` via `CacheBridgeDataServer`; widgets see cached values immediately on mount (no wait for next broker message).
+- `ApplicationState.DataCache` typed as `IDataCache`; `DataServer` property replaces `SignalRService`.
+- `MqttInitializationService` wires `IDataServer` events and calls `DataCache.RegisterServer()` on startup.
+- All widget `Watch()` calls renamed to `Subscribe()`.
+
+### Removed — FEAT-H
+- `ISignalRService` / `SignalRService` / `ServerSignalRService` — replaced by the above.
+- `ITopicCache` / `TopicCache` — renamed to `IDataCache` / `DataCache`.
+- `InProcessDataServer` — replaced by `MqttDataServer` (singleton) + `CacheBridgeDataServer` (scoped).
+- `MqttClientService.LastKnownValues` — superseded by `ServerDataCache`.
+
+### Added
+- **`MqttDataServer`** (Server) — singleton `IDataServer` + `IMqttPublisher` + `IMqttDiagnostics`; hooks `MqttClientService` events and feeds all MQTT data into `ServerDataCache`. Replaces `InProcessDataServer`.
+- **`ServerDataCache`** (Server) — singleton `DataCache` that accumulates all MQTT values for the entire server process; shared across all Blazor Server circuits. `MqttDataHub` now reads current values from here.
+- 12 new unit tests for `CacheBridgeDataServer` (added Moq to `Data.Tests` project).
+
+### Changed
+- Blazor Server circuits now receive MQTT data from `ServerDataCache` via `CacheBridgeDataServer` rather than each circuit independently hooking `MqttClientService.OnMessagePublished`. Widgets see cached values immediately on mount without waiting for the next broker message.
+- `MqttDataHub.GetCurrentValuesForTopics` reads from `ServerDataCache` instead of `IMqttClientService.LastKnownValues`.
 
 ### Fixed
 - **`/healthz` probe in Playwright fixture** — now uses `?ignoreMqtt` so probe returns 200 (not 503) when broker absent; fixture fails immediately on unexpected non-2xx (no 60s timeout).

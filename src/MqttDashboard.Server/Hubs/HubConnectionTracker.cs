@@ -1,9 +1,9 @@
-namespace MqttDashboard.Server.Services;
+namespace MqttDashboard.Server.Hubs;
 
 /// <summary>
 /// Singleton that tracks the number of currently connected SignalR clients.
 /// </summary>
-public class ClientConnectionTracker
+public class HubConnectionTracker
 {
     private int _count = 0;
     public int ConnectedCount => _count;

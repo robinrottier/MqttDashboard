@@ -75,7 +75,7 @@ public abstract class BaseNodeWithDataWidget<TNode> : BaseNodeWidget<TNode>
                 if (idx == 0) { OnDataUpdated(); TriggerLinkAnimation(); }
             }
 
-            var watcher = AppState.DataCache.Watch(capturedTopic, (t, value) =>
+            var watcher = AppState.DataCache.Subscribe(capturedTopic, (t, value) =>
             {
                 if (_disposed) return;
                 // Marshal ALL render-affecting work onto the renderer's synchronisation context.

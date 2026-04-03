@@ -4,6 +4,7 @@
     <File Path="data/dashboards/Default.json" />
   </Folder>
   <Folder Name="/solution items/">
+    <File Path="CHANGELOG.md" />
     <File Path="DEVCHANGELOG.md" />
     <File Path="TODO.md" />
   </Folder>
@@ -32,6 +33,7 @@
     <File Path="scripts/Generate-Icons.ps1" />
     <File Path="scripts/publish.ps1" />
     <File Path="scripts/publish.sh" />
+    <File Path="scripts/release.ps1" />
     <File Path="scripts/test-publish.cmd" />
   </Folder>
   <Folder Name="/solution items/workflows/">
@@ -42,13 +44,17 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/MqttDashboard.Client.Tests/MqttDashboard.Client.Tests.csproj" />
+    <Project Path="tests/MqttDashboard.Data.Tests/MqttDashboard.Data.Tests.csproj" />
     <Project Path="tests/MqttDashboard.IntegrationTests/MqttDashboard.IntegrationTests.csproj" />
+    <Project Path="tests/MqttDashboard.Mqtt.Tests/MqttDashboard.Mqtt.Tests.csproj" />
     <Project Path="tests/MqttDashboard.PlaywrightTests/MqttDashboard.PlaywrightTests.csproj" />
     <Project Path="tests/MqttDashboard.Server.Tests/MqttDashboard.Server.Tests.csproj" />
   </Folder>
   <Folder Name="/src/">
     <File Path="src/Directory.Build.props" />
     <Project Path="src/MqttDashboard.Client/MqttDashboard.Client.csproj" />
+    <Project Path="src/MqttDashboard.Data/MqttDashboard.Data.csproj" />
+    <Project Path="src/MqttDashboard.Mqtt/MqttDashboard.Mqtt.csproj" />
     <Project Path="src/MqttDashboard.Server/MqttDashboard.Server.csproj" />
     <Project Path="src/MqttDashboard.SourceGenerators/MqttDashboard.SourceGenerators.csproj" />
   </Folder>

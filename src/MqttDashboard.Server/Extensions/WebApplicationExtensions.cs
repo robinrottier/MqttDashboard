@@ -26,6 +26,10 @@ public static class WebApplicationExtensions
         var renderModeOptions = app.Services.GetService<MqttDashboard.Services.RenderModeOptions>();
         app.Lifetime.ApplicationStarted.Register(() =>
         {
+            // Force MqttStatusBroadcaster to be instantiated so its constructor wires
+            // the MqttConnectionMonitor.OnStateChanged → SignalR broadcast event.
+            app.Services.GetRequiredService<MqttStatusBroadcaster>();
+
             try
             {
                 var addresses = app.Services.GetService<IServer>()
@@ -144,7 +148,7 @@ public static class WebApplicationExtensions
 
         // Map SignalR Hub — disable antiforgery since SignalR manages its own security
         // (WebSocket same-origin policy protects against CSRF; antiforgery tokens don't apply here)
-        app.MapHub<MqttDataHub>("/mqttdatahub").DisableAntiforgery();
+        app.MapHub<DataHub>("/datahub").DisableAntiforgery();
 
         // Map Razor Components with appropriate render mode
         var razorComponentsEndpoint = app.MapRazorComponents<TApp>();

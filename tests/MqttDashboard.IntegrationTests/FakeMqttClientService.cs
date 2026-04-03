@@ -1,7 +1,5 @@
 using System.Collections.Concurrent;
-using Microsoft.AspNetCore.SignalR;
-using MqttDashboard.Server.Hubs;
-using MqttDashboard.Server.Services;
+using MqttDashboard.Mqtt;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 
@@ -15,12 +13,11 @@ namespace MqttDashboard.IntegrationTests;
 public class FakeMqttClientService : MqttClientService
 {
     public FakeMqttClientService(
-        IHubContext<MqttDataHub> hubContext,
         ILogger<MqttClientService> logger,
         IConfiguration configuration,
         MqttTopicSubscriptionManager subscriptionManager,
         MqttConnectionMonitor connectionMonitor)
-        : base(hubContext, logger, configuration, subscriptionManager, connectionMonitor) { }
+        : base(logger, configuration, subscriptionManager, connectionMonitor) { }
 
     /// <summary>Does nothing — no broker connection is made in tests.</summary>
     protected override Task ExecuteAsync(CancellationToken stoppingToken) => Task.CompletedTask;
@@ -34,9 +31,10 @@ public class FakeMqttClientService : MqttClientService
         => HandleIncomingMessageAsync(topic, payload, DateTime.UtcNow);
 
     /// <summary>
-    /// Seeds the last-known values cache without notifying any clients.
-    /// Useful for pre-populating <c>GetCurrentValuesForTopics</c> in tests.
+    /// Seeds a value into the full pipeline (last-known values cache + <c>ServerDataCache</c>
+    /// via <c>OnMessagePublished</c>) without requiring a live MQTT broker.
+    /// Equivalent to a message arriving with no hub clients currently subscribed.
     /// </summary>
-    public void SeedLastKnownValue(string topic, string value)
-        => _lastKnownValues[topic] = value;
+    public Task SeedLastKnownValueAsync(string topic, string value)
+        => HandleIncomingMessageAsync(topic, value, DateTime.UtcNow);
 }

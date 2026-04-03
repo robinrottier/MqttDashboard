@@ -7,6 +7,6 @@
     <MinVerDefaultPreReleaseIdentifiers>dev</MinVerDefaultPreReleaseIdentifiers>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MinVer" Version="5.0.0" PrivateAssets="All" Condition="$(MSBuildProjectExtension) == '.csproj'" />
+    <PackageReference Include="MinVer" Version="7.0.0" PrivateAssets="All" Condition="$(MSBuildProjectExtension) == '.csproj'" />
   </ItemGroup>
 </Project>
