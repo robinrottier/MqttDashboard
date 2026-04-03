@@ -485,7 +485,7 @@ function Step-CreateMergePR {
         Start-Sleep -Seconds $interval; $elapsed += $interval
         if ($elapsed -gt $timeoutSec) { throw "Timeout ($WorkflowTimeoutMinutes min) waiting for PR CI checks" }
 
-        $checksJson = Get-CmdOutput gh @('pr', 'checks', $prNum, '--json', 'state,name,__typename')
+        $checksJson = Get-CmdOutput gh @('pr', 'checks', $prNum, '--json', 'state,name')
         if (-not $checksJson) { Write-Step "  No checks yet..."; continue }
         try   { $checks = $checksJson | ConvertFrom-Json }
         catch { Write-Step "  Waiting for checks to appear..."; continue }
