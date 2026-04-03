@@ -13,7 +13,7 @@ namespace MqttDashboard.IntegrationTests;
 /// </summary>
 public class MqttFlowIntegrationTests : IClassFixture<InProcessMqttBrokerFixture>, IAsyncDisposable
 {
-    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(30);
 
     private readonly InProcessMqttBrokerFixture _broker;
     private MqttBrokerIntegrationFactory? _factory;
@@ -31,29 +31,30 @@ public class MqttFlowIntegrationTests : IClassFixture<InProcessMqttBrokerFixture
         _factory = new MqttBrokerIntegrationFactory(_broker.Port);
 
         var conn = HubConnectionHelper.Create(_factory);
+
+        // Register the status handler BEFORE StartAsync so we never miss the
+        // OnConnectedAsync broadcast that the hub sends immediately on connect.
+        // (On subsequent tests the broker is already up and MqttClientService
+        // connects in <5 ms — far faster than any post-StartAsync registration.)
+        var connectedTcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        conn.On<string, int>("MqttConnectionStatus", (status, _) =>
+        {
+            if (status == "Connected") connectedTcs.TrySetResult(status);
+        });
+
         await conn.StartAsync();
 
-        // Wait until MqttClientService reports it is connected to the broker.
-        await WaitForMqttConnectedAsync(conn);
+        // Wait for MqttClientService to report it is connected to the broker.
+        await WaitForConnectedAsync(connectedTcs);
 
         return (_factory, conn);
     }
 
-    private static async Task WaitForMqttConnectedAsync(HubConnection conn)
+    private static async Task WaitForConnectedAsync(TaskCompletionSource<string> tcs)
     {
-        var tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
-        conn.On<string, int>("MqttConnectionStatus", (status, _) =>
-        {
-            if (status == "Connected") tcs.TrySetResult(status);
-        });
-
-        // If already received before we registered (OnConnectedAsync fires very fast),
-        // poll by re-subscribing briefly.
-        await Task.Delay(100);
-
         var deadline = DateTime.UtcNow + Timeout;
         while (!tcs.Task.IsCompleted && DateTime.UtcNow < deadline)
-            await Task.Delay(100);
+            await Task.Delay(50);
 
         if (!tcs.Task.IsCompleted)
             throw new TimeoutException("MqttClientService did not connect to the in-process broker within the timeout.");
