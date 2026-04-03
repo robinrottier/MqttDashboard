@@ -10,6 +10,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - **`scripts/release.ps1`** — full rewrite: Linux/WSL compatible, auto-restarts in pwsh 7 when invoked from Windows PowerShell 5.1, step selection via `-From`/`-Only`/`-Skip`/`-BumpType`, interactive step-selection menu and retry/skip prompts on failure, coloured output. Bug fixes: `-WorkflowTimeoutMinutes` was silently ignored, parallel mode swallowed failures, CHANGELOG insert format was wrong, PR CI polling now uses `gh pr checks`.
+- **`scripts/release.ps1`** — added `-Verify` mode (local-only check: preflight → build → publish → docker build, no git ops, no `gh` required); new steps `publish-check` (mirrors `release.yml`), `docker-build` (mirrors `docker.yml`), and `post-deploy` (SSH deploy, auto-skipped unless `DEPLOY_HOST` env var is set). Step count updated to 14.
 
 ### Added
 - **`MqttDashboard.Mqtt.Tests`** — new test project with a real in-process MQTTnet broker (`MQTTnet.Server`).

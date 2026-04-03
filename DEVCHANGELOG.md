@@ -5,6 +5,72 @@ For reviewing work item by item and moving anything back to [TODO.md](TODO.md) i
 
 ---
 
+## 2026-04-03 — release.ps1: -Verify mode, publish-check, docker-build, post-deploy steps
+
+### Commit: TBD · branch: feature/feat-h-data-layer
+
+#### `scripts/release.ps1` — 4 enhancements
+
+**1. `-Verify` mode**
+
+New `-Verify` switch (also `VERIFY=1` env var). When set, `Get-StepsToRun` restricts to the
+6 local steps: `preflight → clean → build-debug → build-release → publish-check → docker-build`.
+No git state changes, no remote operations, no `gh` CLI required.
+
+`Step-Preflight` updated to skip the `gh` availability requirement when `-Verify` is active and
+to skip the remote-URL check (not needed for local verification).
+
+Suitable for use as a Copilot post-change verification gate at the end of each session. Also
+useful as a quick pre-push sanity check on the developer's machine.
+
+Distinguished from `-DryRun`: `-DryRun` still rehearses the full release flow (commits changelog
+locally, etc.) but skips remote pushes; `-Verify` is purely local with zero git mutations.
+
+**2. `publish-check` step (new)**
+
+Mirrors what `release.yml` does for the `linux-x64` target: runs `dotnet publish -c Release
+-r linux-x64 --self-contained true`. Catches trim errors, missing publish-only assemblies, or AOT
+failures that would slip past `dotnet build`. Cleans up the output directory (`artifacts/publish-check`)
+after success. Auto-skipped with `-SkipPublishCheck` switch or `SKIP_PUBLISH_CHECK=1` env var.
+
+⚠️ This step does a full wasm-tools publish so it can be slow (2–4 min) on first run; subsequent
+runs benefit from incremental build cache.
+
+**3. `docker-build` step (new)**
+
+Mirrors `docker.yml`'s build step: `docker build -f src/.../Dockerfile -t mqttdashboard:local .`
+using the repo root as build context. Auto-skipped (with a warning) if:
+- `docker` is not on PATH, or
+- the Docker daemon is not running (`docker info` returns non-zero).
+
+Does not push — local verification only. Tags the image `mqttdashboard:local` for manual inspection.
+
+**4. `post-deploy` step (new)**
+
+Final step (position 14). SSHs to a remote host and runs:
+```
+docker compose -f <compose-file> pull && docker compose -f <compose-file> up -d
+```
+Configuration via env vars:
+- `DEPLOY_HOST` — required; step auto-skips if not set
+- `DEPLOY_USER` — SSH user (default: `$env:USER` / `$env:USERNAME`)
+- `DEPLOY_PATH` — remote working dir (default: `/opt/mqttdashboard`)
+- `DEPLOY_COMPOSE_FILE` — compose file name (default: `docker-compose.yml`)
+
+Skipped in `-DryRun` mode. Documented in `.NOTES` of the script help block.
+
+**Updated step catalogue**
+
+Step order expanded from 11 → 14:
+```
+preflight → clean → build-debug → build-release → publish-check → docker-build
+→ sync → version → changelog → push-changelog → pr → tag → wait-workflows → post-deploy
+```
+
+Help text (`.DESCRIPTION`, `.PARAMETER`, `.NOTES`, `.EXAMPLE`) updated throughout.
+
+---
+
 ## 2026-04-03 — release.ps1 rewrite: Linux/WSL compat, step selection, bug fixes
 
 ### Commit: TBD · branch: feature/feat-h-data-layer

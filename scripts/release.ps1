@@ -9,26 +9,44 @@
       2.  clean           Auto-commit TODO.md if the only dirty file; else abort
       3.  build-debug     Build + test (Debug configuration)
       4.  build-release   Build + test (Release configuration)
-      5.  sync            Fetch + pull --rebase from origin
-      6.  version         Compute next semver tag from latest git tag
-      7.  changelog       Insert versioned section into CHANGELOG.md
-      8.  push-changelog  Commit + push the changelog update
-      9.  pr              Create PR → main, wait for CI checks, merge
-      10. tag             Create annotated tag and push it
-      11. wait-workflows  Wait for release workflows triggered by the tag
+      5.  publish-check   dotnet publish (Release, linux-x64, self-contained)
+      6.  docker-build    docker build (local only, no push; skipped if Docker unavailable)
+      7.  sync            Fetch + pull --rebase from origin
+      8.  version         Compute next semver tag from latest git tag
+      9.  changelog       Insert versioned section into CHANGELOG.md
+      10. push-changelog  Commit + push the changelog update
+      11. pr              Create PR → main, wait for CI checks, merge
+      12. tag             Create annotated tag and push it
+      13. wait-workflows  Wait for release workflows triggered by the tag
+      14. post-deploy     SSH deploy: docker compose pull + up -d (skipped if DEPLOY_HOST not set)
+
+    Steps 1–6 are purely local; steps 7–14 require git remote and/or gh CLI.
+
+    Use -Verify to run only steps 1–6 as a quick local CI mirror — no git state
+    changes, no gh required. Suitable as a Copilot post-change verification gate.
 
     Runs on pwsh 7+ (Windows, Linux, WSL).
     When invoked under Windows PowerShell 5.1, automatically re-launches in pwsh
     if available on PATH.
 
 .PARAMETER DryRun
-    Skip all remote operations (push, merge, tag push).
+    Skip all remote operations (push, merge, tag push). Changelog and version files
+    are still updated locally. To skip all git state changes, use -Verify instead.
 
 .PARAMETER NoGh
     Disable GitHub CLI automation (PR creation, workflow polling).
 
+.PARAMETER Verify
+    Local-only verification mode. Runs steps 1–6 (preflight through docker-build)
+    only. No git state changes, no gh CLI required. Use -Skip docker-build or
+    -SkipPublishCheck to tune which local checks run. Suitable as a fast pre-push
+    gate or Copilot post-change verification step.
+
 .PARAMETER SkipReleaseTests
     Skip running tests for the Release build.
+
+.PARAMETER SkipPublishCheck
+    Skip the publish-check step (self-contained dotnet publish for linux-x64).
 
 .PARAMETER ReleaseTestFilter
     Test filter expression for Release config. Default: 'TestCategory!=Playwright'.
@@ -46,8 +64,8 @@
 .PARAMETER From
     Start from a named step, skipping all earlier ones. Useful to resume after
     a failure without re-running build/test.
-    Step names: preflight clean build-debug build-release sync version
-                changelog push-changelog pr tag wait-workflows
+    Step names: preflight clean build-debug build-release publish-check docker-build
+                sync version changelog push-changelog pr tag wait-workflows post-deploy
 
 .PARAMETER Only
     Run exactly one named step and exit.
@@ -62,6 +80,8 @@
 .EXAMPLE
     pwsh ./scripts/release.ps1
     pwsh ./scripts/release.ps1 -DryRun
+    pwsh ./scripts/release.ps1 -Verify
+    pwsh ./scripts/release.ps1 -Verify -Skip docker-build
     pwsh ./scripts/release.ps1 -From sync
     pwsh ./scripts/release.ps1 -Only build-debug
     pwsh ./scripts/release.ps1 -Skip build-debug,build-release -DryRun
@@ -70,16 +90,26 @@
 .NOTES
     Environment variable fallbacks:
       DRYRUN=1               equivalent to -DryRun
+      VERIFY=1               equivalent to -Verify
       NO_GH=1                equivalent to -NoGh
       SKIP_RELEASE_TESTS=1   equivalent to -SkipReleaseTests
+      SKIP_PUBLISH_CHECK=1   equivalent to -SkipPublishCheck
       RELEASE_TEST_FILTER    equivalent to -ReleaseTestFilter
+
+    SSH deploy configuration (post-deploy step):
+      DEPLOY_HOST            Remote host (step auto-skipped if not set)
+      DEPLOY_USER            SSH user (default: current user)
+      DEPLOY_PATH            Remote working directory (default: /opt/mqttdashboard)
+      DEPLOY_COMPOSE_FILE    Compose file name (default: docker-compose.yml)
 #>
 
 [CmdletBinding()]
 Param(
     [switch]$DryRun,
+    [switch]$Verify,
     [switch]$NoGh,
     [switch]$SkipReleaseTests,
+    [switch]$SkipPublishCheck,
     [string]$ReleaseTestFilter = '',
     [switch]$Parallel,
     [int]$WorkflowTimeoutMinutes = 30,
@@ -129,8 +159,10 @@ function Write-Fail([string]$msg)   { Write-Host "  ✗ $msg" -ForegroundColor R
 
 # ─── Effective flags ──────────────────────────────────────────────────────────
 $IsDryRun      = $DryRun      -or $env:DRYRUN              -eq '1'
+$IsVerify      = $Verify      -or $env:VERIFY              -eq '1'
 $IsNoGh        = $NoGh        -or $env:NO_GH               -eq '1'
 $IsSkipTests   = $SkipReleaseTests -or $env:SKIP_RELEASE_TESTS -eq '1'
+$IsSkipPublish = $SkipPublishCheck -or $env:SKIP_PUBLISH_CHECK -eq '1'
 $EffTestFilter = if ($ReleaseTestFilter) { $ReleaseTestFilter }
                  elseif ($env:RELEASE_TEST_FILTER) { $env:RELEASE_TEST_FILTER }
                  else { 'TestCategory!=Playwright' }
@@ -143,15 +175,20 @@ $IsInteractive = -not $NonInteractive -and
 
 # ─── Step catalogue ───────────────────────────────────────────────────────────
 $StepOrder = @(
-    'preflight', 'clean', 'build-debug', 'build-release',
+    'preflight', 'clean', 'build-debug', 'build-release', 'publish-check', 'docker-build',
     'sync', 'version', 'changelog', 'push-changelog',
-    'pr', 'tag', 'wait-workflows'
+    'pr', 'tag', 'wait-workflows', 'post-deploy'
 )
+# Steps that are purely local (no git remote / gh required)
+$LocalSteps = @('preflight', 'clean', 'build-debug', 'build-release', 'publish-check', 'docker-build')
+
 $StepDesc = @{
     'preflight'      = 'Preflight checks (tools, git remote)'
     'clean'          = 'Ensure clean working tree'
     'build-debug'    = 'Build and test (Debug)'
     'build-release'  = 'Build and test (Release)'
+    'publish-check'  = 'dotnet publish (Release, linux-x64, self-contained)'
+    'docker-build'   = 'docker build (local verify, no push)'
     'sync'           = 'Pull and sync with remote'
     'version'        = 'Compute next version'
     'changelog'      = 'Update CHANGELOG.md'
@@ -159,6 +196,7 @@ $StepDesc = @{
     'pr'             = 'Create PR → wait for CI → merge'
     'tag'            = 'Create and push release tag'
     'wait-workflows' = 'Wait for release workflows'
+    'post-deploy'    = 'SSH deploy: docker compose pull + up -d'
 }
 
 # Resolve skip set (accepts array or comma-separated strings)
@@ -168,6 +206,10 @@ foreach ($s in $Skip) { foreach ($part in ($s -split ',')) { [void]$SkipSet.Add(
 # Build the ordered list of steps to run
 function Get-StepsToRun {
     if ($Only) { return @($Only.Trim()) }
+    if ($IsVerify) {
+        # Local-only mode: restrict to the local steps
+        return $LocalSteps | Where-Object { -not $SkipSet.Contains($_) }
+    }
     $started = [string]::IsNullOrEmpty($From)
     return $StepOrder | Where-Object {
         if (-not $started -and ($_ -ieq $From.Trim())) { $started = $true }
@@ -207,16 +249,21 @@ function Step-Preflight {
         }
     }
     $ghAvail = [bool](Get-Command gh -ErrorAction SilentlyContinue)
-    if (-not $IsNoGh -and -not $ghAvail) {
+    # gh is not required in -Verify mode (local-only steps)
+    if (-not $IsNoGh -and -not $IsVerify -and -not $ghAvail) {
         throw "gh CLI required but not found. Install from https://cli.github.com/ or pass -NoGh to skip GH automation."
     }
-    if ($IsNoGh -and -not $ghAvail) {
+    if (($IsNoGh -or $IsVerify) -and -not $ghAvail) {
         Write-Warn "gh CLI not available — PR automation and workflow polling disabled"
     }
-    $remote = Get-CmdOutput git @('remote', 'get-url', 'origin')
-    if (-not $remote) { throw "git remote 'origin' not configured. Add an origin remote and retry." }
-    Write-Ok "git, dotnet$(if ($ghAvail) { ', gh' }) found"
-    Write-Ok "Remote: $remote"
+    if (-not $IsVerify) {
+        $remote = Get-CmdOutput git @('remote', 'get-url', 'origin')
+        if (-not $remote) { throw "git remote 'origin' not configured. Add an origin remote and retry." }
+        Write-Ok "git, dotnet$(if ($ghAvail) { ', gh' }) found"
+        Write-Ok "Remote: $remote"
+    } else {
+        Write-Ok "git, dotnet found (verify mode — gh and remote not required)"
+    }
 }
 
 # ─── Step: clean ─────────────────────────────────────────────────────────────
@@ -275,6 +322,38 @@ function Step-BuildRelease {
     Write-Step "Testing (Release) [filter: $EffTestFilter]..."
     Assert-Cmd dotnet @('test', 'MqttDashboard.slnx', '-c', 'Release', '--no-build', '--filter', $EffTestFilter) "Release tests failed"
     Write-Ok "Release build + tests passed"
+}
+
+# ─── Step: publish-check ─────────────────────────────────────────────────────
+function Step-PublishCheck {
+    if ($IsSkipPublish) { Write-Warn "Skipping publish-check (-SkipPublishCheck)"; return }
+    $proj   = Join-Path $RepoRoot 'src' 'MqttDashboard.WebApp' 'MqttDashboard.WebApp' 'MqttDashboard.WebApp.csproj'
+    $outDir = Join-Path $RepoRoot 'artifacts' 'publish-check'
+    Write-Step "Publishing self-contained (Release, linux-x64)..."
+    try {
+        Assert-Cmd dotnet @('publish', $proj, '-c', 'Release', '-r', 'linux-x64',
+                            '--self-contained', 'true', '-o', $outDir) "dotnet publish failed"
+        Write-Ok "Publish succeeded (linux-x64)"
+    } finally {
+        if (Test-Path $outDir) { Remove-Item $outDir -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+}
+
+# ─── Step: docker-build ──────────────────────────────────────────────────────
+function Step-DockerBuild {
+    if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+        Write-Warn "docker not found on PATH — skipping docker-build"
+        return
+    }
+    & docker info 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warn "Docker daemon not running — skipping docker-build"
+        return
+    }
+    $dockerfile = Join-Path 'src' 'MqttDashboard.WebApp' 'MqttDashboard.WebApp' 'Dockerfile'
+    Write-Step "Building Docker image (local, no push)..."
+    Assert-Cmd docker @('build', '-f', $dockerfile, '-t', 'mqttdashboard:local', '.') "docker build failed"
+    Write-Ok "Docker image built: mqttdashboard:local"
 }
 
 # ─── Step: sync ──────────────────────────────────────────────────────────────
@@ -428,6 +507,27 @@ function Step-WaitWorkflows {
     }
 }
 
+# ─── Step: post-deploy ───────────────────────────────────────────────────────
+function Step-PostDeploy {
+    $deployHost = $env:DEPLOY_HOST
+    if (-not $deployHost) {
+        Write-Warn "DEPLOY_HOST not set — skipping post-deploy."
+        Write-Step "  Set DEPLOY_HOST (and optionally DEPLOY_USER, DEPLOY_PATH, DEPLOY_COMPOSE_FILE) to enable."
+        return
+    }
+    $deployUser  = if ($env:DEPLOY_USER)         { $env:DEPLOY_USER }         else { $env:USER ?? $env:USERNAME }
+    $deployPath  = if ($env:DEPLOY_PATH)         { $env:DEPLOY_PATH }         else { '/opt/mqttdashboard' }
+    $composeFile = if ($env:DEPLOY_COMPOSE_FILE) { $env:DEPLOY_COMPOSE_FILE } else { 'docker-compose.yml' }
+    $sshTarget   = "$deployUser@$deployHost"
+    $remoteCmd   = "cd '$deployPath' && docker compose -f '$composeFile' pull && docker compose -f '$composeFile' up -d"
+
+    Write-Step "Deploying to $sshTarget : $deployPath ($composeFile)"
+    if ($IsDryRun) { Write-Warn "DRYRUN: skipping SSH deploy"; return }
+
+    Assert-Cmd ssh @($sshTarget, $remoteCmd) "SSH deploy failed"
+    Write-Ok "Deployed to $sshTarget"
+}
+
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 function Get-RepoSlug {
     $url = Get-CmdOutput git @('remote', 'get-url', 'origin')
@@ -475,6 +575,8 @@ $StepFns = @{
     'clean'          = { Step-CleanTree }
     'build-debug'    = { Step-BuildDebug }
     'build-release'  = { Step-BuildRelease }
+    'publish-check'  = { Step-PublishCheck }
+    'docker-build'   = { Step-DockerBuild }
     'sync'           = { Step-GitSync }
     'version'        = { Step-ComputeVersion }
     'changelog'      = { Step-UpdateChangelog }
@@ -482,11 +584,13 @@ $StepFns = @{
     'pr'             = { Step-CreateMergePR }
     'tag'            = { Step-CreateTag }
     'wait-workflows' = { Step-WaitWorkflows }
+    'post-deploy'    = { Step-PostDeploy }
 }
 
 # ─── Main ────────────────────────────────────────────────────────────────────
 try {
-    if ($IsDryRun) { Write-Warn "DRY RUN — no pushes, merges or tags will be made" }
+    if ($IsVerify)  { Write-Warn "VERIFY MODE — local checks only, no git state changes" }
+    if ($IsDryRun)  { Write-Warn "DRY RUN — no pushes, merges or tags will be made" }
 
     $stepsToRun = [string[]](Get-StepsToRun)
 
@@ -521,7 +625,11 @@ try {
         }
     }
 
-    Write-Host "`n✓ Release $($script:NextVersion ?? '(version not computed)') complete." -ForegroundColor Green
+    if ($IsVerify) {
+        Write-Host "`n✓ Local verification complete — all checks passed." -ForegroundColor Green
+    } else {
+        Write-Host "`n✓ Release $($script:NextVersion ?? '(version not computed)') complete." -ForegroundColor Green
+    }
 }
 catch {
     Write-Fail "RELEASE FAILED: $_"

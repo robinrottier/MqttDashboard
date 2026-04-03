@@ -11,8 +11,6 @@ _Completed items are recorded in [CHANGELOG.md](CHANGELOG.md)._
 - [ ] release.ps1
 	- [ ] console output: each step shows what it's doing but then reverts to a single line if OK (like `dotnet build` can do) — currently all sub-command output is streamed verbosely
 	- [ ] detailed output review on failure — buffer step output and dump it in full only when a step fails
-	- [ ] additional step to test Dockerfile build locally on dev Windows box before releasing
-	- [ ] final step to auto-upgrade a remote deployment after release (e.g. via SSH + `docker compose pull && docker compose up -d`, or via the update API endpoint)
 - [ ] Need a way to share dashboards between installations (and dev). Can the API be opened up with a read/write interface to other isntallations via https??
 	- [ ] Then in "OPen" and "Save As" dialogs we could choose destaniotn respository: local file or remote dashboard repo (with list of dashboards to choose from)
 - [ ] Node Property dialog - color transition
